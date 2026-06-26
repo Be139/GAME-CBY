@@ -8,6 +8,7 @@ public class HearthHudButtonAction : MonoBehaviour
 {
     [Header("Action")]
     [SerializeField] private HearthHudController controller;
+    [SerializeField] private HearthTvTerminalController tvTerminalController;
     [SerializeField] private HearthHudButtonActionType actionType = HearthHudButtonActionType.None;
     [SerializeField] private HearthHudPageId targetPage = HearthHudPageId.Slide01PersistentActive;
     [SerializeField] private HearthHudPageId robotReplayReturnPage = HearthHudPageId.Slide05DoorwayDisposition;
@@ -67,6 +68,12 @@ public class HearthHudButtonAction : MonoBehaviour
     {
         FindControllerIfMissing();
 
+        if (tvTerminalController != null && InvokeTvTerminalAction())
+        {
+            InvokeExtraEvent();
+            return;
+        }
+
         if (showTrustDeltaBeforeAction && controller != null)
         {
             controller.ShowTrustDelta(trustDelta);
@@ -106,9 +113,54 @@ public class HearthHudButtonAction : MonoBehaviour
                 case HearthHudButtonActionType.HideCurrentOverlay:
                     controller.HideCurrentOverlay();
                     break;
+                case HearthHudButtonActionType.CloseTerminal:
+                    break;
             }
         }
 
+        InvokeExtraEvent();
+    }
+
+    private bool InvokeTvTerminalAction()
+    {
+        switch (actionType)
+        {
+            case HearthHudButtonActionType.ShowPage:
+                tvTerminalController.ShowPage(targetPage);
+                return true;
+            case HearthHudButtonActionType.ShowNextPage:
+                tvTerminalController.ShowNextPage();
+                return true;
+            case HearthHudButtonActionType.ShowPreviousPage:
+                tvTerminalController.ShowPreviousPage();
+                return true;
+            case HearthHudButtonActionType.ShowRobotReplay:
+                tvTerminalController.RequestRobotReplay();
+                return true;
+            case HearthHudButtonActionType.CompleteRobotReplay:
+                tvTerminalController.ShowPostReplayChoicePage();
+                return true;
+            case HearthHudButtonActionType.SelectDoorwayTab:
+                tvTerminalController.SelectDoorwayTab(targetTab);
+                return true;
+            case HearthHudButtonActionType.HideCurrentOverlay:
+                tvTerminalController.ShowPreviousPage();
+                return true;
+            case HearthHudButtonActionType.CloseTerminal:
+                tvTerminalController.CloseTerminal();
+                return true;
+            case HearthHudButtonActionType.None:
+            case HearthHudButtonActionType.SetHudState:
+            case HearthHudButtonActionType.SetSubtitle:
+            case HearthHudButtonActionType.ShowTrustDelta:
+                return false;
+            default:
+                return false;
+        }
+    }
+
+    private void InvokeExtraEvent()
+    {
         if (onClickExtra != null)
         {
             onClickExtra.Invoke();
@@ -143,6 +195,11 @@ public class HearthHudButtonAction : MonoBehaviour
 
     private void FindControllerIfMissing()
     {
+        if (tvTerminalController == null)
+        {
+            tvTerminalController = GetComponentInParent<HearthTvTerminalController>();
+        }
+
         if (controller != null)
         {
             return;

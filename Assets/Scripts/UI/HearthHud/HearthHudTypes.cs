@@ -58,7 +58,8 @@ public enum HearthHudButtonActionType
     SetHudState,
     SetSubtitle,
     ShowTrustDelta,
-    HideCurrentOverlay
+    HideCurrentOverlay,
+    CloseTerminal
 }
 
 [Serializable]

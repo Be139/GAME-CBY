@@ -53,9 +53,11 @@ public static class HearthTvTerminalPrefabBuilder
         }
 
         Dictionary<int, GameObject> pagePrefabs = new Dictionary<int, GameObject>();
+        Dictionary<int, SlideData> slidesByNumber = new Dictionary<int, SlideData>();
         for (int i = 0; i < slides.Count; i++)
         {
             SlideData slide = slides[i];
+            slidesByNumber[slide.Number] = slide;
             int firstSlideNumber = GetGroupFirstSlide(slide.Number);
             GameObject pageObject = BuildPage(slide, firstSlideNumber);
             string pagePath = PagePrefabFolder + "/TerminalSlide" + slide.Number.ToString("00") + "_" + GetTerminalSlideShortName(slide.Number) + ".prefab";
@@ -64,9 +66,9 @@ public static class HearthTvTerminalPrefabBuilder
             UnityEngine.Object.DestroyImmediate(pageObject);
         }
 
-        GameObject terminal17F01 = BuildTerminalGroup("Terminal_17F01", 1, HearthHudPageId.Slide01PersistentActive, pagePrefabs);
-        GameObject terminal17F02 = BuildTerminalGroup("Terminal_17F02", 7, HearthHudPageId.Slide07PersistentDormant, pagePrefabs);
-        GameObject terminal17F03 = BuildTerminalGroup("Terminal_17F03_Alert", 13, HearthHudPageId.Slide13AlertDoorwaySummary, pagePrefabs);
+        GameObject terminal17F01 = BuildTerminalGroup("Terminal_17F01", 1, HearthHudPageId.Slide01PersistentActive, pagePrefabs, slidesByNumber);
+        GameObject terminal17F02 = BuildTerminalGroup("Terminal_17F02", 7, HearthHudPageId.Slide07PersistentDormant, pagePrefabs, slidesByNumber);
+        GameObject terminal17F03 = BuildTerminalGroup("Terminal_17F03_Alert", 13, HearthHudPageId.Slide13AlertDoorwaySummary, pagePrefabs, slidesByNumber);
 
         GameObject saved17F01 = PrefabUtility.SaveAsPrefabAsset(terminal17F01, Terminal17F01PrefabPath);
         PrefabUtility.SaveAsPrefabAsset(terminal17F02, Terminal17F02PrefabPath);
@@ -117,9 +119,16 @@ public static class HearthTvTerminalPrefabBuilder
         return pageRoot;
     }
 
-    private static GameObject BuildTerminalGroup(string prefabName, int firstSlideNumber, HearthHudPageId startingPage, Dictionary<int, GameObject> pagePrefabs)
+    private static GameObject BuildTerminalGroup(string prefabName, int firstSlideNumber, HearthHudPageId startingPage, Dictionary<int, GameObject> pagePrefabs, Dictionary<int, SlideData> slidesByNumber)
     {
-        GameObject root = new GameObject(prefabName, typeof(RectTransform), typeof(CanvasGroup), typeof(HearthTvTerminalController));
+        GameObject root = new GameObject(
+            prefabName,
+            typeof(RectTransform),
+            typeof(CanvasGroup),
+            typeof(AudioSource),
+            typeof(HearthTerminalCameraTransition),
+            typeof(HearthTerminalBootSequence),
+            typeof(HearthTvTerminalController));
         RectTransform rootRect = root.GetComponent<RectTransform>();
         StretchToParent(rootRect);
 
@@ -128,14 +137,22 @@ public static class HearthTvTerminalPrefabBuilder
         canvasGroup.interactable = false;
         canvasGroup.blocksRaycasts = false;
 
+        AudioSource audioSource = root.GetComponent<AudioSource>();
+        audioSource.playOnAwake = false;
+        audioSource.spatialBlend = 0f;
+
         Image screenGlass = CreateImage(root.transform, "TerminalScreenGlass", new Rect(0f, 0f, ReferenceWidth, ReferenceHeight), new Color(0.043f, 0.063f, 0.094f, 0.58f));
         screenGlass.raycastTarget = false;
 
-        GameObject contentObject = new GameObject("TerminalContentRoot", typeof(RectTransform));
+        GameObject contentObject = new GameObject("TerminalContentRoot", typeof(RectTransform), typeof(CanvasGroup));
         contentObject.transform.SetParent(root.transform, false);
         RectTransform contentRect = contentObject.GetComponent<RectTransform>();
         StretchToParent(contentRect);
         contentRect.localScale = Vector3.one * DefaultTerminalZoom;
+        CanvasGroup contentGroup = contentObject.GetComponent<CanvasGroup>();
+        contentGroup.alpha = 0f;
+        contentGroup.interactable = false;
+        contentGroup.blocksRaycasts = false;
 
         List<HearthHudPage> pages = new List<HearthHudPage>();
         for (int slideNumber = firstSlideNumber; slideNumber < firstSlideNumber + 6; slideNumber++)
@@ -162,7 +179,9 @@ public static class HearthTvTerminalPrefabBuilder
             }
         }
 
+        BuildSelectionHighlighter(contentObject.transform, firstSlideNumber, slidesByNumber);
         BuildKeyboardNavigation(root.transform);
+        BuildBootOverlays(root.transform, contentGroup, contentRect);
 
         HearthTvTerminalController controller = root.GetComponent<HearthTvTerminalController>();
         controller.Configure(null, null, contentRect, canvasGroup, pages.ToArray(), firstSlideNumber, startingPage, DefaultTerminalZoom);
@@ -178,6 +197,94 @@ public static class HearthTvTerminalPrefabBuilder
         CreateImage(root.transform, "KeyboardHintBackplate", new Rect(52f, 990f, 1816f, 46f), new Color(0f, 0f, 0f, 0.28f));
         CreateText(root.transform, "KeyboardHintText", "TAB NEXT PAGE     LEFT/RIGHT SELECT     SPACE CONFIRM     ESC EXIT", new Rect(72f, 1002f, 1160f, 26f), 17f, new Color(0.76f, 0.94f, 0.94f, 0.86f), FontStyles.Normal, TextAlignmentOptions.TopLeft);
         CreateText(root.transform, "KeyboardFocusText", "PAGE 1/5", new Rect(1300f, 1002f, 548f, 26f), 18f, new Color(0.16f, 0.94f, 0.56f, 0.94f), FontStyles.Bold, TextAlignmentOptions.TopRight);
+    }
+
+    private static void BuildSelectionHighlighter(Transform contentParent, int firstSlideNumber, Dictionary<int, SlideData> slidesByNumber)
+    {
+        GameObject root = new GameObject("TerminalSelectionRoot", typeof(RectTransform), typeof(HearthTerminalSelectionHighlighter));
+        root.transform.SetParent(contentParent, false);
+        RectTransform rootRect = root.GetComponent<RectTransform>();
+        StretchToParent(rootRect);
+
+        string[] labels =
+        {
+            "RESIDENT SUMMARY",
+            "ACQUISITION",
+            "FAMILY LOG",
+            "TRUST TREND",
+            "INSPECTION HISTORY"
+        };
+
+        List<Rect> targetRects = new List<Rect>();
+        for (int i = 0; i < labels.Length; i++)
+        {
+            Rect fallback = GetFallbackNavigationRect(i);
+            targetRects.Add(FindTextRectInGroup(slidesByNumber, firstSlideNumber, labels[i], fallback));
+        }
+
+        Rect navigationBounds = BuildNavigationBounds(targetRects);
+        Rect replayRect = FindTextRectInGroup(slidesByNumber, firstSlideNumber, "RECALL EVENT", Rect.zero);
+        if (!IsRectUsable(replayRect) || !IsRectNearNavigation(replayRect, navigationBounds))
+        {
+            replayRect = new Rect(navigationBounds.x + navigationBounds.width - 235f, navigationBounds.y + (navigationBounds.height - 26f) * 0.5f, 220f, 26f);
+        }
+
+        targetRects.Add(replayRect);
+
+        RectTransform bounds = CreateRectTransform(root.transform, "KeyboardSelectionBounds", navigationBounds);
+        Image highlight = CreateImage(root.transform, "KeyboardSelectionHighlight", targetRects[0], new Color(0.1f, 0.95f, 0.58f, 0.12f));
+        Outline outline = highlight.gameObject.AddComponent<Outline>();
+        outline.effectColor = new Color(0.38f, 1f, 0.72f, 0.42f);
+        outline.effectDistance = new Vector2(1.5f, -1.5f);
+
+        GameObject targetsRoot = new GameObject("SelectionTargets", typeof(RectTransform));
+        targetsRoot.transform.SetParent(root.transform, false);
+        StretchToParent(targetsRoot.GetComponent<RectTransform>());
+
+        RectTransform[] targets = new RectTransform[targetRects.Count];
+        for (int i = 0; i < targetRects.Count; i++)
+        {
+            targets[i] = CreateRectTransform(targetsRoot.transform, "Target_" + i.ToString("00"), targetRects[i]);
+        }
+
+        HearthTerminalSelectionHighlighter highlighter = root.GetComponent<HearthTerminalSelectionHighlighter>();
+        highlighter.Configure(highlight.rectTransform, highlight, bounds, targets);
+    }
+
+    private static void BuildBootOverlays(Transform parent, CanvasGroup contentGroup, RectTransform contentRect)
+    {
+        GameObject bootOverlay = new GameObject("TerminalBootOverlay", typeof(RectTransform), typeof(CanvasGroup));
+        bootOverlay.transform.SetParent(parent, false);
+        StretchToParent(bootOverlay.GetComponent<RectTransform>());
+        CanvasGroup bootGroup = bootOverlay.GetComponent<CanvasGroup>();
+        bootGroup.alpha = 0f;
+        bootGroup.interactable = false;
+        bootGroup.blocksRaycasts = false;
+
+        CreateImage(bootOverlay.transform, "BootFlash", new Rect(0f, 0f, ReferenceWidth, ReferenceHeight), new Color(0.55f, 0.95f, 0.85f, 0.18f));
+
+        GameObject scanlineRoot = new GameObject("BootScanlines", typeof(RectTransform));
+        scanlineRoot.transform.SetParent(bootOverlay.transform, false);
+        StretchToParent(scanlineRoot.GetComponent<RectTransform>());
+        for (int y = 0; y < ReferenceHeight; y += 28)
+        {
+            CreateImage(scanlineRoot.transform, "Scanline_" + y.ToString("0000"), new Rect(0f, y, ReferenceWidth, 2f), new Color(0.68f, 1f, 0.9f, 0.12f));
+        }
+
+        GameObject offOverlay = new GameObject("TerminalOffOverlay", typeof(RectTransform), typeof(CanvasGroup));
+        offOverlay.transform.SetParent(parent, false);
+        StretchToParent(offOverlay.GetComponent<RectTransform>());
+        CanvasGroup offGroup = offOverlay.GetComponent<CanvasGroup>();
+        offGroup.alpha = 1f;
+        offGroup.interactable = false;
+        offGroup.blocksRaycasts = false;
+        CreateImage(offOverlay.transform, "OffDarkScreen", new Rect(0f, 0f, ReferenceWidth, ReferenceHeight), new Color(0.005f, 0.008f, 0.012f, 0.96f));
+
+        HearthTerminalBootSequence bootSequence = parent.GetComponent<HearthTerminalBootSequence>();
+        if (bootSequence != null)
+        {
+            bootSequence.Configure(contentGroup, offGroup, bootGroup, contentRect);
+        }
     }
 
     private static void BuildTerminalInteractions(Transform pageRoot, SlideData slide, int firstSlideNumber)
@@ -336,7 +443,9 @@ public static class HearthTvTerminalPrefabBuilder
         if (controller != null)
         {
             Camera terminalCamera = FindBestTerminalCamera(tvTransform);
-            Camera playerCamera = Camera.main;
+            PlayerInteraction playerInteraction = FindBestPlayerInteraction();
+            Camera playerCamera = FindBestPlayerCamera(playerInteraction, terminalCamera);
+            controller.SetPlayerInteraction(playerInteraction);
             controller.SetPlayerCamera(playerCamera);
             controller.SetTerminalCamera(terminalCamera != null ? terminalCamera : canvas.worldCamera);
             controller.SetSwitchCameraWhileOpen(terminalCamera != null);
@@ -431,6 +540,152 @@ public static class HearthTvTerminalPrefabBuilder
         }
 
         return null;
+    }
+
+    private static PlayerInteraction FindBestPlayerInteraction()
+    {
+        PlayerInteraction[] interactions = UnityEngine.Object.FindObjectsOfType<PlayerInteraction>(true);
+        PlayerInteraction fallback = null;
+
+        for (int i = 0; i < interactions.Length; i++)
+        {
+            PlayerInteraction interaction = interactions[i];
+            if (interaction == null)
+            {
+                continue;
+            }
+
+            if (fallback == null)
+            {
+                fallback = interaction;
+            }
+
+            if (interaction.enabled && interaction.gameObject.activeInHierarchy && IsUsablePlayerCamera(interaction.mainCamera, null))
+            {
+                return interaction;
+            }
+        }
+
+        for (int i = 0; i < interactions.Length; i++)
+        {
+            PlayerInteraction interaction = interactions[i];
+            if (interaction != null && IsUsablePlayerCamera(interaction.mainCamera, null))
+            {
+                return interaction;
+            }
+        }
+
+        return fallback;
+    }
+
+    private static Camera FindBestPlayerCamera(PlayerInteraction playerInteraction, Camera terminalCamera)
+    {
+        if (playerInteraction != null && IsUsablePlayerCamera(playerInteraction.mainCamera, terminalCamera))
+        {
+            return playerInteraction.mainCamera;
+        }
+
+        Camera[] cameras = UnityEngine.Object.FindObjectsOfType<Camera>(true);
+        Camera bestCamera = null;
+        int bestScore = int.MinValue;
+
+        for (int i = 0; i < cameras.Length; i++)
+        {
+            Camera camera = cameras[i];
+            if (!IsUsablePlayerCamera(camera, terminalCamera))
+            {
+                continue;
+            }
+
+            int score = ScorePlayerCameraCandidate(camera);
+            if (bestCamera == null || score > bestScore)
+            {
+                bestCamera = camera;
+                bestScore = score;
+            }
+        }
+
+        if (bestCamera != null)
+        {
+            return bestCamera;
+        }
+
+        return IsUsablePlayerCamera(Camera.main, terminalCamera) ? Camera.main : null;
+    }
+
+    private static int ScorePlayerCameraCandidate(Camera camera)
+    {
+        int score = 0;
+        if (camera.gameObject.activeInHierarchy)
+        {
+            score += 20;
+        }
+
+        if (camera.enabled)
+        {
+            score += 40;
+        }
+
+        AudioListener listener = camera.GetComponent<AudioListener>();
+        if (listener != null && listener.enabled)
+        {
+            score += 30;
+        }
+
+        string path = GetHierarchyPath(camera.transform).ToUpperInvariant();
+        if (path.Contains("FIRST PERSON"))
+        {
+            score += 120;
+        }
+
+        if (path.Contains("PLAYER") || path.Contains("PERSON"))
+        {
+            score += 80;
+        }
+
+        if (camera.CompareTag("MainCamera"))
+        {
+            score += 5;
+        }
+
+        if (camera.name == "Main Camera")
+        {
+            score -= 30;
+        }
+
+        return score;
+    }
+
+    private static bool IsUsablePlayerCamera(Camera camera, Camera terminalCamera)
+    {
+        if (camera == null || camera == terminalCamera)
+        {
+            return false;
+        }
+
+        if (camera.name == "Terminal Transition Camera")
+        {
+            return false;
+        }
+
+        return !IsLikelyTerminalCamera(camera);
+    }
+
+    private static bool IsLikelyTerminalCamera(Camera camera)
+    {
+        Transform cursor = camera != null ? camera.transform : null;
+        while (cursor != null)
+        {
+            string name = cursor.name.ToUpperInvariant();
+            if (name.Contains("TV") || name.Contains("MONITORCANVAS") || name.Contains("TERMINAL_"))
+            {
+                return true;
+            }
+
+            cursor = cursor.parent;
+        }
+
+        return false;
     }
 
     private static Camera FindNamedTerminalCamera(Camera[] cameras)
@@ -941,6 +1196,15 @@ public static class HearthTvTerminalPrefabBuilder
         return text;
     }
 
+    private static RectTransform CreateRectTransform(Transform parent, string name, Rect rect)
+    {
+        GameObject rectObject = new GameObject(name, typeof(RectTransform));
+        rectObject.transform.SetParent(parent, false);
+        RectTransform rectTransform = rectObject.GetComponent<RectTransform>();
+        SetTopLeft(rectTransform, rect);
+        return rectTransform;
+    }
+
     private static void AddBorder(Transform parent, Rect rect, Color color, float thickness)
     {
         thickness = Mathf.Max(1f, thickness);
@@ -993,6 +1257,117 @@ public static class HearthTvTerminalPrefabBuilder
         }
 
         return best != null ? best.Rect : fallback;
+    }
+
+    private static Rect FindTextRectInGroup(Dictionary<int, SlideData> slidesByNumber, int firstSlideNumber, string contains, Rect fallback)
+    {
+        Rect bestRect = Rect.zero;
+        float bestArea = -1f;
+
+        for (int slideNumber = firstSlideNumber; slideNumber < firstSlideNumber + 6; slideNumber++)
+        {
+            SlideData slide;
+            if (slidesByNumber == null || !slidesByNumber.TryGetValue(slideNumber, out slide) || slide == null)
+            {
+                continue;
+            }
+
+            Rect rect = FindTextRect(slide, contains, Rect.zero);
+            if (!IsRectUsable(rect))
+            {
+                continue;
+            }
+
+            float area = rect.width * rect.height;
+            if (area > bestArea)
+            {
+                bestArea = area;
+                bestRect = rect;
+            }
+        }
+
+        return IsRectUsable(bestRect) ? bestRect : fallback;
+    }
+
+    private static Rect BuildNavigationBounds(List<Rect> targetRects)
+    {
+        Rect bounds = Rect.zero;
+        bool hasBounds = false;
+
+        for (int i = 0; i < targetRects.Count; i++)
+        {
+            Rect rect = targetRects[i];
+            if (!IsRectUsable(rect))
+            {
+                continue;
+            }
+
+            if (!hasBounds)
+            {
+                bounds = rect;
+                hasBounds = true;
+                continue;
+            }
+
+            bounds = Union(bounds, rect);
+        }
+
+        if (!hasBounds)
+        {
+            bounds = new Rect(140f, 112f, 1540f, 44f);
+        }
+
+        bounds = InflateRect(bounds, 18f, 10f);
+        bounds.x = Mathf.Clamp(bounds.x, 0f, ReferenceWidth - 1f);
+        bounds.y = Mathf.Clamp(bounds.y, 0f, ReferenceHeight - 1f);
+        bounds.width = Mathf.Min(bounds.width, ReferenceWidth - bounds.x);
+        bounds.height = Mathf.Min(Mathf.Max(36f, bounds.height), ReferenceHeight - bounds.y);
+        return bounds;
+    }
+
+    private static Rect Union(Rect a, Rect b)
+    {
+        float xMin = Mathf.Min(a.xMin, b.xMin);
+        float yMin = Mathf.Min(a.yMin, b.yMin);
+        float xMax = Mathf.Max(a.xMax, b.xMax);
+        float yMax = Mathf.Max(a.yMax, b.yMax);
+        return Rect.MinMaxRect(xMin, yMin, xMax, yMax);
+    }
+
+    private static Rect GetFallbackNavigationRect(int index)
+    {
+        switch (index)
+        {
+            case 0:
+                return new Rect(180f, 118f, 220f, 28f);
+            case 1:
+                return new Rect(455f, 118f, 160f, 28f);
+            case 2:
+                return new Rect(690f, 118f, 150f, 28f);
+            case 3:
+                return new Rect(910f, 118f, 160f, 28f);
+            case 4:
+                return new Rect(1140f, 118f, 250f, 28f);
+            default:
+                return new Rect(1500f, 118f, 220f, 28f);
+        }
+    }
+
+    private static bool IsRectNearNavigation(Rect rect, Rect navigationBounds)
+    {
+        if (!IsRectUsable(rect))
+        {
+            return false;
+        }
+
+        float rectCenterY = rect.y + rect.height * 0.5f;
+        float boundsCenterY = navigationBounds.y + navigationBounds.height * 0.5f;
+        return Mathf.Abs(rectCenterY - boundsCenterY) <= 96f;
+    }
+
+    private static bool IsRectUsable(Rect rect)
+    {
+        return rect.width > 0.5f && rect.height > 0.5f;
     }
 
     private static Rect InflateRect(Rect rect, float horizontal, float vertical)

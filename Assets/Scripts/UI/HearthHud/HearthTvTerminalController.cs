@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -28,6 +29,7 @@ public class HearthTvTerminalController : MonoBehaviour
     [SerializeField] private bool switchCameraWhileOpen;
     [SerializeField] private Camera playerCamera;
     [SerializeField] private Camera terminalCamera;
+    [SerializeField] private HearthTerminalCameraTransition cameraTransition;
 
     [Header("Player Lock")]
     [SerializeField] private bool lockGameplayWhileOpen = true;
@@ -38,6 +40,10 @@ public class HearthTvTerminalController : MonoBehaviour
 
     [Header("Scale")]
     [SerializeField] private float zoom = 1f;
+
+    [Header("Presentation")]
+    [SerializeField] private HearthTerminalBootSequence bootSequence;
+    [SerializeField] private HearthTerminalSelectionHighlighter selectionHighlighter;
 
     [Header("Keyboard Navigation")]
     [SerializeField] private bool keyboardNavigationEnabled = true;
@@ -52,6 +58,19 @@ public class HearthTvTerminalController : MonoBehaviour
     [SerializeField] private string pageFocusFormat = "PAGE {0}/{1}";
     [SerializeField] private string replayFocusLabel = "RECALL EVENT | SPACE";
     [SerializeField] private string keyboardHintLabel = "TAB NEXT PAGE     LEFT/RIGHT SELECT     SPACE CONFIRM     ESC EXIT";
+
+    [Header("Audio Hooks")]
+    [SerializeField] private AudioSource audioSource;
+    [SerializeField] private AudioClip openClip;
+    [SerializeField] private AudioClip closeClip;
+    [SerializeField] private AudioClip bootClip;
+    [SerializeField] private AudioClip pageSwitchClip;
+    [SerializeField] private AudioClip focusMoveClip;
+    [SerializeField] private AudioClip submitClip;
+    [SerializeField] private AudioClip replayRequestClip;
+    [SerializeField] private AudioClip viewSwitchClip;
+    [Range(0f, 1f)]
+    [SerializeField] private float audioVolume = 1f;
 
     [Header("Robot Replay")]
     [SerializeField] private MinLoopFlowController minLoopFlowController;
@@ -79,6 +98,9 @@ public class HearthTvTerminalController : MonoBehaviour
     private bool playerAudioWasEnabled;
     private bool terminalAudioWasEnabled;
     private int keyboardFocusIndex;
+    private Coroutine terminalRoutine;
+    private Coroutine cameraFocusRoutine;
+    private bool terminalInputReady;
 
     public bool IsOpen { get; private set; }
 
@@ -129,6 +151,12 @@ public class HearthTvTerminalController : MonoBehaviour
         ApplyZoom();
         HideAllPages();
         SetTerminalInputEnabled(false);
+        terminalInputReady = false;
+
+        if (bootSequence != null)
+        {
+            bootSequence.ApplyClosedInstant();
+        }
     }
 
     private void Start()
@@ -143,12 +171,13 @@ public class HearthTvTerminalController : MonoBehaviour
     {
         zoom = Mathf.Max(0.1f, zoom);
         keyboardCyclePageCount = Mathf.Max(1, keyboardCyclePageCount);
+        audioVolume = Mathf.Clamp01(audioVolume);
         ApplyZoom();
     }
 
     private void Update()
     {
-        if (!IsOpen)
+        if (!IsOpen || !terminalInputReady)
         {
             return;
         }
@@ -222,19 +251,36 @@ public class HearthTvTerminalController : MonoBehaviour
     {
         EnsureReferences();
         EnsureEventSystem();
+        ResolveRuntimePlayerReferences();
 
         if (IsOpen)
         {
             return;
         }
 
+        StartTerminalRoutine(OpenTerminalRoutine());
+    }
+
+    public void CloseTerminal()
+    {
+        if (!IsOpen)
+        {
+            return;
+        }
+
+        StartTerminalRoutine(CloseTerminalRoutine(true));
+    }
+
+    private IEnumerator OpenTerminalRoutine()
+    {
         IsOpen = true;
+        terminalInputReady = false;
         previousCursorLockState = Cursor.lockState;
         previousCursorVisible = Cursor.visible;
 
-        SetTerminalInputEnabled(true);
-        ApplyCameraFocus(true);
+        SetTerminalInputEnabled(false);
         SetGameplayLocked(true);
+        PlayClip(openClip);
 
         if (unlockCursorWhileOpen)
         {
@@ -252,23 +298,67 @@ public class HearthTvTerminalController : MonoBehaviour
             RefreshKeyboardHint();
         }
 
+        PlayClip(bootClip);
+        Coroutine bootRoutine = bootSequence != null ? StartCoroutine(bootSequence.PlayOpenSequence()) : null;
+        StartCameraFocusRoutine(true);
+        yield return WaitForRealtime(Mathf.Max(GetExpectedCameraDuration(true), GetExpectedBootDuration(true)));
+
+        if (bootRoutine != null)
+        {
+            StopCoroutine(bootRoutine);
+            bootSequence.ApplyOpenInstant();
+        }
+
+        CompleteCameraFocusIfNeeded(true);
+
+        terminalInputReady = true;
+        SetTerminalInputEnabled(true);
+        RefreshKeyboardHint();
+
         if (onOpened != null)
         {
             onOpened.Invoke();
         }
+
+        terminalRoutine = null;
     }
 
-    public void CloseTerminal()
+    private IEnumerator CloseTerminalRoutine(bool smoothCamera)
     {
-        if (!IsOpen)
+        terminalInputReady = false;
+        SetTerminalInputEnabled(false);
+        if (selectionHighlighter != null)
         {
-            return;
+            selectionHighlighter.SetVisible(false);
         }
 
-        IsOpen = false;
-        SetTerminalInputEnabled(false);
-        SetGameplayLocked(false);
-        ApplyCameraFocus(false);
+        PlayClip(closeClip);
+
+        Coroutine closeBootRoutine = bootSequence != null ? StartCoroutine(bootSequence.PlayCloseSequence()) : null;
+
+        if (smoothCamera)
+        {
+            StartCameraFocusRoutine(false);
+            yield return WaitForRealtime(Mathf.Max(GetExpectedCameraDuration(false), GetExpectedBootDuration(false)));
+
+            if (closeBootRoutine != null)
+            {
+                StopCoroutine(closeBootRoutine);
+                bootSequence.ApplyClosedInstant();
+            }
+
+            CompleteCameraFocusIfNeeded(false);
+        }
+        else
+        {
+            if (closeBootRoutine != null)
+            {
+                StopCoroutine(closeBootRoutine);
+                bootSequence.ApplyClosedInstant();
+            }
+
+            ApplyCameraFocusImmediate(false);
+        }
 
         if (unlockCursorWhileOpen)
         {
@@ -276,10 +366,15 @@ public class HearthTvTerminalController : MonoBehaviour
             Cursor.visible = previousCursorVisible;
         }
 
+        SetGameplayLocked(false);
+        IsOpen = false;
+
         if (onClosed != null)
         {
             onClosed.Invoke();
         }
+
+        terminalRoutine = null;
     }
 
     public void ShowPage(HearthHudPageId pageId)
@@ -369,6 +464,15 @@ public class HearthTvTerminalController : MonoBehaviour
         playerCamera = camera;
     }
 
+    public void SetPlayerInteraction(PlayerInteraction interaction)
+    {
+        playerInteraction = interaction;
+        if (playerInteraction != null && IsUsablePlayerCamera(playerInteraction.mainCamera))
+        {
+            playerCamera = playerInteraction.mainCamera;
+        }
+    }
+
     public void SetSwitchCameraWhileOpen(bool shouldSwitch)
     {
         switchCameraWhileOpen = shouldSwitch;
@@ -386,6 +490,8 @@ public class HearthTvTerminalController : MonoBehaviour
 
     public void RequestRobotReplay()
     {
+        PlayClip(replayRequestClip);
+
         if (onRobotReplayRequested != null)
         {
             onRobotReplayRequested.Invoke();
@@ -395,9 +501,10 @@ public class HearthTvTerminalController : MonoBehaviour
         {
             if (closeTerminalWhenReplayStarts)
             {
-                CloseTerminal();
+                CloseTerminalInstant();
             }
 
+            PlayClip(viewSwitchClip);
             minLoopFlowController.RequestReplayFromTerminal();
             return;
         }
@@ -406,9 +513,10 @@ public class HearthTvTerminalController : MonoBehaviour
         {
             if (closeTerminalWhenReplayStarts)
             {
-                CloseTerminal();
+                CloseTerminalInstant();
             }
 
+            PlayClip(viewSwitchClip);
             viewSwitchController.SwitchToCompanion();
             return;
         }
@@ -448,6 +556,7 @@ public class HearthTvTerminalController : MonoBehaviour
             return;
         }
 
+        bool changedPage = currentPage != page;
         if (currentPage != null && currentPage != page)
         {
             currentPage.Hide();
@@ -459,6 +568,11 @@ public class HearthTvTerminalController : MonoBehaviour
         currentPage.Show();
         SyncKeyboardFocusToCurrentPage();
         RefreshKeyboardHint();
+
+        if (changedPage && IsOpen && terminalInputReady)
+        {
+            PlayClip(pageSwitchClip);
+        }
 
         if (onPageChanged != null)
         {
@@ -516,6 +630,26 @@ public class HearthTvTerminalController : MonoBehaviour
         if (canvasGroup == null)
         {
             canvasGroup = GetComponent<CanvasGroup>();
+        }
+
+        if (cameraTransition == null)
+        {
+            cameraTransition = GetComponent<HearthTerminalCameraTransition>();
+        }
+
+        if (bootSequence == null)
+        {
+            bootSequence = GetComponent<HearthTerminalBootSequence>();
+        }
+
+        if (selectionHighlighter == null)
+        {
+            selectionHighlighter = GetComponentInChildren<HearthTerminalSelectionHighlighter>(true);
+        }
+
+        if (audioSource == null)
+        {
+            audioSource = GetComponent<AudioSource>();
         }
     }
 
@@ -616,7 +750,74 @@ public class HearthTvTerminalController : MonoBehaviour
         }
     }
 
-    private void ApplyCameraFocus(bool focused)
+    private IEnumerator ApplyCameraFocusRoutine(bool focused)
+    {
+        if (!switchCameraWhileOpen)
+        {
+            if (focused && terminalCamera != null)
+            {
+                SetWorldCamera(terminalCamera);
+            }
+
+            yield break;
+        }
+
+        if (focused)
+        {
+            ResolveRuntimePlayerReferences();
+            CaptureCameraState();
+
+            if (cameraTransition != null && cameraTransition.CanRunEnterTransition(playerCamera, terminalCamera))
+            {
+                yield return StartCoroutine(RunCameraTransitionWithTimeout(
+                    cameraTransition.TransitionToTerminal(playerCamera, terminalCamera, SetWorldCamera),
+                    cameraTransition.EnterDuration,
+                    true));
+                yield break;
+            }
+
+            ApplyCameraFocusImmediate(true);
+            yield break;
+        }
+
+        if (cameraTransition != null && cameraTransition.CanRunExitTransition(playerCamera, terminalCamera))
+        {
+            yield return StartCoroutine(RunCameraTransitionWithTimeout(
+                cameraTransition.TransitionToPlayer(
+                    playerCamera,
+                    terminalCamera,
+                    SetWorldCamera,
+                    playerCameraWasEnabled,
+                    terminalCameraWasEnabled,
+                    playerAudioWasEnabled,
+                    terminalAudioWasEnabled),
+                cameraTransition.ExitDuration,
+                false));
+            yield break;
+        }
+
+        ApplyCameraFocusImmediate(false);
+    }
+
+    private IEnumerator RunCameraTransitionWithTimeout(IEnumerator transition, float expectedDuration, bool focused)
+    {
+        Coroutine routine = StartCoroutine(transition);
+        float timeoutAt = Time.realtimeSinceStartup + Mathf.Max(0.1f, expectedDuration) + 1f;
+
+        while (cameraTransition != null && cameraTransition.IsTransitioning && Time.realtimeSinceStartup < timeoutAt)
+        {
+            yield return null;
+        }
+
+        if (cameraTransition != null && cameraTransition.IsTransitioning)
+        {
+            StopCoroutine(routine);
+            cameraTransition.CancelTransition();
+            ApplyCameraFocusImmediate(focused, false);
+        }
+    }
+
+    private void ApplyCameraFocusImmediate(bool focused, bool captureState = true)
     {
         if (!switchCameraWhileOpen)
         {
@@ -630,10 +831,12 @@ public class HearthTvTerminalController : MonoBehaviour
 
         if (focused)
         {
-            playerCameraWasEnabled = playerCamera != null && playerCamera.enabled;
-            terminalCameraWasEnabled = terminalCamera != null && terminalCamera.enabled;
-            playerAudioWasEnabled = GetAudioListenerEnabled(playerCamera);
-            terminalAudioWasEnabled = GetAudioListenerEnabled(terminalCamera);
+            ResolveRuntimePlayerReferences();
+
+            if (captureState)
+            {
+                CaptureCameraState();
+            }
 
             if (playerCamera != null)
             {
@@ -658,6 +861,227 @@ public class HearthTvTerminalController : MonoBehaviour
                 SetCameraAndAudioEnabled(terminalCamera, terminalCameraWasEnabled, terminalAudioWasEnabled);
             }
         }
+    }
+
+    private void CaptureCameraState()
+    {
+        playerCameraWasEnabled = playerCamera != null && playerCamera.enabled;
+        terminalCameraWasEnabled = terminalCamera != null && terminalCamera.enabled;
+        playerAudioWasEnabled = GetAudioListenerEnabled(playerCamera);
+        terminalAudioWasEnabled = GetAudioListenerEnabled(terminalCamera);
+    }
+
+    private void ResolveRuntimePlayerReferences()
+    {
+        if (playerInteraction == null || !playerInteraction.gameObject.activeInHierarchy)
+        {
+            playerInteraction = FindBestPlayerInteraction();
+        }
+
+        Camera resolvedCamera = FindBestRuntimePlayerCamera();
+        if (resolvedCamera != null)
+        {
+            playerCamera = resolvedCamera;
+        }
+    }
+
+    private PlayerInteraction FindBestPlayerInteraction()
+    {
+        PlayerInteraction[] interactions = UnityEngine.Object.FindObjectsOfType<PlayerInteraction>(true);
+        PlayerInteraction fallback = null;
+
+        for (int i = 0; i < interactions.Length; i++)
+        {
+            PlayerInteraction interaction = interactions[i];
+            if (interaction == null)
+            {
+                continue;
+            }
+
+            if (fallback == null)
+            {
+                fallback = interaction;
+            }
+
+            if (interaction.enabled && interaction.gameObject.activeInHierarchy && IsUsablePlayerCamera(interaction.mainCamera))
+            {
+                return interaction;
+            }
+        }
+
+        for (int i = 0; i < interactions.Length; i++)
+        {
+            PlayerInteraction interaction = interactions[i];
+            if (interaction != null && IsUsablePlayerCamera(interaction.mainCamera))
+            {
+                return interaction;
+            }
+        }
+
+        return fallback;
+    }
+
+    private Camera FindBestRuntimePlayerCamera()
+    {
+        if (playerInteraction != null && IsUsablePlayerCamera(playerInteraction.mainCamera))
+        {
+            return playerInteraction.mainCamera;
+        }
+
+        PlayerInteraction bestInteraction = FindBestPlayerInteraction();
+        if (bestInteraction != null)
+        {
+            playerInteraction = bestInteraction;
+            if (IsUsablePlayerCamera(playerInteraction.mainCamera))
+            {
+                return playerInteraction.mainCamera;
+            }
+        }
+
+        if (IsUsablePlayerCamera(playerCamera) && (playerCamera.enabled || GetAudioListenerEnabled(playerCamera)))
+        {
+            return playerCamera;
+        }
+
+        Camera sceneCamera = FindBestScenePlayerCamera();
+        if (sceneCamera != null)
+        {
+            return sceneCamera;
+        }
+
+        if (Camera.main != null && IsUsablePlayerCamera(Camera.main))
+        {
+            return Camera.main;
+        }
+
+        return IsUsablePlayerCamera(playerCamera) ? playerCamera : null;
+    }
+
+    private Camera FindBestScenePlayerCamera()
+    {
+        Camera[] cameras = UnityEngine.Object.FindObjectsOfType<Camera>(true);
+        Camera bestCamera = null;
+        int bestScore = int.MinValue;
+
+        for (int i = 0; i < cameras.Length; i++)
+        {
+            Camera camera = cameras[i];
+            if (!IsUsablePlayerCamera(camera))
+            {
+                continue;
+            }
+
+            int score = ScorePlayerCameraCandidate(camera);
+            if (bestCamera == null || score > bestScore)
+            {
+                bestCamera = camera;
+                bestScore = score;
+            }
+        }
+
+        return bestCamera;
+    }
+
+    private int ScorePlayerCameraCandidate(Camera camera)
+    {
+        int score = 0;
+        if (camera.gameObject.activeInHierarchy)
+        {
+            score += 20;
+        }
+
+        if (camera.enabled)
+        {
+            score += 40;
+        }
+
+        if (GetAudioListenerEnabled(camera))
+        {
+            score += 30;
+        }
+
+        string path = GetHierarchyPath(camera.transform).ToUpperInvariant();
+        if (path.Contains("FIRST PERSON"))
+        {
+            score += 120;
+        }
+
+        if (path.Contains("PLAYER") || path.Contains("PERSON"))
+        {
+            score += 80;
+        }
+
+        if (camera.CompareTag("MainCamera"))
+        {
+            score += 5;
+        }
+
+        if (camera.name == "Main Camera")
+        {
+            score -= 30;
+        }
+
+        return score;
+    }
+
+    private bool IsUsablePlayerCamera(Camera camera)
+    {
+        if (camera == null || camera == terminalCamera)
+        {
+            return false;
+        }
+
+        if (camera.name == "Terminal Transition Camera")
+        {
+            return false;
+        }
+
+        if (camera.transform.IsChildOf(transform))
+        {
+            return false;
+        }
+
+        if (IsLikelyTerminalCamera(camera))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private static bool IsLikelyTerminalCamera(Camera camera)
+    {
+        Transform cursor = camera != null ? camera.transform : null;
+        while (cursor != null)
+        {
+            string name = cursor.name.ToUpperInvariant();
+            if (name.Contains("TV") || name.Contains("MONITORCANVAS") || name.Contains("TERMINAL_"))
+            {
+                return true;
+            }
+
+            cursor = cursor.parent;
+        }
+
+        return false;
+    }
+
+    private static string GetHierarchyPath(Transform transformToRead)
+    {
+        if (transformToRead == null)
+        {
+            return string.Empty;
+        }
+
+        string path = transformToRead.name;
+        Transform cursor = transformToRead.parent;
+        while (cursor != null)
+        {
+            path = cursor.name + "/" + path;
+            cursor = cursor.parent;
+        }
+
+        return path;
     }
 
     private static bool GetAudioListenerEnabled(Camera camera)
@@ -811,6 +1235,7 @@ public class HearthTvTerminalController : MonoBehaviour
         }
 
         keyboardFocusIndex = Wrap(keyboardFocusIndex + direction, focusCount);
+        PlayClip(focusMoveClip);
         int normalCount = GetNormalCyclePageCount();
         if (keyboardFocusIndex < normalCount)
         {
@@ -826,6 +1251,7 @@ public class HearthTvTerminalController : MonoBehaviour
         int normalCount = GetNormalCyclePageCount();
         if (keyboardFocusIndex >= normalCount)
         {
+            PlayClip(submitClip);
             RequestRobotReplay();
         }
     }
@@ -848,6 +1274,7 @@ public class HearthTvTerminalController : MonoBehaviour
 
         if (keyboardFocusText == null)
         {
+            RefreshSelectionHighlighter();
             return;
         }
 
@@ -855,10 +1282,175 @@ public class HearthTvTerminalController : MonoBehaviour
         if (keyboardFocusIndex >= normalCount)
         {
             keyboardFocusText.text = replayFocusLabel;
+            RefreshSelectionHighlighter();
             return;
         }
 
         keyboardFocusText.text = string.Format(pageFocusFormat, keyboardFocusIndex + 1, normalCount);
+        RefreshSelectionHighlighter();
+    }
+
+    private void RefreshSelectionHighlighter()
+    {
+        if (selectionHighlighter == null)
+        {
+            return;
+        }
+
+        if (!IsOpen || !terminalInputReady)
+        {
+            selectionHighlighter.SetVisible(false);
+            return;
+        }
+
+        selectionHighlighter.SetFocus(keyboardFocusIndex);
+    }
+
+    private void StartTerminalRoutine(IEnumerator routine)
+    {
+        if (terminalRoutine != null)
+        {
+            StopCoroutine(terminalRoutine);
+        }
+
+        if (cameraTransition != null)
+        {
+            cameraTransition.CancelTransition();
+        }
+
+        if (cameraFocusRoutine != null)
+        {
+            StopCoroutine(cameraFocusRoutine);
+            cameraFocusRoutine = null;
+        }
+
+        terminalRoutine = StartCoroutine(routine);
+    }
+
+    private void StartCameraFocusRoutine(bool focused)
+    {
+        if (cameraFocusRoutine != null)
+        {
+            StopCoroutine(cameraFocusRoutine);
+            cameraFocusRoutine = null;
+        }
+
+        cameraFocusRoutine = StartCoroutine(ApplyCameraFocusRoutine(focused));
+    }
+
+    private void CompleteCameraFocusIfNeeded(bool focused)
+    {
+        if (cameraTransition != null && cameraTransition.IsTransitioning)
+        {
+            if (cameraFocusRoutine != null)
+            {
+                StopCoroutine(cameraFocusRoutine);
+            }
+
+            cameraTransition.CancelTransition();
+            ApplyCameraFocusImmediate(focused, false);
+        }
+
+        cameraFocusRoutine = null;
+    }
+
+    private IEnumerator WaitForRealtime(float seconds)
+    {
+        if (seconds <= 0f)
+        {
+            yield break;
+        }
+
+        float endTime = Time.realtimeSinceStartup + seconds;
+        while (Time.realtimeSinceStartup < endTime)
+        {
+            yield return null;
+        }
+    }
+
+    private float GetExpectedCameraDuration(bool focused)
+    {
+        if (cameraTransition == null)
+        {
+            return 0f;
+        }
+
+        float duration = focused ? cameraTransition.EnterDuration : cameraTransition.ExitDuration;
+        return Mathf.Max(0f, duration) + 0.15f;
+    }
+
+    private float GetExpectedBootDuration(bool opening)
+    {
+        if (bootSequence == null)
+        {
+            return 0f;
+        }
+
+        float duration = opening ? bootSequence.BootDuration : bootSequence.CloseFadeDuration;
+        return Mathf.Max(0f, duration) + 0.15f;
+    }
+
+    private void CloseTerminalInstant()
+    {
+        if (!IsOpen)
+        {
+            return;
+        }
+
+        if (terminalRoutine != null)
+        {
+            StopCoroutine(terminalRoutine);
+            terminalRoutine = null;
+        }
+
+        if (cameraTransition != null)
+        {
+            cameraTransition.CancelTransition();
+        }
+
+        if (cameraFocusRoutine != null)
+        {
+            StopCoroutine(cameraFocusRoutine);
+            cameraFocusRoutine = null;
+        }
+
+        terminalInputReady = false;
+        SetTerminalInputEnabled(false);
+        if (selectionHighlighter != null)
+        {
+            selectionHighlighter.SetVisible(false);
+        }
+
+        if (bootSequence != null)
+        {
+            bootSequence.ApplyClosedInstant();
+        }
+
+        ApplyCameraFocusImmediate(false);
+
+        if (unlockCursorWhileOpen)
+        {
+            Cursor.lockState = previousCursorLockState;
+            Cursor.visible = previousCursorVisible;
+        }
+
+        SetGameplayLocked(false);
+        IsOpen = false;
+
+        if (onClosed != null)
+        {
+            onClosed.Invoke();
+        }
+    }
+
+    private void PlayClip(AudioClip clip)
+    {
+        if (audioSource == null || clip == null)
+        {
+            return;
+        }
+
+        audioSource.PlayOneShot(clip, audioVolume);
     }
 
     private int GetNormalCyclePageCount()

@@ -51,6 +51,8 @@ public class HearthTvTerminalController : MonoBehaviour
     [SerializeField] private KeyCode cyclePageKey = KeyCode.Tab;
     [SerializeField] private KeyCode previousSelectionKey = KeyCode.LeftArrow;
     [SerializeField] private KeyCode nextSelectionKey = KeyCode.RightArrow;
+    [SerializeField] private KeyCode upSelectionKey = KeyCode.UpArrow;
+    [SerializeField] private KeyCode downSelectionKey = KeyCode.DownArrow;
     [SerializeField] private KeyCode submitKey = KeyCode.Space;
     [SerializeField] private int keyboardCyclePageCount = 5;
     [SerializeField] private TMP_Text keyboardHintText;
@@ -58,6 +60,15 @@ public class HearthTvTerminalController : MonoBehaviour
     [SerializeField] private string pageFocusFormat = "PAGE {0}/{1}";
     [SerializeField] private string replayFocusLabel = "RECALL EVENT | SPACE";
     [SerializeField] private string keyboardHintLabel = "TAB NEXT PAGE     LEFT/RIGHT SELECT     SPACE CONFIRM     ESC EXIT";
+
+    [Header("PPT Image State Navigation")]
+    [SerializeField] private bool pageDrivenSelectionStates;
+    [SerializeField] private int preChoiceSelectionPageCount = 6;
+    [SerializeField] private int postReplayNavigationPageCount = 5;
+    [SerializeField] private int postReplayChoicePageCount = 2;
+    [SerializeField] private bool hideGeneratedHighlighterWhenPageDriven = true;
+    [SerializeField] private string choiceAFocusLabel = "A SELECTED | SPACE";
+    [SerializeField] private string choiceBFocusLabel = "B SELECTED | SPACE";
 
     [Header("Audio Hooks")]
     [SerializeField] private AudioSource audioSource;
@@ -77,8 +88,11 @@ public class HearthTvTerminalController : MonoBehaviour
     [SerializeField] private ViewSwitchController viewSwitchController;
     [SerializeField] private bool closeTerminalWhenReplayStarts = true;
     [SerializeField] private bool showFinalChoiceWhenReplayUnavailable = true;
+    [SerializeField] private bool closeTerminalWhenChoiceSubmitted;
     [SerializeField] private UnityEvent onRobotReplayRequested;
     [SerializeField] private UnityEvent onPostReplayChoiceShown;
+    [SerializeField] private UnityEvent onChoiceASelected;
+    [SerializeField] private UnityEvent onChoiceBSelected;
 
     [Header("Events")]
     [SerializeField] private UnityEvent onOpened;
@@ -101,6 +115,9 @@ public class HearthTvTerminalController : MonoBehaviour
     private Coroutine terminalRoutine;
     private Coroutine cameraFocusRoutine;
     private bool terminalInputReady;
+    private bool postReplayChoiceMode;
+    private bool postReplayChoicesAvailable;
+    private int pageDrivenChoiceLocalIndex;
 
     public bool IsOpen { get; private set; }
 
@@ -171,6 +188,9 @@ public class HearthTvTerminalController : MonoBehaviour
     {
         zoom = Mathf.Max(0.1f, zoom);
         keyboardCyclePageCount = Mathf.Max(1, keyboardCyclePageCount);
+        preChoiceSelectionPageCount = Mathf.Max(1, preChoiceSelectionPageCount);
+        postReplayNavigationPageCount = Mathf.Max(1, postReplayNavigationPageCount);
+        postReplayChoicePageCount = Mathf.Max(0, postReplayChoicePageCount);
         audioVolume = Mathf.Clamp01(audioVolume);
         ApplyZoom();
     }
@@ -206,6 +226,16 @@ public class HearthTvTerminalController : MonoBehaviour
         if (Input.GetKeyDown(nextSelectionKey))
         {
             MoveKeyboardFocus(1);
+        }
+
+        if (Input.GetKeyDown(upSelectionKey))
+        {
+            MoveKeyboardFocusVertical(-1);
+        }
+
+        if (Input.GetKeyDown(downSelectionKey))
+        {
+            MoveKeyboardFocusVertical(1);
         }
 
         if (Input.GetKeyDown(submitKey))
@@ -256,6 +286,14 @@ public class HearthTvTerminalController : MonoBehaviour
         if (IsOpen)
         {
             return;
+        }
+
+        if (pageDrivenSelectionStates && showStartingPageOnStart)
+        {
+            postReplayChoiceMode = false;
+            postReplayChoicesAvailable = false;
+            pageDrivenChoiceLocalIndex = 0;
+            ShowPage(startingPage);
         }
 
         StartTerminalRoutine(OpenTerminalRoutine());
@@ -473,6 +511,14 @@ public class HearthTvTerminalController : MonoBehaviour
         }
     }
 
+    public void SetPageDrivenSelectionStates(bool enabled, int preChoicePageCount, int choicePageCount)
+    {
+        pageDrivenSelectionStates = enabled;
+        preChoiceSelectionPageCount = Mathf.Max(1, preChoicePageCount);
+        postReplayNavigationPageCount = Mathf.Max(1, preChoiceSelectionPageCount - 1);
+        postReplayChoicePageCount = Mathf.Max(0, choicePageCount);
+    }
+
     public void SetSwitchCameraWhileOpen(bool shouldSwitch)
     {
         switchCameraWhileOpen = shouldSwitch;
@@ -540,6 +586,14 @@ public class HearthTvTerminalController : MonoBehaviour
         int finalPageIndex = GetPostReplayChoicePageIndex();
         if (finalPageIndex >= 0 && pages != null && finalPageIndex < pages.Length)
         {
+            if (pageDrivenSelectionStates)
+            {
+                postReplayChoicesAvailable = true;
+                postReplayChoiceMode = true;
+                keyboardFocusIndex = finalPageIndex;
+                pageDrivenChoiceLocalIndex = 0;
+            }
+
             ShowPage(pages[finalPageIndex]);
         }
 
@@ -1209,6 +1263,12 @@ public class HearthTvTerminalController : MonoBehaviour
 
     private void CycleNormalPage(int direction)
     {
+        if (pageDrivenSelectionStates)
+        {
+            CyclePageDrivenSelection(direction);
+            return;
+        }
+
         int normalCount = GetNormalCyclePageCount();
         if (normalCount <= 0)
         {
@@ -1228,6 +1288,12 @@ public class HearthTvTerminalController : MonoBehaviour
 
     private void MoveKeyboardFocus(int direction)
     {
+        if (pageDrivenSelectionStates)
+        {
+            MovePageDrivenSelection(direction, true);
+            return;
+        }
+
         int focusCount = GetKeyboardFocusCount();
         if (focusCount <= 0)
         {
@@ -1246,8 +1312,22 @@ public class HearthTvTerminalController : MonoBehaviour
         RefreshKeyboardHint();
     }
 
+    private void MoveKeyboardFocusVertical(int direction)
+    {
+        if (pageDrivenSelectionStates)
+        {
+            MovePageDrivenSelectionVertical(direction);
+        }
+    }
+
     private void SubmitKeyboardFocus()
     {
+        if (pageDrivenSelectionStates)
+        {
+            SubmitPageDrivenSelection();
+            return;
+        }
+
         int normalCount = GetNormalCyclePageCount();
         if (keyboardFocusIndex >= normalCount)
         {
@@ -1258,6 +1338,12 @@ public class HearthTvTerminalController : MonoBehaviour
 
     private void SyncKeyboardFocusToCurrentPage()
     {
+        if (pageDrivenSelectionStates)
+        {
+            SyncPageDrivenFocusToCurrentPage();
+            return;
+        }
+
         int normalCount = GetNormalCyclePageCount();
         if (currentPageIndex >= 0 && currentPageIndex < normalCount)
         {
@@ -1267,6 +1353,12 @@ public class HearthTvTerminalController : MonoBehaviour
 
     private void RefreshKeyboardHint()
     {
+        if (pageDrivenSelectionStates)
+        {
+            RefreshPageDrivenKeyboardHint();
+            return;
+        }
+
         if (keyboardHintText != null)
         {
             keyboardHintText.text = keyboardHintLabel;
@@ -1297,6 +1389,12 @@ public class HearthTvTerminalController : MonoBehaviour
             return;
         }
 
+        if (pageDrivenSelectionStates && hideGeneratedHighlighterWhenPageDriven)
+        {
+            selectionHighlighter.SetVisible(false);
+            return;
+        }
+
         if (!IsOpen || !terminalInputReady)
         {
             selectionHighlighter.SetVisible(false);
@@ -1304,6 +1402,220 @@ public class HearthTvTerminalController : MonoBehaviour
         }
 
         selectionHighlighter.SetFocus(keyboardFocusIndex);
+    }
+
+    private void CyclePageDrivenSelection(int direction)
+    {
+        MovePageDrivenSelection(direction, false);
+    }
+
+    private void MovePageDrivenSelection(int direction, bool playFocusMoveSound)
+    {
+        if (postReplayChoicesAvailable && postReplayChoiceMode)
+        {
+            MovePageDrivenChoice(direction, playFocusMoveSound);
+            return;
+        }
+
+        int count = postReplayChoicesAvailable ? GetPostReplayNavigationPageCount() : GetPreChoiceSelectionPageCount();
+        if (count <= 0)
+        {
+            return;
+        }
+
+        int localIndex = keyboardFocusIndex;
+        if (localIndex < 0 || localIndex >= count)
+        {
+            localIndex = currentPageIndex >= 0 && currentPageIndex < count ? currentPageIndex : 0;
+        }
+
+        int next = Wrap(localIndex + direction, count);
+        keyboardFocusIndex = next;
+        postReplayChoiceMode = false;
+
+        if (playFocusMoveSound)
+        {
+            PlayClip(focusMoveClip);
+        }
+
+        ShowPage(pages[next]);
+    }
+
+    private void MovePageDrivenSelectionVertical(int direction)
+    {
+        if (!postReplayChoicesAvailable)
+        {
+            return;
+        }
+
+        if (direction < 0 && postReplayChoiceMode)
+        {
+            postReplayChoiceMode = false;
+            keyboardFocusIndex = 0;
+            PlayClip(focusMoveClip);
+            ShowPage(pages[keyboardFocusIndex]);
+            return;
+        }
+
+        if (direction > 0 && !postReplayChoiceMode)
+        {
+            int choiceStart = GetChoiceStartIndex();
+            int choiceCount = GetChoicePageCount();
+            if (choiceStart < 0 || choiceCount <= 0)
+            {
+                return;
+            }
+
+            pageDrivenChoiceLocalIndex = Mathf.Clamp(pageDrivenChoiceLocalIndex, 0, choiceCount - 1);
+            keyboardFocusIndex = choiceStart + pageDrivenChoiceLocalIndex;
+            postReplayChoiceMode = true;
+            PlayClip(focusMoveClip);
+            ShowPage(pages[keyboardFocusIndex]);
+        }
+    }
+
+    private void MovePageDrivenChoice(int direction, bool playFocusMoveSound)
+    {
+        int choiceStart = GetChoiceStartIndex();
+        int choiceCount = GetChoicePageCount();
+        if (choiceStart < 0 || choiceCount <= 0)
+        {
+            return;
+        }
+
+        int localIndex = keyboardFocusIndex - choiceStart;
+        if (localIndex < 0 || localIndex >= choiceCount)
+        {
+            localIndex = 0;
+        }
+
+        int nextLocal = Wrap(localIndex + direction, choiceCount);
+        pageDrivenChoiceLocalIndex = nextLocal;
+        keyboardFocusIndex = choiceStart + nextLocal;
+        postReplayChoiceMode = true;
+
+        if (playFocusMoveSound)
+        {
+            PlayClip(focusMoveClip);
+        }
+
+        ShowPage(pages[keyboardFocusIndex]);
+    }
+
+    private void SubmitPageDrivenSelection()
+    {
+        if (postReplayChoicesAvailable && (postReplayChoiceMode || IsCurrentPageChoicePage()))
+        {
+            SubmitPageDrivenChoice();
+            return;
+        }
+
+        if (postReplayChoicesAvailable)
+        {
+            return;
+        }
+
+        int actionIndex = GetPreChoiceSelectionPageCount() - 1;
+        if (keyboardFocusIndex == actionIndex || currentPageIndex == actionIndex)
+        {
+            PlayClip(submitClip);
+            RequestRobotReplay();
+        }
+    }
+
+    private void SubmitPageDrivenChoice()
+    {
+        int choiceStart = GetChoiceStartIndex();
+        if (choiceStart < 0)
+        {
+            return;
+        }
+
+        int localIndex = Mathf.Clamp(keyboardFocusIndex - choiceStart, 0, Mathf.Max(0, GetChoicePageCount() - 1));
+        pageDrivenChoiceLocalIndex = localIndex;
+        PlayClip(submitClip);
+
+        if (localIndex == 0)
+        {
+            if (onChoiceASelected != null)
+            {
+                onChoiceASelected.Invoke();
+            }
+        }
+        else
+        {
+            if (onChoiceBSelected != null)
+            {
+                onChoiceBSelected.Invoke();
+            }
+        }
+
+        if (closeTerminalWhenChoiceSubmitted)
+        {
+            CloseTerminal();
+        }
+    }
+
+    private void SyncPageDrivenFocusToCurrentPage()
+    {
+        if (currentPageIndex < 0)
+        {
+            return;
+        }
+
+        if (IsPageIndexChoicePage(currentPageIndex))
+        {
+            postReplayChoicesAvailable = true;
+            postReplayChoiceMode = true;
+            keyboardFocusIndex = currentPageIndex;
+            pageDrivenChoiceLocalIndex = Mathf.Clamp(currentPageIndex - GetChoiceStartIndex(), 0, Mathf.Max(0, GetChoicePageCount() - 1));
+            return;
+        }
+
+        int preChoiceCount = postReplayChoicesAvailable ? GetPostReplayNavigationPageCount() : GetPreChoiceSelectionPageCount();
+        if (currentPageIndex < preChoiceCount)
+        {
+            postReplayChoiceMode = false;
+            keyboardFocusIndex = currentPageIndex;
+        }
+    }
+
+    private void RefreshPageDrivenKeyboardHint()
+    {
+        if (keyboardHintText != null)
+        {
+            keyboardHintText.text = keyboardHintLabel;
+        }
+
+        if (keyboardFocusText != null)
+        {
+            if (postReplayChoiceMode || IsCurrentPageChoicePage())
+            {
+                int choiceStart = GetChoiceStartIndex();
+                int localIndex = choiceStart >= 0 ? keyboardFocusIndex - choiceStart : 0;
+                keyboardFocusText.text = localIndex <= 0 ? choiceAFocusLabel : choiceBFocusLabel;
+            }
+            else
+            {
+                int actionIndex = GetPreChoiceSelectionPageCount() - 1;
+                keyboardFocusText.text = keyboardFocusIndex == actionIndex
+                    ? replayFocusLabel
+                    : string.Format(pageFocusFormat, keyboardFocusIndex + 1, postReplayChoicesAvailable ? GetPostReplayNavigationPageCount() : GetPreChoiceSelectionPageCount());
+            }
+        }
+
+        RefreshSelectionHighlighter();
+    }
+
+    private bool IsCurrentPageChoicePage()
+    {
+        return IsPageIndexChoicePage(currentPageIndex);
+    }
+
+    private bool IsPageIndexChoicePage(int pageIndex)
+    {
+        int choiceStart = GetChoiceStartIndex();
+        return choiceStart >= 0 && pageIndex >= choiceStart && pageIndex < pages.Length;
     }
 
     private void StartTerminalRoutine(IEnumerator routine)
@@ -1460,12 +1772,27 @@ public class HearthTvTerminalController : MonoBehaviour
             return 0;
         }
 
+        if (pageDrivenSelectionStates)
+        {
+            return GetPreChoiceSelectionPageCount();
+        }
+
         int maxWithoutFinalChoice = Mathf.Max(1, pages.Length - 1);
         return Mathf.Clamp(keyboardCyclePageCount, 1, maxWithoutFinalChoice);
     }
 
     private int GetKeyboardFocusCount()
     {
+        if (pageDrivenSelectionStates)
+        {
+            if (postReplayChoicesAvailable)
+            {
+                return postReplayChoiceMode ? GetChoicePageCount() : GetPostReplayNavigationPageCount();
+            }
+
+            return GetPreChoiceSelectionPageCount();
+        }
+
         int normalCount = GetNormalCyclePageCount();
         return normalCount > 0 ? normalCount + 1 : 0;
     }
@@ -1477,7 +1804,65 @@ public class HearthTvTerminalController : MonoBehaviour
             return -1;
         }
 
+        if (pageDrivenSelectionStates)
+        {
+            return GetChoiceStartIndex();
+        }
+
         return pages.Length - 1;
+    }
+
+    private int GetPreChoiceSelectionPageCount()
+    {
+        if (pages == null || pages.Length == 0)
+        {
+            return 0;
+        }
+
+        int maxBeforeChoices = pages.Length - GetChoicePageCount();
+        if (maxBeforeChoices <= 0)
+        {
+            maxBeforeChoices = pages.Length;
+        }
+
+        return Mathf.Clamp(preChoiceSelectionPageCount, 1, maxBeforeChoices);
+    }
+
+    private int GetPostReplayNavigationPageCount()
+    {
+        if (pages == null || pages.Length == 0)
+        {
+            return 0;
+        }
+
+        int maxBeforeChoices = pages.Length - GetChoicePageCount();
+        if (maxBeforeChoices <= 0)
+        {
+            maxBeforeChoices = pages.Length;
+        }
+
+        return Mathf.Clamp(postReplayNavigationPageCount, 1, maxBeforeChoices);
+    }
+
+    private int GetChoicePageCount()
+    {
+        if (pages == null || pages.Length == 0 || postReplayChoicePageCount <= 0)
+        {
+            return 0;
+        }
+
+        return Mathf.Clamp(postReplayChoicePageCount, 0, pages.Length);
+    }
+
+    private int GetChoiceStartIndex()
+    {
+        int choiceCount = GetChoicePageCount();
+        if (pages == null || pages.Length == 0 || choiceCount <= 0)
+        {
+            return -1;
+        }
+
+        return Mathf.Max(0, pages.Length - choiceCount);
     }
 
     private int Wrap(int value, int count)

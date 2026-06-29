@@ -68,6 +68,36 @@ public class TrustStateController : MonoBehaviour
         SetTrustInternal(value);
     }
 
+    public void SetChoiceDeltas(int optionA, int optionB)
+    {
+        optionADelta = optionA;
+        optionBDelta = optionB;
+    }
+
+    public void ConfigureRules(
+        int newStartingTrust,
+        int newMinTrust,
+        int newMaxTrust,
+        int newOptionADelta,
+        int newOptionBDelta,
+        bool resetCurrentTrust)
+    {
+        minTrust = newMinTrust;
+        maxTrust = Mathf.Max(newMinTrust, newMaxTrust);
+        startingTrust = Mathf.Clamp(newStartingTrust, minTrust, maxTrust);
+        optionADelta = newOptionADelta;
+        optionBDelta = newOptionBDelta;
+
+        if (resetCurrentTrust)
+        {
+            ResetTrust();
+        }
+        else
+        {
+            SetTrustInternal(currentTrust);
+        }
+    }
+
     private void SetTrustInternal(int value)
     {
         int clampedValue = Mathf.Clamp(value, minTrust, maxTrust);

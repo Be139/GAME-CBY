@@ -20,6 +20,13 @@ public class CityFacadeBillboardPlacerEditor : Editor
             EditorUtility.SetDirty(placer);
         }
 
+        if (GUILayout.Button("Find Manual BUILDING Roots"))
+        {
+            Undo.RecordObject(placer, "Find manual building roots");
+            placer.FindManualBuildingRoots();
+            EditorUtility.SetDirty(placer);
+        }
+
         if (GUILayout.Button("Generate Blank Facade Billboards"))
         {
             placer.GenerateBillboards();

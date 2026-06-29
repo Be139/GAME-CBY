@@ -7,6 +7,7 @@ using UnityEditor;
 public class CityBillboardPlacementSlot : MonoBehaviour
 {
     [SerializeField] private CityBuildingPlacementSlot buildingSlot;
+    [SerializeField] private Transform sourceBuildingRoot;
     [SerializeField] private string lotName;
     [SerializeField] private int buildingSlotIndex;
     [SerializeField] private string facadeSide;
@@ -18,6 +19,11 @@ public class CityBillboardPlacementSlot : MonoBehaviour
     public CityBuildingPlacementSlot BuildingSlot
     {
         get { return buildingSlot; }
+    }
+
+    public Transform SourceBuildingRoot
+    {
+        get { return sourceBuildingRoot; }
     }
 
     public string LotName
@@ -58,8 +64,22 @@ public class CityBillboardPlacementSlot : MonoBehaviour
     public void Configure(CityBuildingPlacementSlot sourceSlot, string sideName, Vector2 size, float height, Transform newSurfaceRoot, Transform newContentRoot)
     {
         buildingSlot = sourceSlot;
+        sourceBuildingRoot = sourceSlot != null ? sourceSlot.transform : null;
         lotName = sourceSlot != null ? sourceSlot.LotName : string.Empty;
         buildingSlotIndex = sourceSlot != null ? sourceSlot.SlotIndex : -1;
+        facadeSide = sideName;
+        billboardSize = size;
+        heightOnBuilding = height;
+        surfaceRoot = newSurfaceRoot;
+        contentRoot = newContentRoot;
+    }
+
+    public void Configure(Transform sourceRoot, string sideName, Vector2 size, float height, Transform newSurfaceRoot, Transform newContentRoot)
+    {
+        buildingSlot = null;
+        sourceBuildingRoot = sourceRoot;
+        lotName = sourceRoot != null ? sourceRoot.name : string.Empty;
+        buildingSlotIndex = -1;
         facadeSide = sideName;
         billboardSize = size;
         heightOnBuilding = height;

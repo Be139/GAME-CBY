@@ -248,6 +248,7 @@ public class ViewSwitchController : MonoBehaviour
         bool humanActive = mode == ViewMode.Human;
         human.SetVisualsActive(humanActive);
         companion.SetVisualsActive(!humanActive);
+        UpdateCameraTags(humanActive);
 
         human.SetControlsActive(humanActive && controlsActive);
         companion.SetControlsActive(!humanActive && controlsActive);
@@ -273,6 +274,24 @@ public class ViewSwitchController : MonoBehaviour
             human.SetControlsActive(false);
             companion.SetControlsActive(isActive);
         }
+
+        UpdateCameraTags(currentMode == ViewMode.Human);
+    }
+
+    private void UpdateCameraTags(bool humanActive)
+    {
+        SetMainCameraTag(human.viewCamera, humanActive);
+        SetMainCameraTag(companion.viewCamera, !humanActive);
+    }
+
+    private static void SetMainCameraTag(Camera camera, bool isMain)
+    {
+        if (camera == null)
+        {
+            return;
+        }
+
+        camera.tag = isMain ? "MainCamera" : "Untagged";
     }
 
     private IEnumerator FadeTo(float targetAlpha, float duration)

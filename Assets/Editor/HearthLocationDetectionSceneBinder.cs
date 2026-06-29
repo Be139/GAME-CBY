@@ -121,8 +121,8 @@ public static class HearthLocationDetectionSceneBinder
     {
         SerializedObject serialized = new SerializedObject(probe);
         SetObject(serialized, "viewSwitchController", Object.FindObjectOfType<ViewSwitchController>(true));
-        SetObject(serialized, "humanProbeRoot", FindTransformByPathContains("Player/Person Controller"));
-        SetObject(serialized, "companionProbeRoot", FindTransformByPathContains("Player/Robot Controller"));
+        SetObject(serialized, "humanProbeRoot", FindControllerTransform("Person Controller", "Player_Mia_Controller", "Mia_Controller", "Mia"));
+        SetObject(serialized, "companionProbeRoot", FindControllerTransform("Robot Controller", "Robot_Controller", "Companion_Controller", "Companion", "Robot"));
         SetObject(serialized, "hudView", Object.FindObjectOfType<HearthLocationHudView>(true));
         SetObject(serialized, "hudController", Object.FindObjectOfType<HearthFirstPersonHudController>(true));
         SetBool(serialized, "locationEnabled", true);
@@ -155,14 +155,23 @@ public static class HearthLocationDetectionSceneBinder
         EditorUtility.SetDirty(collider);
     }
 
-    private static Transform FindTransformByPathContains(string contains)
+    private static Transform FindControllerTransform(params string[] nameHints)
     {
         FirstPersonMovement[] movements = Object.FindObjectsOfType<FirstPersonMovement>(true);
         for (int i = 0; i < movements.Length; i++)
         {
-            if (movements[i] != null && GetPath(movements[i].transform).Contains(contains))
+            if (movements[i] == null)
             {
-                return movements[i].transform;
+                continue;
+            }
+
+            string path = GetPath(movements[i].transform);
+            for (int hintIndex = 0; hintIndex < nameHints.Length; hintIndex++)
+            {
+                if (path.Contains(nameHints[hintIndex]))
+                {
+                    return movements[i].transform;
+                }
             }
         }
 

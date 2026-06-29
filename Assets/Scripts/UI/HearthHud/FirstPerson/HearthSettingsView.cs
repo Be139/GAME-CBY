@@ -22,7 +22,7 @@ public class HearthSettingsView : MonoBehaviour
     [SerializeField] private int focusIndex;
     [SerializeField] private RectTransform focusRect;
     [SerializeField] private RectTransform[] focusTargets;
-    [SerializeField] private Vector2 focusPadding = new Vector2(16f, 8f);
+    [SerializeField] private Vector2 focusPadding = new Vector2(8f, 4f);
 
     [Header("Optional UI Bindings")]
     [SerializeField] private TMP_Text masterVolumeText;

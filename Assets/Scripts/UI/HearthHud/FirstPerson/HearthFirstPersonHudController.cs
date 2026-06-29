@@ -34,16 +34,20 @@ public class HearthFirstPersonHudController : MonoBehaviour
     [Header("Menu Focus")]
     [SerializeField] private RectTransform menuFocusRect;
     [SerializeField] private RectTransform[] menuFocusTargets;
-    [SerializeField] private Vector2 menuFocusPadding = new Vector2(18f, 8f);
+    [SerializeField] private Vector2 menuFocusPadding = new Vector2(8f, 4f);
 
     [Header("Final Choice Focus")]
     [SerializeField] private RectTransform finalChoiceFocusRect;
     [SerializeField] private RectTransform[] finalChoiceFocusTargets;
-    [SerializeField] private Vector2 finalChoiceFocusPadding = new Vector2(20f, 10f);
+    [SerializeField] private Vector2 finalChoiceFocusPadding = new Vector2(10f, 6f);
 
     [Header("Sub Views")]
     [SerializeField] private HearthDispositionHistoryView dispositionHistoryView;
     [SerializeField] private HearthSettingsView settingsView;
+
+    [Header("Player Control Lock")]
+    [SerializeField] private bool lockPlayerControlsWhileOverlayOpen = true;
+    [SerializeField] private HearthPlayerControlLock playerControlLock;
 
     [Header("Audio")]
     [SerializeField] private AudioSource audioSource;
@@ -109,6 +113,7 @@ public class HearthFirstPersonHudController : MonoBehaviour
     private void Awake()
     {
         BuildPageMap();
+        ResolvePlayerControlLock();
         HideAllPages();
         HideFocusRects();
         HideTrustDeltaImmediate();
@@ -142,6 +147,7 @@ public class HearthFirstPersonHudController : MonoBehaviour
             currentPageId = HearthFirstPersonHudPageId.Slide01PersistentHud;
             SetPersistentVisible(true);
             HideFocusRects();
+            SetPlayerControlsLocked(false);
             pageShown.Invoke(currentPageId);
             return;
         }
@@ -151,15 +157,22 @@ public class HearthFirstPersonHudController : MonoBehaviour
         {
             Debug.LogWarning("[HearthFirstPersonHudController] Page not found: " + pageId, this);
             SetPersistentVisible(true);
+            SetPlayerControlsLocked(false);
             return;
         }
 
         page.Show();
         currentPageId = pageId;
         SetPersistentVisible(page.KeepPersistentHudVisible);
+        SetPlayerControlsLocked(ShouldLockPlayerControls(pageId));
         RefreshPageHelpers();
         PlayPageAudio(pageId);
         pageShown.Invoke(currentPageId);
+    }
+
+    private void OnDisable()
+    {
+        SetPlayerControlsLocked(false);
     }
 
     public void HideOverlay()
@@ -725,6 +738,41 @@ public class HearthFirstPersonHudController : MonoBehaviour
         {
             trustDeltaCanvasGroup.alpha = 0f;
             trustDeltaCanvasGroup.gameObject.SetActive(false);
+        }
+    }
+
+    private void ResolvePlayerControlLock()
+    {
+        if (playerControlLock == null)
+        {
+            playerControlLock = GetComponent<HearthPlayerControlLock>();
+        }
+
+        if (playerControlLock == null)
+        {
+            playerControlLock = FindObjectOfType<HearthPlayerControlLock>();
+        }
+    }
+
+    private bool ShouldLockPlayerControls(HearthFirstPersonHudPageId pageId)
+    {
+        return lockPlayerControlsWhileOverlayOpen &&
+               pageId != HearthFirstPersonHudPageId.None &&
+               pageId != HearthFirstPersonHudPageId.Slide01PersistentHud &&
+               pageId != HearthFirstPersonHudPageId.Slide02TrustDelta;
+    }
+
+    private void SetPlayerControlsLocked(bool locked)
+    {
+        if (!lockPlayerControlsWhileOverlayOpen && locked)
+        {
+            return;
+        }
+
+        ResolvePlayerControlLock();
+        if (playerControlLock != null)
+        {
+            playerControlLock.SetControlsLocked(locked);
         }
     }
 

@@ -33,6 +33,7 @@ public static class HearthFirstPersonHudBuilder
         HearthFirstPersonHudInput input = root.GetComponent<HearthFirstPersonHudInput>();
         HearthDispositionHistoryView historyView = root.GetComponent<HearthDispositionHistoryView>();
         HearthSettingsView settingsView = root.GetComponent<HearthSettingsView>();
+        HearthPlayerControlLock playerControlLock = root.GetComponent<HearthPlayerControlLock>();
 
         RectTransform rootRect = root.GetComponent<RectTransform>();
         Transform persistentLayer = CreateLayer(rootRect, "PersistentHudLayer");
@@ -80,7 +81,8 @@ public static class HearthFirstPersonHudBuilder
             finalFocus,
             finalTargets,
             historyView,
-            settingsView);
+            settingsView,
+            playerControlLock);
 
         BindInput(input, controller, settingsView);
         BindSettingsView(settingsView, settingsFocus, settingsTargets);
@@ -134,6 +136,7 @@ public static class HearthFirstPersonHudBuilder
             typeof(CanvasScaler),
             typeof(GraphicRaycaster),
             typeof(AudioSource),
+            typeof(HearthPlayerControlLock),
             typeof(HearthFirstPersonHudController),
             typeof(HearthFirstPersonHudInput),
             typeof(HearthDispositionHistoryView),
@@ -367,9 +370,9 @@ public static class HearthFirstPersonHudBuilder
     {
         return new[]
         {
-            CreateFocusTarget(parent, "MenuTarget_TodaysRounds", FindTextRect(slide, "TODAY", new RectData(970f, 42f, 150f, 24f)), 22f, 12f),
-            CreateFocusTarget(parent, "MenuTarget_History", FindTextRect(slide, "DISPOSITION HISTORY", new RectData(962f, 70f, 170f, 24f)), 22f, 12f),
-            CreateFocusTarget(parent, "MenuTarget_Settings", FindTextRect(slide, "SYSTEM SETTINGS", new RectData(970f, 98f, 150f, 24f)), 22f, 12f)
+            CreateFocusTarget(parent, "MenuTarget_TodaysRounds", FindTextRect(slide, "TODAY", new RectData(970f, 42f, 150f, 24f)), 4f, 2f),
+            CreateFocusTarget(parent, "MenuTarget_History", FindTextRect(slide, "DISPOSITION HISTORY", new RectData(962f, 70f, 170f, 24f)), 4f, 2f),
+            CreateFocusTarget(parent, "MenuTarget_Settings", FindTextRect(slide, "SYSTEM SETTINGS", new RectData(970f, 98f, 150f, 24f)), 4f, 2f)
         };
     }
 
@@ -377,8 +380,8 @@ public static class HearthFirstPersonHudBuilder
     {
         return new[]
         {
-            CreateFocusTarget(parent, "FinalChoiceTarget_A", FindTextRect(slide, "ANSWER LILY", new RectData(210f, 455f, 390f, 32f)), 32f, 18f),
-            CreateFocusTarget(parent, "FinalChoiceTarget_B", FindTextRect(slide, "COMPANION ANSWER", new RectData(210f, 552f, 560f, 32f)), 32f, 18f)
+            CreateFocusTarget(parent, "FinalChoiceTarget_A", FindTextRect(slide, "ANSWER LILY", new RectData(210f, 455f, 390f, 32f)), 8f, 5f),
+            CreateFocusTarget(parent, "FinalChoiceTarget_B", FindTextRect(slide, "COMPANION ANSWER", new RectData(210f, 552f, 560f, 32f)), 8f, 5f)
         };
     }
 
@@ -386,11 +389,11 @@ public static class HearthFirstPersonHudBuilder
     {
         return new[]
         {
-            CreateFocusTarget(parent, "SettingsTarget_Master", FindTextRect(slide, "Master Volume", new RectData(700f, 444f, 430f, 24f)), 270f, 10f),
-            CreateFocusTarget(parent, "SettingsTarget_Dialogue", FindTextRect(slide, "Dialogue Volume", new RectData(700f, 476f, 430f, 24f)), 270f, 10f),
-            CreateFocusTarget(parent, "SettingsTarget_Ambient", FindTextRect(slide, "Ambient Volume", new RectData(700f, 508f, 430f, 24f)), 270f, 10f),
-            CreateFocusTarget(parent, "SettingsTarget_SFX", FindTextRect(slide, "SFX Volume", new RectData(700f, 540f, 430f, 24f)), 270f, 10f),
-            CreateFocusTarget(parent, "SettingsTarget_Exit", FindTextRect(slide, "EXIT GAME", new RectData(835f, 600f, 160f, 36f)), 24f, 14f)
+            CreateFocusTarget(parent, "SettingsTarget_Master", FindTextRect(slide, "Master Volume", new RectData(700f, 444f, 430f, 24f)), 4f, 2f),
+            CreateFocusTarget(parent, "SettingsTarget_Dialogue", FindTextRect(slide, "Dialogue Volume", new RectData(700f, 476f, 430f, 24f)), 4f, 2f),
+            CreateFocusTarget(parent, "SettingsTarget_Ambient", FindTextRect(slide, "Ambient Volume", new RectData(700f, 508f, 430f, 24f)), 4f, 2f),
+            CreateFocusTarget(parent, "SettingsTarget_SFX", FindTextRect(slide, "SFX Volume", new RectData(700f, 540f, 430f, 24f)), 4f, 2f),
+            CreateFocusTarget(parent, "SettingsTarget_Exit", FindTextRect(slide, "EXIT GAME", new RectData(835f, 600f, 160f, 36f)), 6f, 4f)
         };
     }
 
@@ -564,7 +567,8 @@ public static class HearthFirstPersonHudBuilder
         RectTransform finalFocus,
         RectTransform[] finalTargets,
         HearthDispositionHistoryView historyView,
-        HearthSettingsView settingsView)
+        HearthSettingsView settingsView,
+        HearthPlayerControlLock playerControlLock)
     {
         SerializedObject serialized = new SerializedObject(controller);
         SetObject(serialized, "persistentHudRoot", persistentRoot);
@@ -577,6 +581,9 @@ public static class HearthFirstPersonHudBuilder
         SetObjectArray(serialized, "finalChoiceFocusTargets", finalTargets);
         SetObject(serialized, "dispositionHistoryView", historyView);
         SetObject(serialized, "settingsView", settingsView);
+        SetObject(serialized, "playerControlLock", playerControlLock);
+        SetVector2(serialized, "menuFocusPadding", new Vector2(8f, 4f));
+        SetVector2(serialized, "finalChoiceFocusPadding", new Vector2(10f, 6f));
         SetInt(serialized, "finalChoiceTrustThreshold", 3);
         SetInt(serialized, "totalRounds", 3);
         SetPageArray(serialized, pages);
@@ -596,6 +603,7 @@ public static class HearthFirstPersonHudBuilder
         SerializedObject serialized = new SerializedObject(settingsView);
         SetObject(serialized, "focusRect", focusRect);
         SetObjectArray(serialized, "focusTargets", focusTargets);
+        SetVector2(serialized, "focusPadding", new Vector2(8f, 4f));
         serialized.ApplyModifiedPropertiesWithoutUndo();
     }
 
@@ -865,6 +873,15 @@ public static class HearthFirstPersonHudBuilder
         if (property != null)
         {
             property.intValue = value;
+        }
+    }
+
+    private static void SetVector2(SerializedObject serialized, string propertyName, Vector2 value)
+    {
+        SerializedProperty property = serialized.FindProperty(propertyName);
+        if (property != null)
+        {
+            property.vector2Value = value;
         }
     }
 

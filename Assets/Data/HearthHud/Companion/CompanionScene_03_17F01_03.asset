@@ -1,0 +1,62 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 636736e26cc8c014e819cd3cbf8a94fe, type: 3}
+  m_Name: CompanionScene_03_17F01_03
+  m_EditorClassIdentifier: 
+  sceneId: 17F01_03
+  slideNumber: 3
+  residentId: 17F-01
+  template: 0
+  specialEffect: 0
+  modeLabel: COMPANION UNIT - FIRST PERSON - STANDBY MODE
+  accentColor: {r: 0.48, g: 0.84, b: 1, a: 1}
+  statusTitle: MORNING SYNC
+  statusLines:
+  - label: Last night data
+    value: Uploaded
+  - label: Status
+    value: Awaiting confirm
+  - label: FESI
+    value: Stability maintained
+  - label: Event archive
+    value: Complete
+  statusFooter: PARENT DIALOGUE CONFIRMED
+  decisionKicker: SYNTH VOICE - DECISION
+  decisionTitle: Standby - Observe Confirmation
+  decisionBody: Unit has reached activity permission boundary (child's room doorway).
+  dataStreamTitle: //observation bus - streaming
+  dataStreamLines:
+  - 0x4801 morning_sync_OK
+  - 0x4802 permission_boundary_REACHED
+  - 0x4803 kitchen_distance_5.2m
+  - 0x4804 father_breakfast_machine
+  - 0x4805 mother_milk_tea
+  - 0x4806 ...
+  showHoldPrompt: 0
+  holdPromptText: 
+  holdKey: 101
+  holdSeconds: 1.5
+  showDirectionGuide: 0
+  directionGuideText: 
+  projectionTitle: 
+  projectionBody: 
+  centerMessage: '- ACTIVITY PERMISSION BOUNDARY -'
+  showTriggerCard: 0
+  triggerCardTitle: 
+  triggerCardBody: 
+  triggerCardDelay: 0.25
+  triggerCardSeconds: 3.5
+  autoPlaySpecialEffect: 0
+  specialTitle: 
+  specialBody: 
+  specialStatusLabel: 
+  specialDuration: 1.5

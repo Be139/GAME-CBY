@@ -1,0 +1,85 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 636736e26cc8c014e819cd3cbf8a94fe, type: 3}
+  m_Name: CompanionScene_07_17F02_04
+  m_EditorClassIdentifier: 
+  sceneId: 17F02_04
+  slideNumber: 7
+  residentId: 17F-02
+  template: 1
+  specialEffect: 0
+  modeLabel: COMPANION UNIT - FIRST PERSON - MONITORING MODE
+  accentColor: {r: 0.48, g: 0.84, b: 1, a: 1}
+  statusTitle: QUERY REQUEST
+  statusLines:
+  - label: Caller
+    value: Male resident
+  - label: Range
+    value: Today - full
+  - label: Authorization
+    value: Passed
+  statusFooter: 
+  decisionKicker: SYNTH VOICE - DECISION
+  decisionTitle: Return Query Data
+  decisionBody: Male resident is authorized user. Log access permission valid.
+  dataStreamTitle: //log output channel - streaming
+  dataStreamLines:
+  - 0x74D1 log_today_LOAD
+  - 0x74D4 entry_17:50_BEDROOM
+  - 0x74D5 vent_session
+  - 0x74DA work_stress unit:12 male:0
+  - 0x74DC daily_share unit:21 male:6
+  - 0x74DD full_transcript_LOAD
+  showHoldPrompt: 0
+  holdPromptText: 
+  holdKey: 101
+  holdSeconds: 1.5
+  showDirectionGuide: 0
+  directionGuideText: 
+  projectionTitle: FAMILY LOG - TODAY
+  projectionBody: '17:48 Female resident home
+
+    17:50 Enters master bedroom
+
+    17:50
+    Companion session begins
+
+    17:50-17:58 Topic: work stress - venting
+
+    17:58
+    Emotion 7.2 -> 4.5
+
+    18:27 Male asks female''s status
+
+    18:27 Female responds
+    (brief)
+
+
+    MONTHLY TOPIC - UNIT VS MALE
+
+    Work stress     12 - 0
+
+    Emotional
+    release     8 - 0
+
+    Daily sharing     21 - 6'
+  centerMessage: Subject content displayed.
+  showTriggerCard: 0
+  triggerCardTitle: 
+  triggerCardBody: 
+  triggerCardDelay: 0.25
+  triggerCardSeconds: 3.5
+  autoPlaySpecialEffect: 0
+  specialTitle: 
+  specialBody: 
+  specialStatusLabel: 
+  specialDuration: 1.5

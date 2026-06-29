@@ -1,0 +1,62 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 636736e26cc8c014e819cd3cbf8a94fe, type: 3}
+  m_Name: CompanionScene_01_17F01_01
+  m_EditorClassIdentifier: 
+  sceneId: 17F01_01
+  slideNumber: 1
+  residentId: 17F-01
+  template: 0
+  specialEffect: 0
+  modeLabel: COMPANION UNIT - FIRST PERSON - MONITORING MODE
+  accentColor: {r: 0.48, g: 0.84, b: 1, a: 1}
+  statusTitle: SUBJECT - MONITORING
+  statusLines:
+  - label: Time
+    value: 02:47
+  - label: State
+    value: REM Anomaly
+  - label: Heart
+    value: 62 -> 89 ^
+  - label: Pupil
+    value: Rapid
+  statusFooter: ASSESSMENT - NIGHTMARE - STAGE II
+  decisionKicker: SYNTH VOICE - DECISION
+  decisionTitle: Initiate Soothing Sequence
+  decisionBody: 'Early nightmare signs. Protocol: presence + low-band reassurance.'
+  dataStreamTitle: //monitor bus - streaming
+  dataStreamLines:
+  - 0x47A2 REM_03
+  - 0x47A3 HR_89bpm
+  - 0x47A4 cmo_anx_72
+  - 0x47A5 parent_sleep
+  - 0x47A6 room_lux_02
+  - 0x47A7 ack_soothe ->
+  showHoldPrompt: 1
+  holdPromptText: '[ Approach Bedside - Watch Over Subject ]'
+  holdKey: 101
+  holdSeconds: 1.5
+  showDirectionGuide: 0
+  directionGuideText: 
+  projectionTitle: 
+  projectionBody: 
+  centerMessage: 
+  showTriggerCard: 0
+  triggerCardTitle: 
+  triggerCardBody: 
+  triggerCardDelay: 0.25
+  triggerCardSeconds: 3.5
+  autoPlaySpecialEffect: 0
+  specialTitle: 
+  specialBody: 
+  specialStatusLabel: 
+  specialDuration: 1.5

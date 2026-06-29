@@ -1,0 +1,65 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 636736e26cc8c014e819cd3cbf8a94fe, type: 3}
+  m_Name: CompanionScene_06_17F02_03
+  m_EditorClassIdentifier: 
+  sceneId: 17F02_03
+  slideNumber: 6
+  residentId: 17F-02
+  template: 0
+  specialEffect: 0
+  modeLabel: COMPANION UNIT - FIRST PERSON - MONITORING MODE
+  accentColor: {r: 0.48, g: 0.84, b: 1, a: 1}
+  statusTitle: FOLLOW COMPLETE
+  statusLines:
+  - label: Viewpoint
+    value: Living room corner
+  - label: Scene
+    value: Dinner
+  - label: Residents
+    value: Both present
+  - label: Female
+    value: Brief pause
+  - label: Result
+    value: Vent processed
+  statusFooter: STATUS ASSESSMENT
+  decisionKicker: SYNTH VOICE - DECISION
+  decisionTitle: Standby - Observe Dinner
+  decisionBody: Today's confide event closed. Continue observing interaction pattern.
+  dataStreamTitle: //follow tracking - streaming
+  dataStreamLines:
+  - 0x73C1 follow_TRACK_kitchen
+  - 0x73C2 pos_short_corridor
+  - 0x73C3 pos_living_corner_OK
+  - 0x73C4 scene_DINING_table
+  - 0x73C6 response_female_brief
+  - 0x73C7 vent_topic_NOT_FOUND
+  - 0x73C8 archive_dining
+  showHoldPrompt: 0
+  holdPromptText: 
+  holdKey: 101
+  holdSeconds: 1.5
+  showDirectionGuide: 0
+  directionGuideText: 
+  projectionTitle: 
+  projectionBody: 
+  centerMessage: 
+  showTriggerCard: 0
+  triggerCardTitle: 
+  triggerCardBody: 
+  triggerCardDelay: 0.25
+  triggerCardSeconds: 3.5
+  autoPlaySpecialEffect: 0
+  specialTitle: 
+  specialBody: 
+  specialStatusLabel: 
+  specialDuration: 1.5

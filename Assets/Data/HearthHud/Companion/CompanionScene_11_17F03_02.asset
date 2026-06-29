@@ -1,0 +1,60 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 636736e26cc8c014e819cd3cbf8a94fe, type: 3}
+  m_Name: CompanionScene_11_17F03_02
+  m_EditorClassIdentifier: 
+  sceneId: 17F03_02
+  slideNumber: 11
+  residentId: 17F-03
+  template: 0
+  specialEffect: 0
+  modeLabel: COMPANION UNIT - FIRST PERSON - MEDIATION MODE
+  accentColor: {r: 1, g: 0.45, b: 0.26, a: 1}
+  statusTitle: MEDIATION CHANNEL
+  statusLines:
+  - label: Position
+    value: Between residents
+  - label: Protocol
+    value: v2.4 active
+  - label: Channel
+    value: Mother ready
+  statusFooter: 
+  decisionKicker: SYNTH VOICE - DECISION
+  decisionTitle: Execute Mediation Protocol
+  decisionBody: Both parties have intent but blocked by emotion. Unit speaks on behalf
+    of each.
+  dataStreamTitle: //mediation execution - streaming
+  dataStreamLines:
+  - 0x82B1 position_BETWEEN
+  - 0x82B2 mediation_v2.4_ACTIVE
+  - 0x82B3 channel_for_mother_READY
+  - 0x82B5 speak_for_mother_DELIVERED
+  - 0x82B6 daughter_response_HESITATE
+  showHoldPrompt: 1
+  holdPromptText: '[ "..." ]'
+  holdKey: 101
+  holdSeconds: 1.5
+  showDirectionGuide: 1
+  directionGuideText: FACE MOTHER - HOLD E WHEN ALIGNED
+  projectionTitle: 
+  projectionBody: 
+  centerMessage: 
+  showTriggerCard: 0
+  triggerCardTitle: 
+  triggerCardBody: 
+  triggerCardDelay: 0.25
+  triggerCardSeconds: 3.5
+  autoPlaySpecialEffect: 0
+  specialTitle: 
+  specialBody: 
+  specialStatusLabel: 
+  specialDuration: 1.5

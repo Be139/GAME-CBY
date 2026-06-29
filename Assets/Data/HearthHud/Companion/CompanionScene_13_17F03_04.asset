@@ -1,0 +1,65 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 636736e26cc8c014e819cd3cbf8a94fe, type: 3}
+  m_Name: CompanionScene_13_17F03_04
+  m_EditorClassIdentifier: 
+  sceneId: 17F03_04
+  slideNumber: 13
+  residentId: 17F-03
+  template: 0
+  specialEffect: 0
+  modeLabel: COMPANION UNIT - FIRST PERSON - MEDIATION MODE
+  accentColor: {r: 0.48, g: 0.84, b: 1, a: 1}
+  statusTitle: MALE RESIDENT HOME
+  statusLines:
+  - label: Daughter
+    value: Stable-low residue
+  - label: Recommend
+    value: Unit speaks on behalf
+  - label: Total conversation
+    value: 0
+  - label: Duration
+    value: 14 min
+  - label: Household stability
+    value: Stable
+  statusFooter: DINNER ARCHIVE
+  decisionKicker: SYNTH VOICE - DECISION
+  decisionTitle: This Unit Speaks on Behalf
+  decisionBody: Reduce conflict recurrence risk.
+  dataStreamTitle: //proxy speech - streaming
+  dataStreamLines:
+  - 0x83C1 door_OPEN
+  - 0x83C2 father_HOME
+  - 0x83C3 father_LOOK_unit (0.4s)
+  - 0x83C5 channel_father_OPEN
+  - 0x83C7 message_father_DELIVERED
+  - 0x83CA message_daughter_DELIVERED
+  - 0x83CC archive_silent_dinner
+  showHoldPrompt: 0
+  holdPromptText: 
+  holdKey: 101
+  holdSeconds: 1.5
+  showDirectionGuide: 0
+  directionGuideText: 
+  projectionTitle: 
+  projectionBody: 
+  centerMessage: 
+  showTriggerCard: 0
+  triggerCardTitle: 
+  triggerCardBody: 
+  triggerCardDelay: 0.25
+  triggerCardSeconds: 3.5
+  autoPlaySpecialEffect: 0
+  specialTitle: 
+  specialBody: 
+  specialStatusLabel: 
+  specialDuration: 1.5

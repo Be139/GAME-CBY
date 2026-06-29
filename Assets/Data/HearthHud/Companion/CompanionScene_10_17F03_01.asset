@@ -1,0 +1,65 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 636736e26cc8c014e819cd3cbf8a94fe, type: 3}
+  m_Name: CompanionScene_10_17F03_01
+  m_EditorClassIdentifier: 
+  sceneId: 17F03_01
+  slideNumber: 10
+  residentId: 17F-03
+  template: 0
+  specialEffect: 0
+  modeLabel: COMPANION UNIT - FIRST PERSON - MEDIATION MODE
+  accentColor: {r: 1, g: 0.45, b: 0.26, a: 1}
+  statusTitle: STANDBY OBSERVATION
+  statusLines:
+  - label: Mother
+    value: Sofa
+  - label: Daughter
+    value: Floor
+  - label: Interaction
+    value: Zero - 23 min
+  - label: Mother emotion
+    value: 7.8
+  - label: Daughter emotion
+    value: 6.3
+  statusFooter: CONFLICT IMMINENT
+  decisionKicker: SYNTH VOICE - DECISION
+  decisionTitle: Initiate Conflict De-escalation
+  decisionBody: High probability of escalation to high-intensity argument.
+  dataStreamTitle: //mediation trigger - streaming
+  dataStreamLines:
+  - 0x81A1 silence_23min
+  - 0x81A2 mother_eye_PHONE
+  - 0x81A3 mother_brow_FROWN
+  - 0x81A4 voice_SPIKE
+  - 0x81A6 emo_mother_7.8
+  - 0x81A7 emo_daughter_6.3
+  - 0x81A8 mediation_protocol_LOAD
+  showHoldPrompt: 0
+  holdPromptText: 
+  holdKey: 101
+  holdSeconds: 1.5
+  showDirectionGuide: 0
+  directionGuideText: 
+  projectionTitle: 
+  projectionBody: 
+  centerMessage: 
+  showTriggerCard: 0
+  triggerCardTitle: 
+  triggerCardBody: 
+  triggerCardDelay: 0.25
+  triggerCardSeconds: 3.5
+  autoPlaySpecialEffect: 0
+  specialTitle: 
+  specialBody: 
+  specialStatusLabel: 
+  specialDuration: 1.5

@@ -34,11 +34,18 @@ public class CityFacadeBillboardPlacer : MonoBehaviour
     }
 
     [Header("Source Buildings")]
+    [SerializeField] private bool useGeneratedCitySlots = true;
     [SerializeField] private Transform[] generatedCityRoots;
     [SerializeField] private string[] generatedCityRootNameHints =
     {
         "CityAssets_Batch_",
         "CityAssets_AllTestLots_HeightControlled"
+    };
+    [SerializeField] private bool useManualBuildingRoots = true;
+    [SerializeField] private Transform[] manualBuildingRoots;
+    [SerializeField] private string[] manualBuildingRootNameHints =
+    {
+        "BUILDING"
     };
     [SerializeField] private bool includeInactiveBuildings = true;
 
@@ -116,6 +123,12 @@ public class CityFacadeBillboardPlacer : MonoBehaviour
         set { generatedCityRoots = value; }
     }
 
+    public Transform[] ManualBuildingRoots
+    {
+        get { return manualBuildingRoots; }
+        set { manualBuildingRoots = value; }
+    }
+
     private void OnValidate()
     {
         if (settingsVersion >= CurrentSettingsVersion)
@@ -153,6 +166,29 @@ public class CityFacadeBillboardPlacer : MonoBehaviour
         Debug.Log("CityFacadeBillboardPlacer: found " + generatedCityRoots.Length + " generated city roots.");
     }
 
+    public void FindManualBuildingRoots()
+    {
+        List<Transform> roots = new List<Transform>();
+        Transform[] allObjects = FindObjectsOfType<Transform>(includeInactiveBuildings);
+
+        for (int i = 0; i < allObjects.Length; i++)
+        {
+            Transform candidate = allObjects[i];
+            if (candidate == null)
+            {
+                continue;
+            }
+
+            if (MatchesManualRootHint(candidate.name))
+            {
+                roots.Add(candidate);
+            }
+        }
+
+        manualBuildingRoots = roots.ToArray();
+        Debug.Log("CityFacadeBillboardPlacer: found " + manualBuildingRoots.Length + " manual building roots.");
+    }
+
     public void GenerateBillboards()
     {
         if (clearBeforeGenerate)
@@ -164,10 +200,11 @@ public class CityFacadeBillboardPlacer : MonoBehaviour
             ClearOrphanBillboards();
         }
 
-        List<CityBuildingPlacementSlot> buildingSlots = CollectBuildingSlots();
-        if (buildingSlots.Count == 0)
+        List<CityBuildingPlacementSlot> buildingSlots = useGeneratedCitySlots ? CollectBuildingSlots() : new List<CityBuildingPlacementSlot>();
+        List<Transform> manualBuildings = useManualBuildingRoots ? CollectManualBuildings() : new List<Transform>();
+        if (buildingSlots.Count == 0 && manualBuildings.Count == 0)
         {
-            Debug.LogWarning("CityFacadeBillboardPlacer: no CityBuildingPlacementSlot found. Generate city buildings first, or set Generated City Roots.");
+            Debug.LogWarning("CityFacadeBillboardPlacer: no building source found. Set Generated City Roots, or set Manual Building Roots such as BUILDING.");
             return;
         }
 
@@ -183,6 +220,7 @@ public class CityFacadeBillboardPlacer : MonoBehaviour
         int skippedMissingBuilding = 0;
         int skippedExistingBillboard = 0;
         HashSet<CityBuildingPlacementSlot> slotsWithExistingBillboards = skipBuildingsWithExistingBillboards ? BuildExistingBillboardSlotSet() : null;
+        HashSet<Transform> manualRootsWithExistingBillboards = skipBuildingsWithExistingBillboards ? BuildExistingManualBillboardRootSet() : null;
 
         for (int i = 0; i < buildingSlots.Count; i++)
         {
@@ -231,6 +269,58 @@ public class CityFacadeBillboardPlacer : MonoBehaviour
 
                 Transform parent = parentMode == BillboardParentMode.UnderSharedRoot ? sharedRoot : GetOrCreateSlotBillboardRoot(slot);
                 CreateBillboard(slot, parent, plan, billboardIndex, random);
+                usedFacades.Add(plan.Facade.Side);
+                createdCount++;
+            }
+        }
+
+        for (int i = 0; i < manualBuildings.Count; i++)
+        {
+            Transform sourceRoot = manualBuildings[i];
+            if (sourceRoot == null || random.NextDouble() > buildingUseChance)
+            {
+                continue;
+            }
+
+            if (skipBuildingsWithExistingBillboards && manualRootsWithExistingBillboards != null && manualRootsWithExistingBillboards.Contains(sourceRoot))
+            {
+                skippedExistingBillboard++;
+                continue;
+            }
+
+            Bounds localBounds;
+            if (!TryGetTransformLocalRendererBounds(sourceRoot, out localBounds))
+            {
+                skippedMissingBuilding++;
+                continue;
+            }
+
+            if (localBounds.size.y < minBuildingHeight)
+            {
+                skippedTooSmall++;
+                continue;
+            }
+
+            List<FacadeCandidate> facades = BuildFacadeCandidates(localBounds);
+            if (facades.Count == 0)
+            {
+                skippedTooSmall++;
+                continue;
+            }
+
+            int count = RandomRangeInt(random, Mathf.Min(minBillboardsPerBuilding, maxBillboardsPerBuilding), Mathf.Max(minBillboardsPerBuilding, maxBillboardsPerBuilding));
+            HashSet<FacadeSide> usedFacades = new HashSet<FacadeSide>();
+
+            for (int billboardIndex = 0; billboardIndex < count; billboardIndex++)
+            {
+                BillboardPlan plan;
+                if (!TryCreatePlan(facades, localBounds, usedFacades, random, out plan))
+                {
+                    continue;
+                }
+
+                Transform parent = parentMode == BillboardParentMode.UnderSharedRoot ? sharedRoot : GetOrCreateManualBillboardRoot(sourceRoot);
+                CreateBillboard(sourceRoot, parent, plan, billboardIndex, random);
                 usedFacades.Add(plan.Facade.Side);
                 createdCount++;
             }
@@ -285,7 +375,13 @@ public class CityFacadeBillboardPlacer : MonoBehaviour
             }
 
             Bounds ignoredBounds;
-            if (billboard.BuildingSlot == null || !TryGetSlotLocalRendererBounds(billboard.BuildingSlot, out ignoredBounds))
+            bool sourceMissing = billboard.BuildingSlot == null || !TryGetSlotLocalRendererBounds(billboard.BuildingSlot, out ignoredBounds);
+            if (billboard.BuildingSlot == null && billboard.SourceBuildingRoot != null)
+            {
+                sourceMissing = !TryGetTransformLocalRendererBounds(billboard.SourceBuildingRoot, out ignoredBounds);
+            }
+
+            if (sourceMissing)
             {
                 DestroyToolObject(billboard.gameObject);
                 cleared++;
@@ -322,6 +418,68 @@ public class CityFacadeBillboardPlacer : MonoBehaviour
         return result;
     }
 
+    private List<Transform> CollectManualBuildings()
+    {
+        List<Transform> result = new List<Transform>();
+        if (manualBuildingRoots == null)
+        {
+            return result;
+        }
+
+        for (int i = 0; i < manualBuildingRoots.Length; i++)
+        {
+            Transform root = manualBuildingRoots[i];
+            if (root == null)
+            {
+                continue;
+            }
+
+            if (root.childCount == 0)
+            {
+                AddManualBuildingIfRenderable(result, root);
+                continue;
+            }
+
+            for (int childIndex = 0; childIndex < root.childCount; childIndex++)
+            {
+                AddManualBuildingIfRenderable(result, root.GetChild(childIndex));
+            }
+        }
+
+        return result;
+    }
+
+    private void AddManualBuildingIfRenderable(List<Transform> result, Transform candidate)
+    {
+        if (candidate == null)
+        {
+            return;
+        }
+
+        if (skipInactiveBuildingSlots && !candidate.gameObject.activeInHierarchy)
+        {
+            return;
+        }
+
+        Renderer[] renderers = candidate.GetComponentsInChildren<Renderer>(true);
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            Renderer renderer = renderers[i];
+            if (renderer == null)
+            {
+                continue;
+            }
+
+            if (requireActiveRenderer && (!renderer.enabled || !renderer.gameObject.activeInHierarchy))
+            {
+                continue;
+            }
+
+            result.Add(candidate);
+            return;
+        }
+    }
+
     private bool MatchesGeneratedRootHint(string objectName)
     {
         if (string.IsNullOrEmpty(objectName) || generatedCityRootNameHints == null)
@@ -333,6 +491,25 @@ public class CityFacadeBillboardPlacer : MonoBehaviour
         {
             string hint = generatedCityRootNameHints[i];
             if (!string.IsNullOrEmpty(hint) && objectName.IndexOf(hint, StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private bool MatchesManualRootHint(string objectName)
+    {
+        if (string.IsNullOrEmpty(objectName) || manualBuildingRootNameHints == null)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < manualBuildingRootNameHints.Length; i++)
+        {
+            string hint = manualBuildingRootNameHints[i];
+            if (!string.IsNullOrEmpty(hint) && objectName.Equals(hint, StringComparison.OrdinalIgnoreCase))
             {
                 return true;
             }
@@ -360,6 +537,25 @@ public class CityFacadeBillboardPlacer : MonoBehaviour
         return false;
     }
 
+    private bool IsChildOfManualRoot(Transform target)
+    {
+        if (target == null || manualBuildingRoots == null)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < manualBuildingRoots.Length; i++)
+        {
+            Transform root = manualBuildingRoots[i];
+            if (root != null && (target == root || target.IsChildOf(root)))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private bool ShouldClearBillboard(CityBillboardPlacementSlot billboard)
     {
         if (billboard == null)
@@ -377,6 +573,12 @@ public class CityFacadeBillboardPlacer : MonoBehaviour
         CityBuildingPlacementSlot sourceSlot = billboard.BuildingSlot;
         if (sourceSlot == null)
         {
+            Transform sourceRoot = billboard.SourceBuildingRoot;
+            if (sourceRoot != null)
+            {
+                return manualBuildingRoots == null || manualBuildingRoots.Length == 0 || IsChildOfManualRoot(sourceRoot);
+            }
+
             return generatedCityRoots == null || generatedCityRoots.Length == 0 || IsChildOfGeneratedRoot(billboard.transform);
         }
 
@@ -402,6 +604,27 @@ public class CityFacadeBillboardPlacer : MonoBehaviour
         }
 
         return slots;
+    }
+
+    private HashSet<Transform> BuildExistingManualBillboardRootSet()
+    {
+        HashSet<Transform> roots = new HashSet<Transform>();
+        CityBillboardPlacementSlot[] existingBillboards = FindObjectsOfType<CityBillboardPlacementSlot>(includeInactiveBuildings);
+        for (int i = 0; i < existingBillboards.Length; i++)
+        {
+            CityBillboardPlacementSlot billboard = existingBillboards[i];
+            if (billboard == null || billboard.SourceBuildingRoot == null || billboard.BuildingSlot != null)
+            {
+                continue;
+            }
+
+            if (manualBuildingRoots == null || manualBuildingRoots.Length == 0 || IsChildOfManualRoot(billboard.SourceBuildingRoot))
+            {
+                roots.Add(billboard.SourceBuildingRoot);
+            }
+        }
+
+        return roots;
     }
 
     private bool TryGetSlotLocalRendererBounds(CityBuildingPlacementSlot slot, out Bounds localBounds)
@@ -452,6 +675,69 @@ public class CityFacadeBillboardPlacer : MonoBehaviour
             for (int cornerIndex = 0; cornerIndex < corners.Length; cornerIndex++)
             {
                 Vector3 localPoint = slot.transform.InverseTransformPoint(corners[cornerIndex]);
+                if (!initialized)
+                {
+                    localBounds = new Bounds(localPoint, Vector3.zero);
+                    initialized = true;
+                }
+                else
+                {
+                    localBounds.Encapsulate(localPoint);
+                }
+            }
+        }
+
+        return initialized;
+    }
+
+    private bool TryGetTransformLocalRendererBounds(Transform sourceRoot, out Bounds localBounds)
+    {
+        localBounds = new Bounds(Vector3.zero, Vector3.zero);
+        if (sourceRoot == null)
+        {
+            return false;
+        }
+
+        if (skipInactiveBuildingSlots && !sourceRoot.gameObject.activeInHierarchy)
+        {
+            return false;
+        }
+
+        Renderer[] renderers = sourceRoot.GetComponentsInChildren<Renderer>(true);
+        bool initialized = false;
+
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            Renderer renderer = renderers[i];
+            if (renderer == null)
+            {
+                continue;
+            }
+
+            if (requireActiveRenderer && (!renderer.enabled || !renderer.gameObject.activeInHierarchy))
+            {
+                continue;
+            }
+
+            Bounds worldBounds = renderer.bounds;
+            Vector3 min = worldBounds.min;
+            Vector3 max = worldBounds.max;
+
+            Vector3[] corners =
+            {
+                new Vector3(min.x, min.y, min.z),
+                new Vector3(min.x, min.y, max.z),
+                new Vector3(min.x, max.y, min.z),
+                new Vector3(min.x, max.y, max.z),
+                new Vector3(max.x, min.y, min.z),
+                new Vector3(max.x, min.y, max.z),
+                new Vector3(max.x, max.y, min.z),
+                new Vector3(max.x, max.y, max.z)
+            };
+
+            for (int cornerIndex = 0; cornerIndex < corners.Length; cornerIndex++)
+            {
+                Vector3 localPoint = sourceRoot.InverseTransformPoint(corners[cornerIndex]);
                 if (!initialized)
                 {
                     localBounds = new Bounds(localPoint, Vector3.zero);
@@ -647,6 +933,20 @@ public class CityFacadeBillboardPlacer : MonoBehaviour
         return root.transform;
     }
 
+    private Transform GetOrCreateManualBillboardRoot(Transform sourceRoot)
+    {
+        Transform existing = sourceRoot.Find("Billboards");
+        if (existing != null)
+        {
+            return existing;
+        }
+
+        GameObject root = new GameObject("Billboards");
+        root.transform.SetParent(sourceRoot, false);
+        RegisterCreatedObject(root, "Create manual billboard root");
+        return root.transform;
+    }
+
     private Transform GetOrCreateSharedRoot()
     {
         GameObject existing = GameObject.Find(sharedBillboardRootName);
@@ -698,6 +998,64 @@ public class CityFacadeBillboardPlacer : MonoBehaviour
 
         CityBillboardPlacementSlot marker = billboard.AddComponent<CityBillboardPlacementSlot>();
         marker.Configure(slot, plan.Facade.Side.ToString(), plan.Size, plan.LocalPosition.y, surfaceRoot.transform, contentRoot.transform);
+    }
+
+    private void CreateBillboard(Transform sourceRoot, Transform parent, BillboardPlan plan, int billboardIndex, System.Random random)
+    {
+        GameObject billboard = new GameObject("Billboard_" + SanitizeName(sourceRoot.name) + "_" + billboardIndex.ToString("00"));
+        billboard.transform.SetParent(parent, true);
+        billboard.transform.SetPositionAndRotation(sourceRoot.TransformPoint(plan.LocalPosition), sourceRoot.rotation * Quaternion.LookRotation(plan.Facade.Normal, Vector3.up));
+        RegisterCreatedObject(billboard, "Create manual building billboard");
+
+        GameObject surfaceRoot = new GameObject("SurfaceRoot");
+        surfaceRoot.transform.SetParent(billboard.transform, false);
+        surfaceRoot.transform.localPosition = Vector3.zero;
+        surfaceRoot.transform.localRotation = Quaternion.identity;
+        RegisterCreatedObject(surfaceRoot, "Create billboard surface root");
+
+        if (createPlaceholderSurface)
+        {
+            CreatePlaceholderSurface(surfaceRoot.transform, plan.Size);
+        }
+
+        if (useBillboardPrefabsWhenAvailable)
+        {
+            GameObject prefab = PickPrefab(random);
+            if (prefab != null)
+            {
+                GameObject instance = InstantiatePrefab(prefab, surfaceRoot.transform);
+                instance.transform.localPosition = Vector3.zero;
+                instance.transform.localRotation = Quaternion.identity;
+            }
+        }
+
+        GameObject contentRoot = new GameObject("ContentRoot");
+        contentRoot.transform.SetParent(billboard.transform, false);
+        contentRoot.transform.localPosition = new Vector3(0f, 0f, placeholderThickness * 0.6f + 0.03f);
+        contentRoot.transform.localRotation = Quaternion.identity;
+        RegisterCreatedObject(contentRoot, "Create billboard content root");
+
+        CityBillboardPlacementSlot marker = billboard.AddComponent<CityBillboardPlacementSlot>();
+        marker.Configure(sourceRoot, plan.Facade.Side.ToString(), plan.Size, plan.LocalPosition.y, surfaceRoot.transform, contentRoot.transform);
+    }
+
+    private static string SanitizeName(string source)
+    {
+        if (string.IsNullOrEmpty(source))
+        {
+            return "ManualBuilding";
+        }
+
+        char[] chars = source.ToCharArray();
+        for (int i = 0; i < chars.Length; i++)
+        {
+            if (!char.IsLetterOrDigit(chars[i]) && chars[i] != '_' && chars[i] != '-')
+            {
+                chars[i] = '_';
+            }
+        }
+
+        return new string(chars);
     }
 
     private void CreatePlaceholderSurface(Transform parent, Vector2 size)

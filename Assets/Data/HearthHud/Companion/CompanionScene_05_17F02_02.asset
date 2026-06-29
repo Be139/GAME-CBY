@@ -1,0 +1,59 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 636736e26cc8c014e819cd3cbf8a94fe, type: 3}
+  m_Name: CompanionScene_05_17F02_02
+  m_EditorClassIdentifier: 
+  sceneId: 17F02_02
+  slideNumber: 5
+  residentId: 17F-02
+  template: 0
+  specialEffect: 0
+  modeLabel: COMPANION UNIT - FIRST PERSON - CONFIDE RECEPTION MODE
+  accentColor: {r: 0.48, g: 0.84, b: 1, a: 1}
+  statusTitle: PRESSURE RELEASE COMPLETE
+  statusLines:
+  - label: Emotion index
+    value: 5.4 -> 4.5
+  - label: Today's stress
+    value: Largely released
+  statusFooter: 
+  decisionKicker: SYNTH VOICE - DECISION
+  decisionTitle: Accept Confide - Companion Mode
+  decisionBody: Female resident seeking unit support per household usage pattern.
+  dataStreamTitle: //confide channel - streaming
+  dataStreamLines:
+  - 0x72B1 prompt_ISSUED
+  - 0x72B3 topic_work_stress
+  - 0x72B4 emo_7.2 -> 6.8
+  - 0x72B5 emo_6.1 -> 5.4
+  - 0x72B7 music_jazz_PLAY
+  - 0x72B8 emo_5.4 -> 4.5
+  - 0x72B9 vent_COMPLETE
+  showHoldPrompt: 1
+  holdPromptText: '[ "..." ]'
+  holdKey: 101
+  holdSeconds: 1.5
+  showDirectionGuide: 0
+  directionGuideText: 
+  projectionTitle: 
+  projectionBody: 
+  centerMessage: 
+  showTriggerCard: 0
+  triggerCardTitle: 
+  triggerCardBody: 
+  triggerCardDelay: 0.25
+  triggerCardSeconds: 3.5
+  autoPlaySpecialEffect: 0
+  specialTitle: 
+  specialBody: 
+  specialStatusLabel: 
+  specialDuration: 1.5

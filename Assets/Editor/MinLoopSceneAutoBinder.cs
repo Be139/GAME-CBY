@@ -53,8 +53,8 @@ public static class MinLoopSceneAutoBinder
         MinLoopSceneValidator validator = FindSceneComponent<MinLoopSceneValidator>("MinLoopSceneValidator");
         TerminalUIController terminalUI = FindSceneComponent<TerminalUIController>("TerminalUIController", "Terminal UI Controller", "Terminal_UI");
 
-        GameObject humanRoot = FindSceneGameObject("Player_Mia_Controller", "Mia_Controller", "Mia_FirstPersonController", "Player_Mia", "Mia");
-        GameObject companionRoot = FindSceneGameObject("Companion_Controller", "CompanionUnit_Controller", "Robot_Controller", "Companion_FirstPersonController", "Robot");
+        GameObject humanRoot = FindSceneGameObject("Person Controller", "Player_Mia_Controller", "Mia_Controller", "Mia_FirstPersonController", "Player_Mia", "Mia");
+        GameObject companionRoot = FindSceneGameObject("Robot Controller", "Companion_Controller", "CompanionUnit_Controller", "Robot_Controller", "Companion_FirstPersonController", "Robot");
         Transform doorLookTarget = FindSceneTransform("DoorLook_Target", "DoorLookTarget", "Child_DoorLook_Target");
         Transform miaCorridorAnchor = FindSceneTransform("Anchor_Mia_CorridorStart");
         Transform companionReplayAnchor = FindSceneTransform("Anchor_Companion_ReplayStart");

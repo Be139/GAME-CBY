@@ -1,0 +1,63 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 636736e26cc8c014e819cd3cbf8a94fe, type: 3}
+  m_Name: CompanionScene_04_17F02_01
+  m_EditorClassIdentifier: 
+  sceneId: 17F02_01
+  slideNumber: 4
+  residentId: 17F-02
+  template: 0
+  specialEffect: 0
+  modeLabel: COMPANION UNIT - FIRST PERSON - MONITORING MODE
+  accentColor: {r: 0.48, g: 0.84, b: 1, a: 1}
+  statusTitle: PATTERN RECOGNITION
+  statusLines:
+  - label: Female footsteps
+    value: Approaching
+  - label: Emotion forecast
+    value: Mild - suppressed
+  - label: Confide to unit
+    value: 12 / 14
+  - label: Confide to spouse
+    value: 0 / 14
+  statusFooter: FORECAST - LIKELY TO SEEK UNIT
+  decisionKicker: SYNTH VOICE - DECISION
+  decisionTitle: Open Companion Mode - Accept Confide
+  decisionBody: 'Household usage pattern: high probability of seeking unit support.'
+  dataStreamTitle: //bedroom standby bus - streaming
+  dataStreamLines:
+  - 0x71A1 door_OPEN - 18:33
+  - 0x71A2 female_voice_DETECTED
+  - 0x71A3 male_response_KITCHEN
+  - 0x71A4 conversation_DEFERRED
+  - 0x71A5 footsteps_APPROACH
+  - 0x71A6 pattern_match_12/14
+  - 0x71A7 mode_OPEN_pending
+  showHoldPrompt: 0
+  holdPromptText: 
+  holdKey: 101
+  holdSeconds: 1.5
+  showDirectionGuide: 0
+  directionGuideText: 
+  projectionTitle: 
+  projectionBody: 
+  centerMessage: UNIT INDICATOR - WARM
+  showTriggerCard: 0
+  triggerCardTitle: 
+  triggerCardBody: 
+  triggerCardDelay: 0.25
+  triggerCardSeconds: 3.5
+  autoPlaySpecialEffect: 0
+  specialTitle: 
+  specialBody: 
+  specialStatusLabel: 
+  specialDuration: 1.5

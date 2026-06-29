@@ -46,6 +46,7 @@ public static class HearthFirstPersonHudBuilder
         SlideLayout persistentSlide = FindSlide(layout, 1);
         GameObject persistent = CreateGroup(persistentLayer, "PersistentHud");
         BuildSlideContent(persistent.transform, persistentSlide, false, true, out _, out _);
+        CreateLocationHudView(persistent.transform);
         CanvasGroup persistentGroup = persistent.AddComponent<CanvasGroup>();
 
         CanvasGroup trustGroup = CreateTrustDeltaView(trustLayer, FindSlide(layout, 2), out TMP_Text trustDeltaText);
@@ -313,6 +314,47 @@ public static class HearthFirstPersonHudBuilder
         group.alpha = 0f;
         root.SetActive(false);
         return group;
+    }
+
+    private static HearthLocationHudView CreateLocationHudView(Transform parent)
+    {
+        GameObject root = CreateGroup(parent, "LocationHud");
+        CanvasGroup group = root.AddComponent<CanvasGroup>();
+
+        TMP_Text titleText = CreateText(
+            root.transform,
+            "LocationTitleText",
+            "LOCATION",
+            new RectData(1570f, 956f, 290f, 18f),
+            14f,
+            new Color(0.52f, 0.82f, 0.95f, 0.86f),
+            FontStyles.Bold,
+            TextAlignmentOptions.Right);
+
+        TMP_Text glowText = CreateText(
+            root.transform,
+            "LocationGlowText",
+            "17F-04",
+            new RectData(1490f, 980f, 370f, 46f),
+            19f,
+            new Color(0.25f, 0.75f, 1f, 0.28f),
+            FontStyles.Bold,
+            TextAlignmentOptions.Right);
+
+        TMP_Text locationText = CreateText(
+            root.transform,
+            "LocationValueText",
+            "17F-04",
+            new RectData(1490f, 982f, 370f, 46f),
+            19f,
+            new Color(0.78f, 0.93f, 1f, 0.96f),
+            FontStyles.Bold,
+            TextAlignmentOptions.Right);
+
+        HearthLocationHudView view = root.AddComponent<HearthLocationHudView>();
+        view.Configure(group, titleText, locationText, glowText);
+        view.HideImmediate();
+        return view;
     }
 
     private static void AddPageInteractions(GameObject pageRoot, HearthFirstPersonHudController controller, SlideLayout slide)

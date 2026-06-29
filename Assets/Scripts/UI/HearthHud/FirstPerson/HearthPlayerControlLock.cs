@@ -17,6 +17,7 @@ public class HearthPlayerControlLock : MonoBehaviour
 
     [Header("Lock Behaviour")]
     [SerializeField] private bool disableJumpAlways = true;
+    [SerializeField] private bool disableCrouchAlways = true;
     [SerializeField] private bool clearRigidbodyVelocityOnLock = true;
     [SerializeField] private Rigidbody[] rigidbodiesToClear;
 
@@ -35,6 +36,11 @@ public class HearthPlayerControlLock : MonoBehaviour
         if (disableJumpAlways)
         {
             SetJumpComponentsEnabled(false);
+        }
+
+        if (disableCrouchAlways)
+        {
+            SetCrouchComponentsEnabled(false);
         }
     }
 
@@ -67,6 +73,11 @@ public class HearthPlayerControlLock : MonoBehaviour
             {
                 SetJumpComponentsEnabled(false);
             }
+
+            if (disableCrouchAlways)
+            {
+                SetCrouchComponentsEnabled(false);
+            }
         }
     }
 
@@ -88,6 +99,17 @@ public class HearthPlayerControlLock : MonoBehaviour
         if (disableJumpAlways)
         {
             SetJumpComponentsEnabled(false);
+        }
+    }
+
+    public void SetDisableCrouchAlways(bool value)
+    {
+        disableCrouchAlways = value;
+        ResolveReferences();
+
+        if (disableCrouchAlways)
+        {
+            SetCrouchComponentsEnabled(false);
         }
     }
 
@@ -179,8 +201,16 @@ public class HearthPlayerControlLock : MonoBehaviour
     {
         SetEnabled(movementComponents, enabled);
         SetEnabled(lookComponents, enabled);
-        SetEnabled(crouchComponents, enabled);
         SetEnabled(interactionComponents, enabled);
+
+        if (!disableCrouchAlways)
+        {
+            SetCrouchComponentsEnabled(enabled);
+        }
+        else
+        {
+            SetCrouchComponentsEnabled(false);
+        }
 
         if (!disableJumpAlways)
         {
@@ -220,6 +250,23 @@ public class HearthPlayerControlLock : MonoBehaviour
             {
                 jumpComponents[i].enabled = enabled;
                 jumpComponents[i].SetJumpEnabled(enabled);
+            }
+        }
+    }
+
+    private void SetCrouchComponentsEnabled(bool enabled)
+    {
+        if (crouchComponents == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < crouchComponents.Length; i++)
+        {
+            if (crouchComponents[i] != null)
+            {
+                crouchComponents[i].SetCrouchEnabled(enabled);
+                crouchComponents[i].enabled = enabled;
             }
         }
     }

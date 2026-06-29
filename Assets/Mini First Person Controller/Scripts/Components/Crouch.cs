@@ -2,6 +2,7 @@ using UnityEngine;
 
 public class Crouch : MonoBehaviour
 {
+    [SerializeField] private bool crouchEnabled;
     public KeyCode key = KeyCode.LeftControl;
 
     [Header("Slow Movement")]
@@ -36,6 +37,12 @@ public class Crouch : MonoBehaviour
 
     void LateUpdate()
     {
+        if (!crouchEnabled)
+        {
+            RestoreCrouchIfNeeded();
+            return;
+        }
+
         if (Input.GetKey(key))
         {
             // Enforce a low head.
@@ -86,29 +93,42 @@ public class Crouch : MonoBehaviour
         }
         else
         {
-            if (IsCrouched)
-            {
-                // Rise the head back up.
-                if (headToLower)
-                {
-                    headToLower.localPosition = new Vector3(headToLower.localPosition.x, defaultHeadYLocalPosition.Value, headToLower.localPosition.z);
-                }
-
-                // Reset the colliderToLower's height.
-                if (colliderToLower)
-                {
-                    colliderToLower.height = defaultColliderHeight.Value;
-                    colliderToLower.center = Vector3.up * colliderToLower.height * .5f;
-                }
-
-                // Reset IsCrouched.
-                IsCrouched = false;
-                SetSpeedOverrideActive(false);
-                CrouchEnd?.Invoke();
-            }
+            RestoreCrouchIfNeeded();
         }
     }
 
+    public void SetCrouchEnabled(bool value)
+    {
+        crouchEnabled = value;
+
+        if (!crouchEnabled)
+        {
+            RestoreCrouchIfNeeded();
+        }
+    }
+
+    private void RestoreCrouchIfNeeded()
+    {
+        if (!IsCrouched)
+        {
+            return;
+        }
+
+        if (headToLower && defaultHeadYLocalPosition.HasValue)
+        {
+            headToLower.localPosition = new Vector3(headToLower.localPosition.x, defaultHeadYLocalPosition.Value, headToLower.localPosition.z);
+        }
+
+        if (colliderToLower && defaultColliderHeight.HasValue)
+        {
+            colliderToLower.height = defaultColliderHeight.Value;
+            colliderToLower.center = Vector3.up * colliderToLower.height * .5f;
+        }
+
+        IsCrouched = false;
+        SetSpeedOverrideActive(false);
+        CrouchEnd?.Invoke();
+    }
 
     #region Speed override.
     void SetSpeedOverrideActive(bool state)

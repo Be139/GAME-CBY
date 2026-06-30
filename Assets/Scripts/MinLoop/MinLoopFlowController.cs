@@ -5,10 +5,13 @@ public class MinLoopFlowController : MonoBehaviour
 {
     [Header("References")]
     [SerializeField] private MinLoopTerminalPresenter terminalPresenter;
+    [SerializeField] private HearthTvTerminalController tvTerminalController;
     [SerializeField] private ViewSwitchController viewSwitchController;
     [SerializeField] private ReplaySequenceController replaySequenceController;
+    [SerializeField] private HearthCompanion17F01ReplayController companion17F01ReplayController;
     [SerializeField] private TrustStateController trustStateController;
     [SerializeField] private bool autoFindMissingReferences = true;
+    [SerializeField] private bool useCompanion17F01ReplayController = true;
 
     [Header("Start")]
     [SerializeField] private bool resetFlowOnStart = true;
@@ -71,6 +74,11 @@ public class MinLoopFlowController : MonoBehaviour
             replaySequenceController.CancelReplay();
         }
 
+        if (companion17F01ReplayController != null)
+        {
+            companion17F01ReplayController.CancelReplay();
+        }
+
         if (viewSwitchController != null && viewSwitchController.CurrentMode != ViewSwitchController.ViewMode.Human)
         {
             viewSwitchController.SwitchToHuman();
@@ -80,6 +88,21 @@ public class MinLoopFlowController : MonoBehaviour
         {
             terminalPresenter.Close();
         }
+    }
+
+    public void SetTvTerminalController(HearthTvTerminalController controller)
+    {
+        tvTerminalController = controller;
+    }
+
+    public void SetViewSwitchController(ViewSwitchController controller)
+    {
+        viewSwitchController = controller;
+    }
+
+    public void SetCompanion17F01ReplayController(HearthCompanion17F01ReplayController controller)
+    {
+        companion17F01ReplayController = controller;
     }
 
     public void BeginTerminalInspection()
@@ -251,7 +274,11 @@ public class MinLoopFlowController : MonoBehaviour
 
         SetStage(MinLoopStage.CompanionReplay);
 
-        if (replaySequenceController != null)
+        if (useCompanion17F01ReplayController && companion17F01ReplayController != null)
+        {
+            companion17F01ReplayController.BeginReplay(this);
+        }
+        else if (replaySequenceController != null)
         {
             replaySequenceController.BeginReplay(this);
         }
@@ -279,7 +306,11 @@ public class MinLoopFlowController : MonoBehaviour
 
         SetStage(MinLoopStage.DispositionChoice);
 
-        if (terminalPresenter != null)
+        if (tvTerminalController != null)
+        {
+            tvTerminalController.ShowPostReplayChoicePage();
+        }
+        else if (terminalPresenter != null)
         {
             terminalPresenter.ShowDispositionChoices(ChooseDispositionA, ChooseDispositionB);
         }
@@ -301,7 +332,16 @@ public class MinLoopFlowController : MonoBehaviour
             delta = trustStateController.LastDelta;
         }
 
-        if (terminalPresenter != null)
+        if (tvTerminalController != null)
+        {
+            SetStage(MinLoopStage.Complete);
+
+            if (terminalPresenter != null)
+            {
+                terminalPresenter.Close();
+            }
+        }
+        else if (terminalPresenter != null)
         {
             terminalPresenter.ShowDispositionResult(choice, currentTrust, delta, ContinueToNextResident);
         }
@@ -361,6 +401,11 @@ public class MinLoopFlowController : MonoBehaviour
             terminalPresenter = FindObjectOfType<MinLoopTerminalPresenter>();
         }
 
+        if (tvTerminalController == null)
+        {
+            tvTerminalController = FindObjectOfType<HearthTvTerminalController>();
+        }
+
         if (viewSwitchController == null)
         {
             viewSwitchController = FindObjectOfType<ViewSwitchController>();
@@ -369,6 +414,11 @@ public class MinLoopFlowController : MonoBehaviour
         if (replaySequenceController == null)
         {
             replaySequenceController = FindObjectOfType<ReplaySequenceController>();
+        }
+
+        if (companion17F01ReplayController == null)
+        {
+            companion17F01ReplayController = FindObjectOfType<HearthCompanion17F01ReplayController>();
         }
 
         if (trustStateController == null)

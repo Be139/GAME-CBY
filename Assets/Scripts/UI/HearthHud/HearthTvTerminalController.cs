@@ -89,6 +89,7 @@ public class HearthTvTerminalController : MonoBehaviour
     [SerializeField] private bool closeTerminalWhenReplayStarts = true;
     [SerializeField] private bool showFinalChoiceWhenReplayUnavailable = true;
     [SerializeField] private bool closeTerminalWhenChoiceSubmitted;
+    [SerializeField] private bool routeChoicesToMinLoop = true;
     [SerializeField] private UnityEvent onRobotReplayRequested;
     [SerializeField] private UnityEvent onPostReplayChoiceShown;
     [SerializeField] private UnityEvent onChoiceASelected;
@@ -1537,6 +1538,11 @@ public class HearthTvTerminalController : MonoBehaviour
 
         if (localIndex == 0)
         {
+            if (routeChoicesToMinLoop && minLoopFlowController != null)
+            {
+                minLoopFlowController.ChooseDispositionA();
+            }
+
             if (onChoiceASelected != null)
             {
                 onChoiceASelected.Invoke();
@@ -1544,6 +1550,11 @@ public class HearthTvTerminalController : MonoBehaviour
         }
         else
         {
+            if (routeChoicesToMinLoop && minLoopFlowController != null)
+            {
+                minLoopFlowController.ChooseDispositionB();
+            }
+
             if (onChoiceBSelected != null)
             {
                 onChoiceBSelected.Invoke();

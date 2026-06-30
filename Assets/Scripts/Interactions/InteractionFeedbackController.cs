@@ -41,7 +41,7 @@ public class InteractionFeedbackController : MonoBehaviour, IInteractable
     [SerializeField] private UnityEvent feedbackStarted = new UnityEvent();
     [SerializeField] private UnityEvent feedbackCompleted = new UnityEvent();
 
-    private readonly MaterialPropertyBlock propertyBlock = new MaterialPropertyBlock();
+    private MaterialPropertyBlock propertyBlock;
     private Coroutine feedbackRoutine;
     private float nextAllowedTime;
     private bool hasPlayed;
@@ -55,6 +55,7 @@ public class InteractionFeedbackController : MonoBehaviour, IInteractable
 
     private void Awake()
     {
+        EnsurePropertyBlock();
         ResolveReferences();
         CacheLightStates();
     }
@@ -180,6 +181,8 @@ public class InteractionFeedbackController : MonoBehaviour, IInteractable
 
     private void ApplyVisuals(float multiplier)
     {
+        EnsurePropertyBlock();
+
         Color finalLightColor = lightColor;
         Color finalEmission = pulseColor * emissionIntensity * Mathf.Max(0f, multiplier);
 
@@ -322,6 +325,14 @@ public class InteractionFeedbackController : MonoBehaviour, IInteractable
             MaterialPropertyBlock block = new MaterialPropertyBlock();
             targetRenderer.GetPropertyBlock(block);
             rendererStates[i] = block;
+        }
+    }
+
+    private void EnsurePropertyBlock()
+    {
+        if (propertyBlock == null)
+        {
+            propertyBlock = new MaterialPropertyBlock();
         }
     }
 

@@ -35,6 +35,9 @@ public class HearthCompanionHudController : MonoBehaviour
     [SerializeField] private AudioClip holdCompletedClip;
     [SerializeField] private AudioClip specialEffectClip;
 
+    [Header("Interaction Behavior")]
+    [SerializeField] private bool autoAdvanceOnHoldPrompt = true;
+
     [Header("Events")]
     [SerializeField] private HearthCompanionHudSceneEvent sceneShown = new HearthCompanionHudSceneEvent();
     [SerializeField] private HearthCompanionHudSceneEvent holdPromptConfirmed = new HearthCompanionHudSceneEvent();
@@ -224,7 +227,37 @@ public class HearthCompanionHudController : MonoBehaviour
             return;
         }
 
+        if (!autoAdvanceOnHoldPrompt)
+        {
+            return;
+        }
+
         AdvanceScene();
+    }
+
+    public void SetAutoAdvanceOnHoldPrompt(bool value)
+    {
+        autoAdvanceOnHoldPrompt = value;
+    }
+
+    public void SetHoldPromptVisible(bool visible)
+    {
+        if (holdPrompt != null)
+        {
+            holdPrompt.SetVisible(visible);
+            if (!visible)
+            {
+                holdPrompt.ResetHold();
+            }
+        }
+    }
+
+    public void ResetHoldPrompt()
+    {
+        if (holdPrompt != null)
+        {
+            holdPrompt.ResetHold();
+        }
     }
 
     public void NotifyReplayCompleted()

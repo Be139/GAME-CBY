@@ -13,6 +13,9 @@ public class HearthCompanionReplayInteractable : MonoBehaviour
     [SerializeField] private float maxViewAngle = 12f;
     [SerializeField] private LayerMask lineOfSightMask = ~0;
     [SerializeField] private bool requireLineOfSight;
+    [SerializeField] private bool requireCenterRayHit = true;
+    [SerializeField] private Transform raycastTargetRoot;
+    [SerializeField] private QueryTriggerInteraction raycastTriggerInteraction = QueryTriggerInteraction.Collide;
 
     [Header("Allowed Side Gate")]
     [SerializeField] private bool useAllowedSideGate = true;
@@ -61,6 +64,7 @@ public class HearthCompanionReplayInteractable : MonoBehaviour
         HearthCompanion17F01ReplayController newReplayController)
     {
         focusTarget = newFocusTarget != null ? newFocusTarget : transform;
+        raycastTargetRoot = focusTarget;
         allowedSideReference = newAllowedSideReference;
         replayController = newReplayController;
     }
@@ -77,16 +81,15 @@ public class HearthCompanionReplayInteractable : MonoBehaviour
             return false;
         }
 
-        Vector3 cameraPosition = camera.transform.position;
-        Vector3 toTarget = focusTarget.position - cameraPosition;
-        float distance = toTarget.magnitude;
-        if (distance > maxDistance || distance <= 0.001f)
+        Transform targetRoot = raycastTargetRoot != null ? raycastTargetRoot : focusTarget;
+        if (requireCenterRayHit)
         {
-            return false;
+            if (!CenterRayHitsTarget(camera, targetRoot))
+            {
+                return false;
+            }
         }
-
-        float angle = Vector3.Angle(camera.transform.forward, toTarget / distance);
-        if (angle > maxViewAngle)
+        else if (!AngleGatePasses(camera))
         {
             return false;
         }
@@ -94,14 +97,6 @@ public class HearthCompanionReplayInteractable : MonoBehaviour
         if (useAllowedSideGate && !IsActorOnAllowedSide(actor.position))
         {
             return false;
-        }
-
-        if (requireLineOfSight && Physics.Raycast(cameraPosition, toTarget / distance, out RaycastHit hit, distance, lineOfSightMask, QueryTriggerInteraction.Ignore))
-        {
-            if (hit.transform != focusTarget && !hit.transform.IsChildOf(focusTarget) && !focusTarget.IsChildOf(hit.transform))
-            {
-                return false;
-            }
         }
 
         return true;
@@ -133,5 +128,55 @@ public class HearthCompanionReplayInteractable : MonoBehaviour
         }
 
         return Vector3.Dot(fromReference.normalized, normal.normalized) >= minAllowedSideDot;
+    }
+
+    private bool CenterRayHitsTarget(Camera camera, Transform targetRoot)
+    {
+        if (camera == null || targetRoot == null)
+        {
+            return false;
+        }
+
+        Ray ray = new Ray(camera.transform.position, camera.transform.forward);
+        if (!Physics.Raycast(ray, out RaycastHit hit, maxDistance, lineOfSightMask, raycastTriggerInteraction))
+        {
+            return false;
+        }
+
+        return IsTargetTransform(hit.transform, targetRoot);
+    }
+
+    private bool AngleGatePasses(Camera camera)
+    {
+        Vector3 cameraPosition = camera.transform.position;
+        Vector3 toTarget = focusTarget.position - cameraPosition;
+        float distance = toTarget.magnitude;
+        if (distance > maxDistance || distance <= 0.001f)
+        {
+            return false;
+        }
+
+        float angle = Vector3.Angle(camera.transform.forward, toTarget / distance);
+        if (angle > maxViewAngle)
+        {
+            return false;
+        }
+
+        if (requireLineOfSight && Physics.Raycast(cameraPosition, toTarget / distance, out RaycastHit hit, distance, lineOfSightMask, QueryTriggerInteraction.Ignore))
+        {
+            if (!IsTargetTransform(hit.transform, focusTarget))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool IsTargetTransform(Transform hitTransform, Transform targetRoot)
+    {
+        return hitTransform == targetRoot ||
+               hitTransform.IsChildOf(targetRoot) ||
+               targetRoot.IsChildOf(hitTransform);
     }
 }

@@ -13,6 +13,15 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
     [SerializeField] private CanvasGroup canvasGroup;
     [SerializeField] private bool createFallbackUI = true;
 
+    [Header("Clean Centered Style")]
+    [SerializeField] private bool useCleanCenteredStyle = true;
+    [SerializeField, Range(0.35f, 0.95f)] private float subtitleWidthFraction = 0.66f;
+    [SerializeField, Range(0.15f, 0.85f)] private float subtitleCenterY = 0.46f;
+    [SerializeField, Range(0.08f, 0.35f)] private float subtitleHeightFraction = 0.18f;
+    [SerializeField] private Color cleanTextColor = Color.white;
+    [SerializeField] private float cleanSpeakerFontSize = 22f;
+    [SerializeField] private float cleanBodyFontSize = 28f;
+
     [Header("Timing")]
     [SerializeField] private float defaultHoldSeconds = 2.75f;
     [SerializeField] private bool useUnscaledTime;
@@ -33,6 +42,8 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
     private void OnValidate()
     {
         defaultHoldSeconds = Mathf.Max(0f, defaultHoldSeconds);
+        cleanSpeakerFontSize = Mathf.Max(1f, cleanSpeakerFontSize);
+        cleanBodyFontSize = Mathf.Max(1f, cleanBodyFontSize);
     }
 
     public Coroutine PlaySequence(IList<MinLoopSubtitleLine> lines)
@@ -71,6 +82,8 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
         {
             canvasGroup.alpha = 1f;
         }
+
+        ApplyConfiguredStyle();
     }
 
     public void Hide()
@@ -186,6 +199,7 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
                 canvasGroup = subtitlePanel.GetComponent<CanvasGroup>();
             }
 
+            ApplyConfiguredStyle();
             return;
         }
 
@@ -193,6 +207,8 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
         {
             CreateFallbackUI();
         }
+
+        ApplyConfiguredStyle();
     }
 
     private void CreateFallbackUI()
@@ -223,7 +239,8 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
             panelRect.offsetMax = Vector2.zero;
 
             Image panelImage = panelObject.GetComponent<Image>();
-            panelImage.color = new Color(0f, 0f, 0f, 0.72f);
+            panelImage.color = useCleanCenteredStyle ? Color.clear : new Color(0f, 0f, 0f, 0.72f);
+            panelImage.raycastTarget = false;
 
             canvasGroup = panelObject.GetComponent<CanvasGroup>();
             subtitlePanel = panelObject;
@@ -255,8 +272,68 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
         text.color = Color.white;
         text.fontSize = fontSize;
         text.fontStyle = style;
-        text.alignment = TextAlignmentOptions.Left;
+        text.alignment = useCleanCenteredStyle ? TextAlignmentOptions.Center : TextAlignmentOptions.Left;
         text.enableWordWrapping = true;
         return text;
+    }
+
+    private void ApplyConfiguredStyle()
+    {
+        if (!useCleanCenteredStyle || subtitlePanel == null)
+        {
+            return;
+        }
+
+        RectTransform panelRect = subtitlePanel.GetComponent<RectTransform>();
+        if (panelRect != null)
+        {
+            float halfWidth = Mathf.Clamp01(subtitleWidthFraction) * 0.5f;
+            float halfHeight = Mathf.Clamp01(subtitleHeightFraction) * 0.5f;
+            float centerY = Mathf.Clamp01(subtitleCenterY);
+            panelRect.anchorMin = new Vector2(0.5f - halfWidth, centerY - halfHeight);
+            panelRect.anchorMax = new Vector2(0.5f + halfWidth, centerY + halfHeight);
+            panelRect.offsetMin = Vector2.zero;
+            panelRect.offsetMax = Vector2.zero;
+        }
+
+        Image panelImage = subtitlePanel.GetComponent<Image>();
+        if (panelImage != null)
+        {
+            panelImage.color = Color.clear;
+            panelImage.raycastTarget = false;
+        }
+
+        if (canvasGroup != null)
+        {
+            canvasGroup.blocksRaycasts = false;
+            canvasGroup.interactable = false;
+        }
+
+        ApplyTextStyle(speakerText, new Vector2(0f, 0.62f), new Vector2(1f, 1f), cleanSpeakerFontSize, FontStyles.Bold);
+        ApplyTextStyle(bodyText, new Vector2(0f, 0f), new Vector2(1f, 0.62f), cleanBodyFontSize, FontStyles.Normal);
+    }
+
+    private void ApplyTextStyle(TMP_Text text, Vector2 anchorMin, Vector2 anchorMax, float fontSize, FontStyles style)
+    {
+        if (text == null)
+        {
+            return;
+        }
+
+        RectTransform rect = text.GetComponent<RectTransform>();
+        if (rect != null)
+        {
+            rect.anchorMin = anchorMin;
+            rect.anchorMax = anchorMax;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+        }
+
+        text.color = cleanTextColor;
+        text.fontSize = fontSize;
+        text.fontStyle = style;
+        text.alignment = TextAlignmentOptions.Center;
+        text.enableWordWrapping = true;
+        text.overflowMode = TextOverflowModes.Overflow;
     }
 }

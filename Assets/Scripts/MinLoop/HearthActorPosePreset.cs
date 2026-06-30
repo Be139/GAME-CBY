@@ -23,6 +23,10 @@ public class HearthActorPosePreset : MonoBehaviour
     [SerializeField] private float defaultDuration = 0.25f;
     [SerializeField] private AnimationCurve curve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 
+    [Header("Animator Control")]
+    [SerializeField] private bool pauseAnimatorsOnApply = true;
+    [SerializeField] private Animator[] animatorsToPause = Array.Empty<Animator>();
+
     private Coroutine activeRoutine;
 
     private void Awake()
@@ -54,6 +58,11 @@ public class HearthActorPosePreset : MonoBehaviour
         {
             Debug.LogWarning("[HearthActorPosePreset] Pose not found: " + poseId, this);
             return;
+        }
+
+        if (pauseAnimatorsOnApply)
+        {
+            SetAnimatorsPaused(true);
         }
 
         Transform targetRoot = pose.root != null ? pose.root : defaultPoseRoot;
@@ -119,6 +128,19 @@ public class HearthActorPosePreset : MonoBehaviour
         defaultPoseRoot = root != null ? root : transform;
     }
 
+    public void SetAnimatorsPaused(bool paused)
+    {
+        EnsureAnimatorList();
+        for (int i = 0; i < animatorsToPause.Length; i++)
+        {
+            Animator animator = animatorsToPause[i];
+            if (animator != null)
+            {
+                animator.enabled = !paused;
+            }
+        }
+    }
+
     private Pose FindPose(string poseId)
     {
         if (poses == null)
@@ -136,6 +158,14 @@ public class HearthActorPosePreset : MonoBehaviour
         }
 
         return null;
+    }
+
+    private void EnsureAnimatorList()
+    {
+        if (animatorsToPause == null || animatorsToPause.Length == 0)
+        {
+            animatorsToPause = GetComponentsInChildren<Animator>(true);
+        }
     }
 
     private System.Collections.IEnumerator ApplyPoseRoutine(Transform targetRoot, Pose pose, float duration)

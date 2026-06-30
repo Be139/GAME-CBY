@@ -5,6 +5,8 @@ using UnityEngine;
 public static class Hearth17F01MinimalLoopBinder
 {
     private const string MenuPath = "Tools/Hearth/Replay/Apply 17F01 Minimal Loop Setup";
+    private const float BoyInteractionDistance = 1.42f;
+    private const float RobotAutoMoveSpeed = 0.69f;
 
     [MenuItem(MenuPath)]
     public static void Apply()
@@ -43,6 +45,8 @@ public static class Hearth17F01MinimalLoopBinder
         HearthCompanion17F01ReplayController replayController = GetOrAdd<HearthCompanion17F01ReplayController>(replayControllerObject);
 
         GameObject boy = Find("little_boy_B");
+        GameObject boyInteractionProxy = Find("Capsule Mesh (1)");
+        Transform boyInteractionTarget = ConfigureBoyInteractionProxy(boyInteractionProxy);
         HearthActorPosePreset boyPose = boy != null ? GetOrAdd<HearthActorPosePreset>(boy) : null;
         ConfigurePosePreset(boyPose, new[] { "Sleep", "Awake", "Comforted" });
 
@@ -52,9 +56,23 @@ public static class Hearth17F01MinimalLoopBinder
         HearthActorPosePreset fatherPose = father != null ? GetOrAdd<HearthActorPosePreset>(father) : null;
         ConfigurePosePreset(motherPose, new[] { "Sitting" });
         ConfigurePosePreset(fatherPose, new[] { "Sitting" });
+        DisableActorAnimators(boy);
+        DisableActorAnimators(mother);
+        DisableActorAnimators(father);
+        DisableActorAnimatorsByNames("little_boy_B", "casual_Male_K", "casual_Female_K", "casual_Male_G", "casual_Female_G");
 
-        HearthCompanionReplayInteractable approachInteractable = boy != null ? GetOrAdd<HearthCompanionReplayInteractable>(boy) : null;
-        ConfigureApproachInteractable(approachInteractable, boy != null ? boy.transform : null, childStartAnchor, replayController);
+        if (boyInteractionTarget == null && boy != null)
+        {
+            boyInteractionTarget = boy.transform;
+        }
+
+        HearthCompanionReplayInteractable approachInteractable = boyInteractionTarget != null ? GetOrAdd<HearthCompanionReplayInteractable>(boyInteractionTarget.gameObject) : null;
+        ConfigureApproachInteractable(
+            approachInteractable,
+            boyInteractionTarget,
+            boy != null ? boy.transform : boyInteractionTarget,
+            childStartAnchor,
+            replayController);
 
         ConfigureReplayController(
             replayController,
@@ -76,6 +94,8 @@ public static class Hearth17F01MinimalLoopBinder
         ConfigureTrust(trust);
         ConfigureTerminal(terminal, flow, viewSwitch, person);
         ConfigureHud(hud, hudFlowBinder, previewInput, exclusiveMode, flow, viewSwitch);
+        ConfigureSubtitlePlayers();
+        DisableLegacyMinLoopOverlayPresenters();
 
         EditorUtility.SetDirty(minLoopRoot);
         if (terminal != null)
@@ -249,6 +269,7 @@ public static class Hearth17F01MinimalLoopBinder
         SetObject(so, "livingRoomStartAnchor", livingAnchor);
         SetArray(so, "bedsidePathPoints", pathAnchor != null ? new Object[] { pathAnchor } : new Object[0]);
         SetObject(so, "approachBoyInteractable", approachInteractable);
+        SetFloat(so, "autoMoveSpeed", RobotAutoMoveSpeed);
         SetObject(so, "boyPosePreset", boyPose);
         SetObject(so, "motherPosePreset", motherPose);
         SetObject(so, "fatherPosePreset", fatherPose);
@@ -258,7 +279,8 @@ public static class Hearth17F01MinimalLoopBinder
 
     private static void ConfigureApproachInteractable(
         HearthCompanionReplayInteractable interactable,
-        Transform boy,
+        Transform interactionTarget,
+        Transform sideReference,
         Transform childStartAnchor,
         HearthCompanion17F01ReplayController replayController)
     {
@@ -268,24 +290,135 @@ public static class Hearth17F01MinimalLoopBinder
         }
 
         SerializedObject so = new SerializedObject(interactable);
-        SetObject(so, "focusTarget", boy);
+        SetObject(so, "focusTarget", interactionTarget);
+        SetObject(so, "raycastTargetRoot", interactionTarget);
         SetObject(so, "replayController", replayController);
         SetString(so, "interactionLabel", "[ Approach bedside - Guard service subject ]");
         SetBool(so, "availableOnStart", false);
-        SetFloat(so, "maxDistance", 4.25f);
-        SetFloat(so, "maxViewAngle", 15f);
+        SetFloat(so, "maxDistance", BoyInteractionDistance);
+        SetFloat(so, "maxViewAngle", 8f);
         SetBool(so, "requireLineOfSight", false);
-        SetBool(so, "useAllowedSideGate", childStartAnchor != null && boy != null);
-        SetObject(so, "allowedSideReference", boy);
-        if (childStartAnchor != null && boy != null)
+        SetBool(so, "requireCenterRayHit", true);
+        SetBool(so, "useAllowedSideGate", childStartAnchor != null && sideReference != null);
+        SetObject(so, "allowedSideReference", sideReference);
+        if (childStartAnchor != null && sideReference != null)
         {
-            Vector3 worldNormal = (childStartAnchor.position - boy.position).normalized;
-            SetVector3(so, "allowedSideLocalNormal", boy.InverseTransformDirection(worldNormal));
+            Vector3 worldNormal = (childStartAnchor.position - sideReference.position).normalized;
+            SetVector3(so, "allowedSideLocalNormal", sideReference.InverseTransformDirection(worldNormal));
             SetFloat(so, "minAllowedSideDot", -0.15f);
         }
 
         so.ApplyModifiedPropertiesWithoutUndo();
         EditorUtility.SetDirty(interactable);
+    }
+
+    private static Transform ConfigureBoyInteractionProxy(GameObject proxy)
+    {
+        if (proxy == null)
+        {
+            return null;
+        }
+
+        foreach (Renderer renderer in proxy.GetComponentsInChildren<Renderer>(true))
+        {
+            renderer.enabled = false;
+            EditorUtility.SetDirty(renderer);
+        }
+
+        Collider[] colliders = proxy.GetComponentsInChildren<Collider>(true);
+        if (colliders.Length == 0)
+        {
+            CapsuleCollider capsule = proxy.AddComponent<CapsuleCollider>();
+            capsule.isTrigger = true;
+            capsule.radius = 0.35f;
+            capsule.height = 1.4f;
+            capsule.direction = 1;
+            EditorUtility.SetDirty(capsule);
+        }
+        else
+        {
+            for (int i = 0; i < colliders.Length; i++)
+            {
+                Collider collider = colliders[i];
+                if (collider == null)
+                {
+                    continue;
+                }
+
+                MeshCollider meshCollider = collider as MeshCollider;
+                if (meshCollider != null)
+                {
+                    meshCollider.convex = true;
+                }
+
+                collider.enabled = true;
+                collider.isTrigger = true;
+                EditorUtility.SetDirty(collider);
+            }
+        }
+
+        EditorUtility.SetDirty(proxy);
+        return proxy.transform;
+    }
+
+    private static void ConfigureSubtitlePlayers()
+    {
+        foreach (MinLoopSubtitlePlayer subtitlePlayer in Object.FindObjectsOfType<MinLoopSubtitlePlayer>(true))
+        {
+            SerializedObject so = new SerializedObject(subtitlePlayer);
+            SetBool(so, "useCleanCenteredStyle", true);
+            SetFloat(so, "subtitleWidthFraction", 0.66f);
+            SetFloat(so, "subtitleCenterY", 0.46f);
+            SetFloat(so, "subtitleHeightFraction", 0.18f);
+            SetFloat(so, "cleanSpeakerFontSize", 22f);
+            SetFloat(so, "cleanBodyFontSize", 28f);
+            so.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(subtitlePlayer);
+        }
+    }
+
+    private static void DisableLegacyMinLoopOverlayPresenters()
+    {
+        DisableLegacyPresenter<MinLoopObjectivePresenter>();
+        DisableLegacyPresenter<MinLoopTrustPresenter>();
+        DisableLegacyPresenter<MinLoopRobotHudPresenter>();
+    }
+
+    private static void DisableLegacyPresenter<T>() where T : Behaviour
+    {
+        foreach (T presenter in Object.FindObjectsOfType<T>(true))
+        {
+            presenter.enabled = false;
+            HideGeneratedChildren(presenter.transform);
+            EditorUtility.SetDirty(presenter);
+        }
+    }
+
+    private static void HideGeneratedChildren(Transform root)
+    {
+        if (root == null)
+        {
+            return;
+        }
+
+        foreach (Transform child in root.GetComponentsInChildren<Transform>(true))
+        {
+            if (child == root)
+            {
+                continue;
+            }
+
+            if (child.name == "Min Loop Objective Canvas" ||
+                child.name == "Min Loop Trust Canvas" ||
+                child.name == "Min Loop Robot HUD Canvas" ||
+                child.name == "Min Loop Objective Panel" ||
+                child.name == "Min Loop Trust Panel" ||
+                child.name == "Min Loop Robot HUD Panel")
+            {
+                child.gameObject.SetActive(false);
+                EditorUtility.SetDirty(child.gameObject);
+            }
+        }
     }
 
     private static void ConfigurePosePreset(HearthActorPosePreset preset, string[] ids)
@@ -297,6 +430,9 @@ public static class Hearth17F01MinimalLoopBinder
 
         SerializedObject so = new SerializedObject(preset);
         SetObject(so, "defaultPoseRoot", preset.transform);
+        SetBool(so, "pauseAnimatorsOnApply", true);
+        Animator[] animators = preset.GetComponentsInChildren<Animator>(true);
+        SetArray(so, "animatorsToPause", animators);
         SerializedProperty poses = so.FindProperty("poses");
         if (poses != null)
         {
@@ -314,6 +450,48 @@ public static class Hearth17F01MinimalLoopBinder
 
         so.ApplyModifiedPropertiesWithoutUndo();
         EditorUtility.SetDirty(preset);
+    }
+
+    private static void DisableActorAnimators(GameObject actor)
+    {
+        if (actor == null)
+        {
+            return;
+        }
+
+        foreach (Animator animator in actor.GetComponentsInChildren<Animator>(true))
+        {
+            animator.enabled = false;
+            EditorUtility.SetDirty(animator);
+        }
+    }
+
+    private static void DisableActorAnimatorsByNames(params string[] actorNames)
+    {
+        if (actorNames == null)
+        {
+            return;
+        }
+
+        Animator[] animators = Object.FindObjectsOfType<Animator>(true);
+        for (int i = 0; i < animators.Length; i++)
+        {
+            Animator animator = animators[i];
+            if (animator == null)
+            {
+                continue;
+            }
+
+            for (int j = 0; j < actorNames.Length; j++)
+            {
+                if (string.Equals(animator.gameObject.name, actorNames[j], System.StringComparison.OrdinalIgnoreCase))
+                {
+                    animator.enabled = false;
+                    EditorUtility.SetDirty(animator);
+                    break;
+                }
+            }
+        }
     }
 
     private static Transform CreateAnchor(Transform parent, string name, Transform source)

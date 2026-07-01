@@ -47,6 +47,7 @@ public class HearthCompanionHudSceneData : ScriptableObject
     [SerializeField] private string centerMessage;
 
     [Header("Timed Cards")]
+    [SerializeField] private HearthCompanionTimedCue[] timedCues;
     [SerializeField] private bool showTriggerCard;
     [SerializeField] private string triggerCardTitle;
     [TextArea(2, 6)]
@@ -86,6 +87,7 @@ public class HearthCompanionHudSceneData : ScriptableObject
     public string ProjectionTitle { get { return projectionTitle; } }
     public string ProjectionBody { get { return projectionBody; } }
     public string CenterMessage { get { return centerMessage; } }
+    public HearthCompanionTimedCue[] TimedCues { get { return timedCues; } }
     public bool ShowTriggerCard { get { return showTriggerCard; } }
     public string TriggerCardTitle { get { return triggerCardTitle; } }
     public string TriggerCardBody { get { return triggerCardBody; } }
@@ -122,6 +124,7 @@ public class HearthCompanionHudSceneData : ScriptableObject
         string newProjectionTitle,
         string newProjectionBody,
         string newCenterMessage,
+        HearthCompanionTimedCue[] newTimedCues,
         bool newShowTriggerCard,
         string newTriggerCardTitle,
         string newTriggerCardBody,
@@ -157,6 +160,7 @@ public class HearthCompanionHudSceneData : ScriptableObject
         projectionTitle = newProjectionTitle;
         projectionBody = newProjectionBody;
         centerMessage = newCenterMessage;
+        timedCues = newTimedCues;
         showTriggerCard = newShowTriggerCard;
         triggerCardTitle = newTriggerCardTitle;
         triggerCardBody = newTriggerCardBody;

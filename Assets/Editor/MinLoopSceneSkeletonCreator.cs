@@ -52,15 +52,6 @@ public static class MinLoopSceneSkeletonCreator
         GameObject subtitleObject = FindOrCreateChild(uiRoot.transform, "MinLoopSubtitlePlayer");
         MinLoopSubtitlePlayer subtitlePlayer = AddOrGetComponent<MinLoopSubtitlePlayer>(subtitleObject);
 
-        GameObject robotHudObject = FindOrCreateChild(uiRoot.transform, "MinLoopRobotHudPresenter");
-        MinLoopRobotHudPresenter robotHudPresenter = AddOrGetComponent<MinLoopRobotHudPresenter>(robotHudObject);
-
-        GameObject objectiveObject = FindOrCreateChild(uiRoot.transform, "MinLoopObjectivePresenter");
-        MinLoopObjectivePresenter objectivePresenter = AddOrGetComponent<MinLoopObjectivePresenter>(objectiveObject);
-
-        GameObject trustPresenterObject = FindOrCreateChild(uiRoot.transform, "MinLoopTrustPresenter");
-        MinLoopTrustPresenter trustPresenter = AddOrGetComponent<MinLoopTrustPresenter>(trustPresenterObject);
-
         GameObject replayObject = FindOrCreateChild(replayRoot.transform, "ReplaySequenceController");
         ReplaySequenceController replaySequenceController = AddOrGetComponent<ReplaySequenceController>(replayObject);
 
@@ -137,11 +128,6 @@ public static class MinLoopSceneSkeletonCreator
             new CueRuleTemplate("早晨回顾反馈", morningReviewFeedback, new MinLoopStage[] { MinLoopStage.MorningReview }),
             new CueRuleTemplate("下一户指引反馈", nextResidentGuideFeedback, new MinLoopStage[] { MinLoopStage.Complete })
         });
-
-        AssignObject(objectivePresenter, "flowController", flowController);
-        AssignObject(robotHudPresenter, "flowController", flowController);
-        AssignObject(trustPresenter, "trustStateController", trustStateController);
-        AssignObject(trustPresenter, "flowController", flowController);
 
         AssignObject(debugHotkeys, "flowController", flowController);
         AssignObject(debugHotkeys, "replaySequenceController", replaySequenceController);
@@ -256,9 +242,6 @@ public static class MinLoopSceneSkeletonCreator
         AssignObject(validator, "replaySequenceController", replaySequenceController);
         AssignObject(validator, "comfortAction", comfortAction);
         AssignObject(validator, "subtitlePlayer", subtitlePlayer);
-        AssignObject(validator, "robotHudPresenter", robotHudPresenter);
-        AssignObject(validator, "objectivePresenter", objectivePresenter);
-        AssignObject(validator, "trustPresenter", trustPresenter);
         AssignObject(validator, "trustStateController", trustStateController);
         AssignObject(validator, "debugHotkeys", debugHotkeys);
         AssignObject(validator, "lightingStateController", lightingStateController);

@@ -10,7 +10,6 @@ public class HearthCompanion17F01ReplayController : MonoBehaviour
         Inactive,
         BedroomMonitor,
         LookAtBoyPrompt,
-        AutoMoveToBedside,
         BedsideSoothing,
         LivingRoomObservation,
         ReturningToTerminal
@@ -40,6 +39,7 @@ public class HearthCompanion17F01ReplayController : MonoBehaviour
     [Header("Interaction")]
     [SerializeField] private HearthCompanionReplayInteractable approachBoyInteractable;
     [SerializeField] private float promptRefreshSeconds = 0.05f;
+    [SerializeField] private float promptDelayAfterBedroomPrelude = 1.5f;
 
     [Header("Movement")]
     [SerializeField] private float autoMoveSpeed = 1.15f;
@@ -60,7 +60,13 @@ public class HearthCompanion17F01ReplayController : MonoBehaviour
     [SerializeField] private string boyComfortedPoseId = "Comforted";
     [SerializeField] private string parentSittingPoseId = "Sitting";
 
-    [Header("Subtitle Lines")]
+    [Header("Dialogue Assets")]
+    [SerializeField] private bool preferDialogueSequenceAssets = true;
+    [SerializeField] private HearthDialogueSequence bedroomPreludeSequence;
+    [SerializeField] private HearthDialogueSequence soothingSequence;
+    [SerializeField] private HearthDialogueSequence livingRoomSequence;
+
+    [Header("Fallback Subtitle Lines")]
     [SerializeField] private bool seedDefaultLinesIfEmpty = true;
     [SerializeField] private List<MinLoopSubtitleLine> bedroomPreludeLines = new List<MinLoopSubtitleLine>();
     [SerializeField] private List<MinLoopSubtitleLine> soothingLines = new List<MinLoopSubtitleLine>();
@@ -122,6 +128,7 @@ public class HearthCompanion17F01ReplayController : MonoBehaviour
     private void OnValidate()
     {
         promptRefreshSeconds = Mathf.Max(0.01f, promptRefreshSeconds);
+        promptDelayAfterBedroomPrelude = Mathf.Max(0f, promptDelayAfterBedroomPrelude);
         autoMoveSpeed = Mathf.Max(0.05f, autoMoveSpeed);
         autoRotateSpeed = Mathf.Max(1f, autoRotateSpeed);
         anchorSnapDistance = Mathf.Max(0.001f, anchorSnapDistance);
@@ -156,7 +163,7 @@ public class HearthCompanion17F01ReplayController : MonoBehaviour
 
         if (approachBoyInteractable != null)
         {
-            approachBoyInteractable.SetAvailable(true);
+            approachBoyInteractable.SetAvailable(false);
         }
 
         if (companionHud != null)
@@ -167,12 +174,6 @@ public class HearthCompanion17F01ReplayController : MonoBehaviour
             companionHud.SetHoldPromptVisible(false);
         }
 
-        if (flowController != null)
-        {
-            flowController.NotifyReplayComfortReady();
-        }
-
-        SetStep(ReplayStep.LookAtBoyPrompt);
         bedroomPreludeRoutine = StartCoroutine(BedroomPreludeRoutine());
     }
 
@@ -182,7 +183,7 @@ public class HearthCompanion17F01ReplayController : MonoBehaviour
         {
             case ReplayStep.LookAtBoyPrompt:
                 StopBedroomPrelude();
-                activeRoutine = StartCoroutine(MoveToBedsideRoutine());
+                activeRoutine = StartCoroutine(BeginBedsideSoothingInPlaceRoutine());
                 break;
             case ReplayStep.BedsideSoothing:
                 activeRoutine = StartCoroutine(SoothingRoutine());
@@ -268,19 +269,37 @@ public class HearthCompanion17F01ReplayController : MonoBehaviour
             yield return new WaitForSeconds(bedroomPreludeDelay);
         }
 
-        if (subtitlePlayer != null && bedroomPreludeLines.Count > 0)
+        if (subtitlePlayer != null)
         {
-            yield return subtitlePlayer.PlayLines(bedroomPreludeLines);
+            yield return PlayDialogue(bedroomPreludeSequence, bedroomPreludeLines);
         }
 
         ApplyPose(boyPosePreset, boyAwakePoseId);
+
+        if (promptDelayAfterBedroomPrelude > 0f)
+        {
+            yield return new WaitForSeconds(promptDelayAfterBedroomPrelude);
+        }
+
+        if (approachBoyInteractable != null)
+        {
+            approachBoyInteractable.SetAvailable(true);
+        }
+
+        if (flowController != null)
+        {
+            flowController.NotifyReplayComfortReady();
+        }
+
+        SetStep(ReplayStep.LookAtBoyPrompt);
+        RefreshApproachPrompt();
         bedroomPreludeRoutine = null;
     }
 
-    private IEnumerator MoveToBedsideRoutine()
+    private IEnumerator BeginBedsideSoothingInPlaceRoutine()
     {
-        SetStep(ReplayStep.AutoMoveToBedside);
-        SetRobotControl(false, false, false);
+        SetStep(ReplayStep.BedsideSoothing);
+        SetRobotControl(false, true, false);
 
         if (approachBoyInteractable != null)
         {
@@ -297,22 +316,6 @@ public class HearthCompanion17F01ReplayController : MonoBehaviour
             flowController.NotifyComfortActionPerformed();
         }
 
-        if (bedsidePathPoints != null)
-        {
-            for (int i = 0; i < bedsidePathPoints.Length; i++)
-            {
-                if (bedsidePathPoints[i] != null)
-                {
-                    yield return MoveRobotTo(bedsidePathPoints[i]);
-                }
-            }
-        }
-
-        yield return MoveRobotTo(bedsideInteractAnchor);
-        TeleportRobot(bedsideInteractAnchor);
-        SetRobotControl(false, true, false);
-        SetStep(ReplayStep.BedsideSoothing);
-
         if (companionHud != null)
         {
             companionHud.ShowScene(bedsideSceneId);
@@ -321,6 +324,7 @@ public class HearthCompanion17F01ReplayController : MonoBehaviour
         }
 
         activeRoutine = null;
+        yield break;
     }
 
     private IEnumerator SoothingRoutine()
@@ -330,9 +334,9 @@ public class HearthCompanion17F01ReplayController : MonoBehaviour
             companionHud.SetHoldPromptVisible(false);
         }
 
-        if (subtitlePlayer != null && soothingLines.Count > 0)
+        if (subtitlePlayer != null)
         {
-            yield return subtitlePlayer.PlayLines(soothingLines);
+            yield return PlayDialogue(soothingSequence, soothingLines);
         }
 
         ApplyPose(boyPosePreset, boyComfortedPoseId);
@@ -368,9 +372,9 @@ public class HearthCompanion17F01ReplayController : MonoBehaviour
             yield return new WaitForSeconds(waitBeforeLivingRoomLines);
         }
 
-        if (subtitlePlayer != null && livingRoomLines.Count > 0)
+        if (subtitlePlayer != null)
         {
-            yield return subtitlePlayer.PlayLines(livingRoomLines);
+            yield return PlayDialogue(livingRoomSequence, livingRoomLines);
         }
 
         ReturnToTerminalForDisposition(false);
@@ -402,6 +406,25 @@ public class HearthCompanion17F01ReplayController : MonoBehaviour
         if (companionHud != null)
         {
             companionHud.SetHoldPromptVisible(canInteract);
+        }
+    }
+
+    private IEnumerator PlayDialogue(HearthDialogueSequence sequence, IList<MinLoopSubtitleLine> fallbackLines)
+    {
+        if (subtitlePlayer == null)
+        {
+            yield break;
+        }
+
+        if (preferDialogueSequenceAssets && sequence != null && sequence.HasLines)
+        {
+            yield return subtitlePlayer.PlaySequenceAsset(sequence);
+            yield break;
+        }
+
+        if (fallbackLines != null && fallbackLines.Count > 0)
+        {
+            yield return subtitlePlayer.PlayLines(fallbackLines);
         }
     }
 

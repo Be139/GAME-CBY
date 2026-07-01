@@ -18,9 +18,6 @@ public class MinLoopSceneValidator : MonoBehaviour
     [SerializeField] private ReplaySequenceController replaySequenceController;
     [SerializeField] private ComfortActionInteractable comfortAction;
     [SerializeField] private MinLoopSubtitlePlayer subtitlePlayer;
-    [SerializeField] private MinLoopRobotHudPresenter robotHudPresenter;
-    [SerializeField] private MinLoopObjectivePresenter objectivePresenter;
-    [SerializeField] private MinLoopTrustPresenter trustPresenter;
     [SerializeField] private TrustStateController trustStateController;
     [SerializeField] private MinLoopDebugHotkeys debugHotkeys;
 
@@ -135,21 +132,6 @@ public class MinLoopSceneValidator : MonoBehaviour
         if (subtitlePlayer == null)
         {
             subtitlePlayer = FindSceneObject<MinLoopSubtitlePlayer>();
-        }
-
-        if (robotHudPresenter == null)
-        {
-            robotHudPresenter = FindSceneObject<MinLoopRobotHudPresenter>();
-        }
-
-        if (objectivePresenter == null)
-        {
-            objectivePresenter = FindSceneObject<MinLoopObjectivePresenter>();
-        }
-
-        if (trustPresenter == null)
-        {
-            trustPresenter = FindSceneObject<MinLoopTrustPresenter>();
         }
 
         if (trustStateController == null)
@@ -269,9 +251,8 @@ public class MinLoopSceneValidator : MonoBehaviour
         }
 
         AddRecommended(subtitlePlayer != null, "存在 MinLoopSubtitlePlayer 字幕播放器。", "缺少 MinLoopSubtitlePlayer。复盘仍可按时间推进，但玩家看不到关键字幕。");
-        AddRecommended(robotHudPresenter != null, "存在 MinLoopRobotHudPresenter 机器视角 HUD。", "缺少 MinLoopRobotHudPresenter。复盘仍能跑，但陪伴单元视角不会显示 02:47、心率、噩梦判定等机器信息。");
-        AddRecommended(objectivePresenter != null, "存在 MinLoopObjectivePresenter 当前目标提示。", "缺少 MinLoopObjectivePresenter。最小循环仍能跑，但玩家可能不知道下一步该做什么。");
-        AddRecommended(trustPresenter != null, "存在 MinLoopTrustPresenter 信任度显示。", "缺少 MinLoopTrustPresenter。终端仍会显示信任度结果，但没有独立信任度 UI。");
+        AddRecommended(FindSceneObject<HearthCompanionHudController>() != null, "存在正式 HearthCompanionHudController 机器视角 HUD。", "缺少 HearthCompanionHudController。复盘仍能推进，但陪伴单元正式 HUD 不会显示。");
+        AddRecommended(FindSceneObject<HearthFirstPersonHudController>() != null, "存在正式 HearthFirstPersonHudController 玩家 HUD。", "缺少 HearthFirstPersonHudController。第一人称任务、信任浮字和系统页面不会显示。");
 
         SimpleActorCueController[] actorCues = FindSceneObjects<SimpleActorCueController>();
         AddRecommended(actorCues.Length >= 1, "检测到至少 1 个 SimpleActorCueController。", "建议给孩子模型或占位物挂 SimpleActorCueController，用于看向门口和切换状态。");

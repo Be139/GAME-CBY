@@ -1,0 +1,76 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bf2d7532251303545ab78ab68b00d5cf, type: 3}
+  m_Name: 17F01_LivingRoomObservation
+  m_EditorClassIdentifier: 
+  sequenceId: 17F01_LivingRoomObservation
+  notes: Plays during the living-room observation. The replay returns to the terminal
+    after this sequence finishes.
+  lines:
+  - startDelay: 0.2
+    speaker: Father
+    text: He had a nightmare last night?
+    holdSeconds: 2.2
+    voiceClip: {fileID: 0}
+  - startDelay: 0.4
+    speaker: Mother
+    text: ... He didn't come out.
+    holdSeconds: 2.2
+    voiceClip: {fileID: 0}
+  - startDelay: 0.2
+    speaker: Father
+    text: Mm.
+    holdSeconds: 1.2
+    voiceClip: {fileID: 0}
+  - startDelay: 1.2
+    speaker: Mother
+    text: Then it handled it well.
+    holdSeconds: 2.2
+    voiceClip: {fileID: 0}
+  - startDelay: 0.2
+    speaker: Father
+    text: Mm.
+    holdSeconds: 1.2
+    voiceClip: {fileID: 0}
+  - startDelay: 0.6
+    speaker: Mother
+    text: ... But it feels strange.
+    holdSeconds: 2.4
+    voiceClip: {fileID: 0}
+  - startDelay: 0.2
+    speaker: Mother
+    text: Recently, I haven't heard him knock at all. I'm actually a little unused
+      to it.
+    holdSeconds: 4
+    voiceClip: {fileID: 0}
+  - startDelay: 0.4
+    speaker: Father
+    text: Isn't that a good thing? He's grown up. And it saves us from getting up
+      in the middle of the night.
+    holdSeconds: 4.2
+    voiceClip: {fileID: 0}
+  - startDelay: 0.3
+    speaker: Mother
+    text: But the child hasn't told us about his nightmares for a long time.
+    holdSeconds: 3.6
+    voiceClip: {fileID: 0}
+  - startDelay: 0.6
+    speaker: Father
+    text: At least we don't have to worry about him at night anymore, right?
+    holdSeconds: 3.2
+    voiceClip: {fileID: 0}
+  - startDelay: 0.8
+    speaker: Mother
+    text: ... Mm.
+    holdSeconds: 1.6
+    voiceClip: {fileID: 0}
+  postSequenceDelay: 0

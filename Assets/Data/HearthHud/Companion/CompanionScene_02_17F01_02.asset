@@ -52,6 +52,37 @@ MonoBehaviour:
   projectionTitle: 
   projectionBody: 
   centerMessage: 
+  timedCues:
+  - delaySeconds: 0.25
+    visibleSeconds: 3.2
+    title: STATUS CHANGE
+    body: 'Subject     Awake
+
+      Emotion     Fear - anxiety
+
+      Action     
+      Head turn -> door
+
+
+      ASSESSMENT - SEEKING PARENT'
+  - delaySeconds: 4.2
+    visibleSeconds: 3
+    title: Subject Vocalization
+    body: 'Vocalization: "[detected]"
+
+      Parent state: Deep sleep - 23 min'
+  - delaySeconds: 4.6
+    visibleSeconds: 3
+    title: SOOTHING EFFECTIVE
+    body: 'Heart      89 -> 71 v
+
+      Emotion    Stabilizing'
+  - delaySeconds: 4.4
+    visibleSeconds: 3
+    title: Event Archived
+    body: 'Subject: Re-asleep
+
+      Notification: Deferred to morning sync'
   showTriggerCard: 0
   triggerCardTitle: 
   triggerCardBody: 

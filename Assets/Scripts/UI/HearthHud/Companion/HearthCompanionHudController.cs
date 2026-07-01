@@ -321,7 +321,7 @@ public class HearthCompanionHudController : MonoBehaviour
 
         if (statusPanelView != null)
         {
-            statusPanelView.Apply(scene);
+            statusPanelView.Clear();
         }
 
         if (decisionPanelView != null)

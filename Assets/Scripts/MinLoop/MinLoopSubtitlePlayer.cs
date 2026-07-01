@@ -16,8 +16,10 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
     [Header("Clean Centered Style")]
     [SerializeField] private bool useCleanCenteredStyle = true;
     [SerializeField, Range(0.35f, 0.95f)] private float subtitleWidthFraction = 0.66f;
-    [SerializeField, Range(0.15f, 0.85f)] private float subtitleCenterY = 0.46f;
-    [SerializeField, Range(0.08f, 0.35f)] private float subtitleHeightFraction = 0.18f;
+    [SerializeField, Range(0.12f, 0.85f)] private float speakerCenterY = 0.31f;
+    [SerializeField, Range(0.03f, 0.16f)] private float speakerHeightFraction = 0.06f;
+    [SerializeField, Range(0.08f, 0.8f)] private float bodyCenterY = 0.22f;
+    [SerializeField, Range(0.06f, 0.28f)] private float bodyHeightFraction = 0.12f;
     [SerializeField] private Color cleanTextColor = Color.white;
     [SerializeField] private float cleanSpeakerFontSize = 22f;
     [SerializeField] private float cleanBodyFontSize = 28f;
@@ -53,10 +55,23 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
         return activeRoutine;
     }
 
+    public Coroutine PlaySequence(HearthDialogueSequence sequence)
+    {
+        Stop();
+        activeRoutine = StartCoroutine(PlaySequenceRoutine(sequence));
+        return activeRoutine;
+    }
+
     public IEnumerator PlayLines(IList<MinLoopSubtitleLine> lines)
     {
         Stop();
         yield return PlaySequenceRoutine(lines);
+    }
+
+    public IEnumerator PlaySequenceAsset(HearthDialogueSequence sequence)
+    {
+        Stop();
+        yield return PlaySequenceRoutine(sequence);
     }
 
     public void ShowLine(string speaker, string text)
@@ -151,6 +166,28 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
         HideImmediate();
         IsPlaying = false;
         activeRoutine = null;
+    }
+
+    private IEnumerator PlaySequenceRoutine(HearthDialogueSequence sequence)
+    {
+        if (sequence == null || !sequence.HasLines)
+        {
+            yield return PlaySequenceRoutine((IList<MinLoopSubtitleLine>)null);
+            yield break;
+        }
+
+        IList<MinLoopSubtitleLine> sequenceLines = sequence.Lines as IList<MinLoopSubtitleLine>;
+        if (sequenceLines == null)
+        {
+            sequenceLines = new List<MinLoopSubtitleLine>(sequence.Lines);
+        }
+
+        yield return PlaySequenceRoutine(sequenceLines);
+
+        if (sequence.PostSequenceDelay > 0f)
+        {
+            yield return Wait(sequence.PostSequenceDelay);
+        }
     }
 
     private void PlayVoice(AudioClip clip)
@@ -287,11 +324,8 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
         RectTransform panelRect = subtitlePanel.GetComponent<RectTransform>();
         if (panelRect != null)
         {
-            float halfWidth = Mathf.Clamp01(subtitleWidthFraction) * 0.5f;
-            float halfHeight = Mathf.Clamp01(subtitleHeightFraction) * 0.5f;
-            float centerY = Mathf.Clamp01(subtitleCenterY);
-            panelRect.anchorMin = new Vector2(0.5f - halfWidth, centerY - halfHeight);
-            panelRect.anchorMax = new Vector2(0.5f + halfWidth, centerY + halfHeight);
+            panelRect.anchorMin = Vector2.zero;
+            panelRect.anchorMax = Vector2.one;
             panelRect.offsetMin = Vector2.zero;
             panelRect.offsetMax = Vector2.zero;
         }
@@ -309,11 +343,20 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
             canvasGroup.interactable = false;
         }
 
-        ApplyTextStyle(speakerText, new Vector2(0f, 0.62f), new Vector2(1f, 1f), cleanSpeakerFontSize, FontStyles.Bold);
-        ApplyTextStyle(bodyText, new Vector2(0f, 0f), new Vector2(1f, 0.62f), cleanBodyFontSize, FontStyles.Normal);
+        float halfWidth = Mathf.Clamp01(subtitleWidthFraction) * 0.5f;
+        ApplyTextStyle(
+            speakerText,
+            MakeCenteredAnchor(speakerCenterY, speakerHeightFraction, halfWidth),
+            cleanSpeakerFontSize,
+            FontStyles.Bold);
+        ApplyTextStyle(
+            bodyText,
+            MakeCenteredAnchor(bodyCenterY, bodyHeightFraction, halfWidth),
+            cleanBodyFontSize,
+            FontStyles.Normal);
     }
 
-    private void ApplyTextStyle(TMP_Text text, Vector2 anchorMin, Vector2 anchorMax, float fontSize, FontStyles style)
+    private void ApplyTextStyle(TMP_Text text, Rect anchorRect, float fontSize, FontStyles style)
     {
         if (text == null)
         {
@@ -323,8 +366,8 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
         RectTransform rect = text.GetComponent<RectTransform>();
         if (rect != null)
         {
-            rect.anchorMin = anchorMin;
-            rect.anchorMax = anchorMax;
+            rect.anchorMin = new Vector2(anchorRect.xMin, anchorRect.yMin);
+            rect.anchorMax = new Vector2(anchorRect.xMax, anchorRect.yMax);
             rect.offsetMin = Vector2.zero;
             rect.offsetMax = Vector2.zero;
         }
@@ -335,5 +378,17 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
         text.alignment = TextAlignmentOptions.Center;
         text.enableWordWrapping = true;
         text.overflowMode = TextOverflowModes.Overflow;
+    }
+
+    private Rect MakeCenteredAnchor(float centerY, float height, float halfWidth)
+    {
+        centerY = Mathf.Clamp01(centerY);
+        height = Mathf.Clamp01(height);
+        halfWidth = Mathf.Clamp01(halfWidth);
+        return Rect.MinMaxRect(
+            0.5f - halfWidth,
+            Mathf.Clamp01(centerY - height * 0.5f),
+            0.5f + halfWidth,
+            Mathf.Clamp01(centerY + height * 0.5f));
     }
 }

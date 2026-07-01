@@ -186,21 +186,10 @@ public class MinLoopSetupChecklistWindow : EditorWindow
         builder.AppendLine("- 第一版没有 Clip 也不会报错；后续把正式环境声拖到对应 AudioSource 的 AudioClip，或拖到规则的 Fallback Clip。");
         builder.AppendLine("- 刷卡哔声、按钮声、终端确认声仍然用 InteractionFeedbackController。");
         builder.AppendLine();
-        builder.AppendLine("MinLoopObjectivePresenter：");
-        builder.AppendLine("- 骨架会自动绑定 Flow Controller。");
-        builder.AppendLine("- 第一版不拖 UI 也会自动生成左上角当前目标提示。");
-        builder.AppendLine("- 后续正式 UI 可拖 Objective Root、Title Text、Body Text、Canvas Group。");
-        builder.AppendLine();
-        builder.AppendLine("MinLoopRobotHudPresenter：");
-        builder.AppendLine("- 骨架会自动绑定 Flow Controller。");
-        builder.AppendLine("- 第一版不拖 UI 也会自动生成机器视角 HUD，显示 02:47、心率、噩梦判定和安抚指令。");
-        builder.AppendLine("- 如果场景里有 RobotCanvas 或 CompanionCanvas，Auto Bind References 会优先把它作为占位 HUD 父 Canvas。");
-        builder.AppendLine("- 后续正式 UI 可拖 HUD Root、Time Text、Heart Rate Text、Status Text、Instruction Text、Accent Image、Canvas Group。");
-        builder.AppendLine();
-        builder.AppendLine("MinLoopTrustPresenter：");
-        builder.AppendLine("- 骨架会自动绑定 Trust State Controller 和 Flow Controller。");
-        builder.AppendLine("- 第一版不拖 UI 也会自动生成右上角信任度提示。");
-        builder.AppendLine("- 后续正式 UI 可拖 Trust Root、Value Text、Delta Text、Label Text、Trust Slider、Canvas Group。");
+        builder.AppendLine("正式 HUD：");
+        builder.AppendLine("- 玩家第一人称 UI 使用 HearthFirstPersonHudController / HearthHudRoot。");
+        builder.AppendLine("- 陪伴单元机器视角 UI 使用 HearthCompanionHudController / HearthCompanionHudRoot。");
+        builder.AppendLine("- 旧 MinLoopObjectivePresenter、MinLoopRobotHudPresenter、MinLoopTrustPresenter 已退役，不再创建占位黑底 UI。");
         builder.AppendLine();
         builder.AppendLine("MinLoopDebugHotkeys：");
         builder.AppendLine("- 骨架会自动绑定 Flow Controller 和 Replay Sequence Controller。");
@@ -237,14 +226,11 @@ public class MinLoopSetupChecklistWindow : EditorWindow
         builder.AppendLine("- Bound Close Button / Text");
         builder.AppendLine("- 如果暂时不用 TerminalUIController，保持 Create Event System If Missing 和 Disable Gameplay Behaviours When Open 开启。");
         builder.AppendLine("- Gameplay Behaviours To Disable 拖 Mia 的 FirstPersonMovement、FirstPersonLook、PlayerInteraction。");
-        builder.AppendLine("当前目标 UI 上传后，在 MinLoopObjectivePresenter 中拖 Objective Root、Title Text、Body Text。");
-        builder.AppendLine("机器 HUD UI 上传后，在 MinLoopRobotHudPresenter 中拖 HUD Root、Time Text、Heart Rate Text、Status Text、Instruction Text、Accent Image。");
-        builder.AppendLine("信任度 UI 上传后，在 MinLoopTrustPresenter 中拖 Trust Root、Value Text、Delta Text、Trust Slider。");
+        builder.AppendLine("当前目标、机器 HUD、信任浮字都走正式 Hearth HUD，不再接旧 MinLoop 占位 Presenter。");
         builder.AppendLine("想让 Auto Bind 自动接正式 UI，推荐命名：");
         builder.AppendLine("- 终端：Terminal_BoundUI、Terminal_TitleText、Terminal_BodyText、Terminal_PrimaryButton、Terminal_SecondaryButton、Terminal_CloseButton。");
-        builder.AppendLine("- 目标：Objective_Root、Objective_TitleText、Objective_BodyText。");
-        builder.AppendLine("- 机器 HUD：RobotHUD_Root、RobotHUD_TimeText、RobotHUD_HeartRateText、RobotHUD_StatusText、RobotHUD_InstructionText、RobotHUD_Accent。");
-        builder.AppendLine("- 信任度：Trust_Root、Trust_ValueText、Trust_DeltaText、Trust_LabelText、Trust_Slider。");
+        builder.AppendLine("- 玩家 HUD：HearthHudRoot。");
+        builder.AppendLine("- 机器 HUD：HearthCompanionHudRoot。");
         builder.AppendLine();
 
         builder.AppendLine("【最小验收】");
@@ -252,7 +238,7 @@ public class MinLoopSetupChecklistWindow : EditorWindow
         builder.AppendLine("2. Play 后看向终端按 E，出现刷工牌页。");
         builder.AppendLine("3. 点击刷工牌，出现住户摘要。");
         builder.AppendLine("4. 点击调出昨夜事件，黑场切到 Companion。");
-        builder.AppendLine("5. Companion 视角里能看到机器 HUD：02:47、心率、噩梦判定、安抚指令。");
+        builder.AppendLine("5. Companion 视角里能看到正式机器 HUD，且没有旧占位黑底块。");
         builder.AppendLine("6. 复盘中孩子说“妈妈”，安抚点出现。");
         builder.AppendLine("7. 按 E 安抚后进入父母早晨对话。");
         builder.AppendLine("8. 回终端后能选 A/B，显示信任度变化和下一户。");
@@ -262,8 +248,8 @@ public class MinLoopSetupChecklistWindow : EditorWindow
         builder.AppendLine("12. 走廊/终端、昨夜复盘、早晨回顾三个阶段的灯光颜色能随流程切换。");
         builder.AppendLine("13. 配好环境声 Clip 后，走廊/终端、昨夜复盘、早晨回顾三个阶段的环境声能随流程淡入淡出。");
         builder.AppendLine("14. 等待安抚、早晨回顾、下一户完成阶段会分别触发对应 Feedback 对象。");
-        builder.AppendLine("15. 左上角目标提示会随流程显示当前该做什么。");
-        builder.AppendLine("16. 选择 A/B 后，右上角信任度提示会显示当前值和变化量。");
+        builder.AppendLine("15. 正式玩家 HUD 会显示任务、位置和信任浮字，不再显示旧占位目标面板。");
+        builder.AppendLine("16. 选择 A/B 后，正式 HUD / 终端流程会记录信任度变化。");
         builder.AppendLine("17. 调试时可以用 F1-F8 快速跳测关键节点。");
 
         return builder.ToString();

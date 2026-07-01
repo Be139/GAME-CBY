@@ -44,9 +44,6 @@ public static class MinLoopSceneAutoBinder
         MinLoopDebugHotkeys debugHotkeys = FindSceneComponent<MinLoopDebugHotkeys>("MinLoopDebugHotkeys");
         MinLoopTerminalPresenter terminalPresenter = FindSceneComponent<MinLoopTerminalPresenter>("MinLoopTerminalPresenter");
         MinLoopSubtitlePlayer subtitlePlayer = FindSceneComponent<MinLoopSubtitlePlayer>("MinLoopSubtitlePlayer");
-        MinLoopRobotHudPresenter robotHudPresenter = FindSceneComponent<MinLoopRobotHudPresenter>("MinLoopRobotHudPresenter");
-        MinLoopObjectivePresenter objectivePresenter = FindSceneComponent<MinLoopObjectivePresenter>("MinLoopObjectivePresenter");
-        MinLoopTrustPresenter trustPresenter = FindSceneComponent<MinLoopTrustPresenter>("MinLoopTrustPresenter");
         ReplaySequenceController replaySequenceController = FindSceneComponent<ReplaySequenceController>("ReplaySequenceController");
         ComfortActionInteractable comfortAction = FindSceneComponent<ComfortActionInteractable>("ComfortAction_Bedside");
         ResidentTerminalFlow terminalFlow = FindSceneComponent<ResidentTerminalFlow>("Terminal_17F01_Interactable", "Terminal_17F01");
@@ -69,12 +66,6 @@ public static class MinLoopSceneAutoBinder
 
         PlayerInteraction companionInteraction = FindComponentInChildren<PlayerInteraction>(companionRoot);
         Camera companionCamera = FindComponentInChildren<Camera>(companionRoot);
-        Canvas robotCanvas = FindComponentInChildren<Canvas>(FindSceneGameObject("RobotCanvas", "Robot_Canvas", "CompanionCanvas", "Companion_Canvas"));
-        if (robotCanvas == null)
-        {
-            robotCanvas = FindComponentInChildren<Canvas>(companionRoot);
-        }
-
         InteractionFeedbackController terminalOpenFeedback = FindSceneComponent<InteractionFeedbackController>("Feedback_TerminalOpen");
         InteractionFeedbackController accessCardFeedback = FindSceneComponent<InteractionFeedbackController>("Feedback_AccessCard");
         InteractionFeedbackController replayRequestFeedback = FindSceneComponent<InteractionFeedbackController>("Feedback_ReplayRequest");
@@ -100,15 +91,14 @@ public static class MinLoopSceneAutoBinder
         AssignReplayReferences(replaySequenceController, flowController, subtitlePlayer, comfortAction, childActor, motherActor, fatherActor, doorLookTarget, report);
         AssignComfortReferences(comfortAction, replaySequenceController, report);
         AssignViewSwitchReferences(viewSwitchController, humanRoot, companionRoot, report);
-        AssignPresenterReferences(objectivePresenter, robotHudPresenter, trustPresenter, flowController, trustStateController, robotCanvas, report);
-        AssignBoundUIReferences(terminalUI, terminalPresenter, objectivePresenter, robotHudPresenter, trustPresenter, report);
+        AssignBoundUIReferences(terminalUI, terminalPresenter, report);
         AssignDebugReferences(debugHotkeys, flowController, replaySequenceController, report);
         AssignStageActivatorReferences(stageObjectActivator, flowController, report);
         AssignStageAnchorReferences(stageAnchorController, flowController, humanRoot, companionRoot, miaCorridorAnchor, companionReplayAnchor, miaTerminalReturnAnchor, nextResidentAnchor, report);
         AssignStageCueReferences(stageCueController, flowController, comfortReadyFeedback, morningReviewFeedback, nextResidentGuideFeedback, report);
         AssignLightingReferences(lightingStateController, flowController, corridorLight, replayNightLight, morningLight, report);
         AssignAudioReferences(audioStateController, flowController, corridorAmbience, replayNightAmbience, morningAmbience, report);
-        AssignValidatorReferences(validator, flowController, terminalFlow, terminalPresenter, viewSwitchController, stageObjectActivator, stageAnchorController, stageCueController, lightingStateController, audioStateController, replaySequenceController, comfortAction, subtitlePlayer, robotHudPresenter, objectivePresenter, trustPresenter, trustStateController, debugHotkeys, report);
+        AssignValidatorReferences(validator, flowController, terminalFlow, terminalPresenter, viewSwitchController, stageObjectActivator, stageAnchorController, stageCueController, lightingStateController, audioStateController, replaySequenceController, comfortAction, subtitlePlayer, trustStateController, debugHotkeys, report);
         AssignInteractionCamera(humanInteraction, humanCamera, "Mia 交互相机", report);
         AssignInteractionCamera(companionInteraction, companionCamera, "陪伴单元交互相机", report);
 
@@ -226,34 +216,12 @@ public static class MinLoopSceneAutoBinder
         AssignViewRig(viewSwitchController, "companion", companionRoot, "Companion/Robot", report);
     }
 
-    private static void AssignPresenterReferences(
-        MinLoopObjectivePresenter objectivePresenter,
-        MinLoopRobotHudPresenter robotHudPresenter,
-        MinLoopTrustPresenter trustPresenter,
-        MinLoopFlowController flowController,
-        TrustStateController trustStateController,
-        Canvas robotCanvas,
-        AutoBindReport report)
-    {
-        AssignObject(objectivePresenter, "flowController", flowController, "目标提示 -> 总流程", report, false);
-        AssignObject(robotHudPresenter, "flowController", flowController, "机器 HUD -> 总流程", report, false);
-        AssignObject(robotHudPresenter, "fallbackParentCanvas", robotCanvas, "机器 HUD -> RobotCanvas", report, false);
-        AssignObject(trustPresenter, "trustStateController", trustStateController, "信任度显示 -> 信任度控制器", report, false);
-        AssignObject(trustPresenter, "flowController", flowController, "信任度显示 -> 总流程", report, false);
-    }
-
     private static void AssignBoundUIReferences(
         TerminalUIController terminalUI,
         MinLoopTerminalPresenter terminalPresenter,
-        MinLoopObjectivePresenter objectivePresenter,
-        MinLoopRobotHudPresenter robotHudPresenter,
-        MinLoopTrustPresenter trustPresenter,
         AutoBindReport report)
     {
         AssignTerminalBoundUI(terminalUI, terminalPresenter, report);
-        AssignObjectiveBoundUI(objectivePresenter, report);
-        AssignRobotHudBoundUI(robotHudPresenter, report);
-        AssignTrustBoundUI(trustPresenter, report);
     }
 
     private static void AssignTerminalBoundUI(TerminalUIController terminalUI, MinLoopTerminalPresenter terminalPresenter, AutoBindReport report)
@@ -288,38 +256,6 @@ public static class MinLoopSceneAutoBinder
         AssignOptionalObjectIfFound(terminalPresenter, "boundSecondaryButtonText", FindButtonLabel(secondaryButton, root, "Terminal_SecondaryButtonText", "SecondaryButtonText"), "终端展示器 -> 正式第二按钮文字", report);
         AssignOptionalObjectIfFound(terminalPresenter, "boundCloseButton", closeButton, "终端展示器 -> 正式关闭按钮", report);
         AssignOptionalObjectIfFound(terminalPresenter, "boundCloseButtonText", FindButtonLabel(closeButton, root, "Terminal_CloseButtonText", "CloseButtonText"), "终端展示器 -> 正式关闭按钮文字", report);
-    }
-
-    private static void AssignObjectiveBoundUI(MinLoopObjectivePresenter objectivePresenter, AutoBindReport report)
-    {
-        GameObject root = FindSceneGameObject("Objective_Root", "ObjectiveRoot", "Objective_Panel", "MinLoop_Objective_UI");
-        AssignOptionalObjectIfFound(objectivePresenter, "objectiveRoot", root, "目标提示 -> 正式 UI 根物体", report);
-        AssignOptionalObjectIfFound(objectivePresenter, "titleText", FindNamedComponent<TMP_Text>(root, "Objective_TitleText", "Objective_Title", "ObjectiveTitle", "Objective_Title_Label"), "目标提示 -> 正式标题文本", report);
-        AssignOptionalObjectIfFound(objectivePresenter, "bodyText", FindNamedComponent<TMP_Text>(root, "Objective_BodyText", "Objective_Body", "ObjectiveBody", "Objective_Body_Label"), "目标提示 -> 正式正文文本", report);
-        AssignOptionalObjectIfFound(objectivePresenter, "canvasGroup", FindNamedComponent<CanvasGroup>(root, "Objective_Root", "ObjectiveRoot", "Objective_Panel", "MinLoop_Objective_UI"), "目标提示 -> 正式 CanvasGroup", report);
-    }
-
-    private static void AssignRobotHudBoundUI(MinLoopRobotHudPresenter robotHudPresenter, AutoBindReport report)
-    {
-        GameObject root = FindSceneGameObject("RobotHUD_Root", "Robot_HUD_Root", "RobotHUD_Panel", "CompanionHUD_Root", "Companion_HUD_Root");
-        AssignOptionalObjectIfFound(robotHudPresenter, "hudRoot", root, "机器 HUD -> 正式 UI 根物体", report);
-        AssignOptionalObjectIfFound(robotHudPresenter, "timeText", FindNamedComponent<TMP_Text>(root, "RobotHUD_TimeText", "RobotHUD_Time", "HUD_TimeText", "TimeText"), "机器 HUD -> 时间文本", report);
-        AssignOptionalObjectIfFound(robotHudPresenter, "heartRateText", FindNamedComponent<TMP_Text>(root, "RobotHUD_HeartRateText", "RobotHUD_HeartRate", "HUD_HeartRateText", "HeartRateText"), "机器 HUD -> 心率文本", report);
-        AssignOptionalObjectIfFound(robotHudPresenter, "statusText", FindNamedComponent<TMP_Text>(root, "RobotHUD_StatusText", "RobotHUD_Status", "HUD_StatusText", "StatusText"), "机器 HUD -> 状态文本", report);
-        AssignOptionalObjectIfFound(robotHudPresenter, "instructionText", FindNamedComponent<TMP_Text>(root, "RobotHUD_InstructionText", "RobotHUD_Instruction", "HUD_InstructionText", "InstructionText"), "机器 HUD -> 指令文本", report);
-        AssignOptionalObjectIfFound(robotHudPresenter, "accentImage", FindNamedComponent<Image>(root, "RobotHUD_Accent", "HUD_Accent", "AccentImage", "Accent_Image"), "机器 HUD -> 状态色条", report);
-        AssignOptionalObjectIfFound(robotHudPresenter, "canvasGroup", FindNamedComponent<CanvasGroup>(root, "RobotHUD_Root", "Robot_HUD_Root", "RobotHUD_Panel", "CompanionHUD_Root", "Companion_HUD_Root"), "机器 HUD -> CanvasGroup", report);
-    }
-
-    private static void AssignTrustBoundUI(MinLoopTrustPresenter trustPresenter, AutoBindReport report)
-    {
-        GameObject root = FindSceneGameObject("Trust_Root", "TrustRoot", "Trust_Panel", "MinLoop_Trust_UI");
-        AssignOptionalObjectIfFound(trustPresenter, "trustRoot", root, "信任度显示 -> 正式 UI 根物体", report);
-        AssignOptionalObjectIfFound(trustPresenter, "valueText", FindNamedComponent<TMP_Text>(root, "Trust_ValueText", "Trust_Value", "TrustValueText", "ValueText"), "信任度显示 -> 数值文本", report);
-        AssignOptionalObjectIfFound(trustPresenter, "deltaText", FindNamedComponent<TMP_Text>(root, "Trust_DeltaText", "Trust_Delta", "TrustDeltaText", "DeltaText"), "信任度显示 -> 变化量文本", report);
-        AssignOptionalObjectIfFound(trustPresenter, "labelText", FindNamedComponent<TMP_Text>(root, "Trust_LabelText", "Trust_Label", "TrustLabelText", "LabelText"), "信任度显示 -> 标题文本", report);
-        AssignOptionalObjectIfFound(trustPresenter, "trustSlider", FindNamedComponent<Slider>(root, "Trust_Slider", "TrustSlider", "Slider_Trust"), "信任度显示 -> Slider", report);
-        AssignOptionalObjectIfFound(trustPresenter, "canvasGroup", FindNamedComponent<CanvasGroup>(root, "Trust_Root", "TrustRoot", "Trust_Panel", "MinLoop_Trust_UI"), "信任度显示 -> CanvasGroup", report);
     }
 
     private static void AssignDebugReferences(
@@ -583,9 +519,6 @@ public static class MinLoopSceneAutoBinder
         ReplaySequenceController replaySequenceController,
         ComfortActionInteractable comfortAction,
         MinLoopSubtitlePlayer subtitlePlayer,
-        MinLoopRobotHudPresenter robotHudPresenter,
-        MinLoopObjectivePresenter objectivePresenter,
-        MinLoopTrustPresenter trustPresenter,
         TrustStateController trustStateController,
         MinLoopDebugHotkeys debugHotkeys,
         AutoBindReport report)
@@ -608,9 +541,6 @@ public static class MinLoopSceneAutoBinder
         AssignObject(validator, "replaySequenceController", replaySequenceController, "检查器 -> 复盘控制器", report);
         AssignObject(validator, "comfortAction", comfortAction, "检查器 -> 唯一安抚点", report, false);
         AssignObject(validator, "subtitlePlayer", subtitlePlayer, "检查器 -> 字幕播放器", report, false);
-        AssignObject(validator, "robotHudPresenter", robotHudPresenter, "检查器 -> 机器 HUD", report, false);
-        AssignObject(validator, "objectivePresenter", objectivePresenter, "检查器 -> 目标提示", report, false);
-        AssignObject(validator, "trustPresenter", trustPresenter, "检查器 -> 信任度显示", report, false);
         AssignObject(validator, "trustStateController", trustStateController, "检查器 -> 信任度控制器", report);
         AssignObject(validator, "debugHotkeys", debugHotkeys, "检查器 -> 调试热键", report, false);
 

@@ -26,6 +26,10 @@ public class HearthCompanionReplayInteractable : MonoBehaviour
     [Header("Events")]
     [SerializeField] private HearthCompanion17F01ReplayController replayController;
 
+    [Header("Editor Visualization")]
+    [SerializeField] private bool drawSceneGizmo = true;
+    [SerializeField] private Color sceneGizmoColor = new Color(0.35f, 0.9f, 1f, 0.65f);
+
     private bool available;
 
     public string InteractionLabel
@@ -138,12 +142,21 @@ public class HearthCompanionReplayInteractable : MonoBehaviour
         }
 
         Ray ray = new Ray(camera.transform.position, camera.transform.forward);
-        if (!Physics.Raycast(ray, out RaycastHit hit, maxDistance, lineOfSightMask, raycastTriggerInteraction))
+        RaycastHit[] hits = Physics.RaycastAll(ray, maxDistance, lineOfSightMask, raycastTriggerInteraction);
+        if (hits == null || hits.Length == 0)
         {
             return false;
         }
 
-        return IsTargetTransform(hit.transform, targetRoot);
+        for (int i = 0; i < hits.Length; i++)
+        {
+            if (IsTargetTransform(hits[i].transform, targetRoot))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private bool AngleGatePasses(Camera camera)
@@ -178,5 +191,78 @@ public class HearthCompanionReplayInteractable : MonoBehaviour
         return hitTransform == targetRoot ||
                hitTransform.IsChildOf(targetRoot) ||
                targetRoot.IsChildOf(hitTransform);
+    }
+
+    private void OnDrawGizmos()
+    {
+        if (!drawSceneGizmo)
+        {
+            return;
+        }
+
+        Gizmos.color = sceneGizmoColor;
+        CapsuleCollider capsule = GetComponent<CapsuleCollider>();
+        if (capsule != null)
+        {
+            DrawCapsuleGizmo(capsule);
+            return;
+        }
+
+        Collider collider = GetComponent<Collider>();
+        if (collider != null)
+        {
+            Gizmos.DrawWireCube(collider.bounds.center, collider.bounds.size);
+            return;
+        }
+
+        Transform target = focusTarget != null ? focusTarget : transform;
+        Gizmos.DrawWireSphere(target.position, 0.2f);
+    }
+
+    private void DrawCapsuleGizmo(CapsuleCollider capsule)
+    {
+        Matrix4x4 oldMatrix = Gizmos.matrix;
+        Gizmos.matrix = transform.localToWorldMatrix;
+
+        Vector3 axis = GetCapsuleAxis(capsule.direction);
+        Vector3 sideA = GetCapsuleSideA(capsule.direction) * capsule.radius;
+        Vector3 sideB = GetCapsuleSideB(capsule.direction) * capsule.radius;
+        float halfSegment = Mathf.Max(0f, capsule.height * 0.5f - capsule.radius);
+        Vector3 top = capsule.center + axis * halfSegment;
+        Vector3 bottom = capsule.center - axis * halfSegment;
+
+        Gizmos.DrawWireSphere(top, capsule.radius);
+        Gizmos.DrawWireSphere(bottom, capsule.radius);
+        Gizmos.DrawLine(top + sideA, bottom + sideA);
+        Gizmos.DrawLine(top - sideA, bottom - sideA);
+        Gizmos.DrawLine(top + sideB, bottom + sideB);
+        Gizmos.DrawLine(top - sideB, bottom - sideB);
+
+        Gizmos.matrix = oldMatrix;
+    }
+
+    private static Vector3 GetCapsuleAxis(int direction)
+    {
+        if (direction == 0)
+        {
+            return Vector3.right;
+        }
+
+        if (direction == 2)
+        {
+            return Vector3.forward;
+        }
+
+        return Vector3.up;
+    }
+
+    private static Vector3 GetCapsuleSideA(int direction)
+    {
+        return direction == 0 ? Vector3.up : Vector3.right;
+    }
+
+    private static Vector3 GetCapsuleSideB(int direction)
+    {
+        return direction == 2 ? Vector3.up : Vector3.forward;
     }
 }

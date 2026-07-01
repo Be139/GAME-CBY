@@ -28,6 +28,7 @@ public class MinLoopFlowController : MonoBehaviour
 
     [Header("Runtime State")]
     [SerializeField] private MinLoopStage currentStage = MinLoopStage.Corridor;
+    [SerializeField] private bool dispositionSubmitted;
 
     private Coroutine activeFlowRoutine;
 
@@ -46,6 +47,11 @@ public class MinLoopFlowController : MonoBehaviour
         get { return dispositionApplied; }
     }
 
+    public bool DispositionSubmitted
+    {
+        get { return dispositionSubmitted; }
+    }
+
     private void Awake()
     {
         ResolveReferences();
@@ -62,6 +68,7 @@ public class MinLoopFlowController : MonoBehaviour
     public void ResetFlow()
     {
         StopActiveFlowRoutine();
+        dispositionSubmitted = false;
         SetStage(MinLoopStage.Corridor, true);
 
         if (trustStateController != null)
@@ -305,6 +312,7 @@ public class MinLoopFlowController : MonoBehaviour
         }
 
         SetStage(MinLoopStage.DispositionChoice);
+        dispositionSubmitted = false;
 
         if (tvTerminalController != null)
         {
@@ -321,6 +329,13 @@ public class MinLoopFlowController : MonoBehaviour
     private void ApplyDispositionChoice(MinLoopDispositionChoice choice)
     {
         ResolveReferences();
+
+        if (dispositionSubmitted || currentStage != MinLoopStage.DispositionChoice)
+        {
+            return;
+        }
+
+        dispositionSubmitted = true;
         PlayFeedback(dispositionSubmitFeedback);
 
         int currentTrust = 0;

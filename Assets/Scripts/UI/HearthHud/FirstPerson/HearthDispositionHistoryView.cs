@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -5,8 +6,23 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public class HearthDispositionHistoryView : MonoBehaviour
 {
+    [Serializable]
+    public class RowBinding
+    {
+        public int recordIndex;
+        public GameObject rowRoot;
+        public TMP_Text timestampText;
+        public TMP_Text unitText;
+        public TMP_Text actionText;
+        public TMP_Text statusText;
+        public TMP_Text trustDeltaText;
+    }
+
     [Header("Records")]
     [SerializeField] private List<HearthDispositionRecord> records = new List<HearthDispositionRecord>();
+
+    [Header("Dynamic Row Bindings")]
+    [SerializeField] private RowBinding[] rowBindings;
 
     [Header("Optional Row Bindings")]
     [SerializeField] private TMP_Text[] timestampTexts;
@@ -18,6 +34,8 @@ public class HearthDispositionHistoryView : MonoBehaviour
     [Header("Optional Footer Bindings")]
     [SerializeField] private TMP_Text shiftTrustDeltaText;
     [SerializeField] private TMP_Text currentTrustText;
+    [SerializeField] private TMP_Text[] shiftTrustDeltaTexts;
+    [SerializeField] private TMP_Text[] currentTrustTexts;
 
     [Header("Footer Values")]
     [SerializeField] private int currentTrustScore;
@@ -50,6 +68,11 @@ public class HearthDispositionHistoryView : MonoBehaviour
 
     public void AddRecord(HearthDispositionRecord record)
     {
+        AddRecord(record, currentTrustScore + (record != null ? record.trustDelta : 0));
+    }
+
+    public void AddRecord(HearthDispositionRecord record, int currentTrustAfter)
+    {
         if (record == null)
         {
             return;
@@ -61,7 +84,7 @@ public class HearthDispositionHistoryView : MonoBehaviour
         }
 
         records.Add(record);
-        currentTrustScore += record.trustDelta;
+        currentTrustScore = currentTrustAfter;
         Refresh();
     }
 
@@ -86,6 +109,45 @@ public class HearthDispositionHistoryView : MonoBehaviour
 
     public void Refresh()
     {
+        RefreshDynamicRows();
+        RefreshLegacyRows();
+        RefreshFooters();
+    }
+
+    private void RefreshDynamicRows()
+    {
+        if (rowBindings == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < rowBindings.Length; i++)
+        {
+            RowBinding binding = rowBindings[i];
+            if (binding == null)
+            {
+                continue;
+            }
+
+            int recordIndex = Mathf.Max(0, binding.recordIndex);
+            HearthDispositionRecord record = recordIndex < records.Count ? records[recordIndex] : null;
+            bool hasRecord = record != null;
+
+            if (binding.rowRoot != null)
+            {
+                binding.rowRoot.SetActive(hasRecord);
+            }
+
+            SetText(binding.timestampText, hasRecord ? record.timestamp : string.Empty);
+            SetText(binding.unitText, hasRecord ? record.unitId : string.Empty);
+            SetText(binding.actionText, hasRecord ? record.actionLabel : string.Empty);
+            SetText(binding.statusText, hasRecord ? record.statusLabel : string.Empty);
+            SetText(binding.trustDeltaText, hasRecord ? FormatDelta(record.trustDelta) + " TRUST" : string.Empty);
+        }
+    }
+
+    private void RefreshLegacyRows()
+    {
         int rowCount = Mathf.Max(
             MaxLength(timestampTexts),
             Mathf.Max(MaxLength(unitTexts), Mathf.Max(MaxLength(actionTexts), Mathf.Max(MaxLength(statusTexts), MaxLength(trustDeltaTexts)))));
@@ -99,7 +161,10 @@ public class HearthDispositionHistoryView : MonoBehaviour
             SetOptionalText(statusTexts, i, record != null ? record.statusLabel : string.Empty);
             SetOptionalText(trustDeltaTexts, i, record != null ? FormatDelta(record.trustDelta) + " TRUST" : string.Empty);
         }
+    }
 
+    private void RefreshFooters()
+    {
         if (shiftTrustDeltaText != null)
         {
             shiftTrustDeltaText.text = FormatDelta(currentTrustScore);
@@ -109,6 +174,9 @@ public class HearthDispositionHistoryView : MonoBehaviour
         {
             currentTrustText.text = currentTrustScore.ToString();
         }
+
+        SetAllTexts(shiftTrustDeltaTexts, FormatDelta(currentTrustScore));
+        SetAllTexts(currentTrustTexts, currentTrustScore.ToString());
     }
 
     private static int MaxLength(TMP_Text[] values)
@@ -121,6 +189,27 @@ public class HearthDispositionHistoryView : MonoBehaviour
         if (values != null && index >= 0 && index < values.Length && values[index] != null)
         {
             values[index].text = text;
+        }
+    }
+
+    private static void SetAllTexts(TMP_Text[] values, string text)
+    {
+        if (values == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < values.Length; i++)
+        {
+            SetText(values[i], text);
+        }
+    }
+
+    private static void SetText(TMP_Text value, string text)
+    {
+        if (value != null)
+        {
+            value.text = text;
         }
     }
 

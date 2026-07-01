@@ -5,8 +5,17 @@ using UnityEngine;
 public static class Hearth17F01MinimalLoopBinder
 {
     private const string MenuPath = "Tools/Hearth/Replay/Apply 17F01 Minimal Loop Setup";
-    private const float BoyInteractionDistance = 1.42f;
-    private const float RobotAutoMoveSpeed = 0.69f;
+    private const float BoyInteractionDistance = 0.71f;
+    private const float RobotAutoMoveSpeed = 0.45f;
+    private const float RobotWalkSpeed = 1.625f;
+    private const float RobotRunSpeed = 4.095f;
+    private const float SubtitleSpeakerCenterY = 0.31f;
+    private const float SubtitleBodyCenterY = 0.22f;
+    private const float ProxyRepositionDistance = 2f;
+    private const string DialogueFolder = "Assets/Data/MinLoop/Dialogues";
+    private const string BedroomPreludeDialoguePath = DialogueFolder + "/17F01_BedroomPrelude.asset";
+    private const string SoothingDialoguePath = DialogueFolder + "/17F01_BedsideSoothing.asset";
+    private const string LivingRoomDialoguePath = DialogueFolder + "/17F01_LivingRoomObservation.asset";
 
     [MenuItem(MenuPath)]
     public static void Apply()
@@ -21,9 +30,9 @@ public static class Hearth17F01MinimalLoopBinder
         GameObject robotBedside = Find("Player/Robot Controller (2)", "Robot Controller (2)");
 
         Transform childStartAnchor = CreateAnchor(anchorsRoot, "Anchor_Robot_17F01_ChildRoomStart", robot != null ? robot.transform : null);
-        Transform bedsideAnchor = CreateAnchor(anchorsRoot, "Anchor_Robot_17F01_BedsideInteract", robotBedside != null ? robotBedside.transform : null);
+        Transform bedsideAnchor = robotBedside != null ? CreateAnchor(anchorsRoot, "Anchor_Robot_17F01_BedsideInteract", robotBedside.transform) : null;
         Transform livingAnchor = CreateAnchor(anchorsRoot, "Anchor_Robot_17F01_LivingRoomStart", robotLiving != null ? robotLiving.transform : null);
-        Transform pathAnchor = CreatePathAnchor(anchorsRoot, childStartAnchor, bedsideAnchor);
+        Transform pathAnchor = robotBedside != null ? CreatePathAnchor(anchorsRoot, childStartAnchor, bedsideAnchor) : null;
 
         DisableReferenceController(robotLiving);
         DisableReferenceController(robotBedside);
@@ -40,13 +49,16 @@ public static class Hearth17F01MinimalLoopBinder
         HearthCompanionHudFlowBinder hudFlowBinder = hud != null ? hud.GetComponent<HearthCompanionHudFlowBinder>() : null;
         HearthCompanionHudPreviewInput previewInput = hud != null ? hud.GetComponent<HearthCompanionHudPreviewInput>() : null;
         HearthCompanionHudExclusiveMode exclusiveMode = hud != null ? hud.GetComponent<HearthCompanionHudExclusiveMode>() : null;
+        HearthDialogueSequence bedroomPreludeDialogue = Ensure17F01BedroomPreludeDialogue();
+        HearthDialogueSequence soothingDialogue = Ensure17F01SoothingDialogue();
+        HearthDialogueSequence livingRoomDialogue = Ensure17F01LivingRoomDialogue();
 
         GameObject replayControllerObject = FindOrCreateChild(replayRoot, "HearthCompanion17F01ReplayController").gameObject;
         HearthCompanion17F01ReplayController replayController = GetOrAdd<HearthCompanion17F01ReplayController>(replayControllerObject);
 
         GameObject boy = Find("little_boy_B");
         GameObject boyInteractionProxy = Find("Capsule Mesh (1)");
-        Transform boyInteractionTarget = ConfigureBoyInteractionProxy(boyInteractionProxy);
+        Transform boyInteractionTarget = ConfigureBoyInteractionProxy(boyInteractionProxy, boy);
         HearthActorPosePreset boyPose = boy != null ? GetOrAdd<HearthActorPosePreset>(boy) : null;
         ConfigurePosePreset(boyPose, new[] { "Sleep", "Awake", "Comforted" });
 
@@ -66,6 +78,7 @@ public static class Hearth17F01MinimalLoopBinder
             boyInteractionTarget = boy.transform;
         }
 
+        RemoveDuplicateBoyInteractable(boy, boyInteractionTarget);
         HearthCompanionReplayInteractable approachInteractable = boyInteractionTarget != null ? GetOrAdd<HearthCompanionReplayInteractable>(boyInteractionTarget.gameObject) : null;
         ConfigureApproachInteractable(
             approachInteractable,
@@ -88,7 +101,13 @@ public static class Hearth17F01MinimalLoopBinder
             approachInteractable,
             boyPose,
             motherPose,
-            fatherPose);
+            fatherPose,
+            bedroomPreludeDialogue,
+            soothingDialogue,
+            livingRoomDialogue);
+        ConfigureRobotMovement(robot);
+        ConfigureRobotMovement(robotLiving);
+        ConfigureRobotMovement(robotBedside);
 
         ConfigureFlow(flow, terminal, viewSwitch, replayController, trust);
         ConfigureTrust(trust);
@@ -181,6 +200,8 @@ public static class Hearth17F01MinimalLoopBinder
         SetObject(so, "viewSwitchController", viewSwitch);
         SetObject(so, "playerCamera", person != null ? person.GetComponentInChildren<Camera>(true) : null);
         SetBool(so, "routeChoicesToMinLoop", true);
+        SetBool(so, "closeTerminalWhenChoiceSubmitted", true);
+        SetBool(so, "preventRepeatedChoiceSubmission", true);
         so.ApplyModifiedPropertiesWithoutUndo();
         EditorUtility.SetDirty(terminal);
     }
@@ -246,7 +267,10 @@ public static class Hearth17F01MinimalLoopBinder
         HearthCompanionReplayInteractable approachInteractable,
         HearthActorPosePreset boyPose,
         HearthActorPosePreset motherPose,
-        HearthActorPosePreset fatherPose)
+        HearthActorPosePreset fatherPose,
+        HearthDialogueSequence bedroomPreludeDialogue,
+        HearthDialogueSequence soothingDialogue,
+        HearthDialogueSequence livingRoomDialogue)
     {
         if (replayController == null)
         {
@@ -269,10 +293,15 @@ public static class Hearth17F01MinimalLoopBinder
         SetObject(so, "livingRoomStartAnchor", livingAnchor);
         SetArray(so, "bedsidePathPoints", pathAnchor != null ? new Object[] { pathAnchor } : new Object[0]);
         SetObject(so, "approachBoyInteractable", approachInteractable);
+        SetFloat(so, "promptDelayAfterBedroomPrelude", 1.5f);
         SetFloat(so, "autoMoveSpeed", RobotAutoMoveSpeed);
         SetObject(so, "boyPosePreset", boyPose);
         SetObject(so, "motherPosePreset", motherPose);
         SetObject(so, "fatherPosePreset", fatherPose);
+        SetBool(so, "preferDialogueSequenceAssets", true);
+        SetObject(so, "bedroomPreludeSequence", bedroomPreludeDialogue);
+        SetObject(so, "soothingSequence", soothingDialogue);
+        SetObject(so, "livingRoomSequence", livingRoomDialogue);
         so.ApplyModifiedPropertiesWithoutUndo();
         EditorUtility.SetDirty(replayController);
     }
@@ -312,11 +341,32 @@ public static class Hearth17F01MinimalLoopBinder
         EditorUtility.SetDirty(interactable);
     }
 
-    private static Transform ConfigureBoyInteractionProxy(GameObject proxy)
+    private static Transform ConfigureBoyInteractionProxy(GameObject proxy, GameObject boy)
     {
+        if (proxy == null && boy != null)
+        {
+            proxy = CreateBoyInteractionProxy(boy);
+        }
+
         if (proxy == null)
         {
             return null;
+        }
+
+        if (boy != null)
+        {
+            if (!proxy.transform.IsChildOf(boy.transform))
+            {
+                Vector3 worldPosition = proxy.transform.position;
+                Quaternion worldRotation = proxy.transform.rotation;
+                Undo.SetTransformParent(proxy.transform, boy.transform, "Parent boy interaction proxy");
+                proxy.transform.SetPositionAndRotation(worldPosition, worldRotation);
+            }
+
+            if (Vector3.Distance(proxy.transform.position, boy.transform.position) > ProxyRepositionDistance)
+            {
+                PositionProxyOnBoy(proxy, boy);
+            }
         }
 
         foreach (Renderer renderer in proxy.GetComponentsInChildren<Renderer>(true))
@@ -361,6 +411,116 @@ public static class Hearth17F01MinimalLoopBinder
         return proxy.transform;
     }
 
+    private static GameObject CreateBoyInteractionProxy(GameObject boy)
+    {
+        GameObject proxy = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+        Undo.RegisterCreatedObjectUndo(proxy, "Create boy interaction proxy");
+        proxy.name = "Capsule Mesh (1)";
+        foreach (Renderer renderer in proxy.GetComponentsInChildren<Renderer>(true))
+        {
+            renderer.enabled = false;
+        }
+
+        proxy.transform.SetParent(boy.transform, false);
+        PositionProxyOnBoy(proxy, boy);
+        return proxy;
+    }
+
+    private static void PositionProxyOnBoy(GameObject proxy, GameObject boy)
+    {
+        if (proxy == null || boy == null)
+        {
+            return;
+        }
+
+        Bounds bounds;
+        bool hasBounds = TryGetRendererBounds(boy, proxy, out bounds);
+        proxy.transform.position = hasBounds ? bounds.center : boy.transform.position;
+        proxy.transform.rotation = boy.transform.rotation;
+        proxy.transform.localScale = Vector3.one;
+
+        CapsuleCollider capsule = proxy.GetComponent<CapsuleCollider>();
+        if (capsule == null)
+        {
+            capsule = proxy.AddComponent<CapsuleCollider>();
+        }
+
+        capsule.isTrigger = true;
+        capsule.direction = 1;
+        capsule.center = Vector3.zero;
+        if (hasBounds)
+        {
+            capsule.height = Mathf.Max(1.2f, bounds.size.y);
+            capsule.radius = Mathf.Max(0.35f, Mathf.Min(0.7f, Mathf.Max(bounds.extents.x, bounds.extents.z)));
+        }
+        else
+        {
+            capsule.height = 1.4f;
+            capsule.radius = 0.35f;
+        }
+
+        EditorUtility.SetDirty(proxy.transform);
+        EditorUtility.SetDirty(capsule);
+    }
+
+    private static bool TryGetRendererBounds(GameObject target, GameObject excludedChild, out Bounds bounds)
+    {
+        bounds = new Bounds();
+        if (target == null)
+        {
+            return false;
+        }
+
+        Renderer[] renderers = target.GetComponentsInChildren<Renderer>(true);
+        bool initialized = false;
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            Renderer renderer = renderers[i];
+            if (renderer == null)
+            {
+                continue;
+            }
+
+            if (excludedChild != null && renderer.transform.IsChildOf(excludedChild.transform))
+            {
+                continue;
+            }
+
+            if (!initialized)
+            {
+                bounds = renderer.bounds;
+                initialized = true;
+            }
+            else
+            {
+                bounds.Encapsulate(renderer.bounds);
+            }
+        }
+
+        return initialized;
+    }
+
+    private static void ConfigureRobotMovement(GameObject robot)
+    {
+        if (robot == null)
+        {
+            return;
+        }
+
+        FirstPersonMovement movement = robot.GetComponent<FirstPersonMovement>();
+        if (movement == null)
+        {
+            return;
+        }
+
+        SerializedObject so = new SerializedObject(movement);
+        SetFloat(so, "speed", RobotWalkSpeed);
+        SetFloat(so, "runSpeed", RobotRunSpeed);
+        SetBool(so, "canRun", false);
+        so.ApplyModifiedPropertiesWithoutUndo();
+        EditorUtility.SetDirty(movement);
+    }
+
     private static void ConfigureSubtitlePlayers()
     {
         foreach (MinLoopSubtitlePlayer subtitlePlayer in Object.FindObjectsOfType<MinLoopSubtitlePlayer>(true))
@@ -368,8 +528,10 @@ public static class Hearth17F01MinimalLoopBinder
             SerializedObject so = new SerializedObject(subtitlePlayer);
             SetBool(so, "useCleanCenteredStyle", true);
             SetFloat(so, "subtitleWidthFraction", 0.66f);
-            SetFloat(so, "subtitleCenterY", 0.46f);
-            SetFloat(so, "subtitleHeightFraction", 0.18f);
+            SetFloat(so, "speakerCenterY", SubtitleSpeakerCenterY);
+            SetFloat(so, "speakerHeightFraction", 0.06f);
+            SetFloat(so, "bodyCenterY", SubtitleBodyCenterY);
+            SetFloat(so, "bodyHeightFraction", 0.12f);
             SetFloat(so, "cleanSpeakerFontSize", 22f);
             SetFloat(so, "cleanBodyFontSize", 28f);
             so.ApplyModifiedPropertiesWithoutUndo();
@@ -377,21 +539,127 @@ public static class Hearth17F01MinimalLoopBinder
         }
     }
 
-    private static void DisableLegacyMinLoopOverlayPresenters()
+    private static HearthDialogueSequence Ensure17F01BedroomPreludeDialogue()
     {
-        DisableLegacyPresenter<MinLoopObjectivePresenter>();
-        DisableLegacyPresenter<MinLoopTrustPresenter>();
-        DisableLegacyPresenter<MinLoopRobotHudPresenter>();
+        return EnsureDialogueSequence(
+            BedroomPreludeDialoguePath,
+            "17F01_BedroomPrelude",
+            "Plays after the companion replay begins in the boy's room. The E prompt is gated until this sequence finishes, then the replay controller waits its prompt delay.",
+            new DefaultSubtitleLine("Son", "... No...", 1.8f, 1.2f),
+            new DefaultSubtitleLine("Son", "... Mom...", 2.2f, 1.5f),
+            new DefaultSubtitleLine("Synth Voice", "Decision: initiate soothing protocol. Reason: service subject showing signs of nightmare.", 0.4f, 3f));
     }
 
-    private static void DisableLegacyPresenter<T>() where T : Behaviour
+    private static HearthDialogueSequence Ensure17F01SoothingDialogue()
     {
-        foreach (T presenter in Object.FindObjectsOfType<T>(true))
+        return EnsureDialogueSequence(
+            SoothingDialoguePath,
+            "17F01_BedsideSoothing",
+            "Plays after the player confirms the bedside interaction. Replace these lines with the final soothing script and voice clips.",
+            new DefaultSubtitleLine("Companion Unit", "Was it a nightmare? Come on, with me, slowly. Deep breath. One, two...", 0f, 3.5f),
+            new DefaultSubtitleLine("Companion Unit", "Mom and Dad should be asleep. If you go knock at this hour, she'll be very tired tomorrow.", 0.2f, 4f),
+            new DefaultSubtitleLine("Companion Unit", "Let's calm down like this first. When you feel a little better, if you still want to go, you can go then. Okay?", 0.2f, 4.4f),
+            new DefaultSubtitleLine("Companion Unit", "Two more deep breaths. That's it. Good. Let's lie back down. I'll stay with you until you fall asleep.", 0.2f, 4.2f),
+            new DefaultSubtitleLine("Synth Voice", "Event archived.", 0.6f, 1.8f));
+    }
+
+    private static HearthDialogueSequence Ensure17F01LivingRoomDialogue()
+    {
+        return EnsureDialogueSequence(
+            LivingRoomDialoguePath,
+            "17F01_LivingRoomObservation",
+            "Plays during the living-room observation. The replay returns to the terminal after this sequence finishes.",
+            new DefaultSubtitleLine("Father", "He had a nightmare last night?", 0.2f, 2.2f),
+            new DefaultSubtitleLine("Mother", "... He didn't come out.", 0.4f, 2.2f),
+            new DefaultSubtitleLine("Father", "Mm.", 0.2f, 1.2f),
+            new DefaultSubtitleLine("Mother", "Then it handled it well.", 1.2f, 2.2f),
+            new DefaultSubtitleLine("Father", "Mm.", 0.2f, 1.2f),
+            new DefaultSubtitleLine("Mother", "... But it feels strange.", 0.6f, 2.4f),
+            new DefaultSubtitleLine("Mother", "Recently, I haven't heard him knock at all. I'm actually a little unused to it.", 0.2f, 4f),
+            new DefaultSubtitleLine("Father", "Isn't that a good thing? He's grown up. And it saves us from getting up in the middle of the night.", 0.4f, 4.2f),
+            new DefaultSubtitleLine("Mother", "But the child hasn't told us about his nightmares for a long time.", 0.3f, 3.6f),
+            new DefaultSubtitleLine("Father", "At least we don't have to worry about him at night anymore, right?", 0.6f, 3.2f),
+            new DefaultSubtitleLine("Mother", "... Mm.", 0.8f, 1.6f));
+    }
+
+    private static HearthDialogueSequence EnsureDialogueSequence(string path, string sequenceId, string notes, params DefaultSubtitleLine[] defaults)
+    {
+        EnsureAssetFolder(DialogueFolder);
+
+        HearthDialogueSequence sequence = AssetDatabase.LoadAssetAtPath<HearthDialogueSequence>(path);
+        if (sequence == null)
         {
-            presenter.enabled = false;
-            HideGeneratedChildren(presenter.transform);
-            EditorUtility.SetDirty(presenter);
+            sequence = ScriptableObject.CreateInstance<HearthDialogueSequence>();
+            AssetDatabase.CreateAsset(sequence, path);
         }
+
+        SerializedObject so = new SerializedObject(sequence);
+        SetString(so, "sequenceId", sequenceId);
+        SetString(so, "notes", notes);
+
+        SerializedProperty lines = so.FindProperty("lines");
+        if (lines != null && lines.arraySize == 0 && defaults != null)
+        {
+            lines.arraySize = defaults.Length;
+            for (int i = 0; i < defaults.Length; i++)
+            {
+                SerializedProperty line = lines.GetArrayElementAtIndex(i);
+                line.FindPropertyRelative("speaker").stringValue = defaults[i].speaker;
+                line.FindPropertyRelative("text").stringValue = defaults[i].text;
+                line.FindPropertyRelative("startDelay").floatValue = defaults[i].startDelay;
+                line.FindPropertyRelative("holdSeconds").floatValue = defaults[i].holdSeconds;
+                line.FindPropertyRelative("voiceClip").objectReferenceValue = null;
+            }
+        }
+
+        so.ApplyModifiedPropertiesWithoutUndo();
+        EditorUtility.SetDirty(sequence);
+        return sequence;
+    }
+
+    private static void EnsureAssetFolder(string folder)
+    {
+        if (AssetDatabase.IsValidFolder(folder))
+        {
+            return;
+        }
+
+        string parent = System.IO.Path.GetDirectoryName(folder).Replace("\\", "/");
+        if (!AssetDatabase.IsValidFolder(parent))
+        {
+            EnsureAssetFolder(parent);
+        }
+
+        AssetDatabase.CreateFolder(parent, System.IO.Path.GetFileName(folder));
+    }
+
+    private readonly struct DefaultSubtitleLine
+    {
+        public readonly string speaker;
+        public readonly string text;
+        public readonly float startDelay;
+        public readonly float holdSeconds;
+
+        public DefaultSubtitleLine(string newSpeaker, string newText, float newStartDelay, float newHoldSeconds)
+        {
+            speaker = newSpeaker;
+            text = newText;
+            startDelay = newStartDelay;
+            holdSeconds = newHoldSeconds;
+        }
+    }
+
+    private static void DisableLegacyMinLoopOverlayPresenters()
+    {
+        GameObject minLoopRoot = Find("MIN_LOOP_ROOT");
+        if (minLoopRoot != null)
+        {
+            HideGeneratedChildren(minLoopRoot.transform);
+        }
+
+        DestroySceneObject("MinLoopObjectivePresenter");
+        DestroySceneObject("MinLoopTrustPresenter");
+        DestroySceneObject("MinLoopRobotHudPresenter");
     }
 
     private static void HideGeneratedChildren(Transform root)
@@ -419,6 +687,32 @@ public static class Hearth17F01MinimalLoopBinder
                 EditorUtility.SetDirty(child.gameObject);
             }
         }
+    }
+
+    private static void RemoveDuplicateBoyInteractable(GameObject boy, Transform interactionTarget)
+    {
+        if (boy == null || interactionTarget == null || boy.transform == interactionTarget)
+        {
+            return;
+        }
+
+        HearthCompanionReplayInteractable duplicate = boy.GetComponent<HearthCompanionReplayInteractable>();
+        if (duplicate != null)
+        {
+            Undo.DestroyObjectImmediate(duplicate);
+            EditorUtility.SetDirty(boy);
+        }
+    }
+
+    private static void DestroySceneObject(string objectName)
+    {
+        GameObject target = Find(objectName);
+        if (target == null)
+        {
+            return;
+        }
+
+        Undo.DestroyObjectImmediate(target);
     }
 
     private static void ConfigurePosePreset(HearthActorPosePreset preset, string[] ids)

@@ -88,7 +88,7 @@ public class HearthFirstPersonHudFlowBinder : MonoBehaviour
                 }
                 break;
             case MinLoopStage.Complete:
-                hudController.OpenDispositionHistory();
+                hudController.ShowPage(HearthFirstPersonHudPageId.Slide01PersistentHud);
                 break;
         }
     }
@@ -100,8 +100,7 @@ public class HearthFirstPersonHudFlowBinder : MonoBehaviour
             return;
         }
 
-        hudController.RecordDisposition(choice);
-        hudController.SetTrustScore(trustValue);
+        hudController.RecordDisposition(choice, trustValue, delta);
     }
 
     private void OnTrustChanged(int value)

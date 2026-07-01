@@ -52,11 +52,14 @@ public static class HearthFirstPersonHudBuilder
         CanvasGroup trustGroup = CreateTrustDeltaView(trustLayer, FindSlide(layout, 2), out TMP_Text trustDeltaText);
 
         List<HearthFirstPersonHudPage> pages = new List<HearthFirstPersonHudPage>();
+        List<HearthDispositionHistoryView.RowBinding> historyRows = new List<HearthDispositionHistoryView.RowBinding>();
+        List<TMP_Text> historyShiftTexts = new List<TMP_Text>();
+        List<TMP_Text> historyTrustTexts = new List<TMP_Text>();
         for (int i = 3; i <= 24; i++)
         {
             bool fullscreen = i >= 15 && i <= 17;
             Transform parent = fullscreen ? fullscreenLayer : overlayLayer;
-            HearthFirstPersonHudPage page = CreatePage(parent, FindSlide(layout, i), fullscreen, controller);
+            HearthFirstPersonHudPage page = CreatePage(parent, FindSlide(layout, i), fullscreen, controller, historyRows, historyShiftTexts, historyTrustTexts);
             pages.Add(page);
 
             string pagePath = PagePrefabDir + "/" + GetPagePrefabName(i) + ".prefab";
@@ -84,6 +87,7 @@ public static class HearthFirstPersonHudBuilder
             historyView,
             settingsView,
             playerControlLock);
+        BindHistoryView(historyView, historyRows, historyShiftTexts, historyTrustTexts);
 
         BindInput(input, controller, settingsView);
         BindSettingsView(settingsView, settingsFocus, settingsTargets);
@@ -175,7 +179,14 @@ public static class HearthFirstPersonHudBuilder
         return group;
     }
 
-    private static HearthFirstPersonHudPage CreatePage(Transform parent, SlideLayout slide, bool fullscreen, HearthFirstPersonHudController controller)
+    private static HearthFirstPersonHudPage CreatePage(
+        Transform parent,
+        SlideLayout slide,
+        bool fullscreen,
+        HearthFirstPersonHudController controller,
+        List<HearthDispositionHistoryView.RowBinding> historyRows,
+        List<TMP_Text> historyShiftTexts,
+        List<TMP_Text> historyTrustTexts)
     {
         int slideNumber = slide != null ? slide.number : 0;
         GameObject pageObject = CreateGroup(parent, GetPagePrefabName(slideNumber));
@@ -186,6 +197,10 @@ public static class HearthFirstPersonHudBuilder
         }
 
         BuildSlideContent(pageObject.transform, slide, fullscreen, false, out _, out _);
+        if (IsHistorySlide(slideNumber))
+        {
+            CreateHistoryRuntimeBindings(pageObject.transform, slideNumber, historyRows, historyShiftTexts, historyTrustTexts);
+        }
         CanvasGroup group = pageObject.AddComponent<CanvasGroup>();
         HearthFirstPersonHudPage page = pageObject.AddComponent<HearthFirstPersonHudPage>();
         page.Configure((HearthFirstPersonHudPageId)slideNumber, fullscreen, !fullscreen);
@@ -221,7 +236,7 @@ public static class HearthFirstPersonHudBuilder
             bool hasText = !string.IsNullOrWhiteSpace(shape.text);
             bool isLine = IsLineShape(shape);
 
-            if (shape.fillVisible && shape.fillAlpha > 0.01f && !isLine)
+            if (shape.fillVisible && shape.fillAlpha > 0.01f && !isLine && !ShouldSkipFill(slide.number, shape, fullscreen, persistentSlide))
             {
                 RectTransform rect = CreateImage(parent, "ShapeFill_" + shape.index.ToString("000"), shape.rect, ToFillColor(slide.number, shape));
                 createdShapes.Add(rect);
@@ -271,6 +286,11 @@ public static class HearthFirstPersonHudBuilder
         bool darkFill = shape.fillVisible && IsVeryDark(shape.fillColor) && shape.fillAlpha > 0.65f;
         bool textEmpty = string.IsNullOrWhiteSpace(shape.text);
 
+        if (!textEmpty && IsHistoryGeneratedDynamicText(slideNumber, shape.text))
+        {
+            return true;
+        }
+
         if (!fullscreen && nearFullScreen && textEmpty && darkFill)
         {
             return true;
@@ -287,6 +307,27 @@ public static class HearthFirstPersonHudBuilder
         }
 
         return false;
+    }
+
+    private static bool ShouldSkipFill(int slideNumber, ShapeLayout shape, bool fullscreen, bool persistentSlide)
+    {
+        if (shape == null || shape.rect == null)
+        {
+            return true;
+        }
+
+        if (fullscreen || !persistentSlide || !string.IsNullOrWhiteSpace(shape.text))
+        {
+            return false;
+        }
+
+        if (shape.rect.w * shape.rect.h > 2500f)
+        {
+            return true;
+        }
+
+        Color fillColor = ToColor(shape.fillColor, shape.fillAlpha);
+        return fillColor.a > 0.85f && Luminance(fillColor) > 0.42f;
     }
 
     private static CanvasGroup CreateTrustDeltaView(Transform parent, SlideLayout slide, out TMP_Text trustDeltaText)
@@ -355,6 +396,71 @@ public static class HearthFirstPersonHudBuilder
         view.Configure(group, titleText, locationText, glowText);
         view.HideImmediate();
         return view;
+    }
+
+    private static void CreateHistoryRuntimeBindings(
+        Transform parent,
+        int slideNumber,
+        List<HearthDispositionHistoryView.RowBinding> rows,
+        List<TMP_Text> shiftTrustTexts,
+        List<TMP_Text> currentTrustTexts)
+    {
+        if (rows == null || shiftTrustTexts == null || currentTrustTexts == null)
+        {
+            return;
+        }
+
+        float[] rowY = GetHistoryRowYPositions(slideNumber);
+        for (int i = 0; i < rowY.Length; i++)
+        {
+            GameObject rowRoot = CreateGroup(parent, "RuntimeHistoryRow_" + (i + 1).ToString("00"));
+            TMP_Text timestamp = CreateText(rowRoot.transform, "Timestamp", string.Empty, new RectData(622.6f, rowY[i], 230f, 22f), 16f, HistoryPrimaryColor(), FontStyles.Bold, TextAlignmentOptions.Left);
+            TMP_Text unit = CreateText(rowRoot.transform, "Unit", string.Empty, new RectData(1160f, rowY[i], 140f, 22f), 17f, HistoryPrimaryColor(), FontStyles.Bold, TextAlignmentOptions.Right);
+            TMP_Text action = CreateText(rowRoot.transform, "Action", string.Empty, new RectData(622.6f, rowY[i] + 26.2f, 520f, 24f), 18f, HistoryPrimaryColor(), FontStyles.Bold, TextAlignmentOptions.Left);
+            TMP_Text status = CreateText(rowRoot.transform, "Status", string.Empty, new RectData(622.6f, rowY[i] + 53.9f, 220f, 18f), 13f, HistoryMutedColor(), FontStyles.Bold, TextAlignmentOptions.Left);
+            TMP_Text trust = CreateText(rowRoot.transform, "TrustDelta", string.Empty, new RectData(1165f, rowY[i] + 53.2f, 136f, 22f), 16f, HistoryPrimaryColor(), FontStyles.Bold, TextAlignmentOptions.Right);
+
+            rows.Add(new HearthDispositionHistoryView.RowBinding
+            {
+                recordIndex = i,
+                rowRoot = rowRoot,
+                timestampText = timestamp,
+                unitText = unit,
+                actionText = action,
+                statusText = status,
+                trustDeltaText = trust
+            });
+        }
+
+        float footerShiftY = slideNumber == 21 ? 711.7f : 729f;
+        float footerTrustY = slideNumber == 21 ? 743.7f : 761f;
+        shiftTrustTexts.Add(CreateText(parent, "RuntimeShiftTrustDelta", string.Empty, new RectData(1216f, footerShiftY, 96f, 24f), 18f, HistoryPrimaryColor(), FontStyles.Bold, TextAlignmentOptions.Right));
+        currentTrustTexts.Add(CreateText(parent, "RuntimeCurrentTrust", string.Empty, new RectData(1216f, footerTrustY, 96f, 24f), 18f, HistoryPrimaryColor(), FontStyles.Bold, TextAlignmentOptions.Right));
+    }
+
+    private static float[] GetHistoryRowYPositions(int slideNumber)
+    {
+        switch (slideNumber)
+        {
+            case 19:
+                return new[] { 412.1f };
+            case 20:
+                return new[] { 412.1f, 524.1f };
+            case 21:
+                return new[] { 379.7f, 491.7f, 603.7f };
+            default:
+                return Array.Empty<float>();
+        }
+    }
+
+    private static Color HistoryPrimaryColor()
+    {
+        return new Color(0.78f, 0.93f, 1f, 0.95f);
+    }
+
+    private static Color HistoryMutedColor()
+    {
+        return new Color(0.52f, 0.82f, 0.95f, 0.86f);
     }
 
     private static void AddPageInteractions(GameObject pageRoot, HearthFirstPersonHudController controller, SlideLayout slide)
@@ -649,6 +755,41 @@ public static class HearthFirstPersonHudBuilder
         serialized.ApplyModifiedPropertiesWithoutUndo();
     }
 
+    private static void BindHistoryView(
+        HearthDispositionHistoryView historyView,
+        List<HearthDispositionHistoryView.RowBinding> rowBindings,
+        List<TMP_Text> shiftTrustTexts,
+        List<TMP_Text> currentTrustTexts)
+    {
+        if (historyView == null)
+        {
+            return;
+        }
+
+        SerializedObject serialized = new SerializedObject(historyView);
+        SerializedProperty rows = serialized.FindProperty("rowBindings");
+        if (rows != null)
+        {
+            rows.arraySize = rowBindings != null ? rowBindings.Count : 0;
+            for (int i = 0; rowBindings != null && i < rowBindings.Count; i++)
+            {
+                HearthDispositionHistoryView.RowBinding source = rowBindings[i];
+                SerializedProperty row = rows.GetArrayElementAtIndex(i);
+                row.FindPropertyRelative("recordIndex").intValue = source.recordIndex;
+                row.FindPropertyRelative("rowRoot").objectReferenceValue = source.rowRoot;
+                row.FindPropertyRelative("timestampText").objectReferenceValue = source.timestampText;
+                row.FindPropertyRelative("unitText").objectReferenceValue = source.unitText;
+                row.FindPropertyRelative("actionText").objectReferenceValue = source.actionText;
+                row.FindPropertyRelative("statusText").objectReferenceValue = source.statusText;
+                row.FindPropertyRelative("trustDeltaText").objectReferenceValue = source.trustDeltaText;
+            }
+        }
+
+        SetObjectArray(serialized, "shiftTrustDeltaTexts", shiftTrustTexts != null ? shiftTrustTexts.ToArray() : Array.Empty<TMP_Text>());
+        SetObjectArray(serialized, "currentTrustTexts", currentTrustTexts != null ? currentTrustTexts.ToArray() : Array.Empty<TMP_Text>());
+        serialized.ApplyModifiedPropertiesWithoutUndo();
+    }
+
     private static HearthHudLayout LoadLayout()
     {
         TextAsset asset = AssetDatabase.LoadAssetAtPath<TextAsset>(LayoutJsonPath);
@@ -676,6 +817,63 @@ public static class HearthFirstPersonHudBuilder
     private static bool IsLineShape(ShapeLayout shape)
     {
         return shape.type == 9 || shape.rect.w <= 2.5f || shape.rect.h <= 2.5f;
+    }
+
+    private static bool IsHistorySlide(int slideNumber)
+    {
+        return slideNumber >= 18 && slideNumber <= 21;
+    }
+
+    private static bool IsHistoryGeneratedDynamicText(int slideNumber, string value)
+    {
+        if (!IsHistorySlide(slideNumber) || string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        string text = NormalizeHistoryToken(value);
+        if (text == "VIEW ARCHIVE" || text == "EARLIER SHIFTS")
+        {
+            return true;
+        }
+
+        if (text == "0" || text == "+1" || text == "-1" || text == "50 / 100" || text == "51 / 100")
+        {
+            return true;
+        }
+
+        if (text == "RECOMMENDED" || text == "·" || text == ".")
+        {
+            return true;
+        }
+
+        if (text.StartsWith("17F-", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (text.StartsWith("2026.") && text.Contains(" · "))
+        {
+            return true;
+        }
+
+        if ((text.StartsWith("+", StringComparison.Ordinal) || text.StartsWith("-", StringComparison.Ordinal)) &&
+            text.Contains("TRUST"))
+        {
+            return true;
+        }
+
+        return text.Contains("APPROVE UPGRADE") ||
+               text.Contains("RECOMMEND FAMILY COUNSELING") ||
+               text.Contains("HONOR USER SHUTDOWN");
+    }
+
+    private static string NormalizeHistoryToken(string value)
+    {
+        return value.Replace("\r", " ")
+            .Replace("\n", " ")
+            .Trim()
+            .ToUpperInvariant();
     }
 
     private static bool IsVeryDark(string hex)

@@ -3706,7 +3706,9 @@ MonoBehaviour:
   viewSwitchController: {fileID: 0}
   closeTerminalWhenReplayStarts: 1
   showFinalChoiceWhenReplayUnavailable: 1
-  closeTerminalWhenChoiceSubmitted: 0
+  closeTerminalWhenChoiceSubmitted: 1
+  preventRepeatedChoiceSubmission: 1
+  routeChoicesToMinLoop: 1
   onRobotReplayRequested:
     m_PersistentCalls:
       m_Calls: []

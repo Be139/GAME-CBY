@@ -517,22 +517,36 @@ public class HearthFirstPersonHudController : MonoBehaviour
     public void SetTrustScore(int value)
     {
         trustScore = value;
+        if (dispositionHistoryView != null)
+        {
+            dispositionHistoryView.SetCurrentTrustScore(trustScore);
+        }
     }
 
     public void RecordDisposition(MinLoopDispositionChoice choice)
     {
         int delta = choice == MinLoopDispositionChoice.SystemRecommendedA ? 1 : -1;
+        RecordDisposition(choice, trustScore + delta, delta);
+    }
+
+    public void RecordDisposition(MinLoopDispositionChoice choice, int currentTrustAfter, int trustDelta)
+    {
         string unitId = "17F-" + Mathf.Clamp((dispositionHistoryView != null ? dispositionHistoryView.RecordCount : completedRounds) + 1, 1, 3).ToString("00");
         string actionLabel = choice == MinLoopDispositionChoice.SystemRecommendedA
             ? "Approve Upgrade · Deep Night Companion Pro"
             : "Recommend Family Counseling · Pause unit";
         string statusLabel = choice == MinLoopDispositionChoice.SystemRecommendedA ? "RECOMMENDED" : string.Empty;
-        RecordDisposition(unitId, actionLabel, statusLabel, delta);
+        RecordDisposition(unitId, actionLabel, statusLabel, trustDelta, currentTrustAfter);
     }
 
     public void RecordDisposition(string unitId, string actionLabel, string statusLabel, int trustDelta)
     {
-        trustScore += trustDelta;
+        RecordDisposition(unitId, actionLabel, statusLabel, trustDelta, trustScore + trustDelta);
+    }
+
+    public void RecordDisposition(string unitId, string actionLabel, string statusLabel, int trustDelta, int currentTrustAfter)
+    {
+        trustScore = currentTrustAfter;
         completedRounds = Mathf.Clamp(completedRounds + 1, 0, totalRounds);
         SetRoundsProgress(completedRounds, totalRounds);
 
@@ -543,7 +557,7 @@ public class HearthFirstPersonHudController : MonoBehaviour
             record.actionLabel = actionLabel;
             record.statusLabel = statusLabel;
             record.trustDelta = trustDelta;
-            dispositionHistoryView.AddRecord(record);
+            dispositionHistoryView.AddRecord(record, currentTrustAfter);
         }
 
         ShowTrustDelta(trustDelta);

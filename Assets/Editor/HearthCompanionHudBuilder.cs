@@ -121,7 +121,7 @@ public static class HearthCompanionHudBuilder
         frameImage.preserveAspect = true;
         frameImage.raycastTarget = false;
 
-        HearthCompanionStatusPanelView status = BuildStatusPanel(persistentLayer);
+        HearthCompanionStatusPanelView status = null;
         HearthCompanionDecisionPanelView decision = BuildDecisionPanel(persistentLayer);
         HearthCompanionDataStreamView stream = BuildDataStream(persistentLayer);
         TMP_Text modeLabel = CreateText(persistentLayer, "ModeLabelText", string.Empty, PptRect(471.5f, 733.5f, 546.7f, 18f), 15f, new Color(0.55f, 0.84f, 1f, 0.94f), FontStyles.Bold, TextAlignmentOptions.Center);
@@ -181,12 +181,13 @@ public static class HearthCompanionHudBuilder
 
     private static HearthCompanionTriggerCardView BuildTriggerCard(Transform parent)
     {
-        GameObject panel = CreatePanel(parent, "TriggerCardView", PptRect(72f, 400f, 410f, 132f), new Color(0.01f, 0.05f, 0.07f, 0.72f), new Color(0.42f, 0.76f, 1f, 0.38f));
+        GameObject panel = CreateTransparentGroup(parent, "TriggerCardView");
+        SetTopLeft(panel.GetComponent<RectTransform>(), PptRect(72f, 75.5f, 410f, 214f));
         HearthCompanionTriggerCardView view = panel.AddComponent<HearthCompanionTriggerCardView>();
         CanvasGroup group = panel.GetComponent<CanvasGroup>();
         TMP_Text title = CreateText(panel.transform, "TriggerCardTitleText", string.Empty, ScaleRect(20f, 16f, 360f, 22f), 14f, Color.white, FontStyles.Bold, TextAlignmentOptions.TopLeft);
-        TMP_Text body = CreateText(panel.transform, "TriggerCardBodyText", string.Empty, ScaleRect(20f, 46f, 360f, 70f), 14f, new Color(0.8f, 0.92f, 1f, 0.92f), FontStyles.Normal, TextAlignmentOptions.TopLeft);
-        Image accent = CreateImage(panel.transform, "TriggerCardAccent", ScaleRect(10f, 16f, 3f, 96f), new Color(0.45f, 0.85f, 1f, 0.8f));
+        TMP_Text body = CreateText(panel.transform, "TriggerCardBodyText", string.Empty, ScaleRect(20f, 46f, 360f, 150f), 14f, new Color(0.8f, 0.92f, 1f, 0.92f), FontStyles.Normal, TextAlignmentOptions.TopLeft);
+        Image accent = CreateImage(panel.transform, "TriggerCardAccent", ScaleRect(10f, 16f, 3f, 178f), new Color(0.45f, 0.85f, 1f, 0.8f));
         view.Configure(group, title, body, accent);
         return view;
     }
@@ -563,6 +564,7 @@ public static class HearthCompanionHudBuilder
         private readonly string projectionTitle;
         private readonly string projectionBody;
         private readonly string centerMessage;
+        private readonly HearthCompanionTimedCue[] timedCues;
         private readonly bool showTrigger;
         private readonly string triggerTitle;
         private readonly string triggerBody;
@@ -625,6 +627,7 @@ public static class HearthCompanionHudBuilder
             this.projectionTitle = projectionTitle;
             this.projectionBody = projectionBody;
             this.centerMessage = centerMessage;
+            timedCues = BuildTimedCues(sceneId, statusTitle, statusLines, statusFooter);
             this.showTrigger = showTrigger;
             this.triggerTitle = triggerTitle;
             this.triggerBody = triggerBody;
@@ -662,6 +665,7 @@ public static class HearthCompanionHudBuilder
                 projectionTitle,
                 projectionBody,
                 centerMessage,
+                timedCues,
                 showTrigger,
                 triggerTitle,
                 triggerBody,
@@ -672,6 +676,75 @@ public static class HearthCompanionHudBuilder
                 specialBody,
                 specialStatus,
                 specialDuration);
+        }
+
+        private static HearthCompanionTimedCue[] BuildTimedCues(
+            string sceneId,
+            string statusTitle,
+            HearthCompanionMetricLine[] statusLines,
+            string statusFooter)
+        {
+            if (sceneId == "17F01_02")
+            {
+                return new HearthCompanionTimedCue[]
+                {
+                    new HearthCompanionTimedCue(0.25f, 3.2f, "STATUS CHANGE", "Subject     Awake\nEmotion     Fear - anxiety\nAction      Head turn -> door\n\nASSESSMENT - SEEKING PARENT"),
+                    new HearthCompanionTimedCue(4.2f, 3.0f, "Subject Vocalization", "Vocalization: \"[detected]\"\nParent state: Deep sleep - 23 min"),
+                    new HearthCompanionTimedCue(4.6f, 3.0f, "SOOTHING EFFECTIVE", "Heart      89 -> 71 v\nEmotion    Stabilizing"),
+                    new HearthCompanionTimedCue(4.4f, 3.0f, "Event Archived", "Subject: Re-asleep\nNotification: Deferred to morning sync")
+                };
+            }
+
+            if (string.IsNullOrEmpty(statusTitle) && string.IsNullOrEmpty(statusFooter))
+            {
+                return new HearthCompanionTimedCue[0];
+            }
+
+            return new HearthCompanionTimedCue[]
+            {
+                new HearthCompanionTimedCue(0.25f, 3.5f, statusTitle, BuildCueBody(statusLines, statusFooter))
+            };
+        }
+
+        private static string BuildCueBody(HearthCompanionMetricLine[] lines, string footer)
+        {
+            System.Text.StringBuilder builder = new System.Text.StringBuilder(256);
+            if (lines != null)
+            {
+                for (int i = 0; i < lines.Length; i++)
+                {
+                    HearthCompanionMetricLine line = lines[i];
+                    if (line == null || string.IsNullOrEmpty(line.label))
+                    {
+                        continue;
+                    }
+
+                    if (builder.Length > 0)
+                    {
+                        builder.AppendLine();
+                    }
+
+                    builder.Append(line.label);
+                    if (!string.IsNullOrEmpty(line.value))
+                    {
+                        builder.Append("    ");
+                        builder.Append(line.value);
+                    }
+                }
+            }
+
+            if (!string.IsNullOrEmpty(footer))
+            {
+                if (builder.Length > 0)
+                {
+                    builder.AppendLine();
+                    builder.AppendLine();
+                }
+
+                builder.Append(footer);
+            }
+
+            return builder.ToString();
         }
     }
 }

@@ -1,0 +1,47 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bf2d7532251303545ab78ab68b00d5cf, type: 3}
+  m_Name: 17F01_BedsideSoothing
+  m_EditorClassIdentifier: 
+  sequenceId: 17F01_BedsideSoothing
+  notes: Plays after the player confirms the bedside interaction. Replace these lines
+    with the final soothing script and voice clips.
+  lines:
+  - startDelay: 0
+    speaker: Companion Unit
+    text: Was it a nightmare? Come on, with me, slowly. Deep breath. One, two...
+    holdSeconds: 3.5
+    voiceClip: {fileID: 0}
+  - startDelay: 0.2
+    speaker: Companion Unit
+    text: Mom and Dad should be asleep. If you go knock at this hour, she'll be very
+      tired tomorrow.
+    holdSeconds: 4
+    voiceClip: {fileID: 0}
+  - startDelay: 0.2
+    speaker: Companion Unit
+    text: Let's calm down like this first. When you feel a little better, if you
+      still want to go, you can go then. Okay?
+    holdSeconds: 4.4
+    voiceClip: {fileID: 0}
+  - startDelay: 0.2
+    speaker: Companion Unit
+    text: Two more deep breaths. That's it. Good. Let's lie back down. I'll stay
+      with you until you fall asleep.
+    holdSeconds: 4.2
+    voiceClip: {fileID: 0}
+  - startDelay: 0.6
+    speaker: Synth Voice
+    text: Event archived.
+    holdSeconds: 1.8
+    voiceClip: {fileID: 0}
+  postSequenceDelay: 0

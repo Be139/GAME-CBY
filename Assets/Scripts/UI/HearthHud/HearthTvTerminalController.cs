@@ -88,7 +88,8 @@ public class HearthTvTerminalController : MonoBehaviour
     [SerializeField] private ViewSwitchController viewSwitchController;
     [SerializeField] private bool closeTerminalWhenReplayStarts = true;
     [SerializeField] private bool showFinalChoiceWhenReplayUnavailable = true;
-    [SerializeField] private bool closeTerminalWhenChoiceSubmitted;
+    [SerializeField] private bool closeTerminalWhenChoiceSubmitted = true;
+    [SerializeField] private bool preventRepeatedChoiceSubmission = true;
     [SerializeField] private bool routeChoicesToMinLoop = true;
     [SerializeField] private UnityEvent onRobotReplayRequested;
     [SerializeField] private UnityEvent onPostReplayChoiceShown;
@@ -118,6 +119,7 @@ public class HearthTvTerminalController : MonoBehaviour
     private bool terminalInputReady;
     private bool postReplayChoiceMode;
     private bool postReplayChoicesAvailable;
+    private bool choiceSubmitted;
     private int pageDrivenChoiceLocalIndex;
 
     public bool IsOpen { get; private set; }
@@ -293,6 +295,7 @@ public class HearthTvTerminalController : MonoBehaviour
         {
             postReplayChoiceMode = false;
             postReplayChoicesAvailable = false;
+            choiceSubmitted = false;
             pageDrivenChoiceLocalIndex = 0;
             ShowPage(startingPage);
         }
@@ -584,6 +587,7 @@ public class HearthTvTerminalController : MonoBehaviour
             OpenTerminal();
         }
 
+        choiceSubmitted = false;
         int finalPageIndex = GetPostReplayChoicePageIndex();
         if (finalPageIndex >= 0 && pages != null && finalPageIndex < pages.Length)
         {
@@ -591,6 +595,7 @@ public class HearthTvTerminalController : MonoBehaviour
             {
                 postReplayChoicesAvailable = true;
                 postReplayChoiceMode = true;
+                choiceSubmitted = false;
                 keyboardFocusIndex = finalPageIndex;
                 pageDrivenChoiceLocalIndex = 0;
             }
@@ -1526,6 +1531,11 @@ public class HearthTvTerminalController : MonoBehaviour
 
     private void SubmitPageDrivenChoice()
     {
+        if (preventRepeatedChoiceSubmission && choiceSubmitted)
+        {
+            return;
+        }
+
         int choiceStart = GetChoiceStartIndex();
         if (choiceStart < 0)
         {
@@ -1534,6 +1544,9 @@ public class HearthTvTerminalController : MonoBehaviour
 
         int localIndex = Mathf.Clamp(keyboardFocusIndex - choiceStart, 0, Mathf.Max(0, GetChoicePageCount() - 1));
         pageDrivenChoiceLocalIndex = localIndex;
+        choiceSubmitted = true;
+        terminalInputReady = false;
+        SetTerminalInputEnabled(false);
         PlayClip(submitClip);
 
         if (localIndex == 0)

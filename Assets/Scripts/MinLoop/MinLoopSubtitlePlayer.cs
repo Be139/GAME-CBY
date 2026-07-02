@@ -13,6 +13,10 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
     [SerializeField] private CanvasGroup canvasGroup;
     [SerializeField] private bool createFallbackUI = true;
 
+    [Header("Canvas Sorting")]
+    [SerializeField] private bool forceSubtitleCanvasSorting = true;
+    [SerializeField] private int subtitleSortingOrder = 7600;
+
     [Header("Clean Centered Style")]
     [SerializeField] private bool useCleanCenteredStyle = true;
     [SerializeField, Range(0.35f, 0.95f)] private float subtitleWidthFraction = 0.66f;
@@ -237,6 +241,7 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
             }
 
             ApplyConfiguredStyle();
+            EnsureSubtitleCanvasSorting();
             return;
         }
 
@@ -246,6 +251,7 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
         }
 
         ApplyConfiguredStyle();
+        EnsureSubtitleCanvasSorting();
     }
 
     private void CreateFallbackUI()
@@ -343,6 +349,8 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
             canvasGroup.interactable = false;
         }
 
+        EnsureSubtitleCanvasSorting();
+
         float halfWidth = Mathf.Clamp01(subtitleWidthFraction) * 0.5f;
         ApplyTextStyle(
             speakerText,
@@ -390,5 +398,22 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
             Mathf.Clamp01(centerY - height * 0.5f),
             0.5f + halfWidth,
             Mathf.Clamp01(centerY + height * 0.5f));
+    }
+
+    private void EnsureSubtitleCanvasSorting()
+    {
+        if (!forceSubtitleCanvasSorting || subtitlePanel == null)
+        {
+            return;
+        }
+
+        Canvas subtitleCanvas = subtitlePanel.GetComponent<Canvas>();
+        if (subtitleCanvas == null)
+        {
+            subtitleCanvas = subtitlePanel.AddComponent<Canvas>();
+        }
+
+        subtitleCanvas.overrideSorting = true;
+        subtitleCanvas.sortingOrder = subtitleSortingOrder;
     }
 }

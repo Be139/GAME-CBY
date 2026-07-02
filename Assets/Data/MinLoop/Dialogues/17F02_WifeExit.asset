@@ -13,16 +13,21 @@ MonoBehaviour:
   m_Name: 17F02_WifeExit
   m_EditorClassIdentifier: 
   sequenceId: 17F02_WifeExit
-  notes: Wife leaves the bedroom. Hook door animation to the replay controller events.
+  notes: Husband calls from the dining area. Wife answers him and leaves without addressing the companion unit.
   lines:
   - startDelay: 0.4
-    speaker: Wife
-    text: I should go. Dinner is probably ready.
-    holdSeconds: 3
+    speaker: Husband
+    text: Dinner is ready. Are you coming?
+    holdSeconds: 2.6
     voiceClip: {fileID: 0}
   - startDelay: 0.2
     speaker: Wife
-    text: Stay here for a moment.
-    holdSeconds: 2.2
+    text: Coming.
+    holdSeconds: 1.5
+    voiceClip: {fileID: 0}
+  - startDelay: 0.3
+    speaker: SFX
+    text: '[she stands and walks to the door]'
+    holdSeconds: 1.8
     voiceClip: {fileID: 0}
   postSequenceDelay: 0

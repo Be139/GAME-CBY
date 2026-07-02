@@ -1,4 +1,5 @@
 #if UNITY_EDITOR
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -46,7 +47,7 @@ public static class Hearth17F02MinimalLoopBinder
         GameObject bedroomWife = Find("casual_Female_K (2)", "casual_Female_K2", "casual_Female_K 2");
         GameObject diningWife = Find("casual_Female_K", "casual_Female_K (2)", "casual_Female_K2");
         GameObject diningHusband = Find("casual_Male_K", "casual_Male_K (1)");
-        GameObject terminalHusband = Find("casual_Male_K2", "casual_Male_K 2", "casual_Male_K (1)");
+        GameObject terminalHusband = Find("casual_Male_K (1)", "casual_Male_K2", "casual_Male_K 2");
         GameObject bedroomDoorObject = Find("Door_2_Brown (4)", "Door_2_Brown");
         GameObject bedroomBed = Find("17F/ROOM3/Prop_Bed_09", "Prop_Bed_09");
 
@@ -70,6 +71,7 @@ public static class Hearth17F02MinimalLoopBinder
             robotBedroomReference != null ? robotBedroomReference.transform : null,
             0.68f,
             0.75f);
+        Transform[] wifeExitPathAnchors = CollectWifeExitPathAnchors(anchorsRoot, wifePathAnchorA, wifePathAnchorB);
         Transform wifeDoorPauseAnchor = CreateDoorSideAnchor(anchorsRoot, "Anchor_Wife_17F02_DoorPause", bedroomDoorObject != null ? bedroomDoorObject.transform : null, -0.65f);
         Transform wifeExitOutsideAnchor = CreateDoorSideAnchor(anchorsRoot, "Anchor_Wife_17F02_ExitOutside", bedroomDoorObject != null ? bedroomDoorObject.transform : null, 1.15f);
         SmartDoorController bedroomDoor = ConfigureDoorController(bedroomDoorObject);
@@ -114,8 +116,7 @@ public static class Hearth17F02MinimalLoopBinder
             diningWife,
             diningHusband,
             terminalHusband,
-            wifePathAnchorA,
-            wifePathAnchorB,
+            wifeExitPathAnchors,
             wifeDoorPauseAnchor,
             wifeExitOutsideAnchor,
             bedroomDoor,
@@ -182,8 +183,7 @@ public static class Hearth17F02MinimalLoopBinder
         GameObject diningWife,
         GameObject diningHusband,
         GameObject terminalHusband,
-        Transform wifePathAnchorA,
-        Transform wifePathAnchorB,
+        Transform[] wifeExitPathAnchors,
         Transform wifeDoorPauseAnchor,
         Transform wifeExitOutsideAnchor,
         SmartDoorController bedroomDoor,
@@ -227,18 +227,19 @@ public static class Hearth17F02MinimalLoopBinder
         SetObject(so, "diningHusbandActor", diningHusband);
         SetObject(so, "terminalHusbandActor", terminalHusband);
         SetObject(so, "bedroomWifeMoveRoot", bedroomWife != null ? bedroomWife.transform : null);
-        SetArray(so, "wifeExitPathPoints", CollectObjects(wifePathAnchorA, wifePathAnchorB));
+        SetArray(so, "wifeExitPathPoints", CollectObjects(wifeExitPathAnchors));
         SetObject(so, "wifeDoorPauseAnchor", wifeDoorPauseAnchor);
         SetObject(so, "wifeExitOutsideAnchor", wifeExitOutsideAnchor);
         SetObject(so, "wifeExitDoor", bedroomDoor);
         SetBool(so, "moveBedroomWifeToDoor", true);
         SetBool(so, "openDoorDuringWifeExit", true);
+        SetInt(so, "openDoorAfterPathPointCount", wifeExitPathAnchors != null && wifeExitPathAnchors.Length > 0 ? Mathf.Max(0, wifeExitPathAnchors.Length - 1) : -1);
         SetBool(so, "keepDoorOpenAfterWifeExit", true);
         SetBool(so, "hideBedroomWifeAfterExit", false);
         SetFloat(so, "wifeWalkSpeed", 1.15f);
         SetFloat(so, "wifeDoorPauseSeconds", 0.45f);
         SetFloat(so, "waitAfterDoorOpenSeconds", 0.55f);
-        SetBool(so, "manageActorVisibility", false);
+        SetBool(so, "manageActorVisibility", true);
         SetBool(so, "showBedroomHoldPromptDuringConfide", false);
         SetBool(so, "waitForBedroomAcknowledgement", true);
         SetFloat(so, "bedroomPromptDelayAfterConfideSeconds", 1.5f);
@@ -381,6 +382,40 @@ public static class Hearth17F02MinimalLoopBinder
         return anchor;
     }
 
+    private static Transform[] CollectWifeExitPathAnchors(Transform anchorsRoot, Transform path01, Transform fallbackPath02)
+    {
+        List<Transform> anchors = new List<Transform>();
+        AddIfNotNull(anchors, path01);
+
+        bool foundFineTuneAnchors = false;
+        for (int i = 1; i <= 5; i++)
+        {
+            Transform fineTuneAnchor = anchorsRoot != null ? anchorsRoot.Find("Anchor_Wife_17F02_Path01 (" + i + ")") : null;
+            if (fineTuneAnchor == null)
+            {
+                continue;
+            }
+
+            anchors.Add(fineTuneAnchor);
+            foundFineTuneAnchors = true;
+        }
+
+        if (!foundFineTuneAnchors)
+        {
+            AddIfNotNull(anchors, fallbackPath02);
+        }
+
+        return anchors.ToArray();
+    }
+
+    private static void AddIfNotNull(List<Transform> anchors, Transform anchor)
+    {
+        if (anchor != null && !anchors.Contains(anchor))
+        {
+            anchors.Add(anchor);
+        }
+    }
+
     private static Transform CreateDoorSideAnchor(Transform parent, string name, Transform door, float forwardOffset)
     {
         Transform anchor = FindOrCreateChild(parent, name);
@@ -475,8 +510,15 @@ public static class Hearth17F02MinimalLoopBinder
         return EnsureDialogueSequence(
             BedroomWakeDialoguePath,
             "17F02_BedroomWake",
-            "Black-screen/offline opening. Wife wakes the companion unit in the bedroom.",
-            new DefaultSubtitleLine("Wife", "Hello? Are you there?", 0.2f, 2.0f),
+            "Black-screen/offline opening. The couple speaks outside, the wife enters the bedroom, then wakes the companion unit.",
+            new DefaultSubtitleLine("Husband", "You are back late.", 0.2f, 2.0f),
+            new DefaultSubtitleLine("Wife", "The train stalled again. I just need a minute.", 0.2f, 3.0f),
+            new DefaultSubtitleLine("Husband", "I still have calls. Dinner is almost ready.", 0.3f, 3.0f),
+            new DefaultSubtitleLine("Wife", "I know. I am going to the room first.", 0.2f, 2.6f),
+            new DefaultSubtitleLine("SFX", "[bedroom door opens]", 0.5f, 1.1f),
+            new DefaultSubtitleLine("SFX", "[door closes]", 0.2f, 1.1f),
+            new DefaultSubtitleLine("SFX", "[fabric shifts as she sits on the bed]", 0.3f, 1.7f),
+            new DefaultSubtitleLine("Wife", "Hello? Are you there?", 0.3f, 2.0f),
             new DefaultSubtitleLine("Companion Unit", "Companion unit online.", 0.4f, 1.8f));
     }
 
@@ -499,8 +541,9 @@ public static class Hearth17F02MinimalLoopBinder
             "17F02_BedroomComfort",
             "Companion response after the player confirms the bedroom comfort interaction.",
             new DefaultSubtitleLine("Companion Unit", "I am here. You are not alone in this room.", 0.1f, 2.8f),
-            new DefaultSubtitleLine("Companion Unit", "Your breathing is steadying. We can take the next moment slowly.", 0.2f, 3.4f),
-            new DefaultSubtitleLine("Wife", "...Thank you.", 0.4f, 1.8f));
+            new DefaultSubtitleLine("Companion Unit", "You do not have to solve the whole night right now. Start with one breath.", 0.2f, 4.2f),
+            new DefaultSubtitleLine("Wife", "...That helps.", 0.4f, 1.8f),
+            new DefaultSubtitleLine("Wife", "I can go back out there.", 0.3f, 2.2f));
     }
 
     private static HearthDialogueSequence Ensure17F02WifeExitDialogue()
@@ -508,9 +551,10 @@ public static class Hearth17F02MinimalLoopBinder
         return EnsureDialogueSequence(
             WifeExitDialoguePath,
             "17F02_WifeExit",
-            "Wife leaves the bedroom. Hook door animation to the replay controller events.",
-            new DefaultSubtitleLine("Wife", "I should go. Dinner is probably ready.", 0.4f, 3.0f),
-            new DefaultSubtitleLine("Wife", "Stay here for a moment.", 0.2f, 2.2f));
+            "Husband calls from the dining area. Wife answers him and leaves without addressing the companion unit.",
+            new DefaultSubtitleLine("Husband", "Dinner is ready. Are you coming?", 0.4f, 2.6f),
+            new DefaultSubtitleLine("Wife", "Coming.", 0.2f, 1.5f),
+            new DefaultSubtitleLine("SFX", "[she stands and walks to the door]", 0.3f, 1.8f));
     }
 
     private static HearthDialogueSequence Ensure17F02DiningDialogue()
@@ -807,6 +851,15 @@ public static class Hearth17F02MinimalLoopBinder
         if (property != null)
         {
             property.floatValue = value;
+        }
+    }
+
+    private static void SetInt(SerializedObject so, string propertyPath, int value)
+    {
+        SerializedProperty property = so.FindProperty(propertyPath);
+        if (property != null)
+        {
+            property.intValue = value;
         }
     }
 

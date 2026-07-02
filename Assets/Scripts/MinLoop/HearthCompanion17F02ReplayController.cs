@@ -98,6 +98,8 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
     [SerializeField] private bool hideBedroomWifeAfterExit;
     [SerializeField] private SmartDoorController wifeExitDoor;
     [SerializeField] private bool openDoorDuringWifeExit = true;
+    [Tooltip("-1 keeps the old behavior: walk every Wife Exit Path Point, then open the door. 0 opens before any path point. A positive value opens after that many path points, then continues the remaining path.")]
+    [SerializeField] private int openDoorAfterPathPointCount = -1;
     [SerializeField] private bool keepDoorOpenAfterWifeExit = true;
 
     [Header("Actor Poses")]
@@ -572,7 +574,8 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
             yield break;
         }
 
-        yield return MoveActorAlongPath(moveRoot, wifeExitPathPoints);
+        int splitIndex = ResolveDoorOpenPathSplitIndex();
+        yield return MoveActorAlongPath(moveRoot, wifeExitPathPoints, 0, splitIndex);
         yield return MoveActorToAnchor(moveRoot, wifeDoorPauseAnchor);
 
         if (wifeDoorPauseSeconds > 0f)
@@ -594,6 +597,7 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
             yield return new WaitForSeconds(waitAfterDoorOpenSeconds);
         }
 
+        yield return MoveActorAlongPath(moveRoot, wifeExitPathPoints, splitIndex, GetPathLength(wifeExitPathPoints));
         yield return MoveActorToAnchor(moveRoot, wifeExitOutsideAnchor);
 
         if (!keepDoorOpenAfterWifeExit && wifeExitDoor != null)
@@ -624,18 +628,46 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
 
     private IEnumerator MoveActorAlongPath(Transform actor, Transform[] path)
     {
+        yield return MoveActorAlongPath(actor, path, 0, GetPathLength(path));
+    }
+
+    private IEnumerator MoveActorAlongPath(Transform actor, Transform[] path, int startIndex, int endIndex)
+    {
         if (actor == null || path == null)
         {
             yield break;
         }
 
-        for (int i = 0; i < path.Length; i++)
+        int clampedStart = Mathf.Clamp(startIndex, 0, path.Length);
+        int clampedEnd = Mathf.Clamp(endIndex, clampedStart, path.Length);
+        for (int i = clampedStart; i < clampedEnd; i++)
         {
             if (path[i] != null)
             {
                 yield return MoveActorToAnchor(actor, path[i]);
             }
         }
+    }
+
+    private int ResolveDoorOpenPathSplitIndex()
+    {
+        int pathLength = GetPathLength(wifeExitPathPoints);
+        if (pathLength == 0)
+        {
+            return 0;
+        }
+
+        if (openDoorAfterPathPointCount < 0)
+        {
+            return pathLength;
+        }
+
+        return Mathf.Clamp(openDoorAfterPathPointCount, 0, pathLength);
+    }
+
+    private static int GetPathLength(Transform[] path)
+    {
+        return path != null ? path.Length : 0;
     }
 
     private IEnumerator MoveActorToAnchor(Transform actor, Transform anchor)

@@ -13,9 +13,44 @@ MonoBehaviour:
   m_Name: 17F02_BedroomWake
   m_EditorClassIdentifier: 
   sequenceId: 17F02_BedroomWake
-  notes: Black-screen/offline opening. Wife wakes the companion unit in the bedroom.
+  notes: Black-screen/offline opening. The couple speaks outside, the wife enters the bedroom, then wakes the companion unit.
   lines:
   - startDelay: 0.2
+    speaker: Husband
+    text: You are back late.
+    holdSeconds: 2
+    voiceClip: {fileID: 0}
+  - startDelay: 0.2
+    speaker: Wife
+    text: The train stalled again. I just need a minute.
+    holdSeconds: 3
+    voiceClip: {fileID: 0}
+  - startDelay: 0.3
+    speaker: Husband
+    text: I still have calls. Dinner is almost ready.
+    holdSeconds: 3
+    voiceClip: {fileID: 0}
+  - startDelay: 0.2
+    speaker: Wife
+    text: I know. I am going to the room first.
+    holdSeconds: 2.6
+    voiceClip: {fileID: 0}
+  - startDelay: 0.5
+    speaker: SFX
+    text: '[bedroom door opens]'
+    holdSeconds: 1.1
+    voiceClip: {fileID: 0}
+  - startDelay: 0.2
+    speaker: SFX
+    text: '[door closes]'
+    holdSeconds: 1.1
+    voiceClip: {fileID: 0}
+  - startDelay: 0.3
+    speaker: SFX
+    text: '[fabric shifts as she sits on the bed]'
+    holdSeconds: 1.7
+    voiceClip: {fileID: 0}
+  - startDelay: 0.3
     speaker: Wife
     text: Hello? Are you there?
     holdSeconds: 2

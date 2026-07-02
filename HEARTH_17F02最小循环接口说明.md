@@ -15,19 +15,22 @@
 当前第二户被拆成 7 个节拍：
 
 1. `BedroomWake`  
-   机器人在卧室里，先黑屏。女主人说“Hello? Are you there?” 后唤醒陪伴单元。
+   玩家进入陪伴单元视角后先黑屏。黑屏期间，玩家能听到女主刚进家门后在客厅/房外和男主聊天的声音，字幕正常播放。随后女主进入卧室，应有门声、关门声、坐到床上的声音；女主坐下后，用语音主动唤醒陪伴单元。
 
 2. `BedroomConfide`  
-   机器人 HUD 显示 `17F02_02`，玩家可以移动和转视角。女主人坐在房间里倾诉。倾诉字幕播完后，等待约 `1.5s`，才出现 E 交互。
+   陪伴单元被唤醒后，机器人 HUD 显示 `17F02_02`。女主对陪伴单元倾诉，玩家可以移动和转视角。倾诉字幕播完后，等待约 `1.5s`，才出现 E 安慰交互。
 
 3. `WifeExitLocked`  
-   玩家完成 E 交互后，先播放 `17F02_BedroomComfort`，也就是陪伴单元对女主人的回应/安慰字幕。然后女主人离开房间，这段期间机器人不能移动，但可以保留视角控制。当前已经接入脚本位移和门开合：女主人先走到路径点，再到门内停顿点，门打开后走到门外锚点。
+   玩家完成 E 交互后，先播放 `17F02_BedroomComfort`，也就是陪伴单元对女主人的回应/安慰字幕。女主得到一些安慰后，听到男主从餐厅/客厅喊她吃饭；女主只回应男主，不再对陪伴单元说“等一下”，也不需要照顾陪伴单元的感受。随后女主直接起身离开卧室。离开期间机器人不能移动、不能干预，只能看着她走出去。
+   当前门时机由 `Open Door After Path Point Count` 控制，当前值是 `5`，用于避免女主先穿门、门后打开。
 
 4. `DiningObservation`  
-   几秒后默认认为男主人和女主人已经坐到餐桌前。机器人恢复移动，玩家可以走出房间并听到餐桌对话。
+   女主最终移动到餐桌处，位置和朝向以 `casual_Female_K` 为准。几秒后默认认为男主人和女主人已经坐到餐桌前。机器人恢复移动，玩家可以走出房间并听到餐桌对话。
+   第二幕只显示 `casual_Male_K` 和 `casual_Female_K`。
 
 5. `LivingRoomTerminal`  
    餐桌沉默后黑屏切到客厅固定视角。机器人被传到 `Robot Controller3` 对应锚点，不能移动，也不能转视角。男主面对陪伴单元调用记录。
+   第三幕只显示 `casual_Male_K (1)`，餐桌男女会隐藏。
 
 6. `ForcedShutdown`  
    男主查看记录后情绪升级，触发强制关闭 UI 和故障效果。
@@ -76,6 +79,7 @@
 - 创建 `MIN_LOOP_ROOT/Anchors/Anchor_Robot_17F02_LivingRoomTerminal`。
 - 创建 `MIN_LOOP_ROOT/Anchors/Anchor_Wife_17F02_Path01`。
 - 创建 `MIN_LOOP_ROOT/Anchors/Anchor_Wife_17F02_Path02`。
+- 如果你已经手动复制了 `Anchor_Wife_17F02_Path01 (1)` 到 `Anchor_Wife_17F02_Path01 (5)`，绑定工具会优先把这些细调点按顺序写入 `Wife Exit Path Points`；旧 `Path02` 只在没有细调点时兜底。
 - 创建 `MIN_LOOP_ROOT/Anchors/Anchor_Wife_17F02_DoorPause`。
 - 创建 `MIN_LOOP_ROOT/Anchors/Anchor_Wife_17F02_ExitOutside`。
 - 给 `Door_2_Brown (4)` 添加/配置 `SmartDoorController`。
@@ -109,6 +113,13 @@
 - `Hold Seconds`：这一句至少显示多久。
 - `Voice Clip`：后续录音后拖进这里。拖入后字幕会至少显示到音频播放结束。
 - `Post Sequence Delay`：整段字幕结束后的额外等待时间。
+
+黑屏阶段字幕显示层级：
+
+- `HearthCompanion17F02ReplayController / Blackout Sorting Order` 默认是 `7000`。
+- `MIN_LOOP_ROOT/UI/MinLoopSubtitlePlayer / Force Subtitle Canvas Sorting` 应开启。
+- `MIN_LOOP_ROOT/UI/MinLoopSubtitlePlayer / Subtitle Sorting Order` 推荐保持 `7600`。
+- 如果黑屏中听得到流程但看不到字幕，优先检查这两个排序值：字幕排序必须高于黑屏排序。
 
 ## 机器人 HUD 页面在哪里改
 
@@ -158,6 +169,19 @@ UI 的位置和大小仍然看：
 
 ## 女主人出门路线和门怎么调
 
+当前场景已同步的女主离开卧室路线是：
+
+```text
+Anchor_Wife_17F02_Path01
+-> Anchor_Wife_17F02_Path01 (1)
+-> Anchor_Wife_17F02_Path01 (2)
+-> Anchor_Wife_17F02_Path01 (3)
+-> Anchor_Wife_17F02_Path01 (4)
+-> Anchor_Wife_17F02_Path01 (5)
+-> Anchor_Wife_17F02_DoorPause
+-> Anchor_Wife_17F02_ExitOutside
+```
+
 选中：
 
 `MIN_LOOP_ROOT/ReplayRoom_17F02/HearthCompanion17F02ReplayController`
@@ -166,7 +190,8 @@ UI 的位置和大小仍然看：
 
 - `Move Bedroom Wife To Door`：是否让女主人自动走向门。关闭后只播放字幕和锁定，不移动角色。
 - `Bedroom Wife Move Root`：卧室女主人模型，一般是 `casual_Female_K (2)` 或你指定的卧室女主人根物体。
-- `Wife Exit Path Points`：中途路线点数组。默认有 `Anchor_Wife_17F02_Path01` 和 `Anchor_Wife_17F02_Path02`，用于让女主人先绕开 `Prop_Bed_09` 再去门口。如果要继续绕开床、椅子或墙，可以在 `MIN_LOOP_ROOT/Anchors` 下新建更多空物体，按顺序拖进这个数组。
+- `Wife Exit Path Points`：中途路线点数组。最新走位意图记录为 `Anchor_Wife_17F02_Path01 -> Anchor_Wife_17F02_Path01 (1) -> Anchor_Wife_17F02_Path01 (2) -> Anchor_Wife_17F02_Path01 (3) -> Anchor_Wife_17F02_Path01 (4) -> Anchor_Wife_17F02_Path01 (5)`，这些路径点用于细调女主人离开卧室时的位置和朝向，让路径更丝滑。
+- `Open Door After Path Point Count`：女主走完几个 `Wife Exit Path Points` 后，先移动到 `Wife Door Pause Anchor` 开门，再继续剩余路径。当前推荐值是 `5`。如果女主还是先穿门再开门，把它调小；如果门开太早，把它调大；如果填 `-1`，会恢复旧逻辑，也就是走完所有路径点后才开门。
 - `Wife Door Pause Anchor`：女主人开门前停一下的位置。
 - `Wife Exit Outside Anchor`：女主人走出房间后的终点。
 - `Wife Walk Speed / Wife Rotate Speed`：女主人脚本位移和转身速度。现在只是滑动位移，后续接 Animator 后可以保留这些锚点作为路线。
@@ -177,7 +202,7 @@ UI 的位置和大小仍然看：
 - `Keep Door Open After Wife Exit`：女主人离开后门是否保持打开。
 - `Hide Bedroom Wife After Exit`：女主人走出后是否隐藏卧室那份模型。现在默认关闭，避免误删视野中的模型；如果你用餐桌女主人替代后续状态，可以开启。
 
-路线由锚点控制，不建议写死在脚本里。当前脚本会先给你生成一条可用的默认路线，但你更适合在 Scene 视图里移动这些 `Anchor_Wife_17F02_*`，因为你能直接看到床、墙和门框的位置；脚本只负责按顺序执行。
+路线由锚点控制，不建议写死在脚本里。`Path01 (1)` 到 `Path01 (5)` 是你额外复制出来的细调点，用于减少穿模、控制转身方向，并让女主从房间里走出来的运动更自然。后续真正接脚本时，应把这些点按顺序拖进 `Wife Exit Path Points`，再单独绑定 `Wife Door Pause Anchor` 和 `Wife Exit Outside Anchor`。
 
 门如果打开方向反了，选中 `Door_2_Brown (4)`，把 `SmartDoorController / Open Local Euler Offset / Y` 从 `90` 改成 `-90`。如果没有开门声音，把音效拖到 `Open Clip` 和 `Close Clip`；当前门资产可能只有 AudioSource，但没有实际 AudioClip。
 
@@ -185,14 +210,35 @@ UI 的位置和大小仍然看：
 
 1. 在 Hierarchy 里展开 `MIN_LOOP_ROOT / Anchors`。
 2. 选中 `Anchor_Wife_17F02_Path01`，用移动工具把它放到女主人离床后的第一个安全位置。
-3. 选中 `Anchor_Wife_17F02_Path02`，把它放到靠近门、但不穿过床和墙的位置。
-4. 选中 `Anchor_Wife_17F02_DoorPause`，把它放在门内侧，让女主人到这里先停顿。
+3. 依次选中 `Anchor_Wife_17F02_Path01 (1)`、`(2)`、`(3)`、`(4)`、`(5)`，把它们放到女主人从卧室走向门口时需要细调的位置。
+4. 选中 `Anchor_Wife_17F02_DoorPause`，把它放在门内侧，让女主人到这里先停顿并准备开门。
 5. 选中 `Anchor_Wife_17F02_ExitOutside`，把它放在门外侧，作为走出房间后的终点。
 6. 用旋转工具调整每个锚点的 Y 轴方向。女主人走向这个点时会逐渐转向这个锚点的朝向，到达时会贴合这个锚点的朝向。
+7. 女主最终到餐桌后的静态位置和朝向，以 `casual_Female_K` 为准。
 
-如果还是穿模，可以新建一个空物体放到 `MIN_LOOP_ROOT / Anchors` 下，例如 `Anchor_Wife_17F02_Path03`，然后把它拖进 `HearthCompanion17F02ReplayController / Wife Exit Path Points` 数组里，放在 Path02 和 DoorPause 之间。
+如果还是穿模，可以继续复制新的空物体放到 `MIN_LOOP_ROOT / Anchors` 下，并把它按顺序拖进 `HearthCompanion17F02ReplayController / Wife Exit Path Points` 数组里。路径点越多，越方便控制女主转身和绕开床、墙、门框。
 
 如果你暂时不想让脚本移动女主人，可以关闭 `Move Bedroom Wife To Door`。这样流程仍然播放字幕和锁定机器人，但女主人不会自动走；后续可以用 Animator、Timeline 或事件来接真正动作。
+
+## 第二幕/第三幕模型显隐
+
+选中：
+
+`MIN_LOOP_ROOT/ReplayRoom_17F02/HearthCompanion17F02ReplayController`
+
+看 `Actor Visibility`：
+
+- `Manage Actor Visibility`：当前应开启。
+- `Bedroom Wife Actor`：卧室里的女主，当前是 `casual_Female_K (2)`。
+- `Dining Wife Actor`：第二幕餐桌女主，当前是 `casual_Female_K`。
+- `Dining Husband Actor`：第二幕餐桌男主，当前是 `casual_Male_K`。
+- `Terminal Husband Actor`：第三幕操作陪伴单元的男主，当前是 `casual_Male_K (1)`。
+
+显示规则：
+
+- 卧室段：只显示卧室女主。
+- 第二幕餐桌段：只显示 `casual_Male_K` 和 `casual_Female_K`。
+- 第三幕终端段：只显示 `casual_Male_K (1)`。
 
 ## 卧室 E 交互怎么调
 

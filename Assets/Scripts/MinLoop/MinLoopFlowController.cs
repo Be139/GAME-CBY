@@ -9,9 +9,14 @@ public class MinLoopFlowController : MonoBehaviour
     [SerializeField] private ViewSwitchController viewSwitchController;
     [SerializeField] private ReplaySequenceController replaySequenceController;
     [SerializeField] private HearthCompanion17F01ReplayController companion17F01ReplayController;
+    [SerializeField] private HearthCompanion17F02ReplayController companion17F02ReplayController;
     [SerializeField] private TrustStateController trustStateController;
     [SerializeField] private bool autoFindMissingReferences = true;
     [SerializeField] private bool useCompanion17F01ReplayController = true;
+    [SerializeField] private bool useResidentSpecificReplayControllers = true;
+
+    [Header("Active Resident")]
+    [SerializeField] private string activeReplayResidentId = "17F01";
 
     [Header("Start")]
     [SerializeField] private bool resetFlowOnStart = true;
@@ -52,6 +57,11 @@ public class MinLoopFlowController : MonoBehaviour
         get { return dispositionSubmitted; }
     }
 
+    public string ActiveReplayResidentId
+    {
+        get { return activeReplayResidentId; }
+    }
+
     private void Awake()
     {
         ResolveReferences();
@@ -86,6 +96,11 @@ public class MinLoopFlowController : MonoBehaviour
             companion17F01ReplayController.CancelReplay();
         }
 
+        if (companion17F02ReplayController != null)
+        {
+            companion17F02ReplayController.CancelReplay();
+        }
+
         if (viewSwitchController != null && viewSwitchController.CurrentMode != ViewSwitchController.ViewMode.Human)
         {
             viewSwitchController.SwitchToHuman();
@@ -110,6 +125,25 @@ public class MinLoopFlowController : MonoBehaviour
     public void SetCompanion17F01ReplayController(HearthCompanion17F01ReplayController controller)
     {
         companion17F01ReplayController = controller;
+    }
+
+    public void SetCompanion17F02ReplayController(HearthCompanion17F02ReplayController controller)
+    {
+        companion17F02ReplayController = controller;
+    }
+
+    public void SetActiveReplayResident(string residentId)
+    {
+        activeReplayResidentId = NormalizeResidentId(residentId);
+    }
+
+    public void SetActiveReplayResident(string residentId, HearthTvTerminalController terminal)
+    {
+        SetActiveReplayResident(residentId);
+        if (terminal != null)
+        {
+            tvTerminalController = terminal;
+        }
     }
 
     public void BeginTerminalInspection()
@@ -265,6 +299,7 @@ public class MinLoopFlowController : MonoBehaviour
     private IEnumerator SwitchToCompanionAndBeginReplay()
     {
         SetStage(MinLoopStage.SwitchingToCompanion);
+        PrepareActiveResidentReplayStart();
 
         if (viewSwitchController != null)
         {
@@ -281,7 +316,19 @@ public class MinLoopFlowController : MonoBehaviour
 
         SetStage(MinLoopStage.CompanionReplay);
 
-        if (useCompanion17F01ReplayController && companion17F01ReplayController != null)
+        if (useResidentSpecificReplayControllers && string.Equals(activeReplayResidentId, "17F02", System.StringComparison.OrdinalIgnoreCase))
+        {
+            if (companion17F02ReplayController != null)
+            {
+                companion17F02ReplayController.BeginReplay(this);
+            }
+            else
+            {
+                Debug.LogWarning("MinLoopFlowController is set to 17F02, but no HearthCompanion17F02ReplayController is assigned. Returning directly to disposition choice.", this);
+                yield return ReturnToTerminalForDisposition();
+            }
+        }
+        else if (useCompanion17F01ReplayController && companion17F01ReplayController != null)
         {
             companion17F01ReplayController.BeginReplay(this);
         }
@@ -296,6 +343,24 @@ public class MinLoopFlowController : MonoBehaviour
         }
 
         activeFlowRoutine = null;
+    }
+
+    private void PrepareActiveResidentReplayStart()
+    {
+        if (useResidentSpecificReplayControllers && string.Equals(activeReplayResidentId, "17F02", System.StringComparison.OrdinalIgnoreCase))
+        {
+            if (companion17F02ReplayController != null)
+            {
+                companion17F02ReplayController.PrepareReplayStart();
+            }
+
+            return;
+        }
+
+        if (useCompanion17F01ReplayController && companion17F01ReplayController != null)
+        {
+            companion17F01ReplayController.PrepareReplayStart();
+        }
     }
 
     private IEnumerator ReturnToTerminalForDisposition()
@@ -436,9 +501,39 @@ public class MinLoopFlowController : MonoBehaviour
             companion17F01ReplayController = FindObjectOfType<HearthCompanion17F01ReplayController>();
         }
 
+        if (companion17F02ReplayController == null)
+        {
+            companion17F02ReplayController = FindObjectOfType<HearthCompanion17F02ReplayController>();
+        }
+
         if (trustStateController == null)
         {
             trustStateController = FindObjectOfType<TrustStateController>();
         }
+    }
+
+    private static string NormalizeResidentId(string residentId)
+    {
+        if (string.IsNullOrEmpty(residentId))
+        {
+            return "17F01";
+        }
+
+        string normalized = residentId.Trim().ToUpperInvariant();
+        normalized = normalized.Replace("-", string.Empty);
+        normalized = normalized.Replace("_", string.Empty);
+        normalized = normalized.Replace(" ", string.Empty);
+
+        if (normalized.Contains("17F03") || normalized.Contains("ROOM3"))
+        {
+            return "17F03";
+        }
+
+        if (normalized.Contains("17F02") || normalized.Contains("ROOM2"))
+        {
+            return "17F02";
+        }
+
+        return "17F01";
     }
 }

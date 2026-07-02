@@ -86,6 +86,7 @@ public class HearthTvTerminalController : MonoBehaviour
     [Header("Robot Replay")]
     [SerializeField] private MinLoopFlowController minLoopFlowController;
     [SerializeField] private ViewSwitchController viewSwitchController;
+    [SerializeField] private string replayResidentId = "";
     [SerializeField] private bool closeTerminalWhenReplayStarts = true;
     [SerializeField] private bool showFinalChoiceWhenReplayUnavailable = true;
     [SerializeField] private bool closeTerminalWhenChoiceSubmitted = true;
@@ -538,14 +539,26 @@ public class HearthTvTerminalController : MonoBehaviour
         viewSwitchController = controller;
     }
 
+    public void SetReplayResidentId(string residentId)
+    {
+        replayResidentId = residentId;
+    }
+
+    public string GetReplayResidentId()
+    {
+        string explicitId = NormalizeReplayResidentId(replayResidentId);
+        if (!string.IsNullOrEmpty(explicitId))
+        {
+            return explicitId;
+        }
+
+        return InferReplayResidentId();
+    }
+
     public void RequestRobotReplay()
     {
         PlayClip(replayRequestClip);
-
-        if (onRobotReplayRequested != null)
-        {
-            onRobotReplayRequested.Invoke();
-        }
+        string residentId = GetReplayResidentId();
 
         if (minLoopFlowController != null)
         {
@@ -555,8 +568,20 @@ public class HearthTvTerminalController : MonoBehaviour
             }
 
             PlayClip(viewSwitchClip);
+            minLoopFlowController.SetActiveReplayResident(residentId, this);
+
+            if (onRobotReplayRequested != null)
+            {
+                onRobotReplayRequested.Invoke();
+            }
+
             minLoopFlowController.RequestReplayFromTerminal();
             return;
+        }
+
+        if (onRobotReplayRequested != null)
+        {
+            onRobotReplayRequested.Invoke();
         }
 
         if (viewSwitchController != null)
@@ -1578,6 +1603,63 @@ public class HearthTvTerminalController : MonoBehaviour
         {
             CloseTerminal();
         }
+    }
+
+    private string InferReplayResidentId()
+    {
+        Transform cursor = transform;
+        while (cursor != null)
+        {
+            string fromName = NormalizeReplayResidentId(cursor.name);
+            if (!string.IsNullOrEmpty(fromName))
+            {
+                return fromName;
+            }
+
+            cursor = cursor.parent;
+        }
+
+        if (firstSlideNumber >= 17)
+        {
+            return "17F03";
+        }
+
+        if (firstSlideNumber >= 9)
+        {
+            return "17F02";
+        }
+
+        return "17F01";
+    }
+
+    private static string NormalizeReplayResidentId(string value)
+    {
+        if (string.IsNullOrEmpty(value))
+        {
+            return string.Empty;
+        }
+
+        string normalized = value.Trim().ToUpperInvariant();
+        normalized = normalized.Replace("-", string.Empty);
+        normalized = normalized.Replace("_", string.Empty);
+        normalized = normalized.Replace(" ", string.Empty);
+
+        if (normalized.Contains("17F03") || normalized.Contains("ROOM3"))
+        {
+            return "17F03";
+        }
+
+        if (normalized.Contains("17F02") || normalized.Contains("ROOM2"))
+        {
+            return "17F02";
+        }
+
+        if (normalized.Contains("17F01") || normalized.Contains("ROOM1"))
+        {
+            return "17F01";
+        }
+
+        return string.Empty;
     }
 
     private void SyncPageDrivenFocusToCurrentPage()

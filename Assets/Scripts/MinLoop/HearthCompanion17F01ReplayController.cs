@@ -142,6 +142,25 @@ public class HearthCompanion17F01ReplayController : MonoBehaviour
         BeginReplay(flowController);
     }
 
+    public void PrepareReplayStart()
+    {
+        ResolveReferences();
+        StopActiveRoutine();
+        StopBedroomPrelude();
+        TeleportRobot(childRoomStartAnchor);
+        SetRobotControl(false, false, false);
+
+        if (approachBoyInteractable != null)
+        {
+            approachBoyInteractable.SetAvailable(false);
+        }
+
+        if (companionHud != null)
+        {
+            companionHud.SetHoldPromptVisible(false);
+        }
+    }
+
     public void BeginReplay(MinLoopFlowController owner)
     {
         ResolveReferences();

@@ -35,6 +35,53 @@
 
 本项目已选择 `MCP for Unity` 作为 Unity 2022 项目的第三方 MCP 连接方案。
 
+这里的 `MCP for Unity` 不是 Codex 内置下载的官方工具，而是 Unity 项目内安装的第三方包：
+
+- Unity 包名：`com.coplaydev.unity-mcp`
+- 当前项目锁定来源：`https://github.com/CoplayDev/unity-mcp.git?path=/MCPForUnity#v10.0.0`
+- Codex 本机 MCP 配置名：`unityMCP`
+- 默认 HTTP 地址：`http://127.0.0.1:8080/mcp`
+
+当前项目的 Unity MCP 包入口文件：
+
+- Unity 包声明：`Packages/manifest.json` 中的 `com.coplaydev.unity-mcp`
+- Unity 包锁定：`Packages/packages-lock.json` 中的 `com.coplaydev.unity-mcp.hash`
+- Codex MCP 客户端配置：`C:\Users\彩笔\.codex\config.toml`
+
+Unity 编辑器内使用入口：
+
+- 打开面板：Unity 菜单 `Window > MCP for Unity`
+- 快捷键：Windows/Linux 可用 `Ctrl + Shift + M`
+- 常用按钮：`Configure All Detected Clients` 用于重新写入/刷新 Codex 等客户端配置；`Start/Stop Server` 用于启动或停止本地 HTTP MCP 服务。
+- 连接检查：面板里的 HTTP URL 应与 Codex 配置一致，默认是 `http://127.0.0.1:8080/mcp` 或 `http://localhost:8080/mcp`。
+- 手动启动命令入口在面板 `Connect > Manual Server Launch`。本项目 v10 当前命令格式为：`C:\Users\彩笔\AppData\Local\Microsoft\WinGet\Links\uvx.exe --from "mcpforunityserver==10.0.0" mcp-for-unity --transport http --http-url http://127.0.0.1:8080 --project-scoped-tools`。注意：手动命令里的 `--http-url` 不带 `/mcp`，Codex 客户端配置里的 URL 带 `/mcp`。
+- v10 工具组：v10 将工具分为 `core`、`animation`、`asset_gen`、`docs`、`probuilder`、`profiling`、`scripting_ext`、`testing`、`ui`、`vfx`。非 `core` 工具可能需要在 Unity 的 `Tools` 标签页启用，或通过 MCP 工具 `manage_tools action=activate group=组名` 启用。
+- 多 Unity 实例：如果之后同时打开多个 Unity 项目，应优先读取 MCP 资源 `unity_instances`，再用 `set_active_instance` 选择目标实例。
+
+v10 连接验证方法：
+
+- 普通浏览器或 `GET http://127.0.0.1:8080/mcp` 返回 `406 Not Acceptable` 不代表失败；这是因为 `/mcp` 需要 MCP/JSON-RPC 请求头。
+- 最小连通性验证：向 `http://127.0.0.1:8080/mcp` 发送 JSON-RPC `initialize`，Header 使用 `Content-Type: application/json` 和 `Accept: application/json, text/event-stream`。成功时会返回 `200 OK`、`mcp-session-id`，并显示 serverInfo，例如 `mcp-for-unity-server`。
+- 初始化后应发送 `notifications/initialized`，后续请求都带上 `mcp-session-id`。
+- 读取工具列表：调用 JSON-RPC 方法 `tools/list`。v10 正常应能看到约 47 个工具，包括 `manage_scene`、`manage_gameobject`、`manage_components`、`read_console`、`refresh_unity`、`manage_tools`、`set_active_instance` 等。
+- 读取 Unity Console：调用 `tools/call`，参数 `name="read_console"`，`arguments={"action":"get","count":"10"}`。如果能读到 `Server ready on http://127.0.0.1:8080` 或 `Session connected`，说明 Unity 侧会话已经通。
+- 当前项目实例验证：读取资源 `mcpforunity://instances`，本项目通常显示类似 `GAME-CBY@...`；如果有多个 Unity 实例，先调用 `set_active_instance` 绑定目标实例。
+
+更新 Unity MCP 包时的固定做法：
+
+1. 先用 `git ls-remote --tags https://github.com/CoplayDev/unity-mcp.git` 确认目标版本标签和实际提交。
+2. 把 `Packages/manifest.json` 的 `com.coplaydev.unity-mcp` 改成明确版本标签，例如 `#v10.0.0`，避免一直跟随 `main` 造成版本漂移。
+3. 同步更新 `Packages/packages-lock.json` 里的 `version` 和 `hash`；如果不确定依赖变化，优先让 Unity Package Manager 重新解析。
+4. 回到 Unity 后等待 Package Manager 编译完成，再在 `Window > MCP for Unity` 点击 `Configure All Detected Clients`。
+5. 如果 Codex 里仍然没有 Unity 工具，先重启 MCP Server/重新配置客户端，再重新打开或刷新 Codex 会话。
+
+每次开始涉及 Unity 场景、Prefab、层级、Console、Play Mode、物体绑定或编辑器状态的大任务前，Codex 必须先做一次 MCP 可用性检查：
+
+1. 先通过工具发现能力搜索 Unity / MCP 相关工具，确认当前 Codex 会话里是否真的暴露了可调用的 Unity MCP 工具。
+2. 如果 Unity MCP 工具可调用，优先用它读取 Hierarchy、Console、当前场景、选中物体、组件和 Play Mode 状态，再决定怎么改。
+3. 如果 Unity 面板显示已连接，但 Codex 当前工具列表没有暴露 Unity MCP 调用能力，应明确说明“Unity MCP 已配置/可能已连接，但当前 Codex 工具面板不可直接调用”，然后回退到读取项目文件、场景 YAML、Prefab、脚本和 Editor 菜单工具的方式继续工作。
+4. 如果需要确认 MCP 配置，应优先检查 `C:\Users\彩笔\.codex\config.toml` 和 `Packages/manifest.json`，不要误认为这是 Codex 自带插件。
+
 后续涉及 Unity 场景、层级、Prefab、材质、Console、测试运行、物体选择和编辑器状态的任务时，Codex 应优先尝试通过 Unity MCP 读取当前编辑器状态，再决定是否需要直接编辑项目文件。
 
 如果 Unity MCP 未连接、Unity 未打开或 MCP 工具不可用，Codex 可以回退到读取项目文件、脚本和场景文本的方式，但需要在回复中说明当前没有通过 MCP 验证编辑器内状态。

@@ -169,17 +169,17 @@ UI 的位置和大小仍然看：
 
 ## 女主人出门路线和门怎么调
 
-当前场景已同步的女主离开卧室路线是：
+当前推荐的女主离开卧室路线由“参考女主模型”驱动，而不是直接调空锚点。先在 Scene 视图里移动和旋转这些可见模型，再运行菜单同步到程序锚点：
 
 ```text
-Anchor_Wife_17F02_Path01
--> Anchor_Wife_17F02_Path01 (1)
--> Anchor_Wife_17F02_Path01 (2)
--> Anchor_Wife_17F02_Path01 (3)
--> Anchor_Wife_17F02_Path01 (4)
--> Anchor_Wife_17F02_Path01 (5)
--> Anchor_Wife_17F02_DoorPause
--> Anchor_Wife_17F02_ExitOutside
+Actor_Wife_17F02_Bedroom
+-> REF_Wife_17F02_BeforeDoor_01
+-> REF_Wife_17F02_BeforeDoor_02
+-> REF_Wife_17F02_BeforeDoor_03
+-> REF_Wife_17F02_BeforeDoor_04
+-> REF_Wife_17F02_BeforeDoor_05
+-> REF_Wife_17F02_DoorPause
+-> REF_Wife_17F02_ExitOutside
 ```
 
 选中：
@@ -189,7 +189,7 @@ Anchor_Wife_17F02_Path01
 看 `Wife Exit Blocking`：
 
 - `Move Bedroom Wife To Door`：是否让女主人自动走向门。关闭后只播放字幕和锁定，不移动角色。
-- `Bedroom Wife Move Root`：卧室女主人模型，一般是 `casual_Female_K (2)` 或你指定的卧室女主人根物体。
+- `Bedroom Wife Move Root`：卧室女主人模型，现在推荐是 `Actor_Wife_17F02_Bedroom`。
 - `Use Simple Wife Exit Route`：当前推荐开启。开启后使用更直观的三段式路线，不再使用旧的“第几个路径点后开门”算法。
 - `Wife Before Door Path Points`：门前路线点，只放女主还在房间内、准备走到门口之前的点。
 - `Move To Door Pause Before Opening`：当前推荐开启。女主走完门前路线后，会先贴到 `Wife Door Pause Anchor`，停顿，然后开门。
@@ -205,29 +205,32 @@ Anchor_Wife_17F02_Path01
 - `Keep Door Open After Wife Exit`：女主人离开后门是否保持打开。
 - `Hide Bedroom Wife After Exit`：女主人走出后是否隐藏卧室那份模型。现在默认关闭，避免误删视野中的模型；如果你用餐桌女主人替代后续状态，可以开启。
 
-路线由锚点控制，不建议写死在脚本里。`Path01 (1)` 到 `Path01 (5)` 是你额外复制出来的细调点，用于减少穿模、控制转身方向，并让女主从房间里走出来的运动更自然。现在推荐把这些点分两组拖：
+路线由菜单自动从参考模型复制到锚点，不建议手工维护数组。执行：
 
-- 门前：拖进 `Wife Before Door Path Points`。
-- 门口：单独拖到 `Wife Door Pause Anchor`。
-- 门后：拖进 `Wife After Door Path Points`。
-- 终点：单独拖到 `Wife Exit Outside Anchor`。
+`Tools / Hearth / Replay / Build 17F02 Wife Route From Female References`
+
+菜单会自动处理：
+
+- `casual_Female_K (2)` 会改名为 `Actor_Wife_17F02_Bedroom`，放到 `MIN_LOOP_ROOT / ReplayRoom_17F02 / RuntimeActors`，作为唯一运行时卧室女主。
+- `casual_Female_K (3)` 到 `(7)` 会改名为 `REF_Wife_17F02_BeforeDoor_01` 到 `05`，作为开门前路线参考。
+- `casual_Female_K (8)` 会改名为 `REF_Wife_17F02_DoorPause`，只作为停下并开门的位置，不再放进普通路径。
+- `casual_Female_K (9)` 会改名为 `REF_Wife_17F02_ExitOutside`，作为走出房间后的终点。
+- 参考模型会统一放到 `MIN_LOOP_ROOT / ReplayRoom_17F02 / WifeRouteReferenceModels`，并挂 `HearthEditorOnlyReferenceModel`，编辑时可见，Play 时自动隐藏 Renderer 和 Collider。
+- 程序锚点会自动生成到 `MIN_LOOP_ROOT / Anchors`，并写入 `HearthCompanion17F02ReplayController`。
 
 门如果打开方向反了，选中 `Door_2_Brown (4)`，把 `SmartDoorController / Open Local Euler Offset / Y` 从 `90` 改成 `-90`。如果没有开门声音，把音效拖到 `Open Clip` 和 `Close Clip`；当前门资产可能只有 AudioSource，但没有实际 AudioClip。
 
 ### 你自己调路线的具体方法
 
-1. 在 Hierarchy 里展开 `MIN_LOOP_ROOT / Anchors`。
-2. 选中 `Anchor_Wife_17F02_Path01`，用移动工具把它放到女主人离床后的第一个安全位置。
-3. 把仍在房间内的点放进 `Wife Before Door Path Points`，例如 `Path01` 到 `Path01 (3)`。
-4. 选中 `Anchor_Wife_17F02_DoorPause`，把它放在门内侧，让女主人到这里先停顿并准备开门。
-5. 把门打开后才应该走的点放进 `Wife After Door Path Points`，例如 `Path01 (4)`、`Path01 (5)`。
-6. 选中 `Anchor_Wife_17F02_ExitOutside`，把它放在门外侧，作为走出房间后的终点。
-7. 用旋转工具调整每个锚点的 Y 轴方向。女主人走向这个点时会逐渐转向这个锚点的朝向，到达时会贴合这个锚点的朝向。
-8. 女主最终到餐桌后的静态位置和朝向，以 `casual_Female_K` 为准。
+1. 在 Hierarchy 里展开 `MIN_LOOP_ROOT / ReplayRoom_17F02 / WifeRouteReferenceModels`。
+2. 直接移动和旋转 `REF_Wife_17F02_BeforeDoor_01` 到 `05`，它们代表女主开门前的走位和朝向。
+3. 移动和旋转 `REF_Wife_17F02_DoorPause`，它代表女主停下来、等待、开门的位置。
+4. 移动和旋转 `REF_Wife_17F02_ExitOutside`，它代表女主走出房间后的最终位置。
+5. 运行 `Tools / Hearth / Replay / Build 17F02 Wife Route From Female References`，把参考模型同步到程序锚点。
+6. 进入 Play Mode 测试；如果还穿模，退出 Play Mode 后继续移动参考模型，再重跑菜单。
+7. 女主最终到餐桌后的静态位置和朝向，以 `casual_Female_K` 为准。
 
-为了更好判断方向，锚点现在可以挂 `HearthRouteAnchorGizmo`。它会在 Scene 视图里画一个线框小人和黄色朝向箭头，不会出现在 Game 画面里。执行菜单 `Tools / Hearth / Replay / Migrate 17F02 Wife Exit Route To Simple Segments` 会自动给当前路线锚点加上这个可视化。
-
-如果还是穿模，可以继续复制新的空物体放到 `MIN_LOOP_ROOT / Anchors` 下，并把它按顺序拖进 `Wife Before Door Path Points` 或 `Wife After Door Path Points`。路径点越多，越方便控制女主转身和绕开床、墙、门框。
+如果你更喜欢看空锚点，也可以查看 `MIN_LOOP_ROOT / Anchors` 下自动生成的 `Anchor_Wife_17F02_BeforeDoor_01` 到 `05`、`Anchor_Wife_17F02_DoorPause`、`Anchor_Wife_17F02_ExitOutside`。它们会挂 `HearthRouteAnchorGizmo`，只用于预览和脚本移动。
 
 如果你暂时不想让脚本移动女主人，可以关闭 `Move Bedroom Wife To Door`。这样流程仍然播放字幕和锁定机器人，但女主人不会自动走；后续可以用 Animator、Timeline 或事件来接真正动作。
 

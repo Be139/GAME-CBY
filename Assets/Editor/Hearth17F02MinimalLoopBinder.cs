@@ -8,6 +8,7 @@ public static class Hearth17F02MinimalLoopBinder
 {
     private const string MenuPath = "Tools/Hearth/Replay/Apply 17F02 Minimal Loop Setup";
     private const string MigrateWifeExitRouteMenuPath = "Tools/Hearth/Replay/Migrate 17F02 Wife Exit Route To Simple Segments";
+    private const string BuildWifeRouteFromFemaleReferencesMenuPath = "Tools/Hearth/Replay/Build 17F02 Wife Route From Female References";
     private const string DialogueFolder = "Assets/Data/MinLoop/Dialogues";
     private const string BedroomWakeDialoguePath = DialogueFolder + "/17F02_BedroomWake.asset";
     private const string BedroomConfideDialoguePath = DialogueFolder + "/17F02_BedroomConfide.asset";
@@ -45,7 +46,7 @@ public static class Hearth17F02MinimalLoopBinder
             "Robot Controller 3",
             "robot Controller3",
             "Robot controller3");
-        GameObject bedroomWife = Find("casual_Female_K (2)", "casual_Female_K2", "casual_Female_K 2");
+        GameObject bedroomWife = Find("Actor_Wife_17F02_Bedroom", "casual_Female_K (2)", "casual_Female_K2", "casual_Female_K 2");
         GameObject diningWife = Find("casual_Female_K", "casual_Female_K (2)", "casual_Female_K2");
         GameObject diningHusband = Find("casual_Male_K", "casual_Male_K (1)");
         GameObject terminalHusband = Find("casual_Male_K (1)", "casual_Male_K2", "casual_Male_K 2");
@@ -72,9 +73,14 @@ public static class Hearth17F02MinimalLoopBinder
             robotBedroomReference != null ? robotBedroomReference.transform : null,
             0.68f,
             0.75f);
+        bool useReferenceWifeRoute = HasReferenceWifeRouteAnchors(anchorsRoot);
         Transform[] wifeExitPathAnchors = CollectWifeExitPathAnchors(anchorsRoot, wifePathAnchorA, wifePathAnchorB);
-        Transform wifeDoorPauseAnchor = CreateDoorSideAnchor(anchorsRoot, "Anchor_Wife_17F02_DoorPause", bedroomDoorObject != null ? bedroomDoorObject.transform : null, -0.65f);
-        Transform wifeExitOutsideAnchor = CreateDoorSideAnchor(anchorsRoot, "Anchor_Wife_17F02_ExitOutside", bedroomDoorObject != null ? bedroomDoorObject.transform : null, 1.15f);
+        Transform wifeDoorPauseAnchor = useReferenceWifeRoute
+            ? FindOrCreateChild(anchorsRoot, "Anchor_Wife_17F02_DoorPause")
+            : CreateDoorSideAnchor(anchorsRoot, "Anchor_Wife_17F02_DoorPause", bedroomDoorObject != null ? bedroomDoorObject.transform : null, -0.65f);
+        Transform wifeExitOutsideAnchor = useReferenceWifeRoute
+            ? FindOrCreateChild(anchorsRoot, "Anchor_Wife_17F02_ExitOutside")
+            : CreateDoorSideAnchor(anchorsRoot, "Anchor_Wife_17F02_ExitOutside", bedroomDoorObject != null ? bedroomDoorObject.transform : null, 1.15f);
         SmartDoorController bedroomDoor = ConfigureDoorController(bedroomDoorObject);
         SplitWifeExitPathAnchors(wifeExitPathAnchors, out Transform[] wifeBeforeDoorPathAnchors, out Transform[] wifeAfterDoorPathAnchors);
         ConfigureWifeExitAnchorGizmos(wifeBeforeDoorPathAnchors, wifeDoorPauseAnchor, wifeAfterDoorPathAnchors, wifeExitOutsideAnchor);
@@ -161,8 +167,21 @@ public static class Hearth17F02MinimalLoopBinder
             return;
         }
 
-        Transform[] wifeExitPathAnchors = CollectExistingWifeExitPathAnchors();
-        SplitWifeExitPathAnchors(wifeExitPathAnchors, out Transform[] wifeBeforeDoorPathAnchors, out Transform[] wifeAfterDoorPathAnchors);
+        Transform[] referenceBeforeDoorAnchors = CollectReferenceBeforeDoorAnchors(null);
+        Transform[] wifeExitPathAnchors;
+        Transform[] wifeBeforeDoorPathAnchors;
+        Transform[] wifeAfterDoorPathAnchors;
+        if (referenceBeforeDoorAnchors.Length > 0)
+        {
+            wifeExitPathAnchors = referenceBeforeDoorAnchors;
+            wifeBeforeDoorPathAnchors = referenceBeforeDoorAnchors;
+            wifeAfterDoorPathAnchors = new Transform[0];
+        }
+        else
+        {
+            wifeExitPathAnchors = CollectExistingWifeExitPathAnchors();
+            SplitWifeExitPathAnchors(wifeExitPathAnchors, out wifeBeforeDoorPathAnchors, out wifeAfterDoorPathAnchors);
+        }
         Transform wifeDoorPauseAnchor = FindTransform("Anchor_Wife_17F02_DoorPause");
         Transform wifeExitOutsideAnchor = FindTransform("Anchor_Wife_17F02_ExitOutside");
 
@@ -194,6 +213,93 @@ public static class Hearth17F02MinimalLoopBinder
 
         Debug.Log("[Hearth17F02MinimalLoopBinder] 17F02 wife exit route migrated to simple segments. BeforeDoor="
             + wifeBeforeDoorPathAnchors.Length + ", AfterDoor=" + wifeAfterDoorPathAnchors.Length + ".");
+    }
+
+    [MenuItem(BuildWifeRouteFromFemaleReferencesMenuPath)]
+    public static void BuildWifeRouteFromFemaleReferences()
+    {
+        GameObject minLoopRoot = FindOrCreate("MIN_LOOP_ROOT");
+        Transform anchorsRoot = FindOrCreateChild(minLoopRoot.transform, "Anchors");
+        Transform replayRoot = FindOrCreateChild(minLoopRoot.transform, "ReplayRoom_17F02");
+        Transform runtimeActorsRoot = FindOrCreateChild(replayRoot, "RuntimeActors");
+        Transform referenceModelsRoot = FindOrCreateChild(replayRoot, "WifeRouteReferenceModels");
+
+        GameObject bedroomWife = Find("Actor_Wife_17F02_Bedroom", "casual_Female_K (2)", "casual_Female_K2", "casual_Female_K 2");
+        if (bedroomWife != null)
+        {
+            RenameAndParent(bedroomWife, "Actor_Wife_17F02_Bedroom", runtimeActorsRoot);
+        }
+        else
+        {
+            Debug.LogWarning("[Hearth17F02MinimalLoopBinder] Bedroom wife actor was not found. Expected Actor_Wife_17F02_Bedroom or casual_Female_K (2).");
+        }
+
+        Transform[] beforeDoorAnchors = new Transform[5];
+        for (int i = 0; i < beforeDoorAnchors.Length; i++)
+        {
+            int modelNumber = i + 3;
+            string referenceName = "REF_Wife_17F02_BeforeDoor_" + (i + 1).ToString("00");
+            GameObject reference = Find(referenceName, "casual_Female_K (" + modelNumber + ")");
+            if (reference == null)
+            {
+                Debug.LogWarning("[Hearth17F02MinimalLoopBinder] Wife route reference was not found: " + referenceName + " / casual_Female_K (" + modelNumber + ").");
+                continue;
+            }
+
+            PrepareReferenceModel(reference, referenceName, referenceModelsRoot);
+            beforeDoorAnchors[i] = CreateAnchor(anchorsRoot, "Anchor_Wife_17F02_BeforeDoor_" + (i + 1).ToString("00"), reference.transform);
+        }
+
+        GameObject doorPauseReference = Find("REF_Wife_17F02_DoorPause", "casual_Female_K (8)");
+        Transform wifeDoorPauseAnchor = null;
+        if (doorPauseReference != null)
+        {
+            PrepareReferenceModel(doorPauseReference, "REF_Wife_17F02_DoorPause", referenceModelsRoot);
+            wifeDoorPauseAnchor = CreateAnchor(anchorsRoot, "Anchor_Wife_17F02_DoorPause", doorPauseReference.transform);
+        }
+        else
+        {
+            wifeDoorPauseAnchor = FindOrCreateChild(anchorsRoot, "Anchor_Wife_17F02_DoorPause");
+            Debug.LogWarning("[Hearth17F02MinimalLoopBinder] Door pause reference was not found. Keeping existing Anchor_Wife_17F02_DoorPause.");
+        }
+
+        GameObject exitOutsideReference = Find("REF_Wife_17F02_ExitOutside", "casual_Female_K (9)");
+        Transform wifeExitOutsideAnchor = null;
+        if (exitOutsideReference != null)
+        {
+            PrepareReferenceModel(exitOutsideReference, "REF_Wife_17F02_ExitOutside", referenceModelsRoot);
+            wifeExitOutsideAnchor = CreateAnchor(anchorsRoot, "Anchor_Wife_17F02_ExitOutside", exitOutsideReference.transform);
+        }
+        else
+        {
+            wifeExitOutsideAnchor = FindOrCreateChild(anchorsRoot, "Anchor_Wife_17F02_ExitOutside");
+            Debug.LogWarning("[Hearth17F02MinimalLoopBinder] Exit outside reference was not found. Keeping existing Anchor_Wife_17F02_ExitOutside.");
+        }
+
+        Transform[] compactBeforeDoorAnchors = CompactTransforms(beforeDoorAnchors);
+        ConfigureWifeExitAnchorGizmos(compactBeforeDoorAnchors, wifeDoorPauseAnchor, new Transform[0], wifeExitOutsideAnchor);
+
+        HearthCompanion17F02ReplayController replayController = Object.FindObjectOfType<HearthCompanion17F02ReplayController>(true);
+        if (replayController == null)
+        {
+            replayController = GetOrAdd<HearthCompanion17F02ReplayController>(FindOrCreateChild(replayRoot, "HearthCompanion17F02ReplayController").gameObject);
+        }
+
+        GameObject bedroomDoorObject = Find("Door_2_Brown (4)", "Door_2_Brown");
+        SmartDoorController bedroomDoor = ConfigureDoorController(bedroomDoorObject);
+        ConfigureReferenceDrivenWifeRoute(replayController, bedroomWife, compactBeforeDoorAnchors, wifeDoorPauseAnchor, wifeExitOutsideAnchor, bedroomDoor);
+
+        EditorUtility.SetDirty(minLoopRoot);
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
+        EditorSceneManager.MarkSceneDirty(UnityEngine.SceneManagement.SceneManager.GetActiveScene());
+        EditorSceneManager.SaveOpenScenes();
+
+        Debug.Log("[Hearth17F02MinimalLoopBinder] 17F02 wife route rebuilt from female references. RuntimeActor="
+            + (bedroomWife != null ? bedroomWife.name : "missing")
+            + ", BeforeDoor=" + compactBeforeDoorAnchors.Length
+            + ", DoorPause=" + (wifeDoorPauseAnchor != null ? wifeDoorPauseAnchor.name : "missing")
+            + ", ExitOutside=" + (wifeExitOutsideAnchor != null ? wifeExitOutsideAnchor.name : "missing") + ".");
     }
 
     private static void ConfigureViewSwitch(ViewSwitchController viewSwitch, GameObject person, GameObject robot)
@@ -440,6 +546,12 @@ public static class Hearth17F02MinimalLoopBinder
 
     private static Transform[] CollectWifeExitPathAnchors(Transform anchorsRoot, Transform path01, Transform fallbackPath02)
     {
+        Transform[] referenceDrivenAnchors = CollectReferenceBeforeDoorAnchors(anchorsRoot);
+        if (referenceDrivenAnchors.Length > 0)
+        {
+            return referenceDrivenAnchors;
+        }
+
         List<Transform> anchors = new List<Transform>();
         AddIfNotNull(anchors, path01);
 
@@ -466,6 +578,12 @@ public static class Hearth17F02MinimalLoopBinder
 
     private static Transform[] CollectExistingWifeExitPathAnchors()
     {
+        Transform[] referenceDrivenAnchors = CollectReferenceBeforeDoorAnchors(null);
+        if (referenceDrivenAnchors.Length > 0)
+        {
+            return referenceDrivenAnchors;
+        }
+
         List<Transform> anchors = new List<Transform>();
         AddIfNotNull(anchors, FindTransform("Anchor_Wife_17F02_Path01"));
 
@@ -488,6 +606,24 @@ public static class Hearth17F02MinimalLoopBinder
         }
 
         return anchors.ToArray();
+    }
+
+    private static Transform[] CollectReferenceBeforeDoorAnchors(Transform anchorsRoot)
+    {
+        List<Transform> anchors = new List<Transform>();
+        for (int i = 1; i <= 5; i++)
+        {
+            string anchorName = "Anchor_Wife_17F02_BeforeDoor_" + i.ToString("00");
+            Transform anchor = anchorsRoot != null ? anchorsRoot.Find(anchorName) : FindTransform(anchorName);
+            AddIfNotNull(anchors, anchor);
+        }
+
+        return anchors.ToArray();
+    }
+
+    private static bool HasReferenceWifeRouteAnchors(Transform anchorsRoot)
+    {
+        return CollectReferenceBeforeDoorAnchors(anchorsRoot).Length > 0;
     }
 
     private static void SplitWifeExitPathAnchors(Transform[] source, out Transform[] beforeDoor, out Transform[] afterDoor)
@@ -558,6 +694,97 @@ public static class Hearth17F02MinimalLoopBinder
         HearthRouteAnchorGizmo gizmo = GetOrAdd<HearthRouteAnchorGizmo>(anchor.gameObject);
         gizmo.Configure(label, bodyColor, forwardColor);
         EditorUtility.SetDirty(gizmo);
+    }
+
+    private static void ConfigureReferenceDrivenWifeRoute(
+        HearthCompanion17F02ReplayController replayController,
+        GameObject bedroomWife,
+        Transform[] beforeDoorAnchors,
+        Transform doorPauseAnchor,
+        Transform exitOutsideAnchor,
+        SmartDoorController bedroomDoor)
+    {
+        if (replayController == null)
+        {
+            return;
+        }
+
+        SerializedObject so = new SerializedObject(replayController);
+        SetObject(so, "bedroomWifeActor", bedroomWife);
+        SetObject(so, "bedroomWifeMoveRoot", bedroomWife != null ? bedroomWife.transform : null);
+        SetBool(so, "useSimpleWifeExitRoute", true);
+        SetArray(so, "wifeBeforeDoorPathPoints", CollectObjects(beforeDoorAnchors));
+        SetArray(so, "wifeAfterDoorPathPoints", new Object[0]);
+        SetBool(so, "moveToDoorPauseBeforeOpening", true);
+        SetArray(so, "wifeExitPathPoints", CollectObjects(beforeDoorAnchors));
+        SetObject(so, "wifeDoorPauseAnchor", doorPauseAnchor);
+        SetObject(so, "wifeExitOutsideAnchor", exitOutsideAnchor);
+        SetObject(so, "wifeExitDoor", bedroomDoor);
+        SetBool(so, "moveBedroomWifeToDoor", true);
+        SetBool(so, "openDoorDuringWifeExit", true);
+        SetInt(so, "openDoorAfterPathPointCount", -1);
+        SetBool(so, "keepDoorOpenAfterWifeExit", true);
+        so.ApplyModifiedPropertiesWithoutUndo();
+        EditorUtility.SetDirty(replayController);
+    }
+
+    private static void PrepareReferenceModel(GameObject reference, string referenceName, Transform referenceRoot)
+    {
+        if (reference == null)
+        {
+            return;
+        }
+
+        RenameAndParent(reference, referenceName, referenceRoot);
+        reference.SetActive(true);
+
+        HearthEditorOnlyReferenceModel marker = GetOrAdd<HearthEditorOnlyReferenceModel>(reference);
+        EditorUtility.SetDirty(marker);
+
+        foreach (Renderer renderer in reference.GetComponentsInChildren<Renderer>(true))
+        {
+            renderer.enabled = true;
+            EditorUtility.SetDirty(renderer);
+        }
+
+        foreach (Collider collider in reference.GetComponentsInChildren<Collider>(true))
+        {
+            collider.enabled = true;
+            EditorUtility.SetDirty(collider);
+        }
+    }
+
+    private static void RenameAndParent(GameObject target, string newName, Transform parent)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        target.name = newName;
+        if (parent != null && target.transform.parent != parent)
+        {
+            target.transform.SetParent(parent, true);
+        }
+
+        EditorUtility.SetDirty(target);
+        EditorUtility.SetDirty(target.transform);
+    }
+
+    private static Transform[] CompactTransforms(Transform[] source)
+    {
+        if (source == null)
+        {
+            return new Transform[0];
+        }
+
+        List<Transform> result = new List<Transform>();
+        for (int i = 0; i < source.Length; i++)
+        {
+            AddIfNotNull(result, source[i]);
+        }
+
+        return result.ToArray();
     }
 
     private static void AddIfNotNull(List<Transform> anchors, Transform anchor)

@@ -116,3 +116,31 @@ Anchor_Wife_17F02_Path01
 - `Path01 (4)`、`Path01 (5)` 建议放入门后段。
 - `ExitOutside` 只作为最后离开卧室后的最终位置。
 - 如果女主又出现“走出去再回头”的感觉，优先检查是否有某个门外点误放进了门前段，或者某个门内点误放进了门后段。
+
+## 2026-07-04 17F02 女主参考模型走位细调
+
+### 本次制作口径
+
+- 用户希望继续用复制出来的女主模型细调走位，因为实体模型比空锚点更容易判断身体位置和面朝方向。
+- `casual_Female_K (2)` 是唯一正式卧室女主，运行时必须一直存在。
+- `casual_Female_K (3)` 到 `casual_Female_K (9)` 都只是参考模型，不参与运行时显示、碰撞或剧情显隐。
+
+### 新路线映射
+
+```text
+casual_Female_K (2) -> Actor_Wife_17F02_Bedroom
+casual_Female_K (3) -> REF_Wife_17F02_BeforeDoor_01
+casual_Female_K (4) -> REF_Wife_17F02_BeforeDoor_02
+casual_Female_K (5) -> REF_Wife_17F02_BeforeDoor_03
+casual_Female_K (6) -> REF_Wife_17F02_BeforeDoor_04
+casual_Female_K (7) -> REF_Wife_17F02_BeforeDoor_05
+casual_Female_K (8) -> REF_Wife_17F02_DoorPause
+casual_Female_K (9) -> REF_Wife_17F02_ExitOutside
+```
+
+### 实现规则
+
+- 以后细调 17F02 女主离开卧室时，优先移动和旋转 `REF_Wife_17F02_*` 参考模型。
+- 调整完成后运行 `Tools / Hearth / Replay / Build 17F02 Wife Route From Female References`，由工具把参考模型同步到程序锚点。
+- `REF_Wife_17F02_DoorPause` 只作为“停下来并开门”的位置，不放进普通路径数组，避免女主反复经过同一个门口点。
+- 当前门后没有额外中间点，`REF_Wife_17F02_ExitOutside` 就是开门后走出房间的终点。

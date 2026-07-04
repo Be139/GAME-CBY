@@ -90,3 +90,29 @@ Anchor_Wife_17F02_Path01
 - 如果女主仍然先穿门再开门，把 `Open Door After Path Point Count` 调小。
 - 如果门开得太早，把 `Open Door After Path Point Count` 调大。
 - 如果以后完全改用 Timeline/Animator 演出女主离开，可以关闭 `Move Bedroom Wife To Door`，让脚本只负责字幕、锁定和阶段切换。
+
+## 2026-07-04 17F02 女主离开卧室路线简化
+
+### 本次问题判断
+
+- 用户在机器人视角观察到：女主有时先走出门外，再开门，然后又回到房间再走出去。
+- 原因不是单个锚点错，而是旧逻辑把所有点放在一个数组里，再用 `Open Door After Path Point Count` 判断何时开门；当用户继续复制细调点时，很难直观看出哪些点属于门前、哪些点属于门后。
+- 用户摆锚点时没有实体模型预览，也难以判断角色朝向，所以需要在 Scene 视图给每个路线点显示一个“线框小人”和朝向箭头。
+
+### 新实现口径
+
+- 女主离开卧室改为三段式：
+  1. `Wife Before Door Path Points`：只放房间内、开门前的移动点。
+  2. `Wife Door Pause Anchor`：女主停在门口，等待一小段时间，然后开门。
+  3. `Wife After Door Path Points`：只放开门之后、穿过门和走出门外的移动点，最后再到 `Wife Exit Outside Anchor`。
+- `Use Simple Wife Exit Route` 默认开启；旧的 `Open Door After Path Point Count` 只作为兼容模式保留。
+- 如果当前场景还没有填写新的 Before/After 两个数组，脚本会临时把旧的 `Wife Exit Path Points` 自动拆分：路径点数量大于等于 6 时，前 4 个当作门前段，后面的当作门后段。
+- 新增菜单 `Tools / Hearth / Replay / Migrate 17F02 Wife Exit Route To Simple Segments`，用于把当前场景已有锚点迁移到新三段式字段，并自动给锚点添加可视化朝向。
+
+### 推荐调试方式
+
+- `Path01` 到 `Path01 (3)` 建议先放入门前段。
+- `DoorPause` 只负责开门前停顿，不要放在普通路径数组中反复经过。
+- `Path01 (4)`、`Path01 (5)` 建议放入门后段。
+- `ExitOutside` 只作为最后离开卧室后的最终位置。
+- 如果女主又出现“走出去再回头”的感觉，优先检查是否有某个门外点误放进了门前段，或者某个门内点误放进了门后段。

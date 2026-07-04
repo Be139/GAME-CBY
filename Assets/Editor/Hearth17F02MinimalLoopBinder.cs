@@ -7,6 +7,7 @@ using UnityEngine;
 public static class Hearth17F02MinimalLoopBinder
 {
     private const string MenuPath = "Tools/Hearth/Replay/Apply 17F02 Minimal Loop Setup";
+    private const string MigrateWifeExitRouteMenuPath = "Tools/Hearth/Replay/Migrate 17F02 Wife Exit Route To Simple Segments";
     private const string DialogueFolder = "Assets/Data/MinLoop/Dialogues";
     private const string BedroomWakeDialoguePath = DialogueFolder + "/17F02_BedroomWake.asset";
     private const string BedroomConfideDialoguePath = DialogueFolder + "/17F02_BedroomConfide.asset";
@@ -75,6 +76,8 @@ public static class Hearth17F02MinimalLoopBinder
         Transform wifeDoorPauseAnchor = CreateDoorSideAnchor(anchorsRoot, "Anchor_Wife_17F02_DoorPause", bedroomDoorObject != null ? bedroomDoorObject.transform : null, -0.65f);
         Transform wifeExitOutsideAnchor = CreateDoorSideAnchor(anchorsRoot, "Anchor_Wife_17F02_ExitOutside", bedroomDoorObject != null ? bedroomDoorObject.transform : null, 1.15f);
         SmartDoorController bedroomDoor = ConfigureDoorController(bedroomDoorObject);
+        SplitWifeExitPathAnchors(wifeExitPathAnchors, out Transform[] wifeBeforeDoorPathAnchors, out Transform[] wifeAfterDoorPathAnchors);
+        ConfigureWifeExitAnchorGizmos(wifeBeforeDoorPathAnchors, wifeDoorPauseAnchor, wifeAfterDoorPathAnchors, wifeExitOutsideAnchor);
 
         DisableReferenceController(robotBedroomReference);
         DisableReferenceController(robotLivingReference);
@@ -117,6 +120,8 @@ public static class Hearth17F02MinimalLoopBinder
             diningHusband,
             terminalHusband,
             wifeExitPathAnchors,
+            wifeBeforeDoorPathAnchors,
+            wifeAfterDoorPathAnchors,
             wifeDoorPauseAnchor,
             wifeExitOutsideAnchor,
             bedroomDoor,
@@ -144,6 +149,51 @@ public static class Hearth17F02MinimalLoopBinder
         EditorSceneManager.MarkSceneDirty(UnityEngine.SceneManagement.SceneManager.GetActiveScene());
         EditorSceneManager.SaveOpenScenes();
         Debug.Log("[Hearth17F02MinimalLoopBinder] 17F02 minimal loop setup applied.");
+    }
+
+    [MenuItem(MigrateWifeExitRouteMenuPath)]
+    public static void MigrateWifeExitRouteToSimpleSegments()
+    {
+        HearthCompanion17F02ReplayController replayController = Object.FindObjectOfType<HearthCompanion17F02ReplayController>(true);
+        if (replayController == null)
+        {
+            Debug.LogWarning("[Hearth17F02MinimalLoopBinder] 17F02 replay controller was not found. Run the full 17F02 setup first.");
+            return;
+        }
+
+        Transform[] wifeExitPathAnchors = CollectExistingWifeExitPathAnchors();
+        SplitWifeExitPathAnchors(wifeExitPathAnchors, out Transform[] wifeBeforeDoorPathAnchors, out Transform[] wifeAfterDoorPathAnchors);
+        Transform wifeDoorPauseAnchor = FindTransform("Anchor_Wife_17F02_DoorPause");
+        Transform wifeExitOutsideAnchor = FindTransform("Anchor_Wife_17F02_ExitOutside");
+
+        SerializedObject so = new SerializedObject(replayController);
+        SetBool(so, "useSimpleWifeExitRoute", true);
+        SetArray(so, "wifeBeforeDoorPathPoints", CollectObjects(wifeBeforeDoorPathAnchors));
+        SetBool(so, "moveToDoorPauseBeforeOpening", true);
+        SetArray(so, "wifeAfterDoorPathPoints", CollectObjects(wifeAfterDoorPathAnchors));
+        SetArray(so, "wifeExitPathPoints", CollectObjects(wifeExitPathAnchors));
+        SetInt(so, "openDoorAfterPathPointCount", -1);
+        if (wifeDoorPauseAnchor != null)
+        {
+            SetObject(so, "wifeDoorPauseAnchor", wifeDoorPauseAnchor);
+        }
+
+        if (wifeExitOutsideAnchor != null)
+        {
+            SetObject(so, "wifeExitOutsideAnchor", wifeExitOutsideAnchor);
+        }
+
+        so.ApplyModifiedPropertiesWithoutUndo();
+        EditorUtility.SetDirty(replayController);
+
+        ConfigureWifeExitAnchorGizmos(wifeBeforeDoorPathAnchors, wifeDoorPauseAnchor, wifeAfterDoorPathAnchors, wifeExitOutsideAnchor);
+
+        AssetDatabase.SaveAssets();
+        EditorSceneManager.MarkSceneDirty(UnityEngine.SceneManagement.SceneManager.GetActiveScene());
+        EditorSceneManager.SaveOpenScenes();
+
+        Debug.Log("[Hearth17F02MinimalLoopBinder] 17F02 wife exit route migrated to simple segments. BeforeDoor="
+            + wifeBeforeDoorPathAnchors.Length + ", AfterDoor=" + wifeAfterDoorPathAnchors.Length + ".");
     }
 
     private static void ConfigureViewSwitch(ViewSwitchController viewSwitch, GameObject person, GameObject robot)
@@ -184,6 +234,8 @@ public static class Hearth17F02MinimalLoopBinder
         GameObject diningHusband,
         GameObject terminalHusband,
         Transform[] wifeExitPathAnchors,
+        Transform[] wifeBeforeDoorPathAnchors,
+        Transform[] wifeAfterDoorPathAnchors,
         Transform wifeDoorPauseAnchor,
         Transform wifeExitOutsideAnchor,
         SmartDoorController bedroomDoor,
@@ -227,13 +279,17 @@ public static class Hearth17F02MinimalLoopBinder
         SetObject(so, "diningHusbandActor", diningHusband);
         SetObject(so, "terminalHusbandActor", terminalHusband);
         SetObject(so, "bedroomWifeMoveRoot", bedroomWife != null ? bedroomWife.transform : null);
+        SetBool(so, "useSimpleWifeExitRoute", true);
+        SetArray(so, "wifeBeforeDoorPathPoints", CollectObjects(wifeBeforeDoorPathAnchors));
+        SetArray(so, "wifeAfterDoorPathPoints", CollectObjects(wifeAfterDoorPathAnchors));
+        SetBool(so, "moveToDoorPauseBeforeOpening", true);
         SetArray(so, "wifeExitPathPoints", CollectObjects(wifeExitPathAnchors));
         SetObject(so, "wifeDoorPauseAnchor", wifeDoorPauseAnchor);
         SetObject(so, "wifeExitOutsideAnchor", wifeExitOutsideAnchor);
         SetObject(so, "wifeExitDoor", bedroomDoor);
         SetBool(so, "moveBedroomWifeToDoor", true);
         SetBool(so, "openDoorDuringWifeExit", true);
-        SetInt(so, "openDoorAfterPathPointCount", wifeExitPathAnchors != null && wifeExitPathAnchors.Length > 0 ? Mathf.Max(0, wifeExitPathAnchors.Length - 1) : -1);
+        SetInt(so, "openDoorAfterPathPointCount", -1);
         SetBool(so, "keepDoorOpenAfterWifeExit", true);
         SetBool(so, "hideBedroomWifeAfterExit", false);
         SetFloat(so, "wifeWalkSpeed", 1.15f);
@@ -406,6 +462,102 @@ public static class Hearth17F02MinimalLoopBinder
         }
 
         return anchors.ToArray();
+    }
+
+    private static Transform[] CollectExistingWifeExitPathAnchors()
+    {
+        List<Transform> anchors = new List<Transform>();
+        AddIfNotNull(anchors, FindTransform("Anchor_Wife_17F02_Path01"));
+
+        bool foundFineTuneAnchors = false;
+        for (int i = 1; i <= 5; i++)
+        {
+            Transform fineTuneAnchor = FindTransform("Anchor_Wife_17F02_Path01 (" + i + ")");
+            if (fineTuneAnchor == null)
+            {
+                continue;
+            }
+
+            anchors.Add(fineTuneAnchor);
+            foundFineTuneAnchors = true;
+        }
+
+        if (!foundFineTuneAnchors)
+        {
+            AddIfNotNull(anchors, FindTransform("Anchor_Wife_17F02_Path02"));
+        }
+
+        return anchors.ToArray();
+    }
+
+    private static void SplitWifeExitPathAnchors(Transform[] source, out Transform[] beforeDoor, out Transform[] afterDoor)
+    {
+        List<Transform> before = new List<Transform>();
+        List<Transform> after = new List<Transform>();
+
+        if (source != null)
+        {
+            int beforeCount = source.Length >= 6 ? 4 : Mathf.Max(0, source.Length - 1);
+            for (int i = 0; i < source.Length; i++)
+            {
+                if (source[i] == null)
+                {
+                    continue;
+                }
+
+                if (i < beforeCount)
+                {
+                    before.Add(source[i]);
+                }
+                else
+                {
+                    after.Add(source[i]);
+                }
+            }
+        }
+
+        beforeDoor = before.ToArray();
+        afterDoor = after.ToArray();
+    }
+
+    private static void ConfigureWifeExitAnchorGizmos(Transform[] beforeDoor, Transform doorPause, Transform[] afterDoor, Transform exitOutside)
+    {
+        Color beforeColor = new Color(0.2f, 0.85f, 1f, 0.85f);
+        Color doorColor = new Color(1f, 0.75f, 0.2f, 0.9f);
+        Color afterColor = new Color(0.35f, 1f, 0.45f, 0.85f);
+        Color forwardColor = new Color(1f, 0.92f, 0.25f, 0.95f);
+
+        if (beforeDoor != null)
+        {
+            for (int i = 0; i < beforeDoor.Length; i++)
+            {
+                ConfigureRouteAnchorGizmo(beforeDoor[i], "Before Door " + (i + 1), beforeColor, forwardColor);
+            }
+        }
+
+        ConfigureRouteAnchorGizmo(doorPause, "Door Pause - open", doorColor, forwardColor);
+
+        if (afterDoor != null)
+        {
+            for (int i = 0; i < afterDoor.Length; i++)
+            {
+                ConfigureRouteAnchorGizmo(afterDoor[i], "After Door " + (i + 1), afterColor, forwardColor);
+            }
+        }
+
+        ConfigureRouteAnchorGizmo(exitOutside, "Exit Outside", afterColor, forwardColor);
+    }
+
+    private static void ConfigureRouteAnchorGizmo(Transform anchor, string label, Color bodyColor, Color forwardColor)
+    {
+        if (anchor == null)
+        {
+            return;
+        }
+
+        HearthRouteAnchorGizmo gizmo = GetOrAdd<HearthRouteAnchorGizmo>(anchor.gameObject);
+        gizmo.Configure(label, bodyColor, forwardColor);
+        EditorUtility.SetDirty(gizmo);
     }
 
     private static void AddIfNotNull(List<Transform> anchors, Transform anchor)
@@ -805,6 +957,12 @@ public static class Hearth17F02MinimalLoopBinder
         }
 
         return null;
+    }
+
+    private static Transform FindTransform(params string[] names)
+    {
+        GameObject found = Find(names);
+        return found != null ? found.transform : null;
     }
 
     private static T GetOrAdd<T>(GameObject target) where T : Component

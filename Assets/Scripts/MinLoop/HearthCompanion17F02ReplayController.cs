@@ -87,6 +87,10 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
     [Header("Wife Exit Blocking")]
     [SerializeField] private bool moveBedroomWifeToDoor = true;
     [SerializeField] private Transform bedroomWifeMoveRoot;
+    [SerializeField] private bool useSimpleWifeExitRoute = true;
+    [SerializeField] private Transform[] wifeBeforeDoorPathPoints;
+    [SerializeField] private Transform[] wifeAfterDoorPathPoints;
+    [SerializeField] private bool moveToDoorPauseBeforeOpening = true;
     [SerializeField] private Transform[] wifeExitPathPoints;
     [SerializeField] private Transform wifeDoorPauseAnchor;
     [SerializeField] private Transform wifeExitOutsideAnchor;
@@ -98,7 +102,7 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
     [SerializeField] private bool hideBedroomWifeAfterExit;
     [SerializeField] private SmartDoorController wifeExitDoor;
     [SerializeField] private bool openDoorDuringWifeExit = true;
-    [Tooltip("-1 keeps the old behavior: walk every Wife Exit Path Point, then open the door. 0 opens before any path point. A positive value opens after that many path points, then continues the remaining path.")]
+    [Tooltip("Legacy split-route setting. Used only when Use Simple Wife Exit Route is off.")]
     [SerializeField] private int openDoorAfterPathPointCount = -1;
     [SerializeField] private bool keepDoorOpenAfterWifeExit = true;
 
@@ -574,6 +578,78 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
             yield break;
         }
 
+        if (useSimpleWifeExitRoute)
+        {
+            yield return MoveSimpleWifeExitRoute(moveRoot);
+        }
+        else
+        {
+            yield return MoveLegacyWifeExitRoute(moveRoot);
+        }
+
+        if (!keepDoorOpenAfterWifeExit && wifeExitDoor != null)
+        {
+            wifeExitDoor.Close();
+        }
+
+        if (hideBedroomWifeAfterExit && bedroomWifeActor != null)
+        {
+            bedroomWifeActor.SetActive(false);
+        }
+    }
+
+    private IEnumerator MoveSimpleWifeExitRoute(Transform moveRoot)
+    {
+        bool hasExplicitSimpleRoute = HasPathPoints(wifeBeforeDoorPathPoints) || HasPathPoints(wifeAfterDoorPathPoints);
+        if (hasExplicitSimpleRoute)
+        {
+            yield return MoveActorAlongPath(moveRoot, wifeBeforeDoorPathPoints);
+        }
+        else
+        {
+            int fallbackSplitIndex = ResolveDefaultSimpleRouteSplitIndex();
+            yield return MoveActorAlongPath(moveRoot, wifeExitPathPoints, 0, fallbackSplitIndex);
+        }
+
+        if (moveToDoorPauseBeforeOpening)
+        {
+            yield return MoveActorToAnchor(moveRoot, wifeDoorPauseAnchor);
+        }
+
+        if (wifeDoorPauseSeconds > 0f)
+        {
+            yield return new WaitForSeconds(wifeDoorPauseSeconds);
+        }
+
+        if (openDoorDuringWifeExit && wifeExitDoor != null)
+        {
+            wifeExitDoor.Open();
+            while (wifeExitDoor.IsMoving)
+            {
+                yield return null;
+            }
+        }
+
+        if (waitAfterDoorOpenSeconds > 0f)
+        {
+            yield return new WaitForSeconds(waitAfterDoorOpenSeconds);
+        }
+
+        if (hasExplicitSimpleRoute)
+        {
+            yield return MoveActorAlongPath(moveRoot, wifeAfterDoorPathPoints);
+        }
+        else
+        {
+            int fallbackSplitIndex = ResolveDefaultSimpleRouteSplitIndex();
+            yield return MoveActorAlongPath(moveRoot, wifeExitPathPoints, fallbackSplitIndex, GetPathLength(wifeExitPathPoints));
+        }
+
+        yield return MoveActorToAnchor(moveRoot, wifeExitOutsideAnchor);
+    }
+
+    private IEnumerator MoveLegacyWifeExitRoute(Transform moveRoot)
+    {
         int splitIndex = ResolveDoorOpenPathSplitIndex();
         yield return MoveActorAlongPath(moveRoot, wifeExitPathPoints, 0, splitIndex);
         yield return MoveActorToAnchor(moveRoot, wifeDoorPauseAnchor);
@@ -599,16 +675,6 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
 
         yield return MoveActorAlongPath(moveRoot, wifeExitPathPoints, splitIndex, GetPathLength(wifeExitPathPoints));
         yield return MoveActorToAnchor(moveRoot, wifeExitOutsideAnchor);
-
-        if (!keepDoorOpenAfterWifeExit && wifeExitDoor != null)
-        {
-            wifeExitDoor.Close();
-        }
-
-        if (hideBedroomWifeAfterExit && bedroomWifeActor != null)
-        {
-            bedroomWifeActor.SetActive(false);
-        }
     }
 
     private Transform ResolveBedroomWifeMoveRoot()
@@ -665,9 +731,43 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
         return Mathf.Clamp(openDoorAfterPathPointCount, 0, pathLength);
     }
 
+    private int ResolveDefaultSimpleRouteSplitIndex()
+    {
+        int pathLength = GetPathLength(wifeExitPathPoints);
+        if (pathLength <= 0)
+        {
+            return 0;
+        }
+
+        if (pathLength >= 6)
+        {
+            return 4;
+        }
+
+        return Mathf.Max(0, pathLength - 1);
+    }
+
     private static int GetPathLength(Transform[] path)
     {
         return path != null ? path.Length : 0;
+    }
+
+    private static bool HasPathPoints(Transform[] path)
+    {
+        if (path == null)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < path.Length; i++)
+        {
+            if (path[i] != null)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private IEnumerator MoveActorToAnchor(Transform actor, Transform anchor)

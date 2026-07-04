@@ -22,7 +22,7 @@
 
 3. `WifeExitLocked`  
    玩家完成 E 交互后，先播放 `17F02_BedroomComfort`，也就是陪伴单元对女主人的回应/安慰字幕。女主得到一些安慰后，听到男主从餐厅/客厅喊她吃饭；女主只回应男主，不再对陪伴单元说“等一下”，也不需要照顾陪伴单元的感受。随后女主直接起身离开卧室。离开期间机器人不能移动、不能干预，只能看着她走出去。
-   当前门时机由 `Open Door After Path Point Count` 控制，当前值是 `5`，用于避免女主先穿门、门后打开。
+   当前出门路线改为三段式：先走 `Wife Before Door Path Points`，再到 `Wife Door Pause Anchor` 开门，再走 `Wife After Door Path Points` 和 `Wife Exit Outside Anchor`。这样不会再需要计算“第几个点后插入开门”。
 
 4. `DiningObservation`  
    女主最终移动到餐桌处，位置和朝向以 `casual_Female_K` 为准。几秒后默认认为男主人和女主人已经坐到餐桌前。机器人恢复移动，玩家可以走出房间并听到餐桌对话。
@@ -190,8 +190,11 @@ Anchor_Wife_17F02_Path01
 
 - `Move Bedroom Wife To Door`：是否让女主人自动走向门。关闭后只播放字幕和锁定，不移动角色。
 - `Bedroom Wife Move Root`：卧室女主人模型，一般是 `casual_Female_K (2)` 或你指定的卧室女主人根物体。
-- `Wife Exit Path Points`：中途路线点数组。最新走位意图记录为 `Anchor_Wife_17F02_Path01 -> Anchor_Wife_17F02_Path01 (1) -> Anchor_Wife_17F02_Path01 (2) -> Anchor_Wife_17F02_Path01 (3) -> Anchor_Wife_17F02_Path01 (4) -> Anchor_Wife_17F02_Path01 (5)`，这些路径点用于细调女主人离开卧室时的位置和朝向，让路径更丝滑。
-- `Open Door After Path Point Count`：女主走完几个 `Wife Exit Path Points` 后，先移动到 `Wife Door Pause Anchor` 开门，再继续剩余路径。当前推荐值是 `5`。如果女主还是先穿门再开门，把它调小；如果门开太早，把它调大；如果填 `-1`，会恢复旧逻辑，也就是走完所有路径点后才开门。
+- `Use Simple Wife Exit Route`：当前推荐开启。开启后使用更直观的三段式路线，不再使用旧的“第几个路径点后开门”算法。
+- `Wife Before Door Path Points`：门前路线点，只放女主还在房间内、准备走到门口之前的点。
+- `Move To Door Pause Before Opening`：当前推荐开启。女主走完门前路线后，会先贴到 `Wife Door Pause Anchor`，停顿，然后开门。
+- `Wife After Door Path Points`：门后路线点，只放门已经打开后、女主穿过门框和走到门外的点。
+- `Wife Exit Path Points`：旧路线数组，保留作为兜底。如果新的门前/门后数组为空，脚本会自动把旧数组前 4 个点当门前、后 2 个点当门后，避免旧场景直接失效。
 - `Wife Door Pause Anchor`：女主人开门前停一下的位置。
 - `Wife Exit Outside Anchor`：女主人走出房间后的终点。
 - `Wife Walk Speed / Wife Rotate Speed`：女主人脚本位移和转身速度。现在只是滑动位移，后续接 Animator 后可以保留这些锚点作为路线。
@@ -202,7 +205,12 @@ Anchor_Wife_17F02_Path01
 - `Keep Door Open After Wife Exit`：女主人离开后门是否保持打开。
 - `Hide Bedroom Wife After Exit`：女主人走出后是否隐藏卧室那份模型。现在默认关闭，避免误删视野中的模型；如果你用餐桌女主人替代后续状态，可以开启。
 
-路线由锚点控制，不建议写死在脚本里。`Path01 (1)` 到 `Path01 (5)` 是你额外复制出来的细调点，用于减少穿模、控制转身方向，并让女主从房间里走出来的运动更自然。后续真正接脚本时，应把这些点按顺序拖进 `Wife Exit Path Points`，再单独绑定 `Wife Door Pause Anchor` 和 `Wife Exit Outside Anchor`。
+路线由锚点控制，不建议写死在脚本里。`Path01 (1)` 到 `Path01 (5)` 是你额外复制出来的细调点，用于减少穿模、控制转身方向，并让女主从房间里走出来的运动更自然。现在推荐把这些点分两组拖：
+
+- 门前：拖进 `Wife Before Door Path Points`。
+- 门口：单独拖到 `Wife Door Pause Anchor`。
+- 门后：拖进 `Wife After Door Path Points`。
+- 终点：单独拖到 `Wife Exit Outside Anchor`。
 
 门如果打开方向反了，选中 `Door_2_Brown (4)`，把 `SmartDoorController / Open Local Euler Offset / Y` 从 `90` 改成 `-90`。如果没有开门声音，把音效拖到 `Open Clip` 和 `Close Clip`；当前门资产可能只有 AudioSource，但没有实际 AudioClip。
 
@@ -210,13 +218,16 @@ Anchor_Wife_17F02_Path01
 
 1. 在 Hierarchy 里展开 `MIN_LOOP_ROOT / Anchors`。
 2. 选中 `Anchor_Wife_17F02_Path01`，用移动工具把它放到女主人离床后的第一个安全位置。
-3. 依次选中 `Anchor_Wife_17F02_Path01 (1)`、`(2)`、`(3)`、`(4)`、`(5)`，把它们放到女主人从卧室走向门口时需要细调的位置。
+3. 把仍在房间内的点放进 `Wife Before Door Path Points`，例如 `Path01` 到 `Path01 (3)`。
 4. 选中 `Anchor_Wife_17F02_DoorPause`，把它放在门内侧，让女主人到这里先停顿并准备开门。
-5. 选中 `Anchor_Wife_17F02_ExitOutside`，把它放在门外侧，作为走出房间后的终点。
-6. 用旋转工具调整每个锚点的 Y 轴方向。女主人走向这个点时会逐渐转向这个锚点的朝向，到达时会贴合这个锚点的朝向。
-7. 女主最终到餐桌后的静态位置和朝向，以 `casual_Female_K` 为准。
+5. 把门打开后才应该走的点放进 `Wife After Door Path Points`，例如 `Path01 (4)`、`Path01 (5)`。
+6. 选中 `Anchor_Wife_17F02_ExitOutside`，把它放在门外侧，作为走出房间后的终点。
+7. 用旋转工具调整每个锚点的 Y 轴方向。女主人走向这个点时会逐渐转向这个锚点的朝向，到达时会贴合这个锚点的朝向。
+8. 女主最终到餐桌后的静态位置和朝向，以 `casual_Female_K` 为准。
 
-如果还是穿模，可以继续复制新的空物体放到 `MIN_LOOP_ROOT / Anchors` 下，并把它按顺序拖进 `HearthCompanion17F02ReplayController / Wife Exit Path Points` 数组里。路径点越多，越方便控制女主转身和绕开床、墙、门框。
+为了更好判断方向，锚点现在可以挂 `HearthRouteAnchorGizmo`。它会在 Scene 视图里画一个线框小人和黄色朝向箭头，不会出现在 Game 画面里。执行菜单 `Tools / Hearth / Replay / Migrate 17F02 Wife Exit Route To Simple Segments` 会自动给当前路线锚点加上这个可视化。
+
+如果还是穿模，可以继续复制新的空物体放到 `MIN_LOOP_ROOT / Anchors` 下，并把它按顺序拖进 `Wife Before Door Path Points` 或 `Wife After Door Path Points`。路径点越多，越方便控制女主转身和绕开床、墙、门框。
 
 如果你暂时不想让脚本移动女主人，可以关闭 `Move Bedroom Wife To Door`。这样流程仍然播放字幕和锁定机器人，但女主人不会自动走；后续可以用 Animator、Timeline 或事件来接真正动作。
 

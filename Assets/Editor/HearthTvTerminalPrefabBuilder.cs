@@ -472,7 +472,6 @@ public static class HearthTvTerminalPrefabBuilder
 
         interactable.SetTerminalController(controller);
         EnsureCollider(tvTransform.gameObject);
-        DisableLegacyTerminalInteractables(tvTransform.gameObject);
 
         EditorUtility.SetDirty(tvTransform.gameObject);
         EditorUtility.SetDirty(canvasObject);
@@ -492,21 +491,6 @@ public static class HearthTvTerminalPrefabBuilder
         }
 
         StandardizeTvTerminal(Selection.activeTransform, terminalPrefabPath);
-    }
-
-    private static void DisableLegacyTerminalInteractables(GameObject tvObject)
-    {
-        TerminalInteractable oldTerminal = tvObject.GetComponent<TerminalInteractable>();
-        if (oldTerminal != null)
-        {
-            oldTerminal.enabled = false;
-        }
-
-        ResidentTerminalFlow residentFlow = tvObject.GetComponent<ResidentTerminalFlow>();
-        if (residentFlow != null)
-        {
-            residentFlow.enabled = false;
-        }
     }
 
     private static Camera FindBestTerminalCamera(Transform tvTransform)

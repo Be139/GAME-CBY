@@ -37,6 +37,7 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
     [Header("Anchors")]
     [SerializeField] private Transform bedroomStartAnchor;
     [SerializeField] private Transform livingRoomTerminalAnchor;
+    [SerializeField] private Transform livingRoomTerminalCameraAnchor;
 
     [Header("HUD Scene Ids")]
     [SerializeField] private string bedroomWakeSceneId = "17F02_01";
@@ -282,8 +283,14 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
 
     public void SetAnchors(Transform bedroomAnchor, Transform livingTerminalAnchor)
     {
+        SetAnchors(bedroomAnchor, livingTerminalAnchor, livingRoomTerminalCameraAnchor);
+    }
+
+    public void SetAnchors(Transform bedroomAnchor, Transform livingTerminalAnchor, Transform livingTerminalCameraAnchor)
+    {
         bedroomStartAnchor = bedroomAnchor;
         livingRoomTerminalAnchor = livingTerminalAnchor;
+        livingRoomTerminalCameraAnchor = livingTerminalCameraAnchor;
     }
 
     private IEnumerator ReplayRoutine()
@@ -405,7 +412,7 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
         onLivingRoomTerminalStarted.Invoke();
         SetStageActors(false, false, true);
         ApplyPose(terminalHusbandPose, terminalHusbandPoseId);
-        TeleportRobot(livingRoomTerminalAnchor);
+        TeleportRobot(livingRoomTerminalAnchor, livingRoomTerminalCameraAnchor);
         ShowHudScene(logAccessSceneId, false);
         SetRobotControl(false, false, false);
         yield return FadeBlackTo(0f, livingRoomFadeInSeconds);
@@ -503,12 +510,22 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
 
     private void TeleportRobot(Transform anchor)
     {
+        TeleportRobot(anchor, null);
+    }
+
+    private void TeleportRobot(Transform anchor, Transform cameraAnchor)
+    {
         if (robotRoot == null || anchor == null)
         {
             return;
         }
 
         robotRoot.SetPositionAndRotation(anchor.position, anchor.rotation);
+
+        if (robotCamera != null && cameraAnchor != null)
+        {
+            robotCamera.transform.SetPositionAndRotation(cameraAnchor.position, cameraAnchor.rotation);
+        }
 
         if (robotLook != null)
         {

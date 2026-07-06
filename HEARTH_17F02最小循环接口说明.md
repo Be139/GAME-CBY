@@ -148,6 +148,33 @@ UI 的位置和大小仍然看：
 
 `HEARTH_陪伴单元机器人HUD调参入口.md`
 
+## 关卡02 UI 统一调整入口
+
+如果你想整体调整第二户的 UI，不要只看一个脚本，按下面几类入口调：
+
+- 17F02 TV 终端页面：选中 `17F/ROOM2/TV (4)/MonitorCanvas/Terminal_17F02`。页面整体大小优先调 `MonitorCanvas` 或终端内容父级的缩放；按钮/页面切换由 `HearthTvTerminalController` 控制。
+- 17F02 机器人 HUD 文本和短时卡：改 `Assets/Data/HearthHud/Companion/CompanionScene_04_17F02_01.asset` 到 `CompanionScene_09_17F02_06.asset`。
+- 机器人 HUD 的通用位置、大小、文字字号、边框和面板位置：改场景里的 `HearthCompanionHudRoot`，具体入口见 `HEARTH_陪伴单元机器人HUD调参入口.md`。这些属于通用机器人 HUD，改一次会影响 17F01/17F02/17F03；如果只想第二户独立变体，后续需要复制一个 17F02 专用 Root 或增加 per-scene override。
+- 字幕位置、字号、宽度：选中 `MIN_LOOP_ROOT/UI/MinLoopSubtitlePlayer`，调整 `Speaker Center Y`、`Body Center Y`、字体大小和正文宽度。这里目前是全局字幕样式，改一次会影响所有关卡字幕。
+- 17F02 字幕内容、每句停留时长、语音：改 `Assets/Data/MinLoop/Dialogues/17F02_*.asset`。后续录音后，把对应 `AudioClip` 拖到每句 `Voice Clip`。
+- 17F02 黑屏、淡入淡出、等待时长、E 交互开放时间：选中 `MIN_LOOP_ROOT/ReplayRoom_17F02/HearthCompanion17F02ReplayController`，看 `Timing` 和 `Interaction Gates`。
+
+## 第三幕固定视角怎么调
+
+第三幕“男主调用记录”的视角现在由两个锚点一起决定：
+
+- `Anchor_Robot_17F02_LivingRoomTerminal`：控制正式机器人身体位置和水平朝向。
+- `Anchor_Robot_17F02_LivingRoomTerminalCamera`：控制正式机器人相机位置和俯仰角。
+
+推荐调法：
+
+1. 在 Scene 里把 `Robot Controller (3)` 放到第三幕你想要的位置。
+2. 调它子物体里的 Camera 视角，特别是俯仰角。
+3. 运行 `Tools / Hearth / Replay / Apply 17F02 Minimal Loop Setup`，工具会重新复制身体锚点和相机锚点。
+4. 如果你同时调整了女主离开卧室参考模型，再运行一次 `Tools / Hearth / Replay / Build 17F02 Wife Route From Female References`。
+
+修复后的逻辑：从第二幕餐桌切到第三幕后，正式 `Player/Robot Controller` 会同时套用第三幕身体锚点和相机锚点，不再继承第二幕最后玩家看地面或看天花板的视角。
+
 ## 黑屏和节奏在哪里调
 
 选中：
@@ -215,8 +242,9 @@ Actor_Wife_17F02_Bedroom
 - `casual_Female_K (3)` 到 `(7)` 会改名为 `REF_Wife_17F02_BeforeDoor_01` 到 `05`，作为开门前路线参考。
 - `casual_Female_K (8)` 会改名为 `REF_Wife_17F02_DoorPause`，只作为停下并开门的位置，不再放进普通路径。
 - `casual_Female_K (9)` 会改名为 `REF_Wife_17F02_ExitOutside`，作为走出房间后的终点。
-- 参考模型会统一放到 `MIN_LOOP_ROOT / ReplayRoom_17F02 / WifeRouteReferenceModels`，并挂 `HearthEditorOnlyReferenceModel`，编辑时可见，Play 时自动隐藏 Renderer 和 Collider。
+- 参考模型会统一放到 `MIN_LOOP_ROOT / ReplayRoom_17F02 / WifeRouteReferenceModels`，并挂 `HearthEditorOnlyReferenceModel`。编辑时仍然可见，但 Collider / Rigidbody 碰撞会保持关闭；Play 时 Renderer、Collider、Animator、AudioSource 和导航组件都会关闭，所以不会挡住机器人走路。
 - 程序锚点会自动生成到 `MIN_LOOP_ROOT / Anchors`，并写入 `HearthCompanion17F02ReplayController`。
+- 已淘汰的旧路线锚点 `Anchor_Wife_17F02_Path01`、`Path01 (1)-(5)`、`Path02` 会被清理，避免以后误用。
 
 门如果打开方向反了，选中 `Door_2_Brown (4)`，把 `SmartDoorController / Open Local Euler Offset / Y` 从 `90` 改成 `-90`。如果没有开门声音，把音效拖到 `Open Clip` 和 `Close Clip`；当前门资产可能只有 AudioSource，但没有实际 AudioClip。
 
@@ -230,7 +258,7 @@ Actor_Wife_17F02_Bedroom
 6. 进入 Play Mode 测试；如果还穿模，退出 Play Mode 后继续移动参考模型，再重跑菜单。
 7. 女主最终到餐桌后的静态位置和朝向，以 `casual_Female_K` 为准。
 
-如果你更喜欢看空锚点，也可以查看 `MIN_LOOP_ROOT / Anchors` 下自动生成的 `Anchor_Wife_17F02_BeforeDoor_01` 到 `05`、`Anchor_Wife_17F02_DoorPause`、`Anchor_Wife_17F02_ExitOutside`。它们会挂 `HearthRouteAnchorGizmo`，只用于预览和脚本移动。
+如果你更喜欢看空锚点，也可以查看 `MIN_LOOP_ROOT / Anchors` 下自动生成的 `Anchor_Wife_17F02_BeforeDoor_01` 到 `05`、`Anchor_Wife_17F02_DoorPause`、`Anchor_Wife_17F02_ExitOutside`。它们会挂 `HearthRouteAnchorGizmo`，只用于预览和脚本移动。旧 `Path01 / Path02` 系列已经淘汰，不要再手动恢复。
 
 如果你暂时不想让脚本移动女主人，可以关闭 `Move Bedroom Wife To Door`。这样流程仍然播放字幕和锁定机器人，但女主人不会自动走；后续可以用 Animator、Timeline 或事件来接真正动作。
 

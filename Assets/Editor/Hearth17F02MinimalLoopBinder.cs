@@ -55,6 +55,10 @@ public static class Hearth17F02MinimalLoopBinder
 
         Transform bedroomAnchor = CreateAnchor(anchorsRoot, "Anchor_Robot_17F02_BedroomStart", robotBedroomReference != null ? robotBedroomReference.transform : robot != null ? robot.transform : null);
         Transform livingTerminalAnchor = CreateAnchor(anchorsRoot, "Anchor_Robot_17F02_LivingRoomTerminal", robotLivingReference != null ? robotLivingReference.transform : robot != null ? robot.transform : null);
+        Transform livingTerminalCameraSource = FindCameraTransform(robotLivingReference);
+        Transform livingTerminalCameraAnchor = livingTerminalCameraSource != null
+            ? CreateAnchor(anchorsRoot, "Anchor_Robot_17F02_LivingRoomTerminalCamera", livingTerminalCameraSource)
+            : FindTransform("Anchor_Robot_17F02_LivingRoomTerminalCamera");
         Transform wifePathAnchorA = CreateWifeExitPathAnchor(
             anchorsRoot,
             "Anchor_Wife_17F02_Path01",
@@ -121,6 +125,7 @@ public static class Hearth17F02MinimalLoopBinder
             robot,
             bedroomAnchor,
             livingTerminalAnchor,
+            livingTerminalCameraAnchor,
             bedroomWife,
             diningWife,
             diningHusband,
@@ -143,6 +148,10 @@ public static class Hearth17F02MinimalLoopBinder
         ConfigureFlow(flow, terminal17F02, viewSwitch, replayController, trust);
         ConfigureTerminal(terminal17F02, flow, viewSwitch, person);
         ConfigureHud(hud, flowBinder, previewInput, exclusiveMode, flow, viewSwitch);
+        if (useReferenceWifeRoute)
+        {
+            DeleteDeprecatedWifeRouteObjects();
+        }
 
         EditorUtility.SetDirty(minLoopRoot);
         if (terminal17F02 != null)
@@ -288,6 +297,7 @@ public static class Hearth17F02MinimalLoopBinder
         GameObject bedroomDoorObject = Find("Door_2_Brown (4)", "Door_2_Brown");
         SmartDoorController bedroomDoor = ConfigureDoorController(bedroomDoorObject);
         ConfigureReferenceDrivenWifeRoute(replayController, bedroomWife, compactBeforeDoorAnchors, wifeDoorPauseAnchor, wifeExitOutsideAnchor, bedroomDoor);
+        DeleteDeprecatedWifeRouteObjects();
 
         EditorUtility.SetDirty(minLoopRoot);
         AssetDatabase.SaveAssets();
@@ -335,6 +345,7 @@ public static class Hearth17F02MinimalLoopBinder
         GameObject robot,
         Transform bedroomAnchor,
         Transform livingTerminalAnchor,
+        Transform livingTerminalCameraAnchor,
         GameObject bedroomWife,
         GameObject diningWife,
         GameObject diningHusband,
@@ -372,6 +383,7 @@ public static class Hearth17F02MinimalLoopBinder
         SetObject(so, "robotRigidbody", robot != null ? robot.GetComponent<Rigidbody>() : null);
         SetObject(so, "bedroomStartAnchor", bedroomAnchor);
         SetObject(so, "livingRoomTerminalAnchor", livingTerminalAnchor);
+        SetObject(so, "livingRoomTerminalCameraAnchor", livingTerminalCameraAnchor);
         SetObject(so, "bedroomWakeSequence", bedroomWake);
         SetObject(so, "bedroomConfideSequence", bedroomConfide);
         SetObject(so, "bedroomComfortSequence", bedroomComfort);
@@ -716,7 +728,7 @@ public static class Hearth17F02MinimalLoopBinder
         SetArray(so, "wifeBeforeDoorPathPoints", CollectObjects(beforeDoorAnchors));
         SetArray(so, "wifeAfterDoorPathPoints", new Object[0]);
         SetBool(so, "moveToDoorPauseBeforeOpening", true);
-        SetArray(so, "wifeExitPathPoints", CollectObjects(beforeDoorAnchors));
+        SetArray(so, "wifeExitPathPoints", new Object[0]);
         SetObject(so, "wifeDoorPauseAnchor", doorPauseAnchor);
         SetObject(so, "wifeExitOutsideAnchor", exitOutsideAnchor);
         SetObject(so, "wifeExitDoor", bedroomDoor);
@@ -739,6 +751,7 @@ public static class Hearth17F02MinimalLoopBinder
         reference.SetActive(true);
 
         HearthEditorOnlyReferenceModel marker = GetOrAdd<HearthEditorOnlyReferenceModel>(reference);
+        marker.ApplyReferenceState();
         EditorUtility.SetDirty(marker);
 
         foreach (Renderer renderer in reference.GetComponentsInChildren<Renderer>(true))
@@ -749,8 +762,33 @@ public static class Hearth17F02MinimalLoopBinder
 
         foreach (Collider collider in reference.GetComponentsInChildren<Collider>(true))
         {
-            collider.enabled = true;
+            collider.enabled = false;
             EditorUtility.SetDirty(collider);
+        }
+    }
+
+    private static void DeleteDeprecatedWifeRouteObjects()
+    {
+        string[] deprecatedNames =
+        {
+            "Anchor_Wife_17F02_Path01",
+            "Anchor_Wife_17F02_Path01 (1)",
+            "Anchor_Wife_17F02_Path01 (2)",
+            "Anchor_Wife_17F02_Path01 (3)",
+            "Anchor_Wife_17F02_Path01 (4)",
+            "Anchor_Wife_17F02_Path01 (5)",
+            "Anchor_Wife_17F02_Path02"
+        };
+
+        for (int i = 0; i < deprecatedNames.Length; i++)
+        {
+            GameObject deprecated = Find(deprecatedNames[i]);
+            if (deprecated == null)
+            {
+                continue;
+            }
+
+            Object.DestroyImmediate(deprecated);
         }
     }
 
@@ -1031,6 +1069,17 @@ public static class Hearth17F02MinimalLoopBinder
         }
 
         AssetDatabase.CreateFolder(parent, System.IO.Path.GetFileName(folder));
+    }
+
+    private static Transform FindCameraTransform(GameObject root)
+    {
+        if (root == null)
+        {
+            return null;
+        }
+
+        Camera camera = root.GetComponentInChildren<Camera>(true);
+        return camera != null ? camera.transform : null;
     }
 
     private static Transform CreateAnchor(Transform parent, string name, Transform source)

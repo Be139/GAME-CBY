@@ -1,32 +1,76 @@
 using UnityEngine;
+using UnityEngine.AI;
 
 [DisallowMultipleComponent]
 [ExecuteAlways]
 public class HearthEditorOnlyReferenceModel : MonoBehaviour
 {
+    [SerializeField] private bool disableCollidersAlways = true;
+    [SerializeField] private bool makeRigidbodiesKinematicAlways = true;
     [SerializeField] private bool hideRenderersInPlay = true;
-    [SerializeField] private bool disableCollidersInPlay = true;
     [SerializeField] private bool disableAnimatorsInPlay = true;
     [SerializeField] private bool disableAudioSourcesInPlay = true;
-    [SerializeField] private bool makeRigidbodiesKinematicInPlay = true;
+    [SerializeField] private bool disableNavigationInPlay = true;
+    [SerializeField] private bool disableMonoBehavioursInPlay = true;
 
     private void Awake()
     {
-        ApplyPlayModeState();
+        ApplyReferenceState();
     }
 
     private void OnEnable()
     {
-        ApplyPlayModeState();
+        ApplyReferenceState();
     }
 
     private void Start()
     {
-        ApplyPlayModeState();
+        ApplyReferenceState();
+    }
+
+    private void LateUpdate()
+    {
+        if (Application.isPlaying)
+        {
+            ApplyReferenceState();
+        }
+    }
+
+    private void OnValidate()
+    {
+        ApplyReferenceState();
     }
 
     public void ApplyPlayModeState()
     {
+        ApplyReferenceState();
+    }
+
+    public void ApplyReferenceState()
+    {
+        if (disableCollidersAlways)
+        {
+            foreach (Collider collider in GetComponentsInChildren<Collider>(true))
+            {
+                collider.enabled = false;
+            }
+        }
+
+        if (makeRigidbodiesKinematicAlways)
+        {
+            foreach (Rigidbody body in GetComponentsInChildren<Rigidbody>(true))
+            {
+                if (Application.isPlaying && !body.isKinematic)
+                {
+                    body.velocity = Vector3.zero;
+                    body.angularVelocity = Vector3.zero;
+                }
+
+                body.isKinematic = true;
+                body.detectCollisions = false;
+            }
+        }
+
         if (!Application.isPlaying)
         {
             return;
@@ -37,14 +81,6 @@ public class HearthEditorOnlyReferenceModel : MonoBehaviour
             foreach (Renderer renderer in GetComponentsInChildren<Renderer>(true))
             {
                 renderer.enabled = false;
-            }
-        }
-
-        if (disableCollidersInPlay)
-        {
-            foreach (Collider collider in GetComponentsInChildren<Collider>(true))
-            {
-                collider.enabled = false;
             }
         }
 
@@ -64,18 +100,27 @@ public class HearthEditorOnlyReferenceModel : MonoBehaviour
             }
         }
 
-        if (makeRigidbodiesKinematicInPlay)
+        if (disableNavigationInPlay)
         {
-            foreach (Rigidbody body in GetComponentsInChildren<Rigidbody>(true))
+            foreach (NavMeshAgent agent in GetComponentsInChildren<NavMeshAgent>(true))
             {
-                if (!body.isKinematic)
-                {
-                    body.velocity = Vector3.zero;
-                    body.angularVelocity = Vector3.zero;
-                }
+                agent.enabled = false;
+            }
 
-                body.isKinematic = true;
-                body.detectCollisions = false;
+            foreach (NavMeshObstacle obstacle in GetComponentsInChildren<NavMeshObstacle>(true))
+            {
+                obstacle.enabled = false;
+            }
+        }
+
+        if (disableMonoBehavioursInPlay)
+        {
+            foreach (MonoBehaviour behaviour in GetComponentsInChildren<MonoBehaviour>(true))
+            {
+                if (behaviour != null && behaviour != this)
+                {
+                    behaviour.enabled = false;
+                }
             }
         }
     }

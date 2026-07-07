@@ -62,6 +62,10 @@ public static class Hearth17F02MinimalLoopBinder
         GameObject bedroomBed = Find("17F/ROOM3/Prop_Bed_09", "Prop_Bed_09");
 
         Transform bedroomAnchor = CreateAnchor(anchorsRoot, "Anchor_Robot_17F02_BedroomStart", robotBedroomReference != null ? robotBedroomReference.transform : robot != null ? robot.transform : null);
+        Transform bedroomCameraSource = FindCameraTransform(robotBedroomReference);
+        Transform bedroomCameraAnchor = bedroomCameraSource != null
+            ? CreateAnchor(anchorsRoot, "Anchor_Robot_17F02_BedroomStartCamera", bedroomCameraSource)
+            : FindTransform("Anchor_Robot_17F02_BedroomStartCamera");
         Transform livingTerminalAnchor = CreateAnchor(anchorsRoot, "Anchor_Robot_17F02_LivingRoomTerminal", robotLivingReference != null ? robotLivingReference.transform : robot != null ? robot.transform : null);
         Transform livingTerminalCameraSource = FindCameraTransform(robotLivingReference);
         Transform livingTerminalCameraAnchor = livingTerminalCameraSource != null
@@ -171,6 +175,7 @@ public static class Hearth17F02MinimalLoopBinder
             subtitlePlayer,
             robot,
             bedroomAnchor,
+            bedroomCameraAnchor,
             livingTerminalAnchor,
             livingTerminalCameraAnchor,
             bedroomWife,
@@ -410,6 +415,7 @@ public static class Hearth17F02MinimalLoopBinder
         MinLoopSubtitlePlayer subtitlePlayer,
         GameObject robot,
         Transform bedroomAnchor,
+        Transform bedroomCameraAnchor,
         Transform livingTerminalAnchor,
         Transform livingTerminalCameraAnchor,
         GameObject bedroomWife,
@@ -452,6 +458,7 @@ public static class Hearth17F02MinimalLoopBinder
         SetObject(so, "robotInteraction", robot != null ? robot.GetComponent<PlayerInteraction>() : null);
         SetObject(so, "robotRigidbody", robot != null ? robot.GetComponent<Rigidbody>() : null);
         SetObject(so, "bedroomStartAnchor", bedroomAnchor);
+        SetObject(so, "bedroomStartCameraAnchor", bedroomCameraAnchor);
         SetObject(so, "livingRoomTerminalAnchor", livingTerminalAnchor);
         SetObject(so, "livingRoomTerminalCameraAnchor", livingTerminalCameraAnchor);
         SetObject(so, "bedroomWakeSequence", bedroomWake);
@@ -1403,7 +1410,10 @@ public static class Hearth17F02MinimalLoopBinder
             EditorUtility.SetDirty(body);
         }
 
-        reference.SetActive(false);
+        HearthEditorOnlyReferenceModel marker = GetOrAdd<HearthEditorOnlyReferenceModel>(reference);
+        marker.ApplyReferenceState();
+
+        reference.SetActive(true);
         EditorUtility.SetDirty(reference);
     }
 

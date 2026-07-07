@@ -36,6 +36,7 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
 
     [Header("Anchors")]
     [SerializeField] private Transform bedroomStartAnchor;
+    [SerializeField] private Transform bedroomStartCameraAnchor;
     [SerializeField] private Transform livingRoomTerminalAnchor;
     [SerializeField] private Transform livingRoomTerminalCameraAnchor;
 
@@ -234,7 +235,7 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
 
         SetStageActors(true, false, false);
         PlayActorLoopOrPose(bedroomWifeAnimation, bedroomWifeIdleAnimationId, bedroomWifePose, bedroomWifePoseId);
-        TeleportRobot(bedroomStartAnchor);
+        TeleportRobot(bedroomStartAnchor, bedroomStartCameraAnchor);
         SetRobotControl(false, false, false);
         SetBlackoutAlpha(1f);
     }
@@ -306,12 +307,18 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
 
     public void SetAnchors(Transform bedroomAnchor, Transform livingTerminalAnchor)
     {
-        SetAnchors(bedroomAnchor, livingTerminalAnchor, livingRoomTerminalCameraAnchor);
+        SetAnchors(bedroomAnchor, bedroomStartCameraAnchor, livingTerminalAnchor, livingRoomTerminalCameraAnchor);
     }
 
     public void SetAnchors(Transform bedroomAnchor, Transform livingTerminalAnchor, Transform livingTerminalCameraAnchor)
     {
+        SetAnchors(bedroomAnchor, bedroomStartCameraAnchor, livingTerminalAnchor, livingTerminalCameraAnchor);
+    }
+
+    public void SetAnchors(Transform bedroomAnchor, Transform bedroomCameraAnchor, Transform livingTerminalAnchor, Transform livingTerminalCameraAnchor)
+    {
         bedroomStartAnchor = bedroomAnchor;
+        bedroomStartCameraAnchor = bedroomCameraAnchor;
         livingRoomTerminalAnchor = livingTerminalAnchor;
         livingRoomTerminalCameraAnchor = livingTerminalCameraAnchor;
     }
@@ -327,7 +334,7 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
 
         SetStageActors(true, false, false);
         PlayActorLoopOrPose(bedroomWifeAnimation, bedroomWifeIdleAnimationId, bedroomWifePose, bedroomWifePoseId);
-        TeleportRobot(bedroomStartAnchor);
+        TeleportRobot(bedroomStartAnchor, bedroomStartCameraAnchor);
         SetRobotControl(false, false, false);
 
         currentStep = ReplayStep.BedroomWake;

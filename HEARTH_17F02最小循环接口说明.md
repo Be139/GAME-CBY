@@ -1,5 +1,21 @@
 # 2026-07-02 回放切入闪到 17F01 的修复记录
 
+## 2026-07-07 机器人参考控制器怎么调
+
+- 正式运行时只控制 `Player/Robot Controller`。
+- `Player/Robot Controller (2)` 和 `Player/Robot Controller (3)` 不是第二、第三个正式机器人，而是 17F02 的可视化参考体：
+  - `(2)` 代表卧室唤醒阶段的机器人出生点和朝向。
+  - `(2)` 子物体里的 `Robot First Person Camera` 会同步到 `Anchor_Robot_17F02_BedroomStartCamera`，用于卧室开场的实际视角。
+  - `(3)` 代表第三幕男主调用记录时的机器人站位；它子物体里的 `Robot First Person Camera` 位置/朝向会同步到 `Anchor_Robot_17F02_LivingRoomTerminalCamera`。
+- 现在绑定工具不会再把 `(2)/(3)` 设为 inactive。它们在编辑器里可见、可拖动、可旋转，方便你调整胶囊体和相机。
+- 进入 Play Mode 时，`HearthEditorOnlyReferenceModel` 会让这两个参考体隐藏、无碰撞、无控制脚本，所以玩家不会看到额外机器人，也不会被它们挡住。
+- 调整方法：
+  1. 在 Hierarchy 里选中 `Player/Robot Controller (2)` 或 `Player/Robot Controller (3)`。
+  2. 直接移动/旋转它们，必要时展开子物体调 `Robot First Person Camera`。
+  3. 运行 `Tools / Hearth / Replay / Apply 17F02 Minimal Loop Setup`。
+  4. 程序会把位置和 Camera 视角同步到 `MIN_LOOP_ROOT/Anchors/Anchor_Robot_17F02_*`。
+- 不建议直接拖 `Player/Robot Controller` 来调第二户点位，因为它是正式运行时角色，会在 17F01/17F02/17F03 之间被剧情流程复用。
+
 - 问题原因：17F02 终端传入的住户编号是正确的，但总流程原来是先执行 `ViewSwitchController.SwitchToCompanion()`，等相机切到正式机器人后，才启动 `HearthCompanion17F02ReplayController.BeginReplay()`。如果正式 `Player/Robot Controller` 上一次停在 17F01 或默认位置，玩家就会先看到一小段第一户视角。
 - 当前修复：`MinLoopFlowController` 现在会在切相机前调用当前住户回放控制器的 `PrepareReplayStart()`。17F02 会先把正式机器人放到 `Anchor_Robot_17F02_BedroomStart`，并把 `Hearth17F02ReplayBlackout` 盖到 1，再开始视角切换。
 - 你不需要额外操作：继续从 `17F/ROOM2/TV (4)` 的终端进入回放即可。

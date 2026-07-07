@@ -7738,7 +7738,7 @@ Transform:
   m_GameObject: {fileID: 135007672}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0.238, y: 0, z: 0.322}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -14367,6 +14367,37 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 2023838324}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &238868979
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 238868980}
+  m_Layer: 0
+  m_Name: Anchor_Robot_17F02_BedroomStartCamera
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &238868980
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 238868979}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: 0.8299403, z: -0, w: -0.5578523}
+  m_LocalPosition: {x: -2308.0876, y: 112.71161, z: 589.44464}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 549872584}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &239359103
 PrefabInstance:
@@ -21566,7 +21597,7 @@ Transform:
   m_GameObject: {fileID: 343297952}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0.238, y: 0, z: 0.322}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -30394,8 +30425,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 493999209}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0.560131, z: -0, w: -0.828404}
-  m_LocalPosition: {x: -2308.349, y: 112.71161, z: 584.091}
+  m_LocalRotation: {x: 0.056633156, y: -0.55936956, z: -0.042125933, w: -0.8259079}
+  m_LocalPosition: {x: -2308.157, y: 112.71161, z: 584.0362}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -32838,22 +32869,22 @@ PrefabInstance:
     - target: {fileID: 568985597124981416, guid: 2435736d6adca23458edd7c80c901e3e,
         type: 3}
       propertyPath: m_LocalPosition.x
-      value: -2307.236
+      value: -2307.346
       objectReference: {fileID: 0}
     - target: {fileID: 568985597124981416, guid: 2435736d6adca23458edd7c80c901e3e,
         type: 3}
       propertyPath: m_LocalPosition.y
-      value: 111.6856
+      value: 111.532
       objectReference: {fileID: 0}
     - target: {fileID: 568985597124981416, guid: 2435736d6adca23458edd7c80c901e3e,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: 584.38
+      value: 584.346
       objectReference: {fileID: 0}
     - target: {fileID: 568985597124981416, guid: 2435736d6adca23458edd7c80c901e3e,
         type: 3}
       propertyPath: m_LocalRotation.w
-      value: -0.58221644
+      value: -0.56983405
       objectReference: {fileID: 0}
     - target: {fileID: 568985597124981416, guid: 2435736d6adca23458edd7c80c901e3e,
         type: 3}
@@ -32863,7 +32894,7 @@ PrefabInstance:
     - target: {fileID: 568985597124981416, guid: 2435736d6adca23458edd7c80c901e3e,
         type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0.8130338
+      value: 0.8217599
       objectReference: {fileID: 0}
     - target: {fileID: 568985597124981416, guid: 2435736d6adca23458edd7c80c901e3e,
         type: 3}
@@ -32878,7 +32909,7 @@ PrefabInstance:
     - target: {fileID: 568985597124981416, guid: 2435736d6adca23458edd7c80c901e3e,
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
-      value: 251.213
+      value: 249.47699
       objectReference: {fileID: 0}
     - target: {fileID: 568985597124981416, guid: 2435736d6adca23458edd7c80c901e3e,
         type: 3}
@@ -34481,6 +34512,7 @@ Transform:
   - {fileID: 1573159258}
   - {fileID: 1563052262}
   - {fileID: 493999210}
+  - {fileID: 238868980}
   m_Father: {fileID: 25875083}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &550509123
@@ -56217,13 +56249,14 @@ GameObject:
   - component: {fileID: 887309154}
   - component: {fileID: 887309152}
   - component: {fileID: 887309156}
+  - component: {fileID: 887309158}
   m_Layer: 0
   m_Name: Robot Controller (3)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &887309151
 Transform:
   m_ObjectHideFlags: 0
@@ -56279,7 +56312,7 @@ CapsuleCollider:
   m_LayerOverridePriority: 0
   m_IsTrigger: 0
   m_ProvidesContacts: 0
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 2
   m_Radius: 0.5
   m_Height: 1.8
@@ -56369,6 +56402,25 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 80
   m_CollisionDetection: 1
+--- !u!114 &887309158
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 887309150}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 82893c909bdc0d1428af11305871474f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  disableCollidersAlways: 1
+  makeRigidbodiesKinematicAlways: 1
+  hideRenderersInPlay: 1
+  disableAnimatorsInPlay: 1
+  disableAudioSourcesInPlay: 1
+  disableNavigationInPlay: 1
+  disableMonoBehavioursInPlay: 1
 --- !u!1 &888872778
 GameObject:
   m_ObjectHideFlags: 0
@@ -57378,13 +57430,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 904682824}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.488, z: 0}
+  m_LocalRotation: {x: -0.07051118, y: 0.0007674396, z: 0.0031753033, w: 0.9975057}
+  m_LocalPosition: {x: 0.204, y: 1.488, z: 0.263}
   m_LocalScale: {x: 0.16909, y: 0.16909, z: 0.16909}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 887309151}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: -8.087, y: 0.063, z: 0.36}
 --- !u!114 &904682826
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -63334,7 +63386,7 @@ Transform:
   m_GameObject: {fileID: 1030511302}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.488, z: 0}
+  m_LocalPosition: {x: 0.238, y: 1.488, z: 0.322}
   m_LocalScale: {x: 0.16909, y: 0.16909, z: 0.16909}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -88327,13 +88379,14 @@ GameObject:
   - component: {fileID: 1441128738}
   - component: {fileID: 1441128736}
   - component: {fileID: 1441128740}
+  - component: {fileID: 1441128742}
   m_Layer: 0
   m_Name: Robot Controller (2)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &1441128735
 Transform:
   m_ObjectHideFlags: 0
@@ -88389,7 +88442,7 @@ CapsuleCollider:
   m_LayerOverridePriority: 0
   m_IsTrigger: 0
   m_ProvidesContacts: 0
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 2
   m_Radius: 0.5
   m_Height: 1.8
@@ -88479,6 +88532,25 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 80
   m_CollisionDetection: 1
+--- !u!114 &1441128742
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1441128734}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 82893c909bdc0d1428af11305871474f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  disableCollidersAlways: 1
+  makeRigidbodiesKinematicAlways: 1
+  hideRenderersInPlay: 1
+  disableAnimatorsInPlay: 1
+  disableAudioSourcesInPlay: 1
+  disableNavigationInPlay: 1
+  disableMonoBehavioursInPlay: 1
 --- !u!1 &1442115055
 GameObject:
   m_ObjectHideFlags: 0
@@ -104807,6 +104879,7 @@ MonoBehaviour:
   robotInteraction: {fileID: 510136593}
   robotRigidbody: {fileID: 510136594}
   bedroomStartAnchor: {fileID: 78381447}
+  bedroomStartCameraAnchor: {fileID: 238868980}
   livingRoomTerminalAnchor: {fileID: 1222017236}
   livingRoomTerminalCameraAnchor: {fileID: 493999210}
   bedroomWakeSceneId: 17F02_01
@@ -113816,7 +113889,7 @@ Transform:
   m_GameObject: {fileID: 1847353116}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0.204, y: 0, z: 0.263}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -130569,7 +130642,7 @@ Transform:
   m_GameObject: {fileID: 2130701869}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0.204, y: 0, z: 0.263}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:

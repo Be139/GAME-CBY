@@ -199,7 +199,7 @@ UI 的位置和大小仍然看：
 当前推荐的女主离开卧室路线由“参考女主模型”驱动，而不是直接调空锚点。先在 Scene 视图里移动和旋转这些可见模型，再运行菜单同步到程序锚点：
 
 ```text
-Actor_Wife_17F02_Bedroom
+casual_Female_K@Sitting_Disbelief
 -> REF_Wife_17F02_BeforeDoor_01
 -> REF_Wife_17F02_BeforeDoor_02
 -> REF_Wife_17F02_BeforeDoor_03
@@ -216,7 +216,7 @@ Actor_Wife_17F02_Bedroom
 看 `Wife Exit Blocking`：
 
 - `Move Bedroom Wife To Door`：是否让女主人自动走向门。关闭后只播放字幕和锁定，不移动角色。
-- `Bedroom Wife Move Root`：卧室女主人模型，现在推荐是 `Actor_Wife_17F02_Bedroom`。
+- `Bedroom Wife Move Root`：卧室女主人模型，现在固定推荐是 `casual_Female_K@Sitting_Disbelief`。
 - `Use Simple Wife Exit Route`：当前推荐开启。开启后使用更直观的三段式路线，不再使用旧的“第几个路径点后开门”算法。
 - `Wife Before Door Path Points`：门前路线点，只放女主还在房间内、准备走到门口之前的点。
 - `Move To Door Pause Before Opening`：当前推荐开启。女主走完门前路线后，会先贴到 `Wife Door Pause Anchor`，停顿，然后开门。
@@ -224,7 +224,7 @@ Actor_Wife_17F02_Bedroom
 - `Wife Exit Path Points`：旧路线数组，保留作为兜底。如果新的门前/门后数组为空，脚本会自动把旧数组前 4 个点当门前、后 2 个点当门后，避免旧场景直接失效。
 - `Wife Door Pause Anchor`：女主人开门前停一下的位置。
 - `Wife Exit Outside Anchor`：女主人走出房间后的终点。
-- `Wife Walk Speed / Wife Rotate Speed`：女主人脚本位移和转身速度。现在只是滑动位移，后续接 Animator 后可以保留这些锚点作为路线。
+- `Wife Walk Speed / Wife Rotate Speed`：女主人脚本位移和转身速度。当前走路动作由 `HearthActorAnimationPlayer / WalkLoop` 播放，身体位置仍按这些锚点移动。
 - `Wife Door Pause Seconds`：到门口停顿多久再开门。
 - `Wait After Door Open Seconds`：门打开后等多久再走出去。
 - `Wife Exit Door`：拖 `Door_2_Brown (4)` 上的 `SmartDoorController`。
@@ -238,7 +238,8 @@ Actor_Wife_17F02_Bedroom
 
 菜单会自动处理：
 
-- `casual_Female_K (2)` 会改名为 `Actor_Wife_17F02_Bedroom`，放到 `MIN_LOOP_ROOT / ReplayRoom_17F02 / RuntimeActors`，作为唯一运行时卧室女主。
+- `casual_Female_K@Sitting_Disbelief` 保持原名并作为唯一运行时卧室女主，不再被当作源动作对象关闭。
+- 旧 `Actor_Wife_17F02_Bedroom` 如果仍在场景里，会被设为 inactive，避免与真实卧室女主重叠。
 - `casual_Female_K (3)` 到 `(7)` 会改名为 `REF_Wife_17F02_BeforeDoor_01` 到 `05`，作为开门前路线参考。
 - `casual_Female_K (8)` 会改名为 `REF_Wife_17F02_DoorPause`，只作为停下并开门的位置，不再放进普通路径。
 - `casual_Female_K (9)` 会改名为 `REF_Wife_17F02_ExitOutside`，作为走出房间后的终点。
@@ -262,6 +263,73 @@ Actor_Wife_17F02_Bedroom
 
 如果你暂时不想让脚本移动女主人，可以关闭 `Move Bedroom Wife To Door`。这样流程仍然播放字幕和锁定机器人，但女主人不会自动走；后续可以用 Animator、Timeline 或事件来接真正动作。
 
+## 2026-07-07 最新女主移动根与开门修正规则
+
+这一节优先于上面的旧文字。
+
+17F02 卧室阶段现在分成两个层级：
+
+```text
+Actor_Wife_17F02_BedroomRuntimeRoot
+└── casual_Female_K@Sitting_Disbelief
+```
+
+- `Actor_Wife_17F02_BedroomRuntimeRoot` 是真正的剧情演员根、移动根和显隐根。
+- `casual_Female_K@Sitting_Disbelief` 是可见女主模型，只作为 RuntimeRoot 的子物体。
+- `HearthCompanion17F02ReplayController / Bedroom Wife Actor` 应绑定 RuntimeRoot。
+- `HearthCompanion17F02ReplayController / Bedroom Wife Move Root` 应绑定 RuntimeRoot。
+- `HearthCompanion17F02ReplayController / Bedroom Wife Animation` 应是 RuntimeRoot 上的 `HearthActorAnimationPlayer`，但它的 `Animator` 字段指向子模型的 Animator。
+
+女主动作 Slot 当前规则：
+
+```text
+SittingDisbelief   Apply Root Motion = off   Stabilize Animator Transform = on
+SittingTalking     Apply Root Motion = off   Stabilize Animator Transform = on
+SitToStand         Apply Root Motion = off   Stabilize Animator Transform = on
+WalkLoop           Apply Root Motion = off   Stabilize Animator Transform = on
+OpenDoorOutwards   Apply Root Motion = off   Stabilize Animator Transform = on
+```
+
+也就是说，女主世界位置全部由 RuntimeRoot 和路线锚点控制，不再让 Mixamo 动画自己移动世界坐标。
+
+当前出门路线固定为：
+
+```text
+REF_Wife_17F02_BeforeDoor_01
+-> REF_Wife_17F02_BeforeDoor_02
+-> REF_Wife_17F02_BeforeDoor_03
+-> REF_Wife_17F02_BeforeDoor_04
+-> REF_Wife_17F02_BeforeDoor_05
+-> REF_Wife_17F02_DoorPause
+-> REF_Wife_17F02_ExitOutside
+```
+
+对应 Inspector：
+
+- `Wife Before Door Path Points`：5 个点，`BeforeDoor_01` 到 `BeforeDoor_05`。
+- `Wife After Door Path Points`：当前为空。
+- `Wife Door Pause Anchor`：`REF_Wife_17F02_DoorPause`。
+- `Wife Exit Outside Anchor`：`REF_Wife_17F02_ExitOutside`。
+
+门控制：
+
+- `Door_2_Brown (4)` 上的 `SmartDoorController / Use Unscaled Time` 应开启。
+- `Door Open Delay After Animation Start Seconds` 默认 `1`，控制 `OpenDoorOutwards` 开始多久后开门。
+- 如果门不开，先检查 `Wife Exit Door` 是否拖的是 `Door_2_Brown (4)` 上的 `SmartDoorController`。
+
+防卡死：
+
+- 如果 RuntimeRoot 一段时间没有靠近目标点，脚本会输出 Warning 并吸附到目标锚点继续流程。
+- 如果某个动作 Clip 缺失，会跳过动作但继续路线和开门。
+- 如果门引用缺失，会跳过开门但继续后续阶段，不会让整段 17F02 回放停止。
+
+重跑绑定：
+
+1. 移动或旋转 `REF_Wife_17F02_*` 参考模型。
+2. 运行 `Tools / Hearth / Replay / Build 17F02 Wife Route From Female References`。
+3. 运行 `Tools / Hearth / Replay / Apply 17F02 Minimal Loop Setup`。
+4. 确认 RuntimeRoot、BeforeDoor 数组、门和动作 Slot 仍然按本节规则绑定。
+
 ## 第二幕/第三幕模型显隐
 
 选中：
@@ -271,7 +339,7 @@ Actor_Wife_17F02_Bedroom
 看 `Actor Visibility`：
 
 - `Manage Actor Visibility`：当前应开启。
-- `Bedroom Wife Actor`：卧室里的女主，当前是 `casual_Female_K (2)`。
+- `Bedroom Wife Actor`：卧室里的女主，当前是 `casual_Female_K@Sitting_Disbelief`。
 - `Dining Wife Actor`：第二幕餐桌女主，当前是 `casual_Female_K`。
 - `Dining Husband Actor`：第二幕餐桌男主，当前是 `casual_Male_K`。
 - `Terminal Husband Actor`：第三幕操作陪伴单元的男主，当前是 `casual_Male_K (1)`。
@@ -317,7 +385,7 @@ Actor_Wife_17F02_Bedroom
 - `On Forced Shutdown Started`：男主强制关闭开始。适合接愤怒动作、手部操作、关闭音效。
 - `On Replay Finished`：整个机器人回放结束。
 
-现在动作还没有强制接 Animator。你可以先把模型放好，后面逐步把 Animator Clip 或姿势预设接到这些事件上。
+当前人物动作已经由 `HearthActorAnimationPlayer` 接入，基础 Clip 映射见本文末尾“2026-07-06 动作接入后的调整入口”。这些 UnityEvent 仍然保留，用来追加脚步声、门声、特写、额外手部动作或后续 Timeline。
 
 ## 机器人能不能动在哪里控制
 
@@ -348,13 +416,142 @@ Actor_Wife_17F02_Bedroom
 
 ## 当前预留但还没真正制作的部分
 
-- 女主人起身和走路的真实 Animator 动画。
-- 更精细的门动画和门音效素材。
-- 餐桌两人坐姿动画。
-- 男主俯身操作陪伴单元 UI 的动画。
+- 更精细的门音效素材。
+- 餐桌两人目前已有基础坐姿循环，后续可替换为更自然的吃饭/交谈动画。
+- 第三幕男主目前已有 `ButtonPushing` 基础循环，后续可替换为更精细的俯身操作陪伴单元 UI 动画。
 - 男主生气动作。
 - 黑屏争吵的真实语音。
 - 餐厅/客厅的空间触发范围限制。
 - 第二户专属 A/B 文案细化。
 
 这些都已经有接口，不需要重写第二户流程。
+
+## 2026-07-06 动作接入后的调整入口
+
+现在 17F02 已经接入 `HearthActorAnimationPlayer`，选中下面这些角色根对象即可替换动作：
+
+- `casual_Female_K@Sitting_Disbelief`：卧室女主。
+- `casual_Female_K`：第二幕餐桌女主。
+- `casual_Male_K`：第二幕餐桌男主。
+- `casual_Male_K (1)`：第三幕男主。
+
+每个对象上都有 `HearthActorAnimationPlayer`：
+
+- `Clip Id` 是剧情脚本调用的名字，不建议随便改。
+- `Clip` 是实际动画，可以直接拖新的 Mixamo / FBX 动作 Clip。
+- `Loop` 控制是否循环。
+- `Apply Root Motion` 控制动画是否自己带位移。当前只有 `OpenDoorOutwards` 开启。
+- `Fade Seconds` 控制切动作时的淡入时间。
+
+运行时真实演员规则：
+
+- 卧室阶段只显示并驱动 `casual_Female_K@Sitting_Disbelief`。
+- 餐桌阶段只显示并驱动 `casual_Female_K` 与 `casual_Male_K`。
+- 第三幕只显示并驱动 `casual_Male_K (1)`。
+- `REF_Wife_17F02_*` 是编辑器参考模型，只用于你在 Scene 里看位置和朝向；Play 时会隐藏并且没有碰撞。
+- 旧 `Actor_Wife_17F02_Bedroom`、`Sitting_Idle`、`Sitting`、`Button_Pushing`、`Female_Start_Walking`、`Open_Door_Outwards`、`X_Bot@Sit_To_Stand` 这类旧演员或源动作对象不应该参与游戏显示。重跑 `Apply 17F02 Minimal Loop Setup` 会自动关闭它们。
+
+动作与旧 Pose 的关系：
+
+- 当前优先播放 `HearthActorAnimationPlayer` 里的 Clip。
+- 只有某个 Clip 没有绑定时，才回退到旧 `HearthActorPosePreset`。
+- 这样可以避免 PosePreset 暂停 Animator，导致女主不起身、动作混乱或餐桌坐姿不播放。
+
+当前 17F02 默认动作映射：
+
+```text
+casual_Female_K@Sitting_Disbelief
+- SittingDisbelief -> Assets/casual_Female_K@Sitting_Disbelief.fbx / mixamo.com
+- SittingTalking -> Assets/Sitting_Talking.fbx / mixamo.com
+- SitToStand -> Assets/X_Bot@Sit_To_Stand.fbx / Sit_To_Stand
+- WalkLoop -> Assets/casual_Female_K@Walking.fbx / Walking
+- OpenDoorOutwards -> Assets/Open_Door_Outwards.fbx / mixamo.com
+
+casual_Female_K
+- Sitting -> Assets/Sitting.fbx / mixamo.com
+
+casual_Male_K
+- SittingIdle -> Assets/Sitting_Idle.fbx / mixamo.com
+
+casual_Male_K (1)
+- ButtonPushing -> Assets/Button_Pushing.fbx / mixamo.com
+```
+
+女主离开卧室的新执行顺序：
+
+1. 黑屏恢复后，女主循环 `SittingDisbelief`。
+2. 玩家完成 E 安慰后，女主播放一次 `SittingTalking`。`Bedroom Talking Max Seconds` 默认 `10`，设为 `0` 或负数时等待完整动作/字幕。
+3. 男主喊吃饭、女主回应后，女主播放 `SitToStand`。
+4. 循环 `WalkLoop`，使用 `Assets/casual_Female_K@Walking.fbx / Walking`，同时按参考点路线移动到门口。
+5. 到 `Wife Door Pause Anchor` 后停止走路，播放 `OpenDoorOutwards`。
+6. `OpenDoorOutwards` 开始约 `1s` 后调用 `Door_2_Brown (4)` 开门。
+7. 开门动作结束后关闭 root motion，再直接移动/校正到 `Wife Exit Outside Anchor`。
+
+如果开门与人物动作不同步：
+
+- 选中 `MIN_LOOP_ROOT/ReplayRoom_17F02/HearthCompanion17F02ReplayController`。
+- 调 `Actor Animations / Door Open Delay After Animation Start Seconds`。
+- 数值变小：门更早打开。
+- 数值变大：门更晚打开。
+
+如果 `OpenDoorOutwards` 自带位移太大或方向不对：
+
+- 首先微调 `REF_Wife_17F02_DoorPause` 和 `REF_Wife_17F02_ExitOutside`，再运行 `Build 17F02 Wife Route From Female References`。
+- 如果仍然偏移明显，可以临时关闭 `OpenDoorOutwards / Apply Root Motion`，让脚本完全按锚点移动。
+
+17F01 动作调整入口：
+
+- `little_boy_B`：`LayingSleeping`。
+- `casual_Female_G@Sitting_Idle`：`SittingIdle`。
+- `casual_Male_G@Sitting`：`Sitting`。
+
+17F01 的位置和模型不由脚本重摆；进入 17F01 回放后只播放这些循环动作。
+## 2026-07-07 最新动画接入规则：Humanoid + Animator Controller
+
+本节优先级高于旧的 `HearthActorAnimationPlayer / Playables` 说明。17F02 从现在开始使用 Unity 标准 Humanoid / Animator Controller 流程。
+
+### 为什么改
+
+- 之前的 Mixamo FBX 是 Generic 导入，`AnimationClip.isHumanMotion = false`，无法稳定重定向到真实女主/男主模型。
+- 卧室女主曾经绑定到 `avatar=null / controller=null` 的 Animator，导致脚本推进了，但模型仍保持坐姿移动。
+- 现在已经改为：FBX 统一 Humanoid 导入，真实演员有 Avatar、有 Animator Controller，流程只调用 Animator 状态。
+
+### 当前真实演员
+
+- 卧室女主：`Actor_Wife_17F02_BedroomRuntimeRoot`
+  - 可见子模型：`casual_Female_K@Sitting_Disbelief`
+  - Animator：子模型上的 Animator
+  - Avatar：`casual_Female_KAvatar`
+  - Controller：`BedroomWife17F02.controller`
+- 第二幕餐桌女主：`casual_Female_K`
+  - Controller：`DiningWife17F02.controller`
+- 第二幕餐桌男主：`casual_Male_K`
+  - Controller：`DiningHusband17F02.controller`
+- 第三幕男主：`casual_Male_K (1)`
+  - Controller：`TerminalHusband17F02.controller`
+
+### 当前动作顺序
+
+1. 黑屏和唤醒结束后，卧室女主循环 `SittingDisbelief`。
+2. 玩家完成 E 安慰后，卧室女主播放一次 `SittingTalking`。
+3. 男主喊吃饭后，卧室女主播放 `SitToStand`。
+4. 女主循环 `WalkLoop`，同时脚本移动 RuntimeRoot 到 `BeforeDoor_01` 到 `BeforeDoor_05`。
+5. 到 `DoorPause` 后播放 `OpenDoorOutwards`。
+6. `OpenDoorOutwards` 开始约 1 秒后调用 `Door_2_Brown (4)` 的开门逻辑。
+7. 开门动作结束后，女主直接校正到 `ExitOutside`。
+8. 第二幕只显示餐桌男女并播放 `Sitting / SittingIdle`。
+9. 第三幕只显示 `casual_Male_K (1)` 并播放 `ButtonPushing`。
+
+### 以后怎么换动作
+
+1. 把新的 Mixamo FBX 放进 `Assets`。
+2. 如果只是替换同一动作，优先保持原 `State Id` 不变，只在绑定工具代码或 Inspector 里换 Clip。
+3. 运行 `Tools / Hearth / Replay / Apply 17F02 Minimal Loop Setup`。
+4. 运行 `Tools / Hearth / Replay / Validate 17F02 Animation Setup`，确认 Clip 是 `human=True`，Driver 有 Avatar 和 Controller。
+
+### 路线参考模型规则
+
+- `REF_Wife_17F02_*` 仍然只用于你在 Scene 里细调位置和朝向。
+- 参考模型不是运行时演员，不播放剧情动作。
+- Play Mode 下参考模型应隐藏 Renderer、关闭 Collider，不能挡机器人移动。
+- 调整参考模型后，先运行 `Build 17F02 Wife Route From Female References`，再运行 `Apply 17F02 Minimal Loop Setup`。

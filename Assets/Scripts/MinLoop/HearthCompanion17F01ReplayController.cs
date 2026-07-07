@@ -60,6 +60,14 @@ public class HearthCompanion17F01ReplayController : MonoBehaviour
     [SerializeField] private string boyComfortedPoseId = "Comforted";
     [SerializeField] private string parentSittingPoseId = "Sitting";
 
+    [Header("Actor Animations")]
+    [SerializeField] private HearthActorAnimationPlayer boyAnimation;
+    [SerializeField] private string boySleepAnimationId = "LayingSleeping";
+    [SerializeField] private HearthActorAnimationPlayer motherAnimation;
+    [SerializeField] private string motherSittingAnimationId = "SittingIdle";
+    [SerializeField] private HearthActorAnimationPlayer fatherAnimation;
+    [SerializeField] private string fatherSittingAnimationId = "Sitting";
+
     [Header("Dialogue Assets")]
     [SerializeField] private bool preferDialogueSequenceAssets = true;
     [SerializeField] private HearthDialogueSequence bedroomPreludeSequence;
@@ -176,9 +184,20 @@ public class HearthCompanion17F01ReplayController : MonoBehaviour
         SetStep(ReplayStep.BedroomMonitor);
         TeleportRobot(childRoomStartAnchor);
         SetRobotControl(true, true, false);
-        ApplyPose(boyPosePreset, boySleepPoseId);
-        ApplyPose(motherPosePreset, parentSittingPoseId);
-        ApplyPose(fatherPosePreset, parentSittingPoseId);
+        if (!PlayActorLoop(boyAnimation, boySleepAnimationId))
+        {
+            ApplyPose(boyPosePreset, boySleepPoseId);
+        }
+
+        if (!PlayActorLoop(motherAnimation, motherSittingAnimationId))
+        {
+            ApplyPose(motherPosePreset, parentSittingPoseId);
+        }
+
+        if (!PlayActorLoop(fatherAnimation, fatherSittingAnimationId))
+        {
+            ApplyPose(fatherPosePreset, parentSittingPoseId);
+        }
 
         if (approachBoyInteractable != null)
         {
@@ -293,7 +312,10 @@ public class HearthCompanion17F01ReplayController : MonoBehaviour
             yield return PlayDialogue(bedroomPreludeSequence, bedroomPreludeLines);
         }
 
-        ApplyPose(boyPosePreset, boyAwakePoseId);
+        if (!HasActorAnimation(boyAnimation, boySleepAnimationId))
+        {
+            ApplyPose(boyPosePreset, boyAwakePoseId);
+        }
 
         if (promptDelayAfterBedroomPrelude > 0f)
         {
@@ -358,7 +380,10 @@ public class HearthCompanion17F01ReplayController : MonoBehaviour
             yield return PlayDialogue(soothingSequence, soothingLines);
         }
 
-        ApplyPose(boyPosePreset, boyComfortedPoseId);
+        if (!HasActorAnimation(boyAnimation, boySleepAnimationId))
+        {
+            ApplyPose(boyPosePreset, boyComfortedPoseId);
+        }
 
         if (waitAfterSoothingLines > 0f)
         {
@@ -560,6 +585,22 @@ public class HearthCompanion17F01ReplayController : MonoBehaviour
         {
             preset.ApplyPose(poseId);
         }
+    }
+
+    private static bool PlayActorLoop(HearthActorAnimationPlayer player, string clipId)
+    {
+        if (!HasActorAnimation(player, clipId))
+        {
+            return false;
+        }
+
+        player.PlayLoop(clipId);
+        return true;
+    }
+
+    private static bool HasActorAnimation(HearthActorAnimationPlayer player, string clipId)
+    {
+        return player != null && !string.IsNullOrEmpty(clipId) && player.HasClip(clipId);
     }
 
     private void StopActiveRoutine()

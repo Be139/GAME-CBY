@@ -1,6 +1,8 @@
 #if UNITY_EDITOR
 using System.Collections.Generic;
+using System.IO;
 using UnityEditor;
+using UnityEditor.Animations;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 
@@ -9,7 +11,9 @@ public static class Hearth17F02MinimalLoopBinder
     private const string MenuPath = "Tools/Hearth/Replay/Apply 17F02 Minimal Loop Setup";
     private const string MigrateWifeExitRouteMenuPath = "Tools/Hearth/Replay/Migrate 17F02 Wife Exit Route To Simple Segments";
     private const string BuildWifeRouteFromFemaleReferencesMenuPath = "Tools/Hearth/Replay/Build 17F02 Wife Route From Female References";
+    private const string ValidateAnimationSetupMenuPath = "Tools/Hearth/Replay/Validate 17F02 Animation Setup";
     private const string DialogueFolder = "Assets/Data/MinLoop/Dialogues";
+    private const string ActorControllerFolder = "Assets/Animation/Hearth/17F02";
     private const string BedroomWakeDialoguePath = DialogueFolder + "/17F02_BedroomWake.asset";
     private const string BedroomConfideDialoguePath = DialogueFolder + "/17F02_BedroomConfide.asset";
     private const string BedroomComfortDialoguePath = DialogueFolder + "/17F02_BedroomComfort.asset";
@@ -18,6 +22,9 @@ public static class Hearth17F02MinimalLoopBinder
     private const string LogAccessDialoguePath = DialogueFolder + "/17F02_LogAccess.asset";
     private const string ShutdownDialoguePath = DialogueFolder + "/17F02_ForcedShutdown.asset";
     private const string BlackAudioDialoguePath = DialogueFolder + "/17F02_BlackAudioArgument.asset";
+    private const string BedroomWifeRuntimeRootName = "Actor_Wife_17F02_BedroomRuntimeRoot";
+    private const string FemaleKBaseAvatarPath = "Assets/DenysAlmaral/CityPeople/Meshes/downtown/casual_Female_K.fbx";
+    private const string MaleKBaseAvatarPath = "Assets/DenysAlmaral/CityPeople/Meshes/downtown/casual_Male_K.fbx";
 
     [MenuItem(MenuPath)]
     public static void Apply()
@@ -46,10 +53,11 @@ public static class Hearth17F02MinimalLoopBinder
             "Robot Controller 3",
             "robot Controller3",
             "Robot controller3");
-        GameObject bedroomWife = Find("Actor_Wife_17F02_Bedroom", "casual_Female_K (2)", "casual_Female_K2", "casual_Female_K 2");
-        GameObject diningWife = Find("casual_Female_K", "casual_Female_K (2)", "casual_Female_K2");
-        GameObject diningHusband = Find("casual_Male_K", "casual_Male_K (1)");
-        GameObject terminalHusband = Find("casual_Male_K (1)", "casual_Male_K2", "casual_Male_K 2");
+        GameObject bedroomWifeVisual = FindActor("casual_Female_K@Sitting_Disbelief", "Actor_Wife_17F02_Bedroom", "casual_Female_K (2)", "casual_Female_K2", "casual_Female_K 2");
+        GameObject bedroomWife = EnsureBedroomWifeRuntimeRoot(replayRoot, bedroomWifeVisual);
+        GameObject diningWife = FindActor("casual_Female_K", "casual_Female_K (2)", "casual_Female_K2");
+        GameObject diningHusband = FindActor("casual_Male_K", "casual_Male_K (1)");
+        GameObject terminalHusband = FindActor("casual_Male_K (1)", "casual_Male_K2", "casual_Male_K 2");
         GameObject bedroomDoorObject = Find("Door_2_Brown (4)", "Door_2_Brown");
         GameObject bedroomBed = Find("17F/ROOM3/Prop_Bed_09", "Prop_Bed_09");
 
@@ -86,7 +94,18 @@ public static class Hearth17F02MinimalLoopBinder
             ? FindOrCreateChild(anchorsRoot, "Anchor_Wife_17F02_ExitOutside")
             : CreateDoorSideAnchor(anchorsRoot, "Anchor_Wife_17F02_ExitOutside", bedroomDoorObject != null ? bedroomDoorObject.transform : null, 1.15f);
         SmartDoorController bedroomDoor = ConfigureDoorController(bedroomDoorObject);
-        SplitWifeExitPathAnchors(wifeExitPathAnchors, out Transform[] wifeBeforeDoorPathAnchors, out Transform[] wifeAfterDoorPathAnchors);
+        Transform[] wifeBeforeDoorPathAnchors;
+        Transform[] wifeAfterDoorPathAnchors;
+        if (useReferenceWifeRoute)
+        {
+            wifeBeforeDoorPathAnchors = CollectReferenceBeforeDoorAnchors(anchorsRoot);
+            wifeAfterDoorPathAnchors = new Transform[0];
+            wifeExitPathAnchors = wifeBeforeDoorPathAnchors;
+        }
+        else
+        {
+            SplitWifeExitPathAnchors(wifeExitPathAnchors, out wifeBeforeDoorPathAnchors, out wifeAfterDoorPathAnchors);
+        }
         ConfigureWifeExitAnchorGizmos(wifeBeforeDoorPathAnchors, wifeDoorPauseAnchor, wifeAfterDoorPathAnchors, wifeExitOutsideAnchor);
 
         DisableReferenceController(robotBedroomReference);
@@ -113,6 +132,34 @@ public static class Hearth17F02MinimalLoopBinder
         HearthDialogueSequence shutdown = Ensure17F02ShutdownDialogue();
         HearthDialogueSequence blackAudio = Ensure17F02BlackAudioDialogue();
 
+        Ensure17F02HumanoidAnimationImports();
+
+        HearthActorAnimatorDriver bedroomWifeAnimation = ConfigureActorAnimator(
+            bedroomWife,
+            ActorControllerFolder + "/BedroomWife17F02.controller",
+            FemaleKBaseAvatarPath,
+            new ActorClipBinding("SittingDisbelief", "Assets/casual_Female_K@Sitting_Disbelief.fbx", "mixamo.com", true, false, 0.18f, true),
+            new ActorClipBinding("SittingTalking", "Assets/Sitting_Talking.fbx", "mixamo.com", false, false, 0.18f, true),
+            new ActorClipBinding("SitToStand", "Assets/X_Bot@Sit_To_Stand.fbx", "Sit_To_Stand", false, false, 0.12f, true),
+            new ActorClipBinding("WalkLoop", "Assets/casual_Female_K@Walking.fbx", "Walking", true, false, 0.15f, true),
+            new ActorClipBinding("OpenDoorOutwards", "Assets/Open_Door_Outwards.fbx", "mixamo.com", false, false, 0.12f, true));
+        EnableRuntimeActorObject(bedroomWife);
+        HearthActorAnimatorDriver diningWifeAnimation = ConfigureActorAnimator(
+            diningWife,
+            ActorControllerFolder + "/DiningWife17F02.controller",
+            FemaleKBaseAvatarPath,
+            new ActorClipBinding("Sitting", "Assets/Sitting.fbx", "mixamo.com", true, false, 0.18f));
+        HearthActorAnimatorDriver diningHusbandAnimation = ConfigureActorAnimator(
+            diningHusband,
+            ActorControllerFolder + "/DiningHusband17F02.controller",
+            MaleKBaseAvatarPath,
+            new ActorClipBinding("SittingIdle", "Assets/Sitting_Idle.fbx", "mixamo.com", true, false, 0.18f));
+        HearthActorAnimatorDriver terminalHusbandAnimation = ConfigureActorAnimator(
+            terminalHusband,
+            ActorControllerFolder + "/TerminalHusband17F02.controller",
+            MaleKBaseAvatarPath,
+            new ActorClipBinding("ButtonPushing", "Assets/Button_Pushing.fbx", "mixamo.com", true, false, 0.18f));
+
         GameObject replayControllerObject = FindOrCreateChild(replayRoot, "HearthCompanion17F02ReplayController").gameObject;
         HearthCompanion17F02ReplayController replayController = GetOrAdd<HearthCompanion17F02ReplayController>(replayControllerObject);
 
@@ -130,6 +177,10 @@ public static class Hearth17F02MinimalLoopBinder
             diningWife,
             diningHusband,
             terminalHusband,
+            bedroomWifeAnimation,
+            diningWifeAnimation,
+            diningHusbandAnimation,
+            terminalHusbandAnimation,
             wifeExitPathAnchors,
             wifeBeforeDoorPathAnchors,
             wifeAfterDoorPathAnchors,
@@ -148,6 +199,8 @@ public static class Hearth17F02MinimalLoopBinder
         ConfigureFlow(flow, terminal17F02, viewSwitch, replayController, trust);
         ConfigureTerminal(terminal17F02, flow, viewSwitch, person);
         ConfigureHud(hud, flowBinder, previewInput, exclusiveMode, flow, viewSwitch);
+        DisableDeprecatedBedroomWifeActor(bedroomWife);
+        DisableSourceOnlyActorObjects(bedroomWife, diningWife, diningHusband, terminalHusband);
         if (useReferenceWifeRoute)
         {
             DeleteDeprecatedWifeRouteObjects();
@@ -230,18 +283,14 @@ public static class Hearth17F02MinimalLoopBinder
         GameObject minLoopRoot = FindOrCreate("MIN_LOOP_ROOT");
         Transform anchorsRoot = FindOrCreateChild(minLoopRoot.transform, "Anchors");
         Transform replayRoot = FindOrCreateChild(minLoopRoot.transform, "ReplayRoom_17F02");
-        Transform runtimeActorsRoot = FindOrCreateChild(replayRoot, "RuntimeActors");
         Transform referenceModelsRoot = FindOrCreateChild(replayRoot, "WifeRouteReferenceModels");
 
-        GameObject bedroomWife = Find("Actor_Wife_17F02_Bedroom", "casual_Female_K (2)", "casual_Female_K2", "casual_Female_K 2");
-        if (bedroomWife != null)
+        GameObject bedroomWifeVisual = FindActor("casual_Female_K@Sitting_Disbelief", "Actor_Wife_17F02_Bedroom", "casual_Female_K (2)", "casual_Female_K2", "casual_Female_K 2");
+        if (bedroomWifeVisual == null)
         {
-            RenameAndParent(bedroomWife, "Actor_Wife_17F02_Bedroom", runtimeActorsRoot);
+            Debug.LogWarning("[Hearth17F02MinimalLoopBinder] Bedroom wife actor was not found. Expected casual_Female_K@Sitting_Disbelief.");
         }
-        else
-        {
-            Debug.LogWarning("[Hearth17F02MinimalLoopBinder] Bedroom wife actor was not found. Expected Actor_Wife_17F02_Bedroom or casual_Female_K (2).");
-        }
+        GameObject bedroomWife = EnsureBedroomWifeRuntimeRoot(replayRoot, bedroomWifeVisual);
 
         Transform[] beforeDoorAnchors = new Transform[5];
         for (int i = 0; i < beforeDoorAnchors.Length; i++)
@@ -297,6 +346,23 @@ public static class Hearth17F02MinimalLoopBinder
         GameObject bedroomDoorObject = Find("Door_2_Brown (4)", "Door_2_Brown");
         SmartDoorController bedroomDoor = ConfigureDoorController(bedroomDoorObject);
         ConfigureReferenceDrivenWifeRoute(replayController, bedroomWife, compactBeforeDoorAnchors, wifeDoorPauseAnchor, wifeExitOutsideAnchor, bedroomDoor);
+        Ensure17F02HumanoidAnimationImports();
+
+        HearthActorAnimatorDriver bedroomWifeAnimation = ConfigureActorAnimator(
+            bedroomWife,
+            ActorControllerFolder + "/BedroomWife17F02.controller",
+            FemaleKBaseAvatarPath,
+            new ActorClipBinding("SittingDisbelief", "Assets/casual_Female_K@Sitting_Disbelief.fbx", "mixamo.com", true, false, 0.18f, true),
+            new ActorClipBinding("SittingTalking", "Assets/Sitting_Talking.fbx", "mixamo.com", false, false, 0.18f, true),
+            new ActorClipBinding("SitToStand", "Assets/X_Bot@Sit_To_Stand.fbx", "Sit_To_Stand", false, false, 0.12f, true),
+            new ActorClipBinding("WalkLoop", "Assets/casual_Female_K@Walking.fbx", "Walking", true, false, 0.15f, true),
+            new ActorClipBinding("OpenDoorOutwards", "Assets/Open_Door_Outwards.fbx", "mixamo.com", false, false, 0.12f, true));
+        EnableRuntimeActorObject(bedroomWife);
+        SerializedObject replaySo = new SerializedObject(replayController);
+        SetObject(replaySo, "bedroomWifeAnimation", bedroomWifeAnimation);
+        replaySo.ApplyModifiedPropertiesWithoutUndo();
+        EditorUtility.SetDirty(replayController);
+        DisableDeprecatedBedroomWifeActor(bedroomWife);
         DeleteDeprecatedWifeRouteObjects();
 
         EditorUtility.SetDirty(minLoopRoot);
@@ -350,6 +416,10 @@ public static class Hearth17F02MinimalLoopBinder
         GameObject diningWife,
         GameObject diningHusband,
         GameObject terminalHusband,
+        HearthActorAnimatorDriver bedroomWifeAnimation,
+        HearthActorAnimatorDriver diningWifeAnimation,
+        HearthActorAnimatorDriver diningHusbandAnimation,
+        HearthActorAnimatorDriver terminalHusbandAnimation,
         Transform[] wifeExitPathAnchors,
         Transform[] wifeBeforeDoorPathAnchors,
         Transform[] wifeAfterDoorPathAnchors,
@@ -396,6 +466,10 @@ public static class Hearth17F02MinimalLoopBinder
         SetObject(so, "diningWifeActor", diningWife);
         SetObject(so, "diningHusbandActor", diningHusband);
         SetObject(so, "terminalHusbandActor", terminalHusband);
+        SetObject(so, "bedroomWifeAnimation", bedroomWifeAnimation);
+        SetObject(so, "diningWifeAnimation", diningWifeAnimation);
+        SetObject(so, "diningHusbandAnimation", diningHusbandAnimation);
+        SetObject(so, "terminalHusbandAnimation", terminalHusbandAnimation);
         SetObject(so, "bedroomWifeMoveRoot", bedroomWife != null ? bedroomWife.transform : null);
         SetBool(so, "useSimpleWifeExitRoute", true);
         SetArray(so, "wifeBeforeDoorPathPoints", CollectObjects(wifeBeforeDoorPathAnchors));
@@ -413,6 +487,9 @@ public static class Hearth17F02MinimalLoopBinder
         SetFloat(so, "wifeWalkSpeed", 1.15f);
         SetFloat(so, "wifeDoorPauseSeconds", 0.45f);
         SetFloat(so, "waitAfterDoorOpenSeconds", 0.55f);
+        SetFloat(so, "doorOpenDelayAfterAnimationStartSeconds", 1f);
+        SetFloat(so, "bedroomTalkingMaxSeconds", 10f);
+        SetBool(so, "useUnscaledReplayTime", true);
         SetBool(so, "manageActorVisibility", true);
         SetBool(so, "showBedroomHoldPromptDuringConfide", false);
         SetBool(so, "waitForBedroomAcknowledgement", true);
@@ -736,8 +813,58 @@ public static class Hearth17F02MinimalLoopBinder
         SetBool(so, "openDoorDuringWifeExit", true);
         SetInt(so, "openDoorAfterPathPointCount", -1);
         SetBool(so, "keepDoorOpenAfterWifeExit", true);
+        SetBool(so, "useUnscaledReplayTime", true);
         so.ApplyModifiedPropertiesWithoutUndo();
         EditorUtility.SetDirty(replayController);
+    }
+
+    private static GameObject EnsureBedroomWifeRuntimeRoot(Transform replayRoot, GameObject bedroomWifeVisual)
+    {
+        Transform runtimeActorsRoot = FindOrCreateChild(replayRoot, "RuntimeActors");
+        GameObject runtimeRoot = Find(BedroomWifeRuntimeRootName);
+        if (runtimeRoot == null)
+        {
+            runtimeRoot = new GameObject(BedroomWifeRuntimeRootName);
+            runtimeRoot.transform.SetParent(runtimeActorsRoot, false);
+        }
+        else if (runtimeRoot.transform.parent != runtimeActorsRoot)
+        {
+            runtimeRoot.transform.SetParent(runtimeActorsRoot, true);
+        }
+
+        runtimeRoot.SetActive(true);
+        runtimeRoot.transform.localScale = Vector3.one;
+
+        if (bedroomWifeVisual != null)
+        {
+            bool visualAlreadyChild = bedroomWifeVisual.transform.IsChildOf(runtimeRoot.transform);
+            if (!visualAlreadyChild)
+            {
+                runtimeRoot.transform.SetPositionAndRotation(
+                    bedroomWifeVisual.transform.position,
+                    bedroomWifeVisual.transform.rotation);
+                bedroomWifeVisual.transform.SetParent(runtimeRoot.transform, true);
+            }
+
+            bedroomWifeVisual.SetActive(true);
+            foreach (Renderer renderer in bedroomWifeVisual.GetComponentsInChildren<Renderer>(true))
+            {
+                renderer.enabled = true;
+                EditorUtility.SetDirty(renderer);
+            }
+
+            foreach (Animator animator in bedroomWifeVisual.GetComponentsInChildren<Animator>(true))
+            {
+                animator.enabled = true;
+                animator.applyRootMotion = false;
+                EditorUtility.SetDirty(animator);
+            }
+
+            EditorUtility.SetDirty(bedroomWifeVisual);
+        }
+
+        EditorUtility.SetDirty(runtimeRoot);
+        return runtimeRoot;
     }
 
     private static void PrepareReferenceModel(GameObject reference, string referenceName, Transform referenceRoot)
@@ -765,6 +892,136 @@ public static class Hearth17F02MinimalLoopBinder
             collider.enabled = false;
             EditorUtility.SetDirty(collider);
         }
+    }
+
+    private static void DisableSourceOnlyActorObjects(params GameObject[] runtimeActors)
+    {
+        string[] sourceOnlyNames =
+        {
+            "Sitting_Idle",
+            "Sitting",
+            "Button_Pushing",
+            "Female_Start_Walking",
+            "Open_Door_Outwards",
+            "X_Bot@Sit_To_Stand"
+        };
+
+        for (int i = 0; i < sourceOnlyNames.Length; i++)
+        {
+            DisableSourceOnlyActorObject(sourceOnlyNames[i], runtimeActors);
+        }
+    }
+
+    private static void EnableRuntimeActorObject(GameObject actor)
+    {
+        if (actor == null)
+        {
+            return;
+        }
+
+        actor.SetActive(true);
+        foreach (Renderer renderer in actor.GetComponentsInChildren<Renderer>(true))
+        {
+            renderer.enabled = true;
+            EditorUtility.SetDirty(renderer);
+        }
+
+        foreach (Animator animator in actor.GetComponentsInChildren<Animator>(true))
+        {
+            animator.enabled = true;
+            EditorUtility.SetDirty(animator);
+        }
+
+        EditorUtility.SetDirty(actor);
+    }
+
+    private static void DisableDeprecatedBedroomWifeActor(GameObject currentBedroomWife)
+    {
+        if (currentBedroomWife != null && currentBedroomWife.name == "Actor_Wife_17F02_Bedroom")
+        {
+            return;
+        }
+
+        GameObject deprecated = Find("Actor_Wife_17F02_Bedroom");
+        if (deprecated != null && deprecated != currentBedroomWife)
+        {
+            foreach (HearthActorAnimationPlayer oldPlayer in deprecated.GetComponentsInChildren<HearthActorAnimationPlayer>(true))
+            {
+                Object.DestroyImmediate(oldPlayer);
+            }
+        }
+
+        DisableSourceOnlyActorObject("Actor_Wife_17F02_Bedroom", currentBedroomWife != null ? new[] { currentBedroomWife } : null);
+    }
+
+    private static void DisableSourceOnlyActorObject(string objectName, GameObject[] runtimeActors)
+    {
+        if (string.IsNullOrEmpty(objectName))
+        {
+            return;
+        }
+
+        GameObject[] allObjects = Resources.FindObjectsOfTypeAll<GameObject>();
+        for (int i = 0; i < allObjects.Length; i++)
+        {
+            GameObject candidate = allObjects[i];
+            if (candidate == null || !candidate.scene.IsValid() || candidate.name != objectName)
+            {
+                continue;
+            }
+
+            if (IsRuntimeActorOrChild(candidate, runtimeActors))
+            {
+                continue;
+            }
+
+            candidate.SetActive(false);
+            foreach (Renderer renderer in candidate.GetComponentsInChildren<Renderer>(true))
+            {
+                renderer.enabled = false;
+                EditorUtility.SetDirty(renderer);
+            }
+
+            foreach (Collider collider in candidate.GetComponentsInChildren<Collider>(true))
+            {
+                collider.enabled = false;
+                EditorUtility.SetDirty(collider);
+            }
+
+            foreach (Animator animator in candidate.GetComponentsInChildren<Animator>(true))
+            {
+                animator.enabled = false;
+                EditorUtility.SetDirty(animator);
+            }
+
+            EditorUtility.SetDirty(candidate);
+        }
+    }
+
+    private static bool IsRuntimeActorOrChild(GameObject candidate, GameObject[] runtimeActors)
+    {
+        if (candidate == null || runtimeActors == null)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < runtimeActors.Length; i++)
+        {
+            GameObject actor = runtimeActors[i];
+            if (actor == null)
+            {
+                continue;
+            }
+
+            if (candidate == actor ||
+                candidate.transform.IsChildOf(actor.transform) ||
+                actor.transform.IsChildOf(candidate.transform))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static void DeleteDeprecatedWifeRouteObjects()
@@ -878,6 +1135,7 @@ public static class Hearth17F02MinimalLoopBinder
         SetBool(so, "canToggle", true);
         SetBool(so, "locked", false);
         SetBool(so, "autoClose", false);
+        SetBool(so, "useUnscaledTime", true);
         SetFloat(so, "moveDuration", 0.55f);
         SetEnum(so, "motionMode", (int)SmartDoorController.DoorMotionMode.Rotate);
         SetVector3(so, "openLocalEulerOffset", new Vector3(0f, 90f, 0f));
@@ -1192,6 +1450,418 @@ public static class Hearth17F02MinimalLoopBinder
         return childObject.transform;
     }
 
+    private readonly struct ActorClipBinding
+    {
+        public readonly string clipId;
+        public readonly string assetPath;
+        public readonly string preferredClipName;
+        public readonly bool loop;
+        public readonly bool applyRootMotion;
+        public readonly float fadeSeconds;
+        public readonly bool stabilizeAnimatorTransform;
+
+        public ActorClipBinding(
+            string newClipId,
+            string newAssetPath,
+            string newPreferredClipName,
+            bool newLoop,
+            bool newApplyRootMotion,
+            float newFadeSeconds,
+            bool newStabilizeAnimatorTransform = false)
+        {
+            clipId = newClipId;
+            assetPath = newAssetPath;
+            preferredClipName = newPreferredClipName;
+            loop = newLoop;
+            applyRootMotion = newApplyRootMotion;
+            fadeSeconds = newFadeSeconds;
+            stabilizeAnimatorTransform = newStabilizeAnimatorTransform;
+        }
+    }
+
+    [MenuItem(ValidateAnimationSetupMenuPath)]
+    public static void Validate17F02AnimationSetup()
+    {
+        List<string> lines = new List<string>();
+        lines.Add("[Hearth17F02MinimalLoopBinder] 17F02 animation setup validation");
+
+        ActorClipBinding[] requiredClips = Get17F02AnimationBindings();
+        for (int i = 0; i < requiredClips.Length; i++)
+        {
+            ActorClipBinding binding = requiredClips[i];
+            ModelImporter importer = AssetImporter.GetAtPath(binding.assetPath) as ModelImporter;
+            AnimationClip clip = FindAnimationClip(binding.assetPath, binding.preferredClipName);
+            lines.Add(
+                binding.clipId +
+                " asset=" + binding.assetPath +
+                " importer=" + (importer != null ? importer.animationType.ToString() : "missing") +
+                " clip=" + (clip != null ? clip.name : "missing") +
+                " human=" + (clip != null ? clip.isHumanMotion.ToString() : "-") +
+                " loopWanted=" + binding.loop);
+        }
+
+        HearthCompanion17F02ReplayController replayController = Object.FindObjectOfType<HearthCompanion17F02ReplayController>(true);
+        lines.Add("ReplayController=" + (replayController != null ? replayController.name : "missing"));
+
+        HearthActorAnimatorDriver[] drivers = Object.FindObjectsOfType<HearthActorAnimatorDriver>(true);
+        for (int i = 0; i < drivers.Length; i++)
+        {
+            Animator animator = drivers[i].Animator;
+            lines.Add(
+                "Driver=" + drivers[i].name +
+                " animator=" + (animator != null ? animator.name : "missing") +
+                " avatar=" + (animator != null && animator.avatar != null ? animator.avatar.name : "missing") +
+                " avatarValid=" + (animator != null && animator.avatar != null ? animator.avatar.isValid.ToString() : "-") +
+                " avatarHuman=" + (animator != null && animator.avatar != null ? animator.avatar.isHuman.ToString() : "-") +
+                " controller=" + (animator != null && animator.runtimeAnimatorController != null ? animator.runtimeAnimatorController.name : "missing"));
+        }
+
+        Debug.Log(string.Join("\n", lines));
+    }
+
+    private static ActorClipBinding[] Get17F02AnimationBindings()
+    {
+        return new[]
+        {
+            new ActorClipBinding("SittingDisbelief", "Assets/casual_Female_K@Sitting_Disbelief.fbx", "mixamo.com", true, false, 0.18f),
+            new ActorClipBinding("SittingTalking", "Assets/Sitting_Talking.fbx", "mixamo.com", false, false, 0.18f),
+            new ActorClipBinding("SitToStand", "Assets/X_Bot@Sit_To_Stand.fbx", "Sit_To_Stand", false, false, 0.12f),
+            new ActorClipBinding("WalkLoop", "Assets/casual_Female_K@Walking.fbx", "Walking", true, false, 0.15f),
+            new ActorClipBinding("OpenDoorOutwards", "Assets/Open_Door_Outwards.fbx", "mixamo.com", false, false, 0.12f),
+            new ActorClipBinding("Sitting", "Assets/Sitting.fbx", "mixamo.com", true, false, 0.18f),
+            new ActorClipBinding("SittingIdle", "Assets/Sitting_Idle.fbx", "mixamo.com", true, false, 0.18f),
+            new ActorClipBinding("ButtonPushing", "Assets/Button_Pushing.fbx", "mixamo.com", true, false, 0.18f)
+        };
+    }
+
+    private static void Ensure17F02HumanoidAnimationImports()
+    {
+        ActorClipBinding[] requiredClips = Get17F02AnimationBindings();
+        for (int i = 0; i < requiredClips.Length; i++)
+        {
+            EnsureHumanoidAnimationImport(requiredClips[i].assetPath, requiredClips[i].preferredClipName, requiredClips[i].loop);
+        }
+    }
+
+    private static void EnsureHumanoidAnimationImport(string assetPath, string preferredClipName, bool loop)
+    {
+        ModelImporter importer = AssetImporter.GetAtPath(assetPath) as ModelImporter;
+        if (importer == null)
+        {
+            Debug.LogWarning("[Hearth17F02MinimalLoopBinder] Missing animation FBX: " + assetPath);
+            return;
+        }
+
+        bool changed = false;
+        if (!importer.importAnimation)
+        {
+            importer.importAnimation = true;
+            changed = true;
+        }
+
+        if (importer.animationType != ModelImporterAnimationType.Human)
+        {
+            importer.animationType = ModelImporterAnimationType.Human;
+            changed = true;
+        }
+
+        if (importer.avatarSetup != ModelImporterAvatarSetup.CreateFromThisModel)
+        {
+            importer.avatarSetup = ModelImporterAvatarSetup.CreateFromThisModel;
+            changed = true;
+        }
+
+        ModelImporterClipAnimation[] clips = importer.clipAnimations;
+        if (clips == null || clips.Length == 0)
+        {
+            clips = importer.defaultClipAnimations;
+            changed = true;
+        }
+
+        if (clips != null && clips.Length > 0)
+        {
+            bool matchedPreferred = false;
+            for (int i = 0; i < clips.Length; i++)
+            {
+                if (!string.IsNullOrEmpty(preferredClipName) && clips[i].name == preferredClipName)
+                {
+                    matchedPreferred = true;
+                }
+            }
+
+            for (int i = 0; i < clips.Length; i++)
+            {
+                bool shouldConfigure = clips.Length == 1 ||
+                    string.IsNullOrEmpty(preferredClipName) ||
+                    !matchedPreferred ||
+                    clips[i].name == preferredClipName;
+
+                if (!shouldConfigure)
+                {
+                    continue;
+                }
+
+                if (clips[i].loopTime != loop)
+                {
+                    clips[i].loopTime = loop;
+                    changed = true;
+                }
+
+                if (clips[i].loopPose != loop)
+                {
+                    clips[i].loopPose = loop;
+                    changed = true;
+                }
+
+                if (!clips[i].lockRootRotation)
+                {
+                    clips[i].lockRootRotation = true;
+                    changed = true;
+                }
+
+                if (!clips[i].lockRootHeightY)
+                {
+                    clips[i].lockRootHeightY = true;
+                    changed = true;
+                }
+
+                if (!clips[i].lockRootPositionXZ)
+                {
+                    clips[i].lockRootPositionXZ = true;
+                    changed = true;
+                }
+            }
+
+            importer.clipAnimations = clips;
+        }
+
+        if (changed)
+        {
+            importer.SaveAndReimport();
+        }
+    }
+
+    private static HearthActorAnimatorDriver ConfigureActorAnimator(
+        GameObject actor,
+        string controllerPath,
+        string avatarAssetPath,
+        params ActorClipBinding[] bindings)
+    {
+        if (actor == null)
+        {
+            return null;
+        }
+
+        foreach (HearthActorAnimationPlayer oldPlayer in actor.GetComponentsInChildren<HearthActorAnimationPlayer>(true))
+        {
+            Object.DestroyImmediate(oldPlayer);
+        }
+
+        Animator animator = ResolveActorAnimator(actor);
+        if (animator == null)
+        {
+            animator = actor.AddComponent<Animator>();
+        }
+
+        Avatar avatar = FindAvatar(avatarAssetPath);
+        if (avatar != null)
+        {
+            animator.avatar = avatar;
+        }
+
+        AnimatorController controller = EnsureAnimatorController(controllerPath, bindings);
+        animator.runtimeAnimatorController = controller;
+        animator.applyRootMotion = false;
+        animator.enabled = true;
+        EditorUtility.SetDirty(animator);
+
+        HearthActorAnimatorDriver driver = GetOrAdd<HearthActorAnimatorDriver>(actor);
+        SerializedObject so = new SerializedObject(driver);
+        SetObject(so, "animator", animator);
+
+        SerializedProperty states = so.FindProperty("states");
+        if (states != null && states.isArray)
+        {
+            states.arraySize = bindings != null ? bindings.Length : 0;
+            for (int i = 0; i < states.arraySize; i++)
+            {
+                SerializedProperty slot = states.GetArrayElementAtIndex(i);
+                AnimationClip clip = FindAnimationClip(bindings[i].assetPath, bindings[i].preferredClipName);
+                slot.FindPropertyRelative("stateId").stringValue = bindings[i].clipId;
+                slot.FindPropertyRelative("stateName").stringValue = bindings[i].clipId;
+                slot.FindPropertyRelative("clip").objectReferenceValue = clip;
+                slot.FindPropertyRelative("loop").boolValue = bindings[i].loop;
+                slot.FindPropertyRelative("applyRootMotion").boolValue = bindings[i].applyRootMotion;
+                slot.FindPropertyRelative("fadeSeconds").floatValue = bindings[i].fadeSeconds;
+                slot.FindPropertyRelative("playbackSpeed").floatValue = 1f;
+            }
+        }
+
+        so.ApplyModifiedPropertiesWithoutUndo();
+        EditorUtility.SetDirty(driver);
+        return driver;
+    }
+
+    private static Animator ResolveActorAnimator(GameObject actor)
+    {
+        Animator animator = actor.GetComponent<Animator>();
+        if (animator != null)
+        {
+            return animator;
+        }
+
+        return actor.GetComponentInChildren<Animator>(true);
+    }
+
+    private static Avatar FindAvatar(string assetPath)
+    {
+        Object[] assets = AssetDatabase.LoadAllAssetsAtPath(assetPath);
+        for (int i = 0; i < assets.Length; i++)
+        {
+            Avatar avatar = assets[i] as Avatar;
+            if (avatar != null && avatar.isValid && avatar.isHuman)
+            {
+                return avatar;
+            }
+        }
+
+        return null;
+    }
+
+    private static AnimatorController EnsureAnimatorController(string controllerPath, ActorClipBinding[] bindings)
+    {
+        EnsureAssetFolder(Path.GetDirectoryName(controllerPath).Replace("\\", "/"));
+        AnimatorController controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(controllerPath);
+        if (controller == null)
+        {
+            controller = AnimatorController.CreateAnimatorControllerAtPath(controllerPath);
+        }
+
+        AnimatorStateMachine stateMachine = controller.layers[0].stateMachine;
+        ChildAnimatorState[] existingStates = stateMachine.states;
+        for (int i = 0; i < existingStates.Length; i++)
+        {
+            stateMachine.RemoveState(existingStates[i].state);
+        }
+
+        ChildAnimatorStateMachine[] existingStateMachines = stateMachine.stateMachines;
+        for (int i = 0; i < existingStateMachines.Length; i++)
+        {
+            stateMachine.RemoveStateMachine(existingStateMachines[i].stateMachine);
+        }
+
+        AnimatorState firstState = null;
+        if (bindings != null)
+        {
+            for (int i = 0; i < bindings.Length; i++)
+            {
+                AnimationClip clip = FindAnimationClip(bindings[i].assetPath, bindings[i].preferredClipName);
+                AnimatorState state = stateMachine.AddState(bindings[i].clipId);
+                state.motion = clip;
+                state.speed = 1f;
+                state.writeDefaultValues = true;
+                if (firstState == null)
+                {
+                    firstState = state;
+                }
+            }
+        }
+
+        if (firstState != null)
+        {
+            stateMachine.defaultState = firstState;
+        }
+
+        EditorUtility.SetDirty(controller);
+        return controller;
+    }
+
+    private static HearthActorAnimationPlayer ConfigureActorAnimation(GameObject actor, params ActorClipBinding[] bindings)
+    {
+        if (actor == null)
+        {
+            return null;
+        }
+
+        HearthActorAnimationPlayer player = GetOrAdd<HearthActorAnimationPlayer>(actor);
+        SerializedObject so = new SerializedObject(player);
+        Animator animator = actor.GetComponentInChildren<Animator>(true);
+        if (animator == null)
+        {
+            animator = actor.GetComponent<Animator>();
+        }
+
+        if (animator == null)
+        {
+            animator = actor.AddComponent<Animator>();
+            EditorUtility.SetDirty(animator);
+        }
+
+        SetObject(so, "animator", animator);
+        bool useUnscaledTime = false;
+        if (bindings != null)
+        {
+            for (int i = 0; i < bindings.Length; i++)
+            {
+                useUnscaledTime |= bindings[i].stabilizeAnimatorTransform;
+            }
+        }
+        SetBool(so, "useUnscaledTime", useUnscaledTime);
+
+        SerializedProperty clips = so.FindProperty("clips");
+        if (clips != null && clips.isArray)
+        {
+            clips.arraySize = bindings != null ? bindings.Length : 0;
+            for (int i = 0; i < clips.arraySize; i++)
+            {
+                SerializedProperty slot = clips.GetArrayElementAtIndex(i);
+                AnimationClip clip = FindAnimationClip(bindings[i].assetPath, bindings[i].preferredClipName);
+                slot.FindPropertyRelative("clipId").stringValue = bindings[i].clipId;
+                slot.FindPropertyRelative("clip").objectReferenceValue = clip;
+                slot.FindPropertyRelative("loop").boolValue = bindings[i].loop;
+                slot.FindPropertyRelative("applyRootMotion").boolValue = bindings[i].applyRootMotion;
+                slot.FindPropertyRelative("applyFootIk").boolValue = true;
+                SerializedProperty stabilize = slot.FindPropertyRelative("stabilizeAnimatorTransform");
+                if (stabilize != null)
+                {
+                    stabilize.boolValue = bindings[i].stabilizeAnimatorTransform;
+                }
+                slot.FindPropertyRelative("fadeSeconds").floatValue = bindings[i].fadeSeconds;
+                slot.FindPropertyRelative("playbackSpeed").floatValue = 1f;
+            }
+        }
+
+        so.ApplyModifiedPropertiesWithoutUndo();
+        EditorUtility.SetDirty(player);
+        return player;
+    }
+
+    private static AnimationClip FindAnimationClip(string assetPath, string preferredClipName)
+    {
+        Object[] assets = AssetDatabase.LoadAllAssetsAtPath(assetPath);
+        AnimationClip fallback = null;
+        for (int i = 0; i < assets.Length; i++)
+        {
+            AnimationClip clip = assets[i] as AnimationClip;
+            if (clip == null)
+            {
+                continue;
+            }
+
+            if (!string.IsNullOrEmpty(preferredClipName) && clip.name == preferredClipName)
+            {
+                return clip;
+            }
+
+            if (fallback == null && !clip.name.StartsWith("__preview__") && clip.length > 0.05f)
+            {
+                fallback = clip;
+            }
+        }
+
+        return fallback;
+    }
+
     private static GameObject Find(params string[] names)
     {
         if (names == null)
@@ -1233,6 +1903,57 @@ public static class Hearth17F02MinimalLoopBinder
         }
 
         return null;
+    }
+
+    private static GameObject FindActor(params string[] names)
+    {
+        if (names == null)
+        {
+            return null;
+        }
+
+        GameObject[] allObjects = Resources.FindObjectsOfTypeAll<GameObject>();
+        for (int i = 0; i < names.Length; i++)
+        {
+            string wanted = names[i];
+            if (string.IsNullOrEmpty(wanted))
+            {
+                continue;
+            }
+
+            GameObject best = null;
+            for (int j = 0; j < allObjects.Length; j++)
+            {
+                GameObject candidate = allObjects[j];
+                if (candidate == null || !candidate.scene.IsValid() || candidate.name != wanted)
+                {
+                    continue;
+                }
+
+                if (candidate.GetComponent<Animator>() != null)
+                {
+                    return candidate;
+                }
+
+                if (candidate.GetComponentInChildren<Animator>(true) != null)
+                {
+                    best = candidate;
+                    continue;
+                }
+
+                if (best == null)
+                {
+                    best = candidate;
+                }
+            }
+
+            if (best != null)
+            {
+                return best;
+            }
+        }
+
+        return Find(names);
     }
 
     private static Transform FindTransform(params string[] names)

@@ -72,6 +72,7 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
     [SerializeField] private float waitBeforeForcedShutdownSeconds = 0.8f;
     [SerializeField] private float shutdownEffectSeconds = 1.5f;
     [SerializeField] private float waitBeforeReturnSeconds = 0.8f;
+    [SerializeField] private bool useUnscaledReplayTime = true;
 
     [Header("Interaction Gates")]
     [SerializeField] private bool showBedroomHoldPromptDuringConfide;
@@ -98,6 +99,8 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
     [SerializeField] private float wifeWalkSpeed = 1.15f;
     [SerializeField] private float wifeRotateSpeed = 360f;
     [SerializeField] private float wifeAnchorSnapDistance = 0.03f;
+    [SerializeField] private float wifeMoveNoProgressSeconds = 1.25f;
+    [SerializeField] private float wifeMoveProgressEpsilon = 0.002f;
     [SerializeField] private float wifeDoorPauseSeconds = 0.45f;
     [SerializeField] private float waitAfterDoorOpenSeconds = 0.55f;
     [SerializeField] private bool hideBedroomWifeAfterExit;
@@ -115,6 +118,23 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
     [SerializeField] private string bedroomWifePoseId = "BedroomSit";
     [SerializeField] private string diningSittingPoseId = "DiningSit";
     [SerializeField] private string terminalHusbandPoseId = "LeanToUnit";
+
+    [Header("Actor Animations")]
+    [SerializeField] private HearthActorAnimatorDriver bedroomWifeAnimation;
+    [SerializeField] private string bedroomWifeIdleAnimationId = "SittingDisbelief";
+    [SerializeField] private string bedroomWifeTalkingAnimationId = "SittingTalking";
+    [Tooltip("Maximum seconds to keep the one-shot bedroom talking animation/dialogue before continuing. Set to 0 or below to wait for the full clip/dialogue.")]
+    [SerializeField] private float bedroomTalkingMaxSeconds = 10f;
+    [SerializeField] private string bedroomWifeSitToStandAnimationId = "SitToStand";
+    [SerializeField] private string bedroomWifeWalkLoopAnimationId = "WalkLoop";
+    [SerializeField] private string bedroomWifeOpenDoorAnimationId = "OpenDoorOutwards";
+    [SerializeField] private float doorOpenDelayAfterAnimationStartSeconds = 1f;
+    [SerializeField] private HearthActorAnimatorDriver diningWifeAnimation;
+    [SerializeField] private string diningWifeAnimationId = "Sitting";
+    [SerializeField] private HearthActorAnimatorDriver diningHusbandAnimation;
+    [SerializeField] private string diningHusbandAnimationId = "SittingIdle";
+    [SerializeField] private HearthActorAnimatorDriver terminalHusbandAnimation;
+    [SerializeField] private string terminalHusbandAnimationId = "ButtonPushing";
 
     [Header("Blackout Overlay")]
     [SerializeField] private bool createBlackoutOverlay = true;
@@ -181,8 +201,11 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
         wifeWalkSpeed = Mathf.Max(0.01f, wifeWalkSpeed);
         wifeRotateSpeed = Mathf.Max(1f, wifeRotateSpeed);
         wifeAnchorSnapDistance = Mathf.Max(0.001f, wifeAnchorSnapDistance);
+        wifeMoveNoProgressSeconds = Mathf.Max(0.1f, wifeMoveNoProgressSeconds);
+        wifeMoveProgressEpsilon = Mathf.Max(0.0001f, wifeMoveProgressEpsilon);
         wifeDoorPauseSeconds = Mathf.Max(0f, wifeDoorPauseSeconds);
         waitAfterDoorOpenSeconds = Mathf.Max(0f, waitAfterDoorOpenSeconds);
+        doorOpenDelayAfterAnimationStartSeconds = Mathf.Max(0f, doorOpenDelayAfterAnimationStartSeconds);
     }
 
     public void BeginReplay()
@@ -210,7 +233,7 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
         }
 
         SetStageActors(true, false, false);
-        ApplyPose(bedroomWifePose, bedroomWifePoseId);
+        PlayActorLoopOrPose(bedroomWifeAnimation, bedroomWifeIdleAnimationId, bedroomWifePose, bedroomWifePoseId);
         TeleportRobot(bedroomStartAnchor);
         SetRobotControl(false, false, false);
         SetBlackoutAlpha(1f);
@@ -303,7 +326,7 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
         }
 
         SetStageActors(true, false, false);
-        ApplyPose(bedroomWifePose, bedroomWifePoseId);
+        PlayActorLoopOrPose(bedroomWifeAnimation, bedroomWifeIdleAnimationId, bedroomWifePose, bedroomWifePoseId);
         TeleportRobot(bedroomStartAnchor);
         SetRobotControl(false, false, false);
 
@@ -313,10 +336,11 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
 
         if (initialBlackSeconds > 0f)
         {
-            yield return new WaitForSeconds(initialBlackSeconds);
+            yield return WaitForReplaySeconds(initialBlackSeconds);
         }
 
         yield return PlayDialogue(bedroomWakeSequence);
+        PlayActorLoop(bedroomWifeAnimation, bedroomWifeIdleAnimationId);
         yield return FadeBlackTo(0f, wakeFadeSeconds);
 
         ShowHudScene(bedroomWakeSceneId, false);
@@ -332,7 +356,7 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
         {
             if (bedroomPromptDelayAfterConfideSeconds > 0f)
             {
-                yield return new WaitForSeconds(bedroomPromptDelayAfterConfideSeconds);
+                yield return WaitForReplaySeconds(bedroomPromptDelayAfterConfideSeconds);
             }
 
             if (companionHud != null)
@@ -346,7 +370,7 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
                 yield return null;
             }
 
-            yield return PlayDialogue(bedroomComfortSequence);
+            yield return PlayBedroomTalkingAndComfort();
         }
 
         if (companionHud != null)
@@ -356,7 +380,7 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
 
         if (waitAfterConfideSeconds > 0f)
         {
-            yield return new WaitForSeconds(waitAfterConfideSeconds);
+            yield return WaitForReplaySeconds(waitAfterConfideSeconds);
         }
 
         currentStep = ReplayStep.WifeExitLocked;
@@ -371,7 +395,7 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
 
         if (wifeExitLockedSeconds > 0f)
         {
-            yield return new WaitForSeconds(wifeExitLockedSeconds);
+            yield return WaitForReplaySeconds(wifeExitLockedSeconds);
         }
 
         onWifeExitFinished.Invoke();
@@ -379,8 +403,8 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
         currentStep = ReplayStep.DiningObservation;
         onDiningObservationStarted.Invoke();
         SetStageActors(false, true, false);
-        ApplyPose(diningWifePose, diningSittingPoseId);
-        ApplyPose(diningHusbandPose, diningSittingPoseId);
+        PlayActorLoopOrPose(diningWifeAnimation, diningWifeAnimationId, diningWifePose, diningSittingPoseId);
+        PlayActorLoopOrPose(diningHusbandAnimation, diningHusbandAnimationId, diningHusbandPose, diningSittingPoseId);
         ShowHudScene(diningObservationSceneId, false);
         SetRobotControl(true, true, false);
 
@@ -391,27 +415,27 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
 
         if (waitBeforeDiningDialogueSeconds > 0f)
         {
-            yield return new WaitForSeconds(waitBeforeDiningDialogueSeconds);
+            yield return WaitForReplaySeconds(waitBeforeDiningDialogueSeconds);
         }
 
         yield return PlayDialogue(diningObservationSequence);
 
         if (postDiningSilenceSeconds > 0f)
         {
-            yield return new WaitForSeconds(postDiningSilenceSeconds);
+            yield return WaitForReplaySeconds(postDiningSilenceSeconds);
         }
 
         yield return FadeBlackTo(1f, livingRoomFadeOutSeconds);
 
         if (livingRoomBlackHoldSeconds > 0f)
         {
-            yield return new WaitForSeconds(livingRoomBlackHoldSeconds);
+            yield return WaitForReplaySeconds(livingRoomBlackHoldSeconds);
         }
 
         currentStep = ReplayStep.LivingRoomTerminal;
         onLivingRoomTerminalStarted.Invoke();
         SetStageActors(false, false, true);
-        ApplyPose(terminalHusbandPose, terminalHusbandPoseId);
+        PlayActorLoopOrPose(terminalHusbandAnimation, terminalHusbandAnimationId, terminalHusbandPose, terminalHusbandPoseId);
         TeleportRobot(livingRoomTerminalAnchor, livingRoomTerminalCameraAnchor);
         ShowHudScene(logAccessSceneId, false);
         SetRobotControl(false, false, false);
@@ -420,7 +444,7 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
 
         if (waitBeforeForcedShutdownSeconds > 0f)
         {
-            yield return new WaitForSeconds(waitBeforeForcedShutdownSeconds);
+            yield return WaitForReplaySeconds(waitBeforeForcedShutdownSeconds);
         }
 
         currentStep = ReplayStep.ForcedShutdown;
@@ -446,7 +470,7 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
 
         if (shutdownEffectSeconds > 0f)
         {
-            yield return new WaitForSeconds(shutdownEffectSeconds);
+            yield return WaitForReplaySeconds(shutdownEffectSeconds);
         }
 
         currentStep = ReplayStep.BlackAudio;
@@ -455,7 +479,7 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
 
         if (waitBeforeReturnSeconds > 0f)
         {
-            yield return new WaitForSeconds(waitBeforeReturnSeconds);
+            yield return WaitForReplaySeconds(waitBeforeReturnSeconds);
         }
 
         ReturnToTerminalForDisposition(false);
@@ -493,6 +517,26 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
         }
 
         yield return subtitlePlayer.PlaySequenceAsset(sequence);
+    }
+
+    private IEnumerator WaitForReplaySeconds(float seconds)
+    {
+        if (seconds <= 0f)
+        {
+            yield break;
+        }
+
+        float elapsed = 0f;
+        while (elapsed < seconds)
+        {
+            elapsed += GetReplayDeltaTime();
+            yield return null;
+        }
+    }
+
+    private float GetReplayDeltaTime()
+    {
+        return useUnscaledReplayTime ? Time.unscaledDeltaTime : Time.deltaTime;
     }
 
     private void ShowHudScene(string sceneId, bool showHoldPrompt)
@@ -617,6 +661,9 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
 
     private IEnumerator MoveSimpleWifeExitRoute(Transform moveRoot)
     {
+        yield return PlayActorOnceAndWait(bedroomWifeAnimation, bedroomWifeSitToStandAnimationId);
+        PlayActorLoop(bedroomWifeAnimation, bedroomWifeWalkLoopAnimationId);
+
         bool hasExplicitSimpleRoute = HasPathPoints(wifeBeforeDoorPathPoints) || HasPathPoints(wifeAfterDoorPathPoints);
         if (hasExplicitSimpleRoute)
         {
@@ -633,24 +680,21 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
             yield return MoveActorToAnchor(moveRoot, wifeDoorPauseAnchor);
         }
 
+        StopActorAndHold(bedroomWifeAnimation);
+
         if (wifeDoorPauseSeconds > 0f)
         {
-            yield return new WaitForSeconds(wifeDoorPauseSeconds);
+            yield return WaitForReplaySeconds(wifeDoorPauseSeconds);
         }
 
-        if (openDoorDuringWifeExit && wifeExitDoor != null)
-        {
-            wifeExitDoor.Open();
-            while (wifeExitDoor.IsMoving)
-            {
-                yield return null;
-            }
-        }
+        yield return PlayOpenDoorAnimationAndTriggerDoor();
 
         if (waitAfterDoorOpenSeconds > 0f)
         {
-            yield return new WaitForSeconds(waitAfterDoorOpenSeconds);
+            yield return WaitForReplaySeconds(waitAfterDoorOpenSeconds);
         }
+
+        PlayActorLoop(bedroomWifeAnimation, bedroomWifeWalkLoopAnimationId);
 
         if (hasExplicitSimpleRoute)
         {
@@ -663,35 +707,172 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
         }
 
         yield return MoveActorToAnchor(moveRoot, wifeExitOutsideAnchor);
+        StopActorAndHold(bedroomWifeAnimation);
     }
 
     private IEnumerator MoveLegacyWifeExitRoute(Transform moveRoot)
     {
+        yield return PlayActorOnceAndWait(bedroomWifeAnimation, bedroomWifeSitToStandAnimationId);
+        PlayActorLoop(bedroomWifeAnimation, bedroomWifeWalkLoopAnimationId);
+
         int splitIndex = ResolveDoorOpenPathSplitIndex();
         yield return MoveActorAlongPath(moveRoot, wifeExitPathPoints, 0, splitIndex);
         yield return MoveActorToAnchor(moveRoot, wifeDoorPauseAnchor);
+        StopActorAndHold(bedroomWifeAnimation);
 
         if (wifeDoorPauseSeconds > 0f)
         {
-            yield return new WaitForSeconds(wifeDoorPauseSeconds);
+            yield return WaitForReplaySeconds(wifeDoorPauseSeconds);
         }
 
+        yield return PlayOpenDoorAnimationAndTriggerDoor();
+
+        if (waitAfterDoorOpenSeconds > 0f)
+        {
+            yield return WaitForReplaySeconds(waitAfterDoorOpenSeconds);
+        }
+
+        PlayActorLoop(bedroomWifeAnimation, bedroomWifeWalkLoopAnimationId);
+        yield return MoveActorAlongPath(moveRoot, wifeExitPathPoints, splitIndex, GetPathLength(wifeExitPathPoints));
+        yield return MoveActorToAnchor(moveRoot, wifeExitOutsideAnchor);
+        StopActorAndHold(bedroomWifeAnimation);
+    }
+
+    private IEnumerator PlayOpenDoorAnimationAndTriggerDoor()
+    {
+        float animationSeconds = PlayActorOnce(bedroomWifeAnimation, bedroomWifeOpenDoorAnimationId);
+        float doorDelay = animationSeconds > 0f ? doorOpenDelayAfterAnimationStartSeconds : 0f;
+        Coroutine doorRoutine = null;
         if (openDoorDuringWifeExit && wifeExitDoor != null)
         {
-            wifeExitDoor.Open();
+            doorRoutine = StartCoroutine(OpenDoorAfterDelay(doorDelay));
+        }
+        else if (openDoorDuringWifeExit && wifeExitDoor == null)
+        {
+            Debug.LogWarning("[HearthCompanion17F02ReplayController] Wife exit door is not assigned. Skipping door open and continuing the replay.", this);
+        }
+
+        if (animationSeconds > 0f)
+        {
+            yield return WaitForReplaySeconds(animationSeconds);
+        }
+
+        if (doorRoutine != null)
+        {
+            yield return doorRoutine;
+        }
+
+        if (wifeExitDoor != null)
+        {
             while (wifeExitDoor.IsMoving)
             {
                 yield return null;
             }
         }
 
-        if (waitAfterDoorOpenSeconds > 0f)
+        if (bedroomWifeAnimation != null)
         {
-            yield return new WaitForSeconds(waitAfterDoorOpenSeconds);
+            bedroomWifeAnimation.SetRootMotion(false);
+        }
+    }
+
+    private IEnumerator PlayBedroomTalkingAndComfort()
+    {
+        float animationSeconds = PlayActorOnce(bedroomWifeAnimation, bedroomWifeTalkingAnimationId);
+        float maxSeconds = ResolveBedroomTalkingMaxSeconds(animationSeconds);
+        bool waitFullLength = bedroomTalkingMaxSeconds <= 0f;
+        bool hasDialogue = subtitlePlayer != null && preferDialogueSequenceAssets && bedroomComfortSequence != null && bedroomComfortSequence.HasLines;
+        bool dialogueFinished = false;
+        Coroutine dialogueRoutine = null;
+        if (hasDialogue)
+        {
+            dialogueRoutine = StartCoroutine(PlayDialogueAndMarkDone(bedroomComfortSequence, () => dialogueFinished = true));
+        }
+        else
+        {
+            dialogueFinished = true;
         }
 
-        yield return MoveActorAlongPath(moveRoot, wifeExitPathPoints, splitIndex, GetPathLength(wifeExitPathPoints));
-        yield return MoveActorToAnchor(moveRoot, wifeExitOutsideAnchor);
+        if (maxSeconds > 0f)
+        {
+            float elapsed = 0f;
+            while (!BedroomTalkingWaitIsDone(waitFullLength, hasDialogue, dialogueFinished, elapsed, maxSeconds))
+            {
+                elapsed += GetReplayDeltaTime();
+                yield return null;
+            }
+        }
+        else if (dialogueRoutine != null)
+        {
+            yield return dialogueRoutine;
+            dialogueRoutine = null;
+        }
+
+        if (dialogueRoutine != null && !dialogueFinished)
+        {
+            StopCoroutine(dialogueRoutine);
+            if (subtitlePlayer != null)
+            {
+                subtitlePlayer.Hide();
+            }
+        }
+
+        StopActorAndHold(bedroomWifeAnimation);
+    }
+
+    private static bool BedroomTalkingWaitIsDone(
+        bool waitFullLength,
+        bool hasDialogue,
+        bool dialogueFinished,
+        float elapsed,
+        float targetSeconds)
+    {
+        bool timeFinished = targetSeconds <= 0f || elapsed >= targetSeconds;
+        if (waitFullLength)
+        {
+            return timeFinished && (!hasDialogue || dialogueFinished);
+        }
+
+        if (hasDialogue)
+        {
+            return timeFinished || dialogueFinished;
+        }
+
+        return timeFinished;
+    }
+
+    private IEnumerator PlayDialogueAndMarkDone(HearthDialogueSequence sequence, System.Action onDone)
+    {
+        yield return PlayDialogue(sequence);
+        onDone?.Invoke();
+    }
+
+    private float ResolveBedroomTalkingMaxSeconds(float animationSeconds)
+    {
+        if (bedroomTalkingMaxSeconds <= 0f)
+        {
+            return Mathf.Max(0f, animationSeconds);
+        }
+
+        if (animationSeconds <= 0f)
+        {
+            return bedroomTalkingMaxSeconds;
+        }
+
+        return Mathf.Min(animationSeconds, bedroomTalkingMaxSeconds);
+    }
+
+    private IEnumerator OpenDoorAfterDelay(float delaySeconds)
+    {
+        if (delaySeconds > 0f)
+        {
+            yield return WaitForReplaySeconds(delaySeconds);
+        }
+
+        if (wifeExitDoor != null)
+        {
+            wifeExitDoor.Open();
+        }
     }
 
     private Transform ResolveBedroomWifeMoveRoot()
@@ -794,11 +975,34 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
             yield break;
         }
 
+        float lastDistance = Vector3.Distance(actor.position, anchor.position);
+        float noProgressSeconds = 0f;
         while ((actor.position - anchor.position).sqrMagnitude > wifeAnchorSnapDistance * wifeAnchorSnapDistance)
         {
-            float step = wifeWalkSpeed * Time.deltaTime;
+            float step = wifeWalkSpeed * GetReplayDeltaTime();
             actor.position = Vector3.MoveTowards(actor.position, anchor.position, step);
             RotateActorToward(actor, anchor.rotation);
+
+            float currentDistance = Vector3.Distance(actor.position, anchor.position);
+            if (lastDistance - currentDistance > wifeMoveProgressEpsilon)
+            {
+                noProgressSeconds = 0f;
+                lastDistance = currentDistance;
+            }
+            else
+            {
+                noProgressSeconds += GetReplayDeltaTime();
+                if (noProgressSeconds >= wifeMoveNoProgressSeconds)
+                {
+                    Debug.LogWarning(
+                        "[HearthCompanion17F02ReplayController] Wife move made no progress toward " +
+                        anchor.name + ". Snapping to the anchor so the 17F02 replay can continue.",
+                        this);
+                    actor.SetPositionAndRotation(anchor.position, anchor.rotation);
+                    yield break;
+                }
+            }
+
             yield return null;
         }
 
@@ -812,7 +1016,7 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
             return;
         }
 
-        actor.rotation = Quaternion.RotateTowards(actor.rotation, targetRotation, wifeRotateSpeed * Time.deltaTime);
+        actor.rotation = Quaternion.RotateTowards(actor.rotation, targetRotation, wifeRotateSpeed * GetReplayDeltaTime());
     }
 
     private static void SetActiveIfDistinct(GameObject target, bool active, params GameObject[] possiblyShared)
@@ -841,6 +1045,60 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
         if (preset != null && !string.IsNullOrEmpty(poseId))
         {
             preset.ApplyPose(poseId);
+        }
+    }
+
+    private static bool PlayActorLoop(HearthActorAnimatorDriver player, string clipId)
+    {
+        if (player == null || string.IsNullOrEmpty(clipId) || !player.HasState(clipId))
+        {
+            return false;
+        }
+
+        player.PlayLoop(clipId);
+        return true;
+    }
+
+    private static bool PlayActorLoopOrPose(
+        HearthActorAnimatorDriver player,
+        string clipId,
+        HearthActorPosePreset fallbackPose,
+        string fallbackPoseId)
+    {
+        if (PlayActorLoop(player, clipId))
+        {
+            return true;
+        }
+
+        ApplyPose(fallbackPose, fallbackPoseId);
+        return false;
+    }
+
+    private static float PlayActorOnce(HearthActorAnimatorDriver player, string clipId)
+    {
+        if (player == null || string.IsNullOrEmpty(clipId) || !player.HasState(clipId))
+        {
+            return 0f;
+        }
+
+        return player.PlayOnce(clipId);
+    }
+
+    private IEnumerator PlayActorOnceAndWait(HearthActorAnimatorDriver player, string clipId)
+    {
+        float seconds = PlayActorOnce(player, clipId);
+        if (seconds > 0f)
+        {
+            yield return WaitForReplaySeconds(seconds);
+        }
+    }
+
+    private static void StopActorAndHold(HearthActorAnimatorDriver player)
+    {
+        if (player != null)
+        {
+            player.StopAndHold();
+            player.SetRootMotion(false);
         }
     }
 

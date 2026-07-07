@@ -28,6 +28,7 @@ public class SmartDoorController : MonoBehaviour, IInteractable
     [SerializeField] private Vector3 openLocalEulerOffset;
     [SerializeField] private float moveDuration = 0.55f;
     [SerializeField] private AnimationCurve motionCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+    [SerializeField] private bool useUnscaledTime;
     [SerializeField] private bool startOpen;
 
     [Header("Auto Close")]
@@ -185,7 +186,7 @@ public class SmartDoorController : MonoBehaviour, IInteractable
             float elapsed = 0f;
             while (elapsed < moveDuration)
             {
-                elapsed += Time.deltaTime;
+                elapsed += GetDeltaTime();
                 float t = Mathf.Clamp01(elapsed / moveDuration);
                 float easedT = motionCurve != null ? motionCurve.Evaluate(t) : t;
 
@@ -259,7 +260,12 @@ public class SmartDoorController : MonoBehaviour, IInteractable
     {
         if (autoCloseDelay > 0f)
         {
-            yield return new WaitForSeconds(autoCloseDelay);
+            float elapsed = 0f;
+            while (elapsed < autoCloseDelay)
+            {
+                elapsed += GetDeltaTime();
+                yield return null;
+            }
         }
 
         autoCloseRoutine = null;
@@ -323,5 +329,10 @@ public class SmartDoorController : MonoBehaviour, IInteractable
         }
 
         audioSource.PlayOneShot(clip);
+    }
+
+    private float GetDeltaTime()
+    {
+        return useUnscaledTime ? Time.unscaledDeltaTime : Time.deltaTime;
     }
 }

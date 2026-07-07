@@ -56,14 +56,16 @@ public static class Hearth17F01MinimalLoopBinder
         GameObject replayControllerObject = FindOrCreateChild(replayRoot, "HearthCompanion17F01ReplayController").gameObject;
         HearthCompanion17F01ReplayController replayController = GetOrAdd<HearthCompanion17F01ReplayController>(replayControllerObject);
 
-        GameObject boy = Find("little_boy_B");
+        GameObject boy = FindActor("Laying_Sleeping", "little_boy_B-Laying_Sleeping", "little_boy_B");
         GameObject boyInteractionProxy = Find("Capsule Mesh (1)");
-        Transform boyInteractionTarget = ConfigureBoyInteractionProxy(boyInteractionProxy, boy);
+        Transform interactablesRoot = FindOrCreateChild(replayRoot, "RuntimeInteractables");
+        Transform boyInteractionTarget = ConfigureBoyInteractionProxy(boyInteractionProxy, boy, interactablesRoot);
+        DisableOldBoyRootIfReplacementExists(boy);
         HearthActorPosePreset boyPose = boy != null ? GetOrAdd<HearthActorPosePreset>(boy) : null;
         ConfigurePosePreset(boyPose, new[] { "Sleep", "Awake", "Comforted" });
 
-        GameObject mother = Find("casual_Female_K", "casual_Female_G");
-        GameObject father = Find("casual_Male_K", "casual_Male_G");
+        GameObject mother = FindActor("casual_Female_G@Sitting_Idle", "casual_Female_G", "casual_Female_K");
+        GameObject father = FindActor("casual_Male_G@Sitting", "casual_Male_G", "casual_Male_K");
         HearthActorPosePreset motherPose = mother != null ? GetOrAdd<HearthActorPosePreset>(mother) : null;
         HearthActorPosePreset fatherPose = father != null ? GetOrAdd<HearthActorPosePreset>(father) : null;
         ConfigurePosePreset(motherPose, new[] { "Sitting" });
@@ -72,6 +74,15 @@ public static class Hearth17F01MinimalLoopBinder
         DisableActorAnimators(mother);
         DisableActorAnimators(father);
         DisableActorAnimatorsByNames("little_boy_B", "casual_Male_K", "casual_Female_K", "casual_Male_G", "casual_Female_G");
+        HearthActorAnimationPlayer boyAnimation = ConfigureActorAnimation(
+            boy,
+            new ActorClipBinding("LayingSleeping", "Assets/Laying_Sleeping.fbx", "mixamo.com", true, false, 0.18f));
+        HearthActorAnimationPlayer motherAnimation = ConfigureActorAnimation(
+            mother,
+            new ActorClipBinding("SittingIdle", "Assets/casual_Female_G@Sitting_Idle.fbx", "mixamo.com", true, false, 0.18f));
+        HearthActorAnimationPlayer fatherAnimation = ConfigureActorAnimation(
+            father,
+            new ActorClipBinding("Sitting", "Assets/casual_Male_G@Sitting.fbx", "mixamo.com", true, false, 0.18f));
 
         if (boyInteractionTarget == null && boy != null)
         {
@@ -102,6 +113,9 @@ public static class Hearth17F01MinimalLoopBinder
             boyPose,
             motherPose,
             fatherPose,
+            boyAnimation,
+            motherAnimation,
+            fatherAnimation,
             bedroomPreludeDialogue,
             soothingDialogue,
             livingRoomDialogue);
@@ -268,6 +282,9 @@ public static class Hearth17F01MinimalLoopBinder
         HearthActorPosePreset boyPose,
         HearthActorPosePreset motherPose,
         HearthActorPosePreset fatherPose,
+        HearthActorAnimationPlayer boyAnimation,
+        HearthActorAnimationPlayer motherAnimation,
+        HearthActorAnimationPlayer fatherAnimation,
         HearthDialogueSequence bedroomPreludeDialogue,
         HearthDialogueSequence soothingDialogue,
         HearthDialogueSequence livingRoomDialogue)
@@ -298,6 +315,9 @@ public static class Hearth17F01MinimalLoopBinder
         SetObject(so, "boyPosePreset", boyPose);
         SetObject(so, "motherPosePreset", motherPose);
         SetObject(so, "fatherPosePreset", fatherPose);
+        SetObject(so, "boyAnimation", boyAnimation);
+        SetObject(so, "motherAnimation", motherAnimation);
+        SetObject(so, "fatherAnimation", fatherAnimation);
         SetBool(so, "preferDialogueSequenceAssets", true);
         SetObject(so, "bedroomPreludeSequence", bedroomPreludeDialogue);
         SetObject(so, "soothingSequence", soothingDialogue);
@@ -341,11 +361,11 @@ public static class Hearth17F01MinimalLoopBinder
         EditorUtility.SetDirty(interactable);
     }
 
-    private static Transform ConfigureBoyInteractionProxy(GameObject proxy, GameObject boy)
+    private static Transform ConfigureBoyInteractionProxy(GameObject proxy, GameObject boy, Transform parent)
     {
         if (proxy == null && boy != null)
         {
-            proxy = CreateBoyInteractionProxy(boy);
+            proxy = CreateBoyInteractionProxy(boy, parent);
         }
 
         if (proxy == null)
@@ -353,16 +373,16 @@ public static class Hearth17F01MinimalLoopBinder
             return null;
         }
 
+        if (parent != null && proxy.transform.parent != parent)
+        {
+            Vector3 worldPosition = proxy.transform.position;
+            Quaternion worldRotation = proxy.transform.rotation;
+            Undo.SetTransformParent(proxy.transform, parent, "Parent boy interaction proxy");
+            proxy.transform.SetPositionAndRotation(worldPosition, worldRotation);
+        }
+
         if (boy != null)
         {
-            if (!proxy.transform.IsChildOf(boy.transform))
-            {
-                Vector3 worldPosition = proxy.transform.position;
-                Quaternion worldRotation = proxy.transform.rotation;
-                Undo.SetTransformParent(proxy.transform, boy.transform, "Parent boy interaction proxy");
-                proxy.transform.SetPositionAndRotation(worldPosition, worldRotation);
-            }
-
             if (Vector3.Distance(proxy.transform.position, boy.transform.position) > ProxyRepositionDistance)
             {
                 PositionProxyOnBoy(proxy, boy);
@@ -411,7 +431,7 @@ public static class Hearth17F01MinimalLoopBinder
         return proxy.transform;
     }
 
-    private static GameObject CreateBoyInteractionProxy(GameObject boy)
+    private static GameObject CreateBoyInteractionProxy(GameObject boy, Transform parent)
     {
         GameObject proxy = GameObject.CreatePrimitive(PrimitiveType.Capsule);
         Undo.RegisterCreatedObjectUndo(proxy, "Create boy interaction proxy");
@@ -421,7 +441,11 @@ public static class Hearth17F01MinimalLoopBinder
             renderer.enabled = false;
         }
 
-        proxy.transform.SetParent(boy.transform, false);
+        if (parent != null)
+        {
+            proxy.transform.SetParent(parent, false);
+        }
+
         PositionProxyOnBoy(proxy, boy);
         return proxy;
     }
@@ -704,6 +728,52 @@ public static class Hearth17F01MinimalLoopBinder
         }
     }
 
+    private static void DisableOldBoyRootIfReplacementExists(GameObject selectedBoy)
+    {
+        if (selectedBoy == null || selectedBoy.name == "little_boy_B")
+        {
+            return;
+        }
+
+        GameObject[] allObjects = Resources.FindObjectsOfTypeAll<GameObject>();
+        for (int i = 0; i < allObjects.Length; i++)
+        {
+            GameObject candidate = allObjects[i];
+            if (candidate == null || !candidate.scene.IsValid() || candidate.name != "little_boy_B")
+            {
+                continue;
+            }
+
+            if (candidate == selectedBoy ||
+                candidate.transform.IsChildOf(selectedBoy.transform) ||
+                selectedBoy.transform.IsChildOf(candidate.transform))
+            {
+                continue;
+            }
+
+            candidate.SetActive(false);
+            foreach (Renderer renderer in candidate.GetComponentsInChildren<Renderer>(true))
+            {
+                renderer.enabled = false;
+                EditorUtility.SetDirty(renderer);
+            }
+
+            foreach (Collider collider in candidate.GetComponentsInChildren<Collider>(true))
+            {
+                collider.enabled = false;
+                EditorUtility.SetDirty(collider);
+            }
+
+            foreach (Animator animator in candidate.GetComponentsInChildren<Animator>(true))
+            {
+                animator.enabled = false;
+                EditorUtility.SetDirty(animator);
+            }
+
+            EditorUtility.SetDirty(candidate);
+        }
+    }
+
     private static void DestroySceneObject(string objectName)
     {
         GameObject target = Find(objectName);
@@ -912,6 +982,98 @@ public static class Hearth17F01MinimalLoopBinder
         return childObject.transform;
     }
 
+    private readonly struct ActorClipBinding
+    {
+        public readonly string clipId;
+        public readonly string assetPath;
+        public readonly string preferredClipName;
+        public readonly bool loop;
+        public readonly bool applyRootMotion;
+        public readonly float fadeSeconds;
+
+        public ActorClipBinding(string newClipId, string newAssetPath, string newPreferredClipName, bool newLoop, bool newApplyRootMotion, float newFadeSeconds)
+        {
+            clipId = newClipId;
+            assetPath = newAssetPath;
+            preferredClipName = newPreferredClipName;
+            loop = newLoop;
+            applyRootMotion = newApplyRootMotion;
+            fadeSeconds = newFadeSeconds;
+        }
+    }
+
+    private static HearthActorAnimationPlayer ConfigureActorAnimation(GameObject actor, params ActorClipBinding[] bindings)
+    {
+        if (actor == null)
+        {
+            return null;
+        }
+
+        HearthActorAnimationPlayer player = GetOrAdd<HearthActorAnimationPlayer>(actor);
+        SerializedObject so = new SerializedObject(player);
+        Animator animator = actor.GetComponentInChildren<Animator>(true);
+        if (animator == null)
+        {
+            animator = actor.GetComponent<Animator>();
+        }
+
+        if (animator == null)
+        {
+            animator = actor.AddComponent<Animator>();
+            EditorUtility.SetDirty(animator);
+        }
+
+        SetObject(so, "animator", animator);
+
+        SerializedProperty clips = so.FindProperty("clips");
+        if (clips != null && clips.isArray)
+        {
+            clips.arraySize = bindings != null ? bindings.Length : 0;
+            for (int i = 0; i < clips.arraySize; i++)
+            {
+                SerializedProperty slot = clips.GetArrayElementAtIndex(i);
+                AnimationClip clip = FindAnimationClip(bindings[i].assetPath, bindings[i].preferredClipName);
+                slot.FindPropertyRelative("clipId").stringValue = bindings[i].clipId;
+                slot.FindPropertyRelative("clip").objectReferenceValue = clip;
+                slot.FindPropertyRelative("loop").boolValue = bindings[i].loop;
+                slot.FindPropertyRelative("applyRootMotion").boolValue = bindings[i].applyRootMotion;
+                slot.FindPropertyRelative("applyFootIk").boolValue = true;
+                slot.FindPropertyRelative("fadeSeconds").floatValue = bindings[i].fadeSeconds;
+                slot.FindPropertyRelative("playbackSpeed").floatValue = 1f;
+            }
+        }
+
+        so.ApplyModifiedPropertiesWithoutUndo();
+        EditorUtility.SetDirty(player);
+        return player;
+    }
+
+    private static AnimationClip FindAnimationClip(string assetPath, string preferredClipName)
+    {
+        Object[] assets = AssetDatabase.LoadAllAssetsAtPath(assetPath);
+        AnimationClip fallback = null;
+        for (int i = 0; i < assets.Length; i++)
+        {
+            AnimationClip clip = assets[i] as AnimationClip;
+            if (clip == null)
+            {
+                continue;
+            }
+
+            if (!string.IsNullOrEmpty(preferredClipName) && clip.name == preferredClipName)
+            {
+                return clip;
+            }
+
+            if (fallback == null && !clip.name.StartsWith("__preview__") && clip.length > 0.05f)
+            {
+                fallback = clip;
+            }
+        }
+
+        return fallback;
+    }
+
     private static GameObject Find(params string[] namesOrPaths)
     {
         for (int i = 0; i < namesOrPaths.Length; i++)
@@ -924,6 +1086,52 @@ public static class Hearth17F01MinimalLoopBinder
         }
 
         return null;
+    }
+
+    private static GameObject FindActor(params string[] namesOrPaths)
+    {
+        GameObject[] allObjects = Resources.FindObjectsOfTypeAll<GameObject>();
+        for (int i = 0; i < namesOrPaths.Length; i++)
+        {
+            string wanted = namesOrPaths[i];
+            if (string.IsNullOrEmpty(wanted))
+            {
+                continue;
+            }
+
+            GameObject best = null;
+            for (int j = 0; j < allObjects.Length; j++)
+            {
+                GameObject candidate = allObjects[j];
+                if (candidate == null || !candidate.scene.IsValid() || candidate.name != wanted)
+                {
+                    continue;
+                }
+
+                if (candidate.GetComponent<Animator>() != null)
+                {
+                    return candidate;
+                }
+
+                if (candidate.GetComponentInChildren<Animator>(true) != null)
+                {
+                    best = candidate;
+                    continue;
+                }
+
+                if (best == null)
+                {
+                    best = candidate;
+                }
+            }
+
+            if (best != null)
+            {
+                return best;
+            }
+        }
+
+        return Find(namesOrPaths);
     }
 
     private static T GetOrAdd<T>(GameObject target) where T : Component

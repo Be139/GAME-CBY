@@ -161,3 +161,128 @@ casual_Female_K (9) -> REF_Wife_17F02_ExitOutside
   - `Anchor_Robot_17F02_LivingRoomTerminalCamera`：正式机器人相机位置、俯仰角和最终画面朝向。
 - 从第二幕进入第三幕时，流程会同时套用身体锚点和相机锚点，并关闭机器人移动/转头，确保第三幕视角保持为用户摆好的第三幕占位相机视角。
 - 后续如果用户想调整第三幕视角，应先调整 `Robot Controller (3)` 和它子物体 Camera 的位置/角度，再运行 `Tools / Hearth / Replay / Apply 17F02 Minimal Loop Setup` 同步锚点。
+
+## 2026-07-06 17F01/17F02 人物动作接入
+
+### 本次制作口径
+
+- 17F01 的人物模型、位置和朝向以用户当前场景为准，不再由脚本重新摆放。
+- 17F01 只在进入机器人回放流程时播放用户已经设置好的循环动作：
+  - `little_boy_B` 播放 `LayingSleeping`。
+  - `casual_Female_G@Sitting_Idle` 播放 `SittingIdle`。
+  - `casual_Male_G@Sitting` 播放 `Sitting`。
+- 17F02 从旧的静态 Pose / 简单脚本走位，升级为“剧情流程控制 + 可替换动画 Clip + 锚点走位”。
+- `SITTING TALKING ON CASUAL_FEMALE_K` 的实际导入文件按用户确认使用 `Assets/Sitting_Talking.fbx`。
+
+### 17F02 新动作流程
+
+1. 从 17F02 终端进入机器人回放后，先进入黑屏阶段，播放房外/客厅男女主对话和女主进房相关字幕。
+2. 黑屏恢复、陪伴单元被唤醒后，卧室女主 `Actor_Wife_17F02_Bedroom` 循环播放 `SittingDisbelief`。
+3. 女主倾诉结束并等待约 `1.5s` 后，玩家才可以按 `E` 触发陪伴单元安慰。
+4. 玩家完成安慰交互后，卧室女主切换为循环播放 `SittingTalking`，直到男主喊吃饭、女主准备离开。
+5. 女主离开卧室时，依次播放 `SitToStand`、`StartWalking`，随后循环 `WalkLoop` 并沿用户参考模型同步出来的路线锚点移动。
+6. 女主到 `Wife Door Pause Anchor` 后停下，播放 `OpenDoorOutwards`。该动作当前允许使用 root motion。
+7. `OpenDoorOutwards` 开始约 `1s` 后调用 `Door_2_Brown (4)` 的开门逻辑；如果时机不准，后续调 `Door Open Delay After Animation Start Seconds`。
+8. 开门动作结束后，流程关闭 root motion，并把女主移动/校正到 `Wife Exit Outside Anchor`，避免动画自带位移让后续站位漂移。
+9. 第二幕餐桌阶段只显示 `casual_Male_K` 和 `casual_Female_K`，并播放基础坐姿循环。
+10. 第三幕终端阶段隐藏餐桌男女，只显示 `casual_Male_K (1)`，并播放 `ButtonPushing` 基础循环。
+
+### 后续实现提醒
+
+- 如果用户之后替换 Mixamo 动作，应优先在对应角色根对象的 `HearthActorAnimationPlayer / Clips` 里替换 `Clip`，尽量不要改 `Clip Id`。
+- 如果某段动作衔接不自然，优先调对应 Slot 的 `Fade Seconds`、路径参考模型的位置/朝向，以及 `Door Open Delay After Animation Start Seconds`。
+- 如果 `OpenDoorOutwards` 的 root motion 偏移过大，可以先关闭该 Slot 的 `Apply Root Motion`，让角色完全按锚点移动。
+
+## 2026-07-06 17F01/17F02 模型与动画绑定修正
+
+### 本次问题判断
+
+- 17F01 的 E 交互判定曾经跟随 `little_boy_B` 可见模型作为子物体存在；用户删除或替换该模型后，`Capsule Mesh (1)` 也会一起消失，导致机器人看向床边时无法触发 E。
+- 17F02 同时存在正式卧室女主 `Actor_Wife_17F02_Bedroom` 和源动作模型 `casual_Female_K@Sitting_Disbelief`，两者位置接近，造成开场女主重叠。
+- 17F02 流程仍在部分阶段先调用旧 `HearthActorPosePreset`，再播放新动画；旧 PosePreset 会暂停 Animator，容易让 Mixamo 动作不播放或看起来混乱。
+
+### 新实现口径
+
+- 17F01 的 `Capsule Mesh (1)` 改为独立交互判定物，挂在 `MIN_LOOP_ROOT/ReplayRoom_17F01/RuntimeInteractables` 下，不再作为小男孩可见模型的子物体。
+- 17F01 绑定工具优先使用 `Laying_Sleeping` / `little_boy_B-Laying_Sleeping` 作为睡姿模型；旧 `little_boy_B` 根对象如果还在，会被关闭，避免叠模和误播动作。
+- 17F02 有 `HearthActorAnimationPlayer` 且 Clip 存在时，不再执行旧 PosePreset；PosePreset 只作为缺少 Clip 时的兜底。
+- 17F02 的真实演员显示规则固定为：卧室女主、餐桌男女、第三幕男主分阶段显示；源动作模型和参考模型不参与运行时画面。
+
+## 2026-07-07 17F02 女主真实模型与动作绑定修正
+
+### 本次补充修复口径
+
+- 为解决玩家完成 E 安慰交互后女主消失、后续起身/走路/开门流程中断的问题，17F02 卧室女主改为“可见模型 + RuntimeRoot”分离结构。
+- `Actor_Wife_17F02_BedroomRuntimeRoot` 是唯一运行时卧室女主演员根、显隐根和脚本移动根。
+- `casual_Female_K@Sitting_Disbelief` 继续作为卧室可见女主模型，但必须作为 RuntimeRoot 的子物体。
+- 女主所有卧室动作都在同一个可见模型上播放，不再切换到旧 `Actor_Wife_17F02_Bedroom`，也不再把 `casual_Female_K@Sitting_Disbelief` 当源动作对象自动隐藏。
+- 女主的 `SittingDisbelief / SittingTalking / SitToStand / WalkLoop / OpenDoorOutwards` 都关闭 `Apply Root Motion`，并开启 `Stabilize Animator Transform`；世界位移完全由 RuntimeRoot 和 `REF_Wife_17F02_*` 路线锚点控制。
+- `Wife Before Door Path Points` 固定为 `REF_Wife_17F02_BeforeDoor_01` 到 `05`；`Wife After Door Path Points` 当前为空；开门后直接到 `REF_Wife_17F02_ExitOutside`。
+- 17F02 回放等待、女主移动、门开启动画延迟改为不受普通 TimeScale 影响；`Door_2_Brown (4)` 的 `SmartDoorController` 也开启 `Use Unscaled Time`。
+- 女主移动流程新增防卡死保护：如果 RuntimeRoot 没有向目标锚点前进，会输出 Warning 并吸附到目标点继续剧情，避免整段回放卡住。
+
+### 本次制作口径
+
+- 本次只修改 17F02；17F01 已由用户自行解决，不再调整第一户逻辑。
+- 卧室阶段的唯一真实女主固定为 `casual_Female_K@Sitting_Disbelief`。旧 `Actor_Wife_17F02_Bedroom` 不再参与流程，应保持 inactive。
+- `casual_Female_K@Sitting_Disbelief` 不是源动作对象，也不能被自动关闭；它同时承担卧室真实角色、卧室位移根对象和卧室动作播放对象。
+- `REF_Wife_17F02_*` 仍然只作为编辑器走位和朝向参考；Play Mode 下不显示、不碰撞、不参与剧情显隐。
+
+### 17F02 新动作流程修正
+
+1. 黑屏恢复、陪伴单元被唤醒后，`casual_Female_K@Sitting_Disbelief` 循环播放 `SittingDisbelief`，Clip 使用 `Assets/casual_Female_K@Sitting_Disbelief.fbx / mixamo.com`。
+2. 玩家完成 E 安慰交互后，卧室女主播放一次 `SittingTalking`，Clip 使用 `Assets/Sitting_Talking.fbx / mixamo.com`。`Bedroom Talking Max Seconds` 默认 `10`，设为 `0` 或负数时等待完整动作/字幕。
+3. 男主喊吃饭、女主回应后，女主播放 `SitToStand` 一次。
+4. 离开卧室时不再使用 `Female_Start_Walking` 或旧 `locom_f_basicWalk_30f`，走路循环改为 `Assets/casual_Female_K@Walking.fbx / Walking`。
+5. 女主仍沿 `REF_Wife_17F02_BeforeDoor_*` 同步出的锚点移动到 `REF_Wife_17F02_DoorPause`。
+6. 到门口后播放 `OpenDoorOutwards`，并按现有延迟调用 `Door_2_Brown (4)` 开门。
+7. 开门结束后不再额外推算复杂门后路径，直接校正/移动到 `REF_Wife_17F02_ExitOutside`。
+8. 第二幕餐桌阶段只显示 `casual_Female_K` 和 `casual_Male_K`，动作分别为 `Sitting` 与 `SittingIdle`。
+9. 第三幕只显示 `casual_Male_K (1)`，动作是 `ButtonPushing`。
+
+### 后续实现提醒
+
+- 如果后续重跑 `Tools / Hearth / Replay / Apply 17F02 Minimal Loop Setup`，应确认卧室女主仍绑定到 `casual_Female_K@Sitting_Disbelief`，旧 `Actor_Wife_17F02_Bedroom` 仍为 inactive。
+- 如果用户替换动作，只替换对应 `HearthActorAnimationPlayer / Clips` 里的 Clip，尽量不要改 `Clip Id`。
+- 如果女主路线穿模，先移动 `REF_Wife_17F02_*` 参考模型，再运行 `Tools / Hearth / Replay / Build 17F02 Wife Route From Female References` 同步锚点。
+## 2026-07-07 17F02 动作播放规范修正记录
+
+### 问题现象
+
+- 玩家在 17F02 卧室完成 E 安慰交互后，女主没有播放 `SittingTalking`。
+- 后续也没有正常播放 `SitToStand`、`WalkLoop`、`OpenDoorOutwards`，看起来像是一直保持坐姿移动出门。
+- 第二幕餐桌男主/女主和第三幕男主也没有稳定播放指定动作。
+
+### 本次原因判断
+
+- 之前 17F02 使用 Playables 直接播放 FBX Clip，但这些 Mixamo FBX 原本是 Generic 导入，不能稳定作为 Humanoid 动作重定向到真实角色。
+- 卧室女主运行时绑定到的 Animator 曾经是 `avatar=null / controller=null`，不符合 Unity 角色动画规范。
+- 用户复制模型来调位置和朝向的方式可以保留，但这些复制模型只能作为参考锚点，不能作为运行时演员或动画目标。
+
+### 最新制作规则
+
+- 17F02 角色动画改为 Unity 标准 Humanoid / Animator Controller 流程。
+- 真实演员只使用：
+  - 卧室女主：`Actor_Wife_17F02_BedroomRuntimeRoot` 下的 `casual_Female_K@Sitting_Disbelief`
+  - 餐桌女主：`casual_Female_K`
+  - 餐桌男主：`casual_Male_K`
+  - 第三幕男主：`casual_Male_K (1)`
+- `REF_Wife_17F02_*` 只作为用户调走位和朝向的参考模型；Play Mode 下不显示、不碰撞、不参与剧情显隐。
+- 17F02 的动作状态现在由 `HearthActorAnimatorDriver` 播放，绑定工具自动生成 `Assets/Animation/Hearth/17F02/*.controller`。
+
+### 最新动作顺序
+
+1. 卧室女主循环 `SittingDisbelief`。
+2. E 安慰后播放一次 `SittingTalking`。
+3. 离开前播放 `SitToStand`。
+4. 循环 `WalkLoop`，沿参考模型生成的锚点移动。
+5. 门口播放 `OpenDoorOutwards`，约 1 秒后开 `Door_2_Brown (4)`。
+6. 开门动作结束后直接校正到 `ExitOutside`。
+7. 第二幕餐桌男女播放 `Sitting / SittingIdle`。
+8. 第三幕男主播放 `ButtonPushing`。
+
+### 后续实现提醒
+
+- 以后新增或替换 Mixamo 动作时，优先检查 FBX 是否为 Humanoid，Clip 是否 `human=True`。
+- 如果动作不播放，先检查演员 Animator 是否有有效 Avatar 和 Controller，而不是先改剧情流程。
+- 如果女主走位不准，先移动 `REF_Wife_17F02_*` 参考模型并重跑路线同步菜单，不要把参考模型改成运行时演员。

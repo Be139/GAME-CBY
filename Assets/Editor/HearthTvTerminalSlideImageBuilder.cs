@@ -103,11 +103,31 @@ public static class HearthTvTerminalSlideImageBuilder
         RebuildTvTerminalImagePrefabs();
 
         HearthTvTerminalPrefabBuilder.StandardizeTvByHierarchyPath("17F/ROOM1/TV (3)", Terminal17F01PrefabPath);
-        HearthTvTerminalPrefabBuilder.StandardizeTvByHierarchyPath("17F/ROOM2/TV (4)", Terminal17F02PrefabPath);
-        HearthTvTerminalPrefabBuilder.StandardizeTvByHierarchyPath("17F/ROOM3/TV (2)", Terminal17F03PrefabPath);
+        HearthTvTerminalPrefabBuilder.StandardizeTvByHierarchyPath("17F/ROOM3/TV (2)", Terminal17F02PrefabPath);
+        HearthTvTerminalPrefabBuilder.StandardizeTvByHierarchyPath("17F/ROOM2/TV (4)", Terminal17F03PrefabPath);
+
+        SetSceneTerminalResidentId("17F/ROOM1/TV (3)/MonitorCanvas/Terminal_17F01", "17F01");
+        SetSceneTerminalResidentId("17F/ROOM3/TV (2)/MonitorCanvas/Terminal_17F02", "17F02");
+        SetSceneTerminalResidentId("17F/ROOM2/TV (4)/MonitorCanvas/Terminal_17F03_Alert", "17F03");
 
         EditorSceneManager.SaveOpenScenes();
         Debug.Log("[HearthTvTerminalSlideImageBuilder] Applied PPT image terminals to current 17F scene TVs.");
+    }
+
+    private static void SetSceneTerminalResidentId(string hierarchyPath, string residentId)
+    {
+        GameObject terminalObject = GameObject.Find(hierarchyPath);
+        HearthTvTerminalController controller = terminalObject != null
+            ? terminalObject.GetComponent<HearthTvTerminalController>()
+            : null;
+        if (controller == null)
+        {
+            Debug.LogWarning("[HearthTvTerminalSlideImageBuilder] Could not set resident id because terminal was not found: " + hierarchyPath);
+            return;
+        }
+
+        controller.SetReplayResidentId(residentId);
+        EditorUtility.SetDirty(controller);
     }
 
     private static GameObject BuildImagePage(int slideNumber, Sprite sprite)

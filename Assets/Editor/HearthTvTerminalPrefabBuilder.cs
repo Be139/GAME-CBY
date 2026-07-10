@@ -530,6 +530,8 @@ public static class HearthTvTerminalPrefabBuilder
     {
         PlayerInteraction[] interactions = UnityEngine.Object.FindObjectsOfType<PlayerInteraction>(true);
         PlayerInteraction fallback = null;
+        PlayerInteraction bestInteraction = null;
+        int bestScore = int.MinValue;
 
         for (int i = 0; i < interactions.Length; i++)
         {
@@ -544,22 +546,62 @@ public static class HearthTvTerminalPrefabBuilder
                 fallback = interaction;
             }
 
-            if (interaction.enabled && interaction.gameObject.activeInHierarchy && IsUsablePlayerCamera(interaction.mainCamera, null))
+            if (!IsUsablePlayerCamera(interaction.mainCamera, null))
             {
-                return interaction;
+                continue;
+            }
+
+            int score = ScorePlayerInteractionCandidate(interaction);
+            if (bestInteraction == null || score > bestScore)
+            {
+                bestInteraction = interaction;
+                bestScore = score;
             }
         }
 
-        for (int i = 0; i < interactions.Length; i++)
+        return bestInteraction != null ? bestInteraction : fallback;
+    }
+
+    private static int ScorePlayerInteractionCandidate(PlayerInteraction interaction)
+    {
+        if (interaction == null)
         {
-            PlayerInteraction interaction = interactions[i];
-            if (interaction != null && IsUsablePlayerCamera(interaction.mainCamera, null))
-            {
-                return interaction;
-            }
+            return int.MinValue;
         }
 
-        return fallback;
+        int score = 0;
+        if (interaction.gameObject.activeInHierarchy)
+        {
+            score += 100;
+        }
+
+        if (interaction.enabled)
+        {
+            score += 100;
+        }
+
+        Camera camera = interaction.mainCamera;
+        if (camera != null && camera.enabled)
+        {
+            score += 40;
+        }
+
+        string path = GetHierarchyPath(interaction.transform).ToUpperInvariant();
+        if (path.Contains("PERSON CONTROLLER"))
+        {
+            score += 1000;
+        }
+        else if (path.Contains("PERSON"))
+        {
+            score += 250;
+        }
+
+        if (path.Contains("ROBOT CONTROLLER"))
+        {
+            score -= 500;
+        }
+
+        return score;
     }
 
     private static Camera FindBestPlayerCamera(PlayerInteraction playerInteraction, Camera terminalCamera)

@@ -286,3 +286,25 @@ casual_Female_K (9) -> REF_Wife_17F02_ExitOutside
 - 以后新增或替换 Mixamo 动作时，优先检查 FBX 是否为 Humanoid，Clip 是否 `human=True`。
 - 如果动作不播放，先检查演员 Animator 是否有有效 Avatar 和 Controller，而不是先改剧情流程。
 - 如果女主走位不准，先移动 `REF_Wife_17F02_*` 参考模型并重跑路线同步菜单，不要把参考模型改成运行时演员。
+
+## 2026-07-09 17F02 / 17F03 门口 TV 终端入口对调
+
+### 本次制作口径
+
+- 本次只交换两台门口 TV 的终端内容和回放住户 ID。
+- 不修改地面 `LOCATION` 判定、不修改房间 Mesh 归属、不修改玩家 HUD 的历史列表或住户排序。
+- `17F/ROOM3/TV (2)` 现在作为 17F02 第二关卡入口，挂载 `Terminal_17F02`。
+- `17F/ROOM2/TV (4)` 现在作为 17F03 Alert 终端入口，挂载 `Terminal_17F03_Alert`。
+
+### 已同步到当前场景
+
+- `17F/ROOM3/TV (2)/MonitorCanvas` 下只保留 `Terminal_17F02`。
+- `17F/ROOM3/TV (2)/MonitorCanvas/Terminal_17F02` 的 `replayResidentId` 显式设置为 `17F02`。
+- `17F/ROOM2/TV (4)/MonitorCanvas` 下只保留 `Terminal_17F03_Alert`。
+- `17F/ROOM2/TV (4)/MonitorCanvas/Terminal_17F03_Alert` 的 `replayResidentId` 显式设置为 `17F03`。
+- `17F/ROOM1/TV (3)` 的 17F01 终端入口保持不变。
+
+### 后续实现提醒
+
+- 因为终端控制器会从父级 `ROOM2 / ROOM3` 名称推断住户 ID，所以这两个对调后的终端必须保留显式 `replayResidentId`。
+- 后续如果重新运行 TV 标准化工具或重新拖入终端 Prefab，需要再次确认 `ROOM3/TV (2)` 是 `17F02`，`ROOM2/TV (4)` 是 `17F03`。

@@ -26,25 +26,24 @@ MonoBehaviour:
   - label: Protocol
     value: v2.4 active
   - label: Channel
-    value: Mother ready
+    value: Mother intent -> Daughter
   statusFooter: 
   decisionKicker: SYNTH VOICE - DECISION
-  decisionTitle: Execute Mediation Protocol
-  decisionBody: Both parties have intent but blocked by emotion. Unit speaks on behalf
-    of each.
+  decisionTitle: Speak For Mother
+  decisionBody: Translate the mother's intent into a lower-conflict message for the
+    daughter.
   dataStreamTitle: //mediation execution - streaming
   dataStreamLines:
   - 0x82B1 position_BETWEEN
   - 0x82B2 mediation_v2.4_ACTIVE
-  - 0x82B3 channel_for_mother_READY
-  - 0x82B5 speak_for_mother_DELIVERED
-  - 0x82B6 daughter_response_HESITATE
+  - 0x82B3 target_DAUGHTER_READY
+  - 0x82B5 speak_for_mother_PENDING
   showHoldPrompt: 1
-  holdPromptText: '[ "..." ]'
+  holdPromptText: '[ Relay Mother''s Intent To Daughter ]'
   holdKey: 101
   holdSeconds: 1.5
   showDirectionGuide: 1
-  directionGuideText: FACE MOTHER - HOLD E WHEN ALIGNED
+  directionGuideText: FACE DAUGHTER - HOLD E WHEN ALIGNED
   projectionTitle: 
   projectionBody: 
   centerMessage: 
@@ -57,7 +56,7 @@ MonoBehaviour:
       Protocol    v2.4 active
 
       Channel   
-      Mother ready'
+      Mother intent -> Daughter'
   showTriggerCard: 0
   triggerCardTitle: 
   triggerCardBody: 

@@ -922,6 +922,10 @@ public static class Hearth17F01MinimalLoopBinder
             collider.enabled = false;
             EditorUtility.SetDirty(collider);
         }
+
+        HearthEditorOnlyReferenceModel marker = GetOrAdd<HearthEditorOnlyReferenceModel>(controller);
+        marker.ApplyReferenceState();
+        EditorUtility.SetDirty(marker);
     }
 
     private static HearthTvTerminalController FindTerminal17F01()

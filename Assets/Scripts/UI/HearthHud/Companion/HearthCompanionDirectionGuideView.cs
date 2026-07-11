@@ -10,6 +10,7 @@ public class HearthCompanionDirectionGuideView : MonoBehaviour
     [SerializeField] private TMP_Text guideText;
     [SerializeField] private Image markerImage;
     [SerializeField] private RectTransform markerRect;
+    [SerializeField] private bool markerVisible = true;
 
     [Header("Runtime Target")]
     [SerializeField] private Camera viewCamera;
@@ -60,6 +61,15 @@ public class HearthCompanionDirectionGuideView : MonoBehaviour
         UpdateMarkerPosition();
     }
 
+    public void SetMarkerVisible(bool visible)
+    {
+        markerVisible = visible;
+        if (markerImage != null)
+        {
+            markerImage.gameObject.SetActive(visible);
+        }
+    }
+
     public void SetVisible(bool visible)
     {
         if (canvasGroup != null)
@@ -74,7 +84,7 @@ public class HearthCompanionDirectionGuideView : MonoBehaviour
 
     private void UpdateMarkerPosition()
     {
-        if (markerRect == null || canvasGroup == null || canvasGroup.alpha <= 0.01f)
+        if (!markerVisible || markerRect == null || canvasGroup == null || canvasGroup.alpha <= 0.01f)
         {
             return;
         }

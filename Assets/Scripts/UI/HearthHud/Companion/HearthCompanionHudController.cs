@@ -252,6 +252,22 @@ public class HearthCompanionHudController : MonoBehaviour
         }
     }
 
+    public void SetDirectionGuideVisible(bool visible)
+    {
+        if (directionGuideView != null)
+        {
+            directionGuideView.SetVisible(visible);
+        }
+    }
+
+    public void SetDirectionMarkerVisible(bool visible)
+    {
+        if (directionGuideView != null)
+        {
+            directionGuideView.SetMarkerVisible(visible);
+        }
+    }
+
     public void ResetHoldPrompt()
     {
         if (holdPrompt != null)

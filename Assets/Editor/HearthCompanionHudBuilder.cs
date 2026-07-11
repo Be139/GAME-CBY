@@ -76,6 +76,36 @@ public static class HearthCompanionHudBuilder
         Debug.Log("[HearthCompanionHudBuilder] Regenerated default companion unit scene data.");
     }
 
+    [MenuItem("Tools/Hearth/HUD/Regenerate 17F03 Companion Scene Data Defaults")]
+    public static void Regenerate17F03SceneDataDefaults()
+    {
+        EnsureFolders();
+        SceneDefault[] defaults = CreateDefaults();
+        for (int i = 0; i < defaults.Length; i++)
+        {
+            SceneDefault item = defaults[i];
+            if (!item.AssetName.Contains("17F03"))
+            {
+                continue;
+            }
+
+            string assetPath = DataFolder + "/" + item.AssetName + ".asset";
+            HearthCompanionHudSceneData asset = AssetDatabase.LoadAssetAtPath<HearthCompanionHudSceneData>(assetPath);
+            if (asset == null)
+            {
+                asset = ScriptableObject.CreateInstance<HearthCompanionHudSceneData>();
+                AssetDatabase.CreateAsset(asset, assetPath);
+            }
+
+            item.Apply(asset);
+            EditorUtility.SetDirty(asset);
+        }
+
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
+        Debug.Log("[HearthCompanionHudBuilder] Regenerated 17F03 companion scene data defaults only.");
+    }
+
     private static GameObject BuildRoot(HearthCompanionHudSceneData[] sceneAssets)
     {
         GameObject root = new GameObject(
@@ -233,7 +263,7 @@ public static class HearthCompanionHudBuilder
         root.transform.SetParent(parent, false);
         Stretch(root.GetComponent<RectTransform>());
         CanvasGroup group = root.GetComponent<CanvasGroup>();
-        TMP_Text label = CreateText(root.transform, "DirectionGuideText", string.Empty, PptRect(520f, 430f, 400f, 32f), 17f, new Color(0.5f, 0.9f, 1f, 0.9f), FontStyles.Bold, TextAlignmentOptions.Center);
+        TMP_Text label = CreateText(root.transform, "DirectionGuideText", string.Empty, PptRect(520f, 520f, 400f, 32f), 17f, new Color(0.5f, 0.9f, 1f, 0.9f), FontStyles.Bold, TextAlignmentOptions.Center);
         Image marker = CreateImage(root.transform, "DirectionGuideMarker", PptRect(700f, 490f, 40f, 40f), new Color(0.5f, 0.9f, 1f, 0.32f));
         AddBorder(marker.transform, new Rect(0f, 0f, 40f, 40f), new Color(0.5f, 0.9f, 1f, 0.86f), 2f);
         HearthCompanionDirectionGuideView view = root.GetComponent<HearthCompanionDirectionGuideView>();
@@ -356,21 +386,21 @@ public static class HearthCompanionHudBuilder
                 false, "", false, "", "", "", "", false, "", "", false, "", "", "", 1.5f),
 
             new SceneDefault("17F03_02", 11, "17F-03", HearthCompanionHudTemplate.Standard, HearthCompanionSpecialEffect.None, "COMPANION UNIT - FIRST PERSON - MEDIATION MODE", orange,
-                "MEDIATION CHANNEL", Lines(M("Position", "Between residents"), M("Protocol", "v2.4 active"), M("Channel", "Mother ready")), "",
-                "Execute Mediation Protocol", "Both parties have intent but blocked by emotion. Unit speaks on behalf of each.", "//mediation execution - streaming",
-                Arr("0x82B1 position_BETWEEN", "0x82B2 mediation_v2.4_ACTIVE", "0x82B3 channel_for_mother_READY", "0x82B5 speak_for_mother_DELIVERED", "0x82B6 daughter_response_HESITATE"),
-                true, "[ \"...\" ]", true, "FACE MOTHER - HOLD E WHEN ALIGNED", "", "", "", false, "", "", false, "", "", "", 1.5f),
+                "MEDIATION CHANNEL", Lines(M("Position", "Between residents"), M("Protocol", "v2.4 active"), M("Channel", "Mother intent -> Daughter")), "",
+                "Speak For Mother", "Translate the mother's intent into a lower-conflict message for the daughter.", "//mediation execution - streaming",
+                Arr("0x82B1 position_BETWEEN", "0x82B2 mediation_v2.4_ACTIVE", "0x82B3 target_DAUGHTER_READY", "0x82B5 speak_for_mother_PENDING"),
+                true, "[ Relay Mother's Intent To Daughter ]", true, "FACE DAUGHTER - HOLD E WHEN ALIGNED", "", "", "", false, "", "", false, "", "", "", 1.5f),
 
             new SceneDefault("17F03_03", 12, "17F-03", HearthCompanionHudTemplate.Standard, HearthCompanionSpecialEffect.None, "COMPANION UNIT - FIRST PERSON - MEDIATION MODE", orange,
                 "MEDIATION COMPLETE", Lines(M("Mother emotion", "7.8 -> 4.1"), M("Daughter emotion", "6.3 -> 4.5")), "DE-ESCALATION - SUCCESS",
-                "Execute Mediation Protocol", "Speaking for daughter. Channel open both directions.", "//mediation execution - streaming",
+                "Speak For Daughter", "Translate the daughter's intent into a lower-conflict message for the mother.", "//mediation execution - streaming",
                 Arr("0x82B4 channel_for_daughter_READY", "0x82B7 speak_for_daughter_DELIVERED", "0x82B8 mother_response_HESITATE", "0x82B9 emo_both_DROP", "0x82BA mediation_COMPLETE"),
-                true, "[ \"...\" ]", true, "FACE DAUGHTER - HOLD E WHEN ALIGNED", "", "", "", false, "", "", false, "", "", "", 1.5f),
+                true, "[ Relay Daughter's Intent To Mother ]", true, "FACE MOTHER - HOLD E WHEN ALIGNED", "", "", "", false, "", "", false, "", "", "", 1.5f),
 
             new SceneDefault("17F03_04", 13, "17F-03", HearthCompanionHudTemplate.Standard, HearthCompanionSpecialEffect.None, "COMPANION UNIT - FIRST PERSON - MEDIATION MODE", blue,
-                "MALE RESIDENT HOME", Lines(M("Daughter", "Stable-low residue"), M("Recommend", "Unit speaks on behalf"), M("Total conversation", "0"), M("Duration", "14 min"), M("Household stability", "Stable")), "DINNER ARCHIVE",
-                "This Unit Speaks on Behalf", "Reduce conflict recurrence risk.", "//proxy speech - streaming",
-                Arr("0x83C1 door_OPEN", "0x83C2 father_HOME", "0x83C3 father_LOOK_unit (0.4s)", "0x83C5 channel_father_OPEN", "0x83C7 message_father_DELIVERED", "0x83CA message_daughter_DELIVERED", "0x83CC archive_silent_dinner"),
+                "SERVICE SUBJECT APPROACH", Lines(M("Daughter", "Approaching"), M("Intent", "Direct conversation"), M("Emotion", "Stable - low"), M("Parents", "Separate rooms"), M("Time", "22:14")), "DIALOGUE MODE",
+                "Open Standard Response", "Service subject initiated direct contact with this unit.", "//night dialogue - streaming",
+                Arr("0x83C1 bedroom_door_OPEN", "0x83C2 daughter_APPROACH", "0x83C3 intent_DIALOGUE", "0x83C5 standard_response_LOAD", "0x83C7 evaluation_RANGE_EXCEEDED"),
                 false, "", false, "", "", "", "", false, "", "", false, "", "", "", 1.5f),
 
             new SceneDefault("17F03_05", 14, "17F-03", HearthCompanionHudTemplate.DeepSleep, HearthCompanionSpecialEffect.DeepSleep, "COMPANION UNIT - FIRST PERSON - DEEP SLEEP", orange,

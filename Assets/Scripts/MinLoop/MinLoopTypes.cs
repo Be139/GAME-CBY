@@ -14,7 +14,11 @@ public enum MinLoopStage
     MorningReview,
     ReturningToTerminal,
     DispositionChoice,
-    Complete
+    Complete,
+    EnteringResidentUnit,
+    ResidentUnitDialogue,
+    ResidentUnitInspection,
+    ResidentPostReplay
 }
 
 public enum MinLoopDispositionChoice

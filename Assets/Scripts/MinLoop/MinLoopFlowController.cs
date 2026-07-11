@@ -10,6 +10,7 @@ public class MinLoopFlowController : MonoBehaviour
     [SerializeField] private ReplaySequenceController replaySequenceController;
     [SerializeField] private HearthCompanion17F01ReplayController companion17F01ReplayController;
     [SerializeField] private HearthCompanion17F02ReplayController companion17F02ReplayController;
+    [SerializeField] private HearthCompanion17F03ReplayController companion17F03ReplayController;
     [SerializeField] private TrustStateController trustStateController;
     [SerializeField] private bool autoFindMissingReferences = true;
     [SerializeField] private bool useCompanion17F01ReplayController = true;
@@ -101,6 +102,11 @@ public class MinLoopFlowController : MonoBehaviour
             companion17F02ReplayController.CancelReplay();
         }
 
+        if (companion17F03ReplayController != null)
+        {
+            companion17F03ReplayController.CancelFlow();
+        }
+
         if (viewSwitchController != null && viewSwitchController.CurrentMode != ViewSwitchController.ViewMode.Human)
         {
             viewSwitchController.SwitchToHuman();
@@ -130,6 +136,15 @@ public class MinLoopFlowController : MonoBehaviour
     public void SetCompanion17F02ReplayController(HearthCompanion17F02ReplayController controller)
     {
         companion17F02ReplayController = controller;
+    }
+
+    public void SetCompanion17F03ReplayController(HearthCompanion17F03ReplayController controller)
+    {
+        companion17F03ReplayController = controller;
+        if (companion17F03ReplayController != null)
+        {
+            companion17F03ReplayController.SetFlowController(this);
+        }
     }
 
     public void SetActiveReplayResident(string residentId)
@@ -232,6 +247,47 @@ public class MinLoopFlowController : MonoBehaviour
         StartFlowRoutine(SwitchToCompanionAndBeginReplay());
     }
 
+    public void RequestEnterUnitFromTerminal()
+    {
+        ResolveReferences();
+
+        if (!string.Equals(activeReplayResidentId, "17F03", System.StringComparison.OrdinalIgnoreCase))
+        {
+            Debug.LogWarning("MinLoopFlowController received Enter Unit for a resident other than 17F03.", this);
+            return;
+        }
+
+        if (companion17F03ReplayController == null)
+        {
+            Debug.LogWarning("MinLoopFlowController cannot enter 17F03 because no HearthCompanion17F03ReplayController is assigned.", this);
+            return;
+        }
+
+        StopActiveFlowRoutine();
+        if (terminalPresenter != null)
+        {
+            terminalPresenter.Close();
+        }
+
+        SetStage(MinLoopStage.EnteringResidentUnit);
+        companion17F03ReplayController.BeginHumanEntry(this);
+    }
+
+    public void NotifyResidentUnitDialogueStarted()
+    {
+        SetStage(MinLoopStage.ResidentUnitDialogue);
+    }
+
+    public void NotifyResidentUnitInspectionReady()
+    {
+        SetStage(MinLoopStage.ResidentUnitInspection);
+    }
+
+    public void NotifyResidentPostReplayStarted()
+    {
+        SetStage(MinLoopStage.ResidentPostReplay);
+    }
+
     public void NotifyReplayComfortReady()
     {
         SetStage(MinLoopStage.WaitingForComfort);
@@ -316,7 +372,19 @@ public class MinLoopFlowController : MonoBehaviour
 
         SetStage(MinLoopStage.CompanionReplay);
 
-        if (useResidentSpecificReplayControllers && string.Equals(activeReplayResidentId, "17F02", System.StringComparison.OrdinalIgnoreCase))
+        if (useResidentSpecificReplayControllers && string.Equals(activeReplayResidentId, "17F03", System.StringComparison.OrdinalIgnoreCase))
+        {
+            if (companion17F03ReplayController != null)
+            {
+                companion17F03ReplayController.BeginRecordedReplay(this);
+            }
+            else
+            {
+                Debug.LogWarning("MinLoopFlowController is set to 17F03, but no HearthCompanion17F03ReplayController is assigned. Returning directly to disposition choice.", this);
+                yield return ReturnToTerminalForDisposition();
+            }
+        }
+        else if (useResidentSpecificReplayControllers && string.Equals(activeReplayResidentId, "17F02", System.StringComparison.OrdinalIgnoreCase))
         {
             if (companion17F02ReplayController != null)
             {
@@ -504,6 +572,15 @@ public class MinLoopFlowController : MonoBehaviour
         if (companion17F02ReplayController == null)
         {
             companion17F02ReplayController = FindObjectOfType<HearthCompanion17F02ReplayController>();
+        }
+
+        if (companion17F03ReplayController == null)
+        {
+            companion17F03ReplayController = FindObjectOfType<HearthCompanion17F03ReplayController>();
+            if (companion17F03ReplayController != null)
+            {
+                companion17F03ReplayController.SetFlowController(this);
+            }
         }
 
         if (trustStateController == null)

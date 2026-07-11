@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using UnityEngine;
 
 [DisallowMultipleComponent]
@@ -27,6 +28,7 @@ public class HearthActorAnimatorDriver : MonoBehaviour
     [SerializeField] private string playOnEnableStateId;
 
     private int activeStateHash;
+    private string activeStateId;
 
     public Animator Animator
     {
@@ -35,6 +37,11 @@ public class HearthActorAnimatorDriver : MonoBehaviour
             ResolveAnimator();
             return animator;
         }
+    }
+
+    public string ActiveStateId
+    {
+        get { return activeStateId; }
     }
 
     private void OnEnable()
@@ -86,6 +93,54 @@ public class HearthActorAnimatorDriver : MonoBehaviour
 
         slot.loop = false;
         return PlayInternal(slot);
+    }
+
+    public float HoldStateAtStart(string stateId)
+    {
+        StateSlot slot = FindState(stateId);
+        ResolveAnimator();
+        if (slot == null || animator == null || string.IsNullOrEmpty(slot.stateName))
+        {
+            return 0f;
+        }
+
+        string statePath = ResolveStatePath(slot.stateName);
+        if (string.IsNullOrEmpty(statePath))
+        {
+            Debug.LogWarning("[HearthActorAnimatorDriver] Animator state was not found: " + slot.stateName, this);
+            return 0f;
+        }
+
+        animator.enabled = true;
+        animator.applyRootMotion = slot.applyRootMotion;
+        animator.speed = 1f;
+        activeStateHash = Animator.StringToHash(statePath);
+        activeStateId = slot.stateId;
+        animator.Play(activeStateHash, 0, 0f);
+        animator.Update(0f);
+        animator.speed = 0f;
+        return GetStateLength(stateId);
+    }
+
+    public void ResumePlayback()
+    {
+        ResolveAnimator();
+        if (animator != null)
+        {
+            StateSlot slot = FindState(activeStateId);
+            animator.speed = slot != null ? Mathf.Max(0.01f, slot.playbackSpeed) : 1f;
+        }
+    }
+
+    public IEnumerator WaitForStateCompletion(string stateId, bool useUnscaledTime = false)
+    {
+        float duration = GetStateLength(stateId);
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += useUnscaledTime ? Time.unscaledDeltaTime : Time.deltaTime;
+            yield return null;
+        }
     }
 
     public void StopAndHold()
@@ -169,6 +224,7 @@ public class HearthActorAnimatorDriver : MonoBehaviour
 
         animator.Update(0f);
         activeStateHash = stateHash;
+        activeStateId = slot.stateId;
         return slot.clip != null ? slot.clip.length / Mathf.Max(0.01f, slot.playbackSpeed) : 0f;
     }
 

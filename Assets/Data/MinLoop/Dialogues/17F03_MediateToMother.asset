@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bf2d7532251303545ab78ab68b00d5cf, type: 3}
+  m_Name: 17F03_MediateToMother
+  m_EditorClassIdentifier: 
+  sequenceId: 17F03_MediateToMother
+  notes: The unit speaks for the daughter.
+  lines:
+  - startDelay: 0.1
+    speaker: Companion Unit
+    text: She knows you are trying to help. She hopes you can trust her to make the
+      schedule herself.
+    holdSeconds: 4.8
+    voiceClip: {fileID: 0}
+  - startDelay: 0.35
+    speaker: Mother
+    text: ...All right.
+    holdSeconds: 1.8
+    voiceClip: {fileID: 0}
+  - startDelay: 0.35
+    speaker: Synth Voice
+    text: De-escalation successful.
+    holdSeconds: 2.2
+    voiceClip: {fileID: 0}
+  postSequenceDelay: 0

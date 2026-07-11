@@ -7,6 +7,12 @@ using UnityEngine.Events;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
+public enum HearthTerminalPrimaryAction
+{
+    RequestReplay,
+    EnterUnit
+}
+
 [DisallowMultipleComponent]
 public class HearthTvTerminalController : MonoBehaviour
 {
@@ -84,6 +90,7 @@ public class HearthTvTerminalController : MonoBehaviour
     [SerializeField] private float audioVolume = 1f;
 
     [Header("Robot Replay")]
+    [SerializeField] private HearthTerminalPrimaryAction primaryAction = HearthTerminalPrimaryAction.RequestReplay;
     [SerializeField] private MinLoopFlowController minLoopFlowController;
     [SerializeField] private ViewSwitchController viewSwitchController;
     [SerializeField] private string replayResidentId = "";
@@ -93,6 +100,7 @@ public class HearthTvTerminalController : MonoBehaviour
     [SerializeField] private bool preventRepeatedChoiceSubmission = true;
     [SerializeField] private bool routeChoicesToMinLoop = true;
     [SerializeField] private UnityEvent onRobotReplayRequested;
+    [SerializeField] private UnityEvent onEnterUnitRequested;
     [SerializeField] private UnityEvent onPostReplayChoiceShown;
     [SerializeField] private UnityEvent onChoiceASelected;
     [SerializeField] private UnityEvent onChoiceBSelected;
@@ -148,6 +156,11 @@ public class HearthTvTerminalController : MonoBehaviour
     public Camera TerminalCamera
     {
         get { return terminalCamera; }
+    }
+
+    public HearthTerminalPrimaryAction PrimaryAction
+    {
+        get { return primaryAction; }
     }
 
     private void Reset()
@@ -544,6 +557,14 @@ public class HearthTvTerminalController : MonoBehaviour
         replayResidentId = residentId;
     }
 
+    public void SetPrimaryAction(HearthTerminalPrimaryAction action)
+    {
+        primaryAction = action;
+        replayFocusLabel = action == HearthTerminalPrimaryAction.EnterUnit
+            ? "ENTER UNIT | SPACE"
+            : "RECALL EVENT | SPACE";
+    }
+
     public string GetReplayResidentId()
     {
         string explicitId = NormalizeReplayResidentId(replayResidentId);
@@ -557,6 +578,12 @@ public class HearthTvTerminalController : MonoBehaviour
 
     public void RequestRobotReplay()
     {
+        if (primaryAction == HearthTerminalPrimaryAction.EnterUnit)
+        {
+            RequestEnterUnit();
+            return;
+        }
+
         PlayClip(replayRequestClip);
         string residentId = GetReplayResidentId();
 
@@ -603,6 +630,35 @@ public class HearthTvTerminalController : MonoBehaviour
         }
 
         Debug.LogWarning("[HearthTvTerminalController] Robot replay requested, but no MinLoopFlowController or ViewSwitchController is assigned.", this);
+    }
+
+    public void RequestEnterUnit()
+    {
+        PlayClip(replayRequestClip);
+        string residentId = GetReplayResidentId();
+
+        if (closeTerminalWhenReplayStarts)
+        {
+            CloseTerminalInstant();
+        }
+
+        if (minLoopFlowController != null)
+        {
+            minLoopFlowController.SetActiveReplayResident(residentId, this);
+        }
+
+        if (onEnterUnitRequested != null)
+        {
+            onEnterUnitRequested.Invoke();
+        }
+
+        if (minLoopFlowController != null)
+        {
+            minLoopFlowController.RequestEnterUnitFromTerminal();
+            return;
+        }
+
+        Debug.LogWarning("[HearthTvTerminalController] Enter Unit requested, but no MinLoopFlowController is assigned.", this);
     }
 
     public void ShowPostReplayChoicePage()

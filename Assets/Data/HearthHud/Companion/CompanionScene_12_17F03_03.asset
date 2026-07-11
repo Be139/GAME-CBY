@@ -27,8 +27,9 @@ MonoBehaviour:
     value: 6.3 -> 4.5
   statusFooter: DE-ESCALATION - SUCCESS
   decisionKicker: SYNTH VOICE - DECISION
-  decisionTitle: Execute Mediation Protocol
-  decisionBody: Speaking for daughter. Channel open both directions.
+  decisionTitle: Speak For Daughter
+  decisionBody: Translate the daughter's intent into a lower-conflict message for
+    the mother.
   dataStreamTitle: //mediation execution - streaming
   dataStreamLines:
   - 0x82B4 channel_for_daughter_READY
@@ -37,11 +38,11 @@ MonoBehaviour:
   - 0x82B9 emo_both_DROP
   - 0x82BA mediation_COMPLETE
   showHoldPrompt: 1
-  holdPromptText: '[ "..." ]'
+  holdPromptText: '[ Relay Daughter''s Intent To Mother ]'
   holdKey: 101
   holdSeconds: 1.5
   showDirectionGuide: 1
-  directionGuideText: FACE DAUGHTER - HOLD E WHEN ALIGNED
+  directionGuideText: FACE MOTHER - HOLD E WHEN ALIGNED
   projectionTitle: 
   projectionBody: 
   centerMessage: 

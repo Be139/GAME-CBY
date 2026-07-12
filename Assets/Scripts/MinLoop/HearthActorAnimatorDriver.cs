@@ -114,10 +114,12 @@ public class HearthActorAnimatorDriver : MonoBehaviour
         animator.enabled = true;
         animator.applyRootMotion = slot.applyRootMotion;
         animator.speed = 1f;
+        RestoreRootMotionChildBaseline();
         activeStateHash = Animator.StringToHash(statePath);
         activeStateId = slot.stateId;
         animator.Play(activeStateHash, 0, 0f);
         animator.Update(0f);
+        RestoreRootMotionChildBaseline();
         animator.speed = 0f;
         return GetStateLength(stateId);
     }
@@ -201,6 +203,7 @@ public class HearthActorAnimatorDriver : MonoBehaviour
         animator.enabled = true;
         animator.speed = Mathf.Max(0.01f, slot.playbackSpeed);
         animator.applyRootMotion = slot.applyRootMotion;
+        RestoreRootMotionChildBaseline();
 
         string statePath = ResolveStatePath(slot.stateName);
         if (string.IsNullOrEmpty(statePath))
@@ -223,6 +226,7 @@ public class HearthActorAnimatorDriver : MonoBehaviour
         }
 
         animator.Update(0f);
+        RestoreRootMotionChildBaseline();
         activeStateHash = stateHash;
         activeStateId = slot.stateId;
         return slot.clip != null ? slot.clip.length / Mathf.Max(0.01f, slot.playbackSpeed) : 0f;
@@ -247,6 +251,20 @@ public class HearthActorAnimatorDriver : MonoBehaviour
         }
 
         return null;
+    }
+
+    private void RestoreRootMotionChildBaseline()
+    {
+        if (animator == null)
+        {
+            return;
+        }
+
+        HearthActorRootMotionRelay relay = animator.GetComponent<HearthActorRootMotionRelay>();
+        if (relay != null)
+        {
+            relay.RestoreAnimatorChildBaseline();
+        }
     }
 
     private StateSlot FindState(string stateId)

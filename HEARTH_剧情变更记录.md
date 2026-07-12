@@ -372,3 +372,16 @@ casual_Female_K (9) -> REF_Wife_17F02_ExitOutside
 - 已关闭 17F03 正式演员上的第三方 `CityPeople` 随机自动动画，避免它覆盖剧情指定动作。
 - 关机段拆为 `17F03_NightShutdownLeadIn` 与 `17F03_NightShutdownAction` 两个可编辑字幕/语音资产，后续加入语音后仍按真实播放完成时机推进。
 - 本条已同步到脚本、Dialogue Sequence 和当前 `SampleScene`。
+
+## 2026-07-12 17F03 母亲起身位移保留
+
+### 演出调整
+
+- 第一幕中，母亲播放 `SitToStand` 时，动作自带的水平位移应被保留；她完成起身后进入 Talking，不能瞬间回到起始坐姿位置。
+- 该位移只服务第一幕的连续演出。进入第二幕时，母亲仍按既定流程切换到 `Anchor_Mother_17F03_Midday`，作为新的冲突场景站位。
+
+### 实现记录
+
+- `HearthActorRootMotionRelay` 将动画模型的实际水平位移转存到 `Actor_Mother_17F03_RuntimeRoot`，并保持模型子节点本地位置稳定。
+- `casual_Female_G@Sit_To_Stand.fbx` 已解除 XZ Root Motion 的 Bake Into Pose；母亲 `SitToStand` State 启用 Root Motion，Talking 与 StandingArguing 不启用。
+- 这是当前 17F03 的正式演出规则；后续替换起身动作时应重新运行 17F03 Setup 与 Validate 菜单。

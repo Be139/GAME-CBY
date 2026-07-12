@@ -24,6 +24,9 @@ public static class Hearth17F03MinimalLoopBinder
     private const string DaughterSitupPath = "Assets/action/casual_Female_K@Situp_To_Idle.fbx";
     private const string DaughterTalkingPath = "Assets/action/casual_Female_K@Talking.fbx";
     private const string FatherBasePath = "Assets/action/Doctor_Male_B@Male_Sitting_Pose.fbx";
+    private const string ReplayRoomPath = "MIN_LOOP_ROOT/ReplayRoom_17F03";
+    private const string RuntimeActorsPath = ReplayRoomPath + "/RuntimeActors";
+    private const string StagingPreviewRootName = "StagingPreview_17F03";
     private const string PhysicalBodyColliderName = "PhysicalBodyCollider_17F03";
     private const string InteractionVolumeName = "InteractionVolume_17F03";
     private const float BlockingOverlapTolerance = 0.05f;
@@ -45,6 +48,7 @@ public static class Hearth17F03MinimalLoopBinder
     {
         int errors = 0;
         errors += ValidateHumanClip(MotherBasePath, "SitToStand");
+        errors += ValidateHorizontalRootMotion(MotherBasePath, "SitToStand");
         errors += ValidateHumanClip(MotherArguingPath, "StandingArguing");
         errors += ValidateHumanClip(MotherTalkingPath, "Talking");
         errors += ValidateHumanClip(DaughterCodePath, "EnteringCode");
@@ -87,6 +91,10 @@ public static class Hearth17F03MinimalLoopBinder
         Physics.SyncTransforms();
         errors += ValidateRigBlockingOverlaps(formalHuman);
         errors += ValidateRigBlockingOverlaps(formalRobot);
+        errors += ValidateRuntimeActorVisualCount("Actor_Mother_17F03_RuntimeRoot", "casual_Female_G@Sit_To_Stand");
+        errors += ValidateRuntimeActorVisualCount("Actor_Father_17F03_RuntimeRoot", "Doctor_Male_B@Male_Sitting_Pose");
+        errors += ValidateRuntimeActorVisualCount("Actor_Father_17F03_MiddayRuntimeRoot", "Doctor_Male_B@Male_Sitting_Pose (1)");
+        errors += ValidateRuntimeActorVisualCount("Actor_Daughter_17F03_RuntimeRoot", "casual_Female_K (2)");
 
         if (errors == 0)
         {
@@ -113,7 +121,10 @@ public static class Hearth17F03MinimalLoopBinder
             return;
         }
 
-        GameObject daughterSource = FindSceneObject("GameObject/casual_Female_K (2)", "casual_Female_K (2)");
+        GameObject daughterSource = FindRuntimeActorVisual(
+            "Actor_Daughter_17F03_RuntimeRoot",
+            "casual_Female_K (2)",
+            "GameObject/casual_Female_K (2)");
         Animator daughterSourceAnimator = daughterSource != null ? daughterSource.GetComponentInChildren<Animator>(true) : null;
         Avatar daughterAvatar = daughterSourceAnimator != null ? daughterSourceAnimator.avatar : null;
         if (daughterAvatar == null || !daughterAvatar.isValid || !daughterAvatar.isHuman)
@@ -135,9 +146,18 @@ public static class Hearth17F03MinimalLoopBinder
         GameObject middayRobotReference = FindSceneObject("Player/Robot Controller (4)", "Robot Controller (4)");
         GameObject nightRobotReference = FindSceneObject("Player/Robot Controller (5)", "Robot Controller (5)");
         GameObject physicalUnit = FindSceneObject("GameObject/ROBOT", "ROBOT");
-        GameObject motherSource = FindSceneObject(null, "casual_Female_G@Sit_To_Stand");
-        GameObject fatherSource = FindSceneObject(null, "Doctor_Male_B@Male_Sitting_Pose");
-        GameObject middayFatherSource = FindSceneObject(null, "Doctor_Male_B@Male_Sitting_Pose (1)");
+        GameObject motherSource = FindRuntimeActorVisual(
+            "Actor_Mother_17F03_RuntimeRoot",
+            "casual_Female_G@Sit_To_Stand",
+            null);
+        GameObject fatherSource = FindRuntimeActorVisual(
+            "Actor_Father_17F03_RuntimeRoot",
+            "Doctor_Male_B@Male_Sitting_Pose",
+            null);
+        GameObject middayFatherSource = FindRuntimeActorVisual(
+            "Actor_Father_17F03_MiddayRuntimeRoot",
+            "Doctor_Male_B@Male_Sitting_Pose (1)",
+            null);
         GameObject motherReplayReference = FindSceneObject("GameObject/casual_Female_G (1)", "casual_Female_G (1)");
         GameObject unusedMotherReference = FindSceneObject("GameObject/casual_Female_G", "casual_Female_G");
         GameObject daughterNightStartReference = FindSceneObject("GameObject/casual_Female_K (1)", "casual_Female_K (1)");
@@ -229,7 +249,7 @@ public static class Hearth17F03MinimalLoopBinder
             anchors.MotherHuman,
             clips.MotherAvatar,
             motherController,
-            new DriverState("SitToStand", "SitToStand", clips.MotherSitToStand, false),
+            new DriverState("SitToStand", "SitToStand", clips.MotherSitToStand, false, true),
             new DriverState("Talking", "Talking", clips.MotherTalking, true),
             new DriverState("StandingArguing", "StandingArguing", clips.MotherArguing, false));
         RuntimeActor father = EnsureRuntimeActor(
@@ -354,7 +374,7 @@ public static class Hearth17F03MinimalLoopBinder
     private static ClipLibrary ConfigureAnimationImports(Avatar daughterAvatar)
     {
         ClipLibrary result = new ClipLibrary();
-        ConfigureHumanClip(MotherBasePath, "SitToStand", false, null, true);
+        ConfigureHumanClip(MotherBasePath, "SitToStand", false, null, true, true);
         result.MotherAvatar = LoadAvatar(MotherBasePath);
         ConfigureHumanClip(FatherBasePath, "Sitting", false, null, true);
         result.FatherAvatar = LoadAvatar(FatherBasePath);
@@ -387,7 +407,13 @@ public static class Hearth17F03MinimalLoopBinder
         return result;
     }
 
-    private static void ConfigureHumanClip(string path, string clipName, bool loop, Avatar sourceAvatar, bool createAvatar)
+    private static void ConfigureHumanClip(
+        string path,
+        string clipName,
+        bool loop,
+        Avatar sourceAvatar,
+        bool createAvatar,
+        bool preserveHorizontalRootMotion = false)
     {
         ModelImporter importer = AssetImporter.GetAtPath(path) as ModelImporter;
         if (importer == null)
@@ -415,7 +441,7 @@ public static class Hearth17F03MinimalLoopBinder
             selected.loopPose = loop;
             selected.lockRootRotation = true;
             selected.lockRootHeightY = true;
-            selected.lockRootPositionXZ = true;
+            selected.lockRootPositionXZ = !preserveHorizontalRootMotion;
             selected.keepOriginalOrientation = true;
             selected.keepOriginalPositionY = true;
             selected.keepOriginalPositionXZ = true;
@@ -444,6 +470,34 @@ public static class Hearth17F03MinimalLoopBinder
         if (importer == null || importer.animationType != ModelImporterAnimationType.Human || clip == null || !clip.isHumanMotion)
         {
             Debug.LogError("[Hearth17F03MinimalLoopBinder] Invalid Humanoid clip: " + path + " / " + clipName);
+            return 1;
+        }
+
+        return 0;
+    }
+
+    private static int ValidateHorizontalRootMotion(string path, string clipName)
+    {
+        ModelImporter importer = AssetImporter.GetAtPath(path) as ModelImporter;
+        if (importer == null)
+        {
+            return 1;
+        }
+
+        ModelImporterClipAnimation[] imported = importer.clipAnimations;
+        if (imported == null || imported.Length == 0)
+        {
+            imported = importer.defaultClipAnimations;
+        }
+
+        ModelImporterClipAnimation clip = imported != null
+            ? imported.FirstOrDefault(item => item.name == clipName)
+            : null;
+        if (clip == null || clip.lockRootPositionXZ)
+        {
+            Debug.LogError(
+                "[Hearth17F03MinimalLoopBinder] Mother SitToStand must preserve horizontal root motion. " +
+                "Run Apply 17F03 Minimal Loop Setup to restore the import settings.");
             return 1;
         }
 
@@ -681,22 +735,34 @@ public static class Hearth17F03MinimalLoopBinder
             root.SetPositionAndRotation(initialAnchor.position, initialAnchor.rotation);
         }
 
+        Transform existingVisual = FindDirectChild(root, model.name);
+        if (existingVisual != null)
+        {
+            model = existingVisual.gameObject;
+        }
+
         if (model.transform.parent != root)
         {
             Undo.SetTransformParent(model.transform, root, "Parent 17F03 actor model");
         }
 
+        RemoveDuplicateRuntimeActorVisuals(root, model.transform);
+
         DisableCompetingActorAnimationBehaviours(model);
 
         Animator animator = model.GetComponentInChildren<Animator>(true);
         if (animator == null) animator = Undo.AddComponent<Animator>(model);
+        ResetRuntimeAnimatorTransform(root, animator.transform);
         animator.avatar = avatar;
         animator.runtimeAnimatorController = controller;
         animator.applyRootMotion = false;
         animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
         animator.enabled = true;
+        ResetRuntimeAnimatorTransform(root, animator.transform);
 
         HearthActorAnimatorDriver driver = GetOrAdd<HearthActorAnimatorDriver>(root.gameObject);
+        HearthActorRootMotionRelay rootMotionRelay = GetOrAdd<HearthActorRootMotionRelay>(animator.gameObject);
+        rootMotionRelay.Configure(root);
         SerializedObject so = new SerializedObject(driver);
         SetObject(so, "animator", animator);
         SetBool(so, "playOnEnable", false);
@@ -709,7 +775,7 @@ public static class Hearth17F03MinimalLoopBinder
             item.FindPropertyRelative("stateName").stringValue = states[i].StateName;
             item.FindPropertyRelative("clip").objectReferenceValue = states[i].Clip;
             item.FindPropertyRelative("loop").boolValue = states[i].Loop;
-            item.FindPropertyRelative("applyRootMotion").boolValue = false;
+            item.FindPropertyRelative("applyRootMotion").boolValue = states[i].ApplyRootMotion;
             item.FindPropertyRelative("fadeSeconds").floatValue = 0.16f;
             item.FindPropertyRelative("playbackSpeed").floatValue = 1f;
         }
@@ -717,6 +783,19 @@ public static class Hearth17F03MinimalLoopBinder
         EditorUtility.SetDirty(animator);
         EditorUtility.SetDirty(driver);
         return new RuntimeActor(root, model, animator, driver);
+    }
+
+    private static void ResetRuntimeAnimatorTransform(Transform actorRoot, Transform animatorTransform)
+    {
+        if (actorRoot == null || animatorTransform == null || animatorTransform.parent != actorRoot)
+        {
+            return;
+        }
+
+        Undo.RecordObject(animatorTransform, "Reset 17F03 runtime animator transform");
+        animatorTransform.localPosition = Vector3.zero;
+        animatorTransform.localRotation = Quaternion.identity;
+        EditorUtility.SetDirty(animatorTransform);
     }
 
     private static void DisableCompetingActorAnimationBehaviours(GameObject actorModel)
@@ -1358,6 +1437,25 @@ public static class Hearth17F03MinimalLoopBinder
         return root != null ? root : new GameObject(name);
     }
 
+    private static Transform FindDirectChild(Transform parent, string childName)
+    {
+        if (parent == null || string.IsNullOrEmpty(childName))
+        {
+            return null;
+        }
+
+        for (int i = 0; i < parent.childCount; i++)
+        {
+            Transform child = parent.GetChild(i);
+            if (child.name == childName)
+            {
+                return child;
+            }
+        }
+
+        return null;
+    }
+
     private static Transform EnsureChild(Transform parent, string name)
     {
         Transform child = parent.Find(name);
@@ -1380,6 +1478,124 @@ public static class Hearth17F03MinimalLoopBinder
         if (string.IsNullOrEmpty(fallbackName)) return null;
         return Resources.FindObjectsOfTypeAll<GameObject>()
             .FirstOrDefault(item => item.scene.IsValid() && item.name == fallbackName);
+    }
+
+    private static GameObject FindRuntimeActorVisual(string runtimeActorName, string visualName, string originalScenePath)
+    {
+        GameObject runtimeActorsObject = FindSceneObjectByHierarchyPath(RuntimeActorsPath);
+        Transform runtimeActor = runtimeActorsObject != null
+            ? FindDirectChild(runtimeActorsObject.transform, runtimeActorName)
+            : null;
+        Transform runtimeVisual = FindDirectChild(runtimeActor, visualName);
+        if (runtimeVisual != null)
+        {
+            return runtimeVisual.gameObject;
+        }
+
+        GameObject original = FindSceneObjectByHierarchyPath(originalScenePath);
+        if (original != null && !IsInsideStagingPreview(original.transform))
+        {
+            return original;
+        }
+
+        return Resources.FindObjectsOfTypeAll<GameObject>()
+            .Where(item => item.scene.IsValid() && item.name == visualName && !IsInsideStagingPreview(item.transform))
+            .FirstOrDefault();
+    }
+
+    private static GameObject FindSceneObjectByHierarchyPath(string hierarchyPath)
+    {
+        if (string.IsNullOrEmpty(hierarchyPath))
+        {
+            return null;
+        }
+
+        string[] parts = hierarchyPath.Split('/');
+        Scene scene = SceneManager.GetActiveScene();
+        Transform current = scene.GetRootGameObjects()
+            .Select(item => item.transform)
+            .FirstOrDefault(item => item.name == parts[0]);
+        if (current == null)
+        {
+            return null;
+        }
+
+        for (int i = 1; i < parts.Length; i++)
+        {
+            current = FindDirectChild(current, parts[i]);
+            if (current == null)
+            {
+                return null;
+            }
+        }
+
+        return current.gameObject;
+    }
+
+    private static bool IsInsideStagingPreview(Transform target)
+    {
+        while (target != null)
+        {
+            if (target.name == StagingPreviewRootName)
+            {
+                return true;
+            }
+
+            target = target.parent;
+        }
+
+        return false;
+    }
+
+    private static void RemoveDuplicateRuntimeActorVisuals(Transform actorRoot, Transform keep)
+    {
+        if (actorRoot == null || keep == null)
+        {
+            return;
+        }
+
+        List<Transform> duplicates = new List<Transform>();
+        for (int i = 0; i < actorRoot.childCount; i++)
+        {
+            Transform child = actorRoot.GetChild(i);
+            if (child != keep && child.name == keep.name)
+            {
+                duplicates.Add(child);
+            }
+        }
+
+        for (int i = 0; i < duplicates.Count; i++)
+        {
+            Debug.LogWarning("[Hearth17F03MinimalLoopBinder] Removed duplicate visual '" + keep.name + "' from " + actorRoot.name + ".");
+            Undo.DestroyObjectImmediate(duplicates[i].gameObject);
+        }
+    }
+
+    private static int ValidateRuntimeActorVisualCount(string actorRootName, string visualName)
+    {
+        GameObject runtimeActorsObject = FindSceneObjectByHierarchyPath(RuntimeActorsPath);
+        Transform actorRoot = runtimeActorsObject != null
+            ? FindDirectChild(runtimeActorsObject.transform, actorRootName)
+            : null;
+        int count = 0;
+        if (actorRoot != null)
+        {
+            for (int i = 0; i < actorRoot.childCount; i++)
+            {
+                if (actorRoot.GetChild(i).name == visualName)
+                {
+                    count++;
+                }
+            }
+        }
+
+        if (count == 1)
+        {
+            return 0;
+        }
+
+        Debug.LogError("[Hearth17F03MinimalLoopBinder] Expected exactly one visual '" + visualName + "' under " + actorRootName + ", found " + count + ".");
+        return 1;
     }
 
     private static T FindSceneComponent<T>() where T : Component
@@ -1541,7 +1757,16 @@ public static class Hearth17F03MinimalLoopBinder
         public readonly string StateName;
         public readonly AnimationClip Clip;
         public readonly bool Loop;
-        public DriverState(string id, string stateName, AnimationClip clip, bool loop) { Id = id; StateName = stateName; Clip = clip; Loop = loop; }
+        public readonly bool ApplyRootMotion;
+
+        public DriverState(string id, string stateName, AnimationClip clip, bool loop, bool applyRootMotion = false)
+        {
+            Id = id;
+            StateName = stateName;
+            Clip = clip;
+            Loop = loop;
+            ApplyRootMotion = applyRootMotion;
+        }
     }
 
     private readonly struct DefaultLine

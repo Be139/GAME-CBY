@@ -340,6 +340,7 @@ public static class Hearth17F01MinimalLoopBinder
 
         SerializedObject so = new SerializedObject(interactable);
         SetObject(so, "focusTarget", interactionTarget);
+        SetObject(so, "interactionCollider", interactable.GetComponent<Collider>());
         SetObject(so, "raycastTargetRoot", interactionTarget);
         SetObject(so, "replayController", replayController);
         SetString(so, "interactionLabel", "[ Approach bedside - Guard service subject ]");

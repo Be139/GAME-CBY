@@ -24,6 +24,9 @@ public static class Hearth17F03MinimalLoopBinder
     private const string DaughterSitupPath = "Assets/action/casual_Female_K@Situp_To_Idle.fbx";
     private const string DaughterTalkingPath = "Assets/action/casual_Female_K@Talking.fbx";
     private const string FatherBasePath = "Assets/action/Doctor_Male_B@Male_Sitting_Pose.fbx";
+    private const string PhysicalBodyColliderName = "PhysicalBodyCollider_17F03";
+    private const string InteractionVolumeName = "InteractionVolume_17F03";
+    private const float BlockingOverlapTolerance = 0.05f;
 
     [MenuItem("Tools/Hearth/Replay/Apply 17F03 Minimal Loop Setup")]
     public static void ApplySetup()
@@ -77,9 +80,17 @@ public static class Hearth17F03MinimalLoopBinder
             errors++;
         }
 
+        GameObject physicalUnit = FindSceneObject("GameObject/ROBOT", "ROBOT");
+        GameObject formalHuman = FindSceneObject("Player/Person Controller", "Person Controller");
+        GameObject formalRobot = FindSceneObject("Player/Robot Controller", "Robot Controller");
+        errors += ValidatePhysicalUnitColliders(physicalUnit);
+        Physics.SyncTransforms();
+        errors += ValidateRigBlockingOverlaps(formalHuman);
+        errors += ValidateRigBlockingOverlaps(formalRobot);
+
         if (errors == 0)
         {
-            Debug.Log("[Hearth17F03MinimalLoopBinder] Validation passed: animations, controller, cameras, listener and ViewSwitch are ready.");
+            Debug.Log("[Hearth17F03MinimalLoopBinder] Validation passed: animations, controller, cameras, listener, ViewSwitch and spawn collisions are ready.");
         }
         else
         {
@@ -274,6 +285,7 @@ public static class Hearth17F03MinimalLoopBinder
 
         ViewSwitchController formalViewSwitch = ConfigureSingleViewSwitch(minLoopRoot, formalHuman, formalRobot);
         ConfigureFormalCameras(formalHumanCamera, formalRobotCamera);
+        DisableControllerPlaceholderRenderers(formalHuman);
         DisableControllerPlaceholderRenderers(formalRobot);
 
         SmartDoorController door = ConfigureDoor(doorRoot);
@@ -290,6 +302,7 @@ public static class Hearth17F03MinimalLoopBinder
         HearthCompanionHudController companionHud = FindSceneComponent<HearthCompanionHudController>();
         GameObject humanHudRoot = FindSceneObject(null, "HearthHudRoot");
         CanvasGroup humanHudCanvasGroup = humanHudRoot != null ? GetOrAdd<CanvasGroup>(humanHudRoot) : null;
+        EnsureHumanInteractionPrompt(humanHudRoot, formalHuman.GetComponent<PlayerInteraction>());
         MinLoopSubtitlePlayer subtitlePlayer = FindSceneComponent<MinLoopSubtitlePlayer>();
         MinLoopFlowController flow = FindSceneComponent<MinLoopFlowController>();
 
@@ -437,6 +450,135 @@ public static class Hearth17F03MinimalLoopBinder
         return 0;
     }
 
+    private static int ValidatePhysicalUnitColliders(GameObject physicalUnit)
+    {
+        if (physicalUnit == null)
+        {
+            Debug.LogError("[Hearth17F03MinimalLoopBinder] Missing physical ROBOT object.");
+            return 1;
+        }
+
+        int errors = 0;
+        BoxCollider[] rootColliders = physicalUnit.GetComponents<BoxCollider>();
+        if (rootColliders.Length > 0)
+        {
+            Debug.LogError(
+                "[Hearth17F03MinimalLoopBinder] ROBOT still has a root BoxCollider. " +
+                "Its imported scale can expand a default collider to building size. Run Apply Setup again.",
+                physicalUnit);
+            errors++;
+        }
+
+        Transform bodyRoot = physicalUnit.transform.Find(PhysicalBodyColliderName);
+        BoxCollider bodyCollider = bodyRoot != null ? bodyRoot.GetComponent<BoxCollider>() : null;
+        if (bodyCollider == null || bodyCollider.isTrigger || !bodyCollider.enabled)
+        {
+            Debug.LogError("[Hearth17F03MinimalLoopBinder] Missing enabled non-trigger physical body collider for ROBOT.", physicalUnit);
+            errors++;
+        }
+        else if (GetWorldBoxSize(bodyCollider).x > 3f ||
+                 GetWorldBoxSize(bodyCollider).y > 3f ||
+                 GetWorldBoxSize(bodyCollider).z > 3f)
+        {
+            Debug.LogError(
+                "[Hearth17F03MinimalLoopBinder] ROBOT physical body collider is unexpectedly large: " +
+                GetWorldBoxSize(bodyCollider).ToString("F2"),
+                bodyCollider);
+            errors++;
+        }
+
+        Transform interactionRoot = physicalUnit.transform.Find(InteractionVolumeName);
+        BoxCollider interactionCollider = interactionRoot != null ? interactionRoot.GetComponent<BoxCollider>() : null;
+        Hearth17F03UnitInteractable interactable = interactionRoot != null
+            ? interactionRoot.GetComponent<Hearth17F03UnitInteractable>()
+            : null;
+        if (interactionCollider == null || !interactionCollider.isTrigger || interactable == null)
+        {
+            Debug.LogError("[Hearth17F03MinimalLoopBinder] ROBOT interaction Trigger is missing or misconfigured.", physicalUnit);
+            errors++;
+        }
+
+        return errors;
+    }
+
+    private static int ValidateRigBlockingOverlaps(GameObject rig)
+    {
+        if (rig == null || !rig.activeInHierarchy)
+        {
+            return 0;
+        }
+
+        Collider rigCollider = rig.GetComponent<Collider>();
+        if (rigCollider == null || !rigCollider.enabled)
+        {
+            return 0;
+        }
+
+        int errors = 0;
+        Collider[] nearby = Physics.OverlapBox(
+            rigCollider.bounds.center,
+            rigCollider.bounds.extents + Vector3.one * BlockingOverlapTolerance,
+            Quaternion.identity,
+            ~0,
+            QueryTriggerInteraction.Ignore);
+
+        for (int i = 0; i < nearby.Length; i++)
+        {
+            Collider candidate = nearby[i];
+            if (candidate == null || candidate == rigCollider || !candidate.enabled || candidate.isTrigger ||
+                candidate.transform.IsChildOf(rig.transform))
+            {
+                continue;
+            }
+
+            Vector3 direction;
+            float distance;
+            bool overlaps = Physics.ComputePenetration(
+                rigCollider,
+                rigCollider.transform.position,
+                rigCollider.transform.rotation,
+                candidate,
+                candidate.transform.position,
+                candidate.transform.rotation,
+                out direction,
+                out distance);
+            if (!overlaps || distance <= BlockingOverlapTolerance)
+            {
+                continue;
+            }
+
+            Debug.LogError(
+                "[Hearth17F03MinimalLoopBinder] " + rig.name + " starts inside blocking collider " +
+                GetHierarchyPath(candidate.transform) + " by " + distance.ToString("F3") + "m.",
+                candidate);
+            errors++;
+        }
+
+        return errors;
+    }
+
+    private static Vector3 GetWorldBoxSize(BoxCollider collider)
+    {
+        Vector3 scale = collider.transform.lossyScale;
+        return new Vector3(
+            collider.size.x * Mathf.Abs(scale.x),
+            collider.size.y * Mathf.Abs(scale.y),
+            collider.size.z * Mathf.Abs(scale.z));
+    }
+
+    private static string GetHierarchyPath(Transform target)
+    {
+        string path = target.name;
+        Transform parent = target.parent;
+        while (parent != null)
+        {
+            path = parent.name + "/" + path;
+            parent = parent.parent;
+        }
+
+        return path;
+    }
+
     private static AnimatorController EnsureAnimatorController(string path, params StateMotion[] motions)
     {
         AnimatorController controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(path);
@@ -544,11 +686,14 @@ public static class Hearth17F03MinimalLoopBinder
             Undo.SetTransformParent(model.transform, root, "Parent 17F03 actor model");
         }
 
+        DisableCompetingActorAnimationBehaviours(model);
+
         Animator animator = model.GetComponentInChildren<Animator>(true);
         if (animator == null) animator = Undo.AddComponent<Animator>(model);
         animator.avatar = avatar;
         animator.runtimeAnimatorController = controller;
         animator.applyRootMotion = false;
+        animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
         animator.enabled = true;
 
         HearthActorAnimatorDriver driver = GetOrAdd<HearthActorAnimatorDriver>(root.gameObject);
@@ -574,27 +719,159 @@ public static class Hearth17F03MinimalLoopBinder
         return new RuntimeActor(root, model, animator, driver);
     }
 
+    private static void DisableCompetingActorAnimationBehaviours(GameObject actorModel)
+    {
+        if (actorModel == null)
+        {
+            return;
+        }
+
+        foreach (MonoBehaviour behaviour in actorModel.GetComponentsInChildren<MonoBehaviour>(true))
+        {
+            if (behaviour == null)
+            {
+                continue;
+            }
+
+            string typeName = behaviour.GetType().FullName;
+            if (!string.Equals(typeName, "CityPeople.CityPeople", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            behaviour.enabled = false;
+            EditorUtility.SetDirty(behaviour);
+        }
+    }
+
     private static Hearth17F03UnitInteractable EnsurePhysicalUnitInteractable(GameObject physicalUnit, HearthCompanion17F03ReplayController controller)
     {
-        Transform child = physicalUnit.transform.Find("InteractionVolume_17F03");
+        RemoveLegacyPhysicalUnitRootComponents(physicalUnit);
+
+        Bounds bounds = CalculateRendererBounds(physicalUnit);
+        EnsurePhysicalUnitBodyCollider(physicalUnit, bounds);
+
+        Transform child = physicalUnit.transform.Find(InteractionVolumeName);
         if (child == null)
         {
-            child = new GameObject("InteractionVolume_17F03").transform;
+            child = new GameObject(InteractionVolumeName).transform;
             child.SetParent(physicalUnit.transform, false);
         }
 
-        Bounds bounds = CalculateRendererBounds(physicalUnit);
-        child.position = bounds.center;
-        child.rotation = Quaternion.identity;
-        child.localScale = Vector3.one;
+        PositionColliderRoot(child, bounds.center);
         BoxCollider collider = GetOrAdd<BoxCollider>(child.gameObject);
-        collider.isTrigger = true;
-        collider.center = Vector3.zero;
-        collider.size = new Vector3(Mathf.Max(0.4f, bounds.size.x), Mathf.Max(1f, bounds.size.y), Mathf.Max(0.4f, bounds.size.z));
+        Vector3 worldSize = new Vector3(
+            Mathf.Max(0.6f, bounds.size.x + 0.2f),
+            Mathf.Max(1.1f, bounds.size.y + 0.15f),
+            Mathf.Max(0.6f, bounds.size.z + 0.2f));
+        ConfigureWorldBoxCollider(collider, child, worldSize, true, true);
         Hearth17F03UnitInteractable interactable = GetOrAdd<Hearth17F03UnitInteractable>(child.gameObject);
         interactable.SetController(controller);
+        interactable.SetInteractionCollider(collider);
         interactable.SetAvailable(false);
+        EditorUtility.SetDirty(child.gameObject);
         return interactable;
+    }
+
+    private static void RemoveLegacyPhysicalUnitRootComponents(GameObject physicalUnit)
+    {
+        foreach (BoxCollider collider in physicalUnit.GetComponents<BoxCollider>())
+        {
+            Undo.DestroyObjectImmediate(collider);
+        }
+
+        foreach (Hearth17F03UnitInteractable interactable in physicalUnit.GetComponents<Hearth17F03UnitInteractable>())
+        {
+            Undo.DestroyObjectImmediate(interactable);
+        }
+    }
+
+    private static void EnsurePhysicalUnitBodyCollider(GameObject physicalUnit, Bounds bounds)
+    {
+        Transform child = physicalUnit.transform.Find(PhysicalBodyColliderName);
+        if (child == null)
+        {
+            child = new GameObject(PhysicalBodyColliderName).transform;
+            child.SetParent(physicalUnit.transform, false);
+        }
+
+        PositionColliderRoot(child, bounds.center);
+        BoxCollider collider = GetOrAdd<BoxCollider>(child.gameObject);
+        Vector3 worldSize = new Vector3(
+            Mathf.Max(0.45f, bounds.size.x * 0.82f),
+            Mathf.Max(0.95f, bounds.size.y * 0.9f),
+            Mathf.Max(0.45f, bounds.size.z * 0.82f));
+        ConfigureWorldBoxCollider(collider, child, worldSize, false, true);
+        EditorUtility.SetDirty(child.gameObject);
+    }
+
+    private static void PositionColliderRoot(Transform root, Vector3 worldCenter)
+    {
+        root.position = worldCenter;
+        root.rotation = Quaternion.identity;
+        root.localScale = Vector3.one;
+    }
+
+    private static void ConfigureWorldBoxCollider(
+        BoxCollider collider,
+        Transform colliderRoot,
+        Vector3 worldSize,
+        bool isTrigger,
+        bool enabled)
+    {
+        Vector3 worldScale = colliderRoot.lossyScale;
+        collider.isTrigger = isTrigger;
+        collider.center = Vector3.zero;
+        collider.size = new Vector3(
+            worldSize.x / Mathf.Max(0.0001f, Mathf.Abs(worldScale.x)),
+            worldSize.y / Mathf.Max(0.0001f, Mathf.Abs(worldScale.y)),
+            worldSize.z / Mathf.Max(0.0001f, Mathf.Abs(worldScale.z)));
+        collider.enabled = enabled;
+        EditorUtility.SetDirty(collider);
+    }
+
+    private static void EnsureHumanInteractionPrompt(GameObject humanHudRoot, PlayerInteraction interaction)
+    {
+        if (humanHudRoot == null || interaction == null)
+        {
+            return;
+        }
+
+        Transform layer = humanHudRoot.transform.Find("InteractionPromptLayer");
+        if (layer == null)
+        {
+            layer = CreateStretch(humanHudRoot.transform, "InteractionPromptLayer");
+        }
+
+        layer.SetAsLastSibling();
+
+        Transform prompt = layer.Find("PlayerInteractionPrompt");
+        bool created = prompt == null;
+        if (created)
+        {
+            prompt = CreateRect(layer, "PlayerInteractionPrompt", new Rect(650f, 790f, 620f, 68f));
+        }
+
+        RectTransform promptRect = prompt.GetComponent<RectTransform>();
+        ApplyRect(promptRect, new Rect(650f, 790f, 620f, 68f));
+        Image fill = GetOrAdd<Image>(prompt.gameObject);
+        fill.color = new Color(0.015f, 0.055f, 0.075f, 0.34f);
+        fill.raycastTarget = false;
+        if (created)
+        {
+            AddBorder(prompt, 620f, 68f, new Color(0.32f, 0.82f, 1f, 0.76f), 2f);
+        }
+
+        TMP_Text label = EnsureText(prompt, "InteractionText", new Rect(18f, 0f, 584f, 68f), 19f, FontStyles.Bold, TextAlignmentOptions.Center);
+        ApplyRect(label.rectTransform, new Rect(18f, 0f, 584f, 68f));
+        label.text = "E  INTERACT";
+        label.color = new Color(0.79f, 0.94f, 1f, 0.98f);
+
+        interaction.uiInteraction = prompt.gameObject;
+        interaction.uiInteractionText = label;
+        prompt.gameObject.SetActive(false);
+        EditorUtility.SetDirty(interaction);
+        EditorUtility.SetDirty(prompt.gameObject);
     }
 
     private static Hearth17F03GazeInteractable EnsureGazeInteractable(
@@ -769,9 +1046,10 @@ public static class Hearth17F03MinimalLoopBinder
             L("Daughter", "Today Dad came home and asked you how I was. He asked you, not me.", 0.2f, 4.2f),
             L("Daughter", "At dinner the three of us sat at one table and nobody spoke. The food was warm. The people were cold.", 0.2f, 5.2f),
             L("Daughter", "You understand them more and more. They understand me less and less.", 0.2f, 4.4f));
-        result.NightShutdown = EnsureDialogue("17F03_NightShutdown", "Maintenance menu and core service shutdown.",
+        result.NightShutdownLeadIn = EnsureDialogue("17F03_NightShutdownLeadIn", "The unit responds before the daughter begins the shutdown operation.",
             L("Companion Unit", "I can tell that you are emotional today. Perhaps we can begin with-", 0.2f, 3.7f),
-            L("Daughter", "Enough.", 0.1f, 1.6f),
+            L("Daughter", "Enough.", 0.1f, 1.6f));
+        result.NightShutdown = EnsureDialogue("17F03_NightShutdownAction", "Maintenance menu and core service shutdown after Entering Code begins.",
             L("System", "Display opened. Operator: daughter. Permission: basic user.", 0.5f, 3.2f),
             L("System", "Maintenance menu accessed. Core services selected.", 0.3f, 3.0f),
             L("System", "Core services shutting down. This unit will enter deep sleep.", 0.3f, 3.5f),
@@ -902,6 +1180,7 @@ public static class Hearth17F03MinimalLoopBinder
         SetObject(so, "mediateToDaughterSequence", dialogues.ToDaughter);
         SetObject(so, "mediateToMotherSequence", dialogues.ToMother);
         SetObject(so, "nightDaughterSequence", dialogues.NightDaughter);
+        SetObject(so, "nightShutdownLeadInSequence", dialogues.NightShutdownLeadIn);
         SetObject(so, "nightShutdownSequence", dialogues.NightShutdown);
         SetObject(so, "postReplayExplanationSequence", dialogues.PostReplay);
         SetObject(so, "blackoutCanvasGroup", blackout.Group);
@@ -1138,12 +1417,22 @@ public static class Hearth17F03MinimalLoopBinder
         GameObject target = new GameObject(name, typeof(RectTransform));
         target.transform.SetParent(parent, false);
         RectTransform rt = target.GetComponent<RectTransform>();
+        ApplyRect(rt, rect);
+        return target.transform;
+    }
+
+    private static void ApplyRect(RectTransform rt, Rect rect)
+    {
+        if (rt == null)
+        {
+            return;
+        }
+
         rt.anchorMin = new Vector2(0f, 1f);
         rt.anchorMax = new Vector2(0f, 1f);
         rt.pivot = new Vector2(0f, 1f);
         rt.anchoredPosition = new Vector2(rect.x, -rect.y);
         rt.sizeDelta = new Vector2(rect.width, rect.height);
-        return target.transform;
     }
 
     private static Transform CreateStretch(Transform parent, string name)
@@ -1330,6 +1619,7 @@ public static class Hearth17F03MinimalLoopBinder
         public HearthDialogueSequence ToDaughter;
         public HearthDialogueSequence ToMother;
         public HearthDialogueSequence NightDaughter;
+        public HearthDialogueSequence NightShutdownLeadIn;
         public HearthDialogueSequence NightShutdown;
         public HearthDialogueSequence PostReplay;
     }

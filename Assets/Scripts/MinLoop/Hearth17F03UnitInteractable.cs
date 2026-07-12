@@ -8,6 +8,9 @@ public class Hearth17F03UnitInteractable : MonoBehaviour, IInteractable
     [SerializeField] private string description = "E INSPECT COMPANION UNIT";
     [SerializeField] private bool available;
 
+    public bool IsAvailable { get { return available; } }
+    public Collider InteractionCollider { get { return interactionCollider; } }
+
     private void Awake()
     {
         if (interactionCollider == null)
@@ -34,6 +37,12 @@ public class Hearth17F03UnitInteractable : MonoBehaviour, IInteractable
     public void SetController(HearthCompanion17F03ReplayController value)
     {
         controller = value;
+    }
+
+    public void SetInteractionCollider(Collider value)
+    {
+        interactionCollider = value != null ? value : GetComponent<Collider>();
+        ApplyAvailability();
     }
 
     public void SetAvailable(bool value)

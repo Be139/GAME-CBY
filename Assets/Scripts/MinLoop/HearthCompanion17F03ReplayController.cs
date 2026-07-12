@@ -117,6 +117,7 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
     [SerializeField] private HearthDialogueSequence mediateToDaughterSequence;
     [SerializeField] private HearthDialogueSequence mediateToMotherSequence;
     [SerializeField] private HearthDialogueSequence nightDaughterSequence;
+    [SerializeField] private HearthDialogueSequence nightShutdownLeadInSequence;
     [SerializeField] private HearthDialogueSequence nightShutdownSequence;
     [SerializeField] private HearthDialogueSequence postReplayExplanationSequence;
 
@@ -174,6 +175,7 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
 
     private void Awake()
     {
+        DisableCompetingActorAnimationBehaviours();
         EnsureBlackoutOverlay();
         SetBlackoutAlpha(0f);
         SetGazeTarget(null);
@@ -185,7 +187,11 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
 
     private void LateUpdate()
     {
-        RefreshGazeHoldPrompt();
+        if (currentStep == ReplayStep.AwaitingDaughter ||
+            currentStep == ReplayStep.AwaitingMother)
+        {
+            RefreshGazeHoldPrompt();
+        }
     }
 
     private void OnEnable()
@@ -468,11 +474,11 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
         yield return WaitSeconds(afterDoorOpenSeconds);
         PlayActorLoop(daughterAnimation, daughterWalkId);
         yield return MoveActorAlongPath(daughterMoveRoot, daughterNightPathPoints);
-        StopActorAndHold(daughterAnimation);
 
         currentStep = ReplayStep.NightDialogue;
         PlayActorLoop(daughterAnimation, daughterTalkingId);
         yield return PlayDialogue(nightDaughterSequence);
+        yield return PlayDialogue(nightShutdownLeadInSequence);
 
         currentStep = ReplayStep.NightShutdown;
         ShowHudScene(deepSleepSceneId);
@@ -583,6 +589,7 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
 
     private void PrepareHumanActors()
     {
+        DisableCompetingActorAnimationBehaviours();
         SetActorActive(motherActor, true);
         SetActorActive(fatherActor, true);
         SetActorActive(middayFatherActor, false);
@@ -602,6 +609,7 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
 
     private void PrepareMiddayActors()
     {
+        DisableCompetingActorAnimationBehaviours();
         SetActorActive(motherActor, true);
         SetActorActive(fatherActor, false);
         SetActorActive(middayFatherActor, true);
@@ -622,12 +630,45 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
 
     private void PrepareNightActors()
     {
+        DisableCompetingActorAnimationBehaviours();
         SetActorActive(motherActor, false);
         SetActorActive(fatherActor, false);
         SetActorActive(middayFatherActor, false);
         SetActorActive(daughterActor, true);
         SnapActor(daughterMoveRoot, daughterNightStartAnchor);
         if (daughterDoor != null) daughterDoor.SnapClosed();
+    }
+
+    private void DisableCompetingActorAnimationBehaviours()
+    {
+        DisableCompetingActorAnimationBehaviours(motherActor);
+        DisableCompetingActorAnimationBehaviours(fatherActor);
+        DisableCompetingActorAnimationBehaviours(middayFatherActor);
+        DisableCompetingActorAnimationBehaviours(daughterActor);
+    }
+
+    private static void DisableCompetingActorAnimationBehaviours(GameObject actor)
+    {
+        if (actor == null)
+        {
+            return;
+        }
+
+        MonoBehaviour[] behaviours = actor.GetComponentsInChildren<MonoBehaviour>(true);
+        for (int i = 0; i < behaviours.Length; i++)
+        {
+            MonoBehaviour behaviour = behaviours[i];
+            if (behaviour == null)
+            {
+                continue;
+            }
+
+            string typeName = behaviour.GetType().FullName;
+            if (string.Equals(typeName, "CityPeople.CityPeople", System.StringComparison.Ordinal))
+            {
+                behaviour.enabled = false;
+            }
+        }
     }
 
     private void ShowHudScene(string sceneId)
@@ -676,7 +717,9 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
 
     private void RefreshGazeHoldPrompt()
     {
-        if (companionHud == null)
+        if (companionHud == null ||
+            (currentStep != ReplayStep.AwaitingDaughter &&
+             currentStep != ReplayStep.AwaitingMother))
         {
             return;
         }

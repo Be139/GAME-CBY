@@ -368,8 +368,7 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
 
             if (companionHud != null)
             {
-                companionHud.ResetHoldPrompt();
-                companionHud.SetHoldPromptVisible(true);
+                companionHud.ShowCurrentHoldPrompt();
             }
 
             while (!bedroomAcknowledged)

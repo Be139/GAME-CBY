@@ -5,6 +5,7 @@ public class HearthCompanionReplayInteractable : MonoBehaviour
 {
     [Header("Target")]
     [SerializeField] private Transform focusTarget;
+    [SerializeField] private Collider interactionCollider;
     [SerializeField] private string interactionLabel = "[ Approach bedside - Guard service subject ]";
     [SerializeField] private bool availableOnStart;
 
@@ -42,6 +43,11 @@ public class HearthCompanionReplayInteractable : MonoBehaviour
         get { return available; }
     }
 
+    public Collider InteractionCollider
+    {
+        get { return interactionCollider; }
+    }
+
     private void Awake()
     {
         if (focusTarget == null)
@@ -49,7 +55,13 @@ public class HearthCompanionReplayInteractable : MonoBehaviour
             focusTarget = transform;
         }
 
+        if (interactionCollider == null)
+        {
+            interactionCollider = GetComponent<Collider>();
+        }
+
         available = availableOnStart;
+        ApplyAvailability();
     }
 
     private void OnValidate()
@@ -71,11 +83,16 @@ public class HearthCompanionReplayInteractable : MonoBehaviour
         raycastTargetRoot = focusTarget;
         allowedSideReference = newAllowedSideReference;
         replayController = newReplayController;
+        if (interactionCollider == null)
+        {
+            interactionCollider = GetComponent<Collider>();
+        }
     }
 
     public void SetAvailable(bool value)
     {
         available = value;
+        ApplyAvailability();
     }
 
     public bool CanInteract(Transform actor, Camera camera)
@@ -111,6 +128,14 @@ public class HearthCompanionReplayInteractable : MonoBehaviour
         if (replayController != null)
         {
             replayController.CompleteCurrentStep();
+        }
+    }
+
+    private void ApplyAvailability()
+    {
+        if (interactionCollider != null)
+        {
+            interactionCollider.enabled = available;
         }
     }
 

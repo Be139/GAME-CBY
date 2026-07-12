@@ -252,6 +252,17 @@ public class HearthCompanionHudController : MonoBehaviour
         }
     }
 
+    public void ShowCurrentHoldPrompt()
+    {
+        if (holdPrompt == null || currentScene == null || !currentScene.ShowHoldPrompt)
+        {
+            SetHoldPromptVisible(false);
+            return;
+        }
+
+        holdPrompt.Apply(currentScene);
+    }
+
     public void SetDirectionGuideVisible(bool visible)
     {
         if (directionGuideView != null)

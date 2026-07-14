@@ -178,8 +178,7 @@ public class SmartDoorController : MonoBehaviour, IInteractable
 
         if (moveDuration <= 0f)
         {
-            movingRoot.localPosition = targetPosition;
-            movingRoot.localRotation = targetRotation;
+            ApplyDoorPose(open);
         }
         else
         {
@@ -195,8 +194,9 @@ public class SmartDoorController : MonoBehaviour, IInteractable
             }
         }
 
-        movingRoot.localPosition = targetPosition;
-        movingRoot.localRotation = targetRotation;
+        // Keep the completed pose consistent with the selected motion mode.
+        // A rotate-only door must not inherit its configured slide offset here.
+        ApplyDoorPose(open);
         IsOpen = open;
         IsMoving = false;
         moveRoutine = null;

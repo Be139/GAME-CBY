@@ -95,3 +95,17 @@
 - ROOM2/ROOM3 部分家具的负缩放 BoxCollider 会报几何警告。
 
 这些问题不会改变本轮三户交互修复结论，但正式演示前建议单独做一次场景清理，不应和 17F03 流程脚本混在同一次修改中。
+
+## 2026-07-14 门与检查镜头验证
+
+### 已完成并验证
+
+- `Door_2_Brown (7)/Door` 的铰链轴位于门扇侧边，轴位置正确；开启方向已统一为 local Y `-90`。
+- 修复了 `SmartDoorController` 在 `Rotate` 模式结束帧仍写入滑动位移的通用问题。运行时实测门扇打开后为 `IsOpen = true`、local rotation `(0, 270, 0)`，local position 保持关闭时位置，不再滑进墙体。
+- 新建并绑定 `UnitInspectionCameraTransition_17F03`。实测从人类视角进入检查后为 `UnitInspection`、人类 Camera 关闭、实体 ROBOT Camera 开启、黑场 alpha `0`；退出后人类 Camera 恢复、实体 ROBOT Camera 关闭。
+
+### 可调入口
+
+- 门的速度与方向：`17F/ROOM2/Door_2_Brown (7)/Door / SmartDoorController`。
+- 检查镜头速度与缓动：`MIN_LOOP_ROOT/ReplayRoom_17F03/UnitInspectionCameraTransition_17F03`。
+- 若要让女儿在门口等待更久，再调整 `HearthCompanion17F03ReplayController / After Door Open Seconds`；不要用门的旋转角度代替等待时间。

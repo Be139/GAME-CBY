@@ -312,6 +312,7 @@ public static class Hearth17F03MinimalLoopBinder
         Hearth17F03InspectionPanel inspectionPanel = EnsureInspectionPanel(uiRoot);
         RemoveLegacyGazePrompt(uiRoot);
         BlackoutReferences blackout = EnsureBlackout(uiRoot);
+        HearthTerminalCameraTransition inspectionTransition = EnsureInspectionCameraTransition(replayRoot);
 
         HearthCompanion17F03ReplayController controller = GetOrAdd<HearthCompanion17F03ReplayController>(replayRoot.gameObject);
         Hearth17F03UnitInteractable unitInteractable = EnsurePhysicalUnitInteractable(physicalUnit, controller);
@@ -343,6 +344,7 @@ public static class Hearth17F03MinimalLoopBinder
             formalRobotCamera,
             physicalUnit,
             physicalInspectionCamera,
+            inspectionTransition,
             unitInteractable,
             anchors,
             mother,
@@ -992,13 +994,38 @@ public static class Hearth17F03MinimalLoopBinder
         SetObject(so, "movingRoot", moving);
         SetEnum(so, "motionMode", (int)SmartDoorController.DoorMotionMode.Rotate);
         SetBool(so, "captureClosedStateOnAwake", true);
-        SetVector3(so, "openLocalEulerOffset", new Vector3(0f, 90f, 0f));
+        // The pack mesh extends from the Door pivot toward negative local X. A negative yaw
+        // swings this 17F03 leaf away from its wall instead of into the frame.
+        SetVector3(so, "openLocalEulerOffset", new Vector3(0f, -90f, 0f));
         SetFloat(so, "moveDuration", 0.55f);
         SetBool(so, "autoClose", false);
         SetBool(so, "startOpen", false);
         SetObject(so, "audioSource", moving.GetComponent<AudioSource>());
         so.ApplyModifiedPropertiesWithoutUndo();
         return door;
+    }
+
+    private static HearthTerminalCameraTransition EnsureInspectionCameraTransition(Transform replayRoot)
+    {
+        if (replayRoot == null)
+        {
+            return null;
+        }
+
+        Transform host = EnsureChild(replayRoot, "UnitInspectionCameraTransition_17F03");
+        HearthTerminalCameraTransition transition = GetOrAdd<HearthTerminalCameraTransition>(host.gameObject);
+        SerializedObject so = new SerializedObject(transition);
+        SetBool(so, "smoothTransitionEnabled", true);
+        SetFloat(so, "enterDuration", 0.5f);
+        SetFloat(so, "exitDuration", 0.5f);
+        SetBool(so, "smoothExit", true);
+        SetBool(so, "useUnscaledTime", true);
+        SetBool(so, "createTransitionCameraIfMissing", true);
+        SetBool(so, "copyCameraSettings", true);
+        SetBool(so, "copyAudioListenerIfMissing", false);
+        so.ApplyModifiedPropertiesWithoutUndo();
+        EditorUtility.SetDirty(transition);
+        return transition;
     }
 
     private static Hearth17F03InspectionPanel EnsureInspectionPanel(Transform uiRoot)
@@ -1189,6 +1216,7 @@ public static class Hearth17F03MinimalLoopBinder
         Camera robotCamera,
         GameObject physicalUnit,
         Camera physicalCamera,
+        HearthTerminalCameraTransition inspectionTransition,
         Hearth17F03UnitInteractable unitInteractable,
         AnchorLibrary anchors,
         RuntimeActor mother,
@@ -1227,6 +1255,8 @@ public static class Hearth17F03MinimalLoopBinder
         SetObject(so, "humanDoorReturnCameraAnchor", anchors.HumanDoorReturnCamera);
         SetObject(so, "physicalUnitObject", physicalUnit);
         SetObject(so, "physicalUnitInspectionCamera", physicalCamera);
+        SetBool(so, "useSmoothInspectionCameraTransition", true);
+        SetObject(so, "inspectionCameraTransition", inspectionTransition);
         SetObject(so, "physicalUnitInteractable", unitInteractable);
         SetObject(so, "middayRobotAnchor", anchors.MiddayRobot);
         SetObject(so, "middayRobotCameraAnchor", anchors.MiddayRobotCamera);

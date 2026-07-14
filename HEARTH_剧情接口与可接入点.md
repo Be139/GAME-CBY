@@ -141,3 +141,11 @@
 - 17F02/17F03：建议复用 `HearthDialogueSequence + MinLoopSubtitlePlayer + 完成后开放交互` 的结构。
 - VR 输入：所有关键动作已有公开方法，后续 VR 射线或按钮直接调用 A/B、字幕后交互、终端提交等方法。
 - 交互 UI 主题：当前 PC 版由 `HearthCompanionHoldPrompt` 和 `PlayerInteractionPrompt` 提供；后续 VR 只需调用同一确认接口，可替换表现层而不改剧情流程。
+
+## 17F03 实体陪伴单元检查镜头
+
+- 入口：第一幕父母对话完成后，玩家面向 `ROBOT/InteractionVolume_17F03` 按 E，由 `HearthCompanion17F03ReplayController.OpenUnitInspection()` 执行。
+- 当前表现：人类视角会在约 `0.5s` 平滑移动至 `ROBOT/Camera (1)`，不再以黑场作为正常检查入口；检查 UI 打开后，Space 继续调取记录，Esc 调用 `CancelFlow()` 平滑返回人类视角。
+- 可调组件：`MIN_LOOP_ROOT/ReplayRoom_17F03/UnitInspectionCameraTransition_17F03`。可在 Inspector 修改 `Enter Duration`、`Exit Duration`、缓动曲线和是否平滑退出。
+- 后备规则：若平移组件、人类 Camera 或 `ROBOT/Camera (1)` 的任一引用缺失，流程自动使用旧黑场切换，避免剧情卡死。
+- 与终端的关系：该组件复用 `HearthTerminalCameraTransition` 的镜头平移能力，但只服务第三户“实体陪伴单元检查”；门口 TV 终端转场逻辑不受影响。

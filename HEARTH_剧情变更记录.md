@@ -385,3 +385,17 @@ casual_Female_K (9) -> REF_Wife_17F02_ExitOutside
 - `HearthActorRootMotionRelay` 将动画模型的实际水平位移转存到 `Actor_Mother_17F03_RuntimeRoot`，并保持模型子节点本地位置稳定。
 - `casual_Female_G@Sit_To_Stand.fbx` 已解除 XZ Root Motion 的 Bake Into Pose；母亲 `SitToStand` State 启用 Root Motion，Talking 与 StandingArguing 不启用。
 - 这是当前 17F03 的正式演出规则；后续替换起身动作时应重新运行 17F03 Setup 与 Validate 菜单。
+
+## 2026-07-14 17F03 门开启方向与实体检查镜头表现
+
+### 门开启
+
+- 第三幕中女儿打开 `17F/ROOM2/Door_2_Brown (7)/Door` 时，门扇应绕现有右侧铰链旋转，朝远离墙体的一侧打开。
+- 场景检查确认旋转轴本身无误；此前问题来自旋转门完成时被脚本额外套用了滑动偏移，视觉上像门扇卡进墙里。
+- 当前正式设定为 `Motion Mode = Rotate`、`Open Local Euler Offset = (0, -90, 0)`，门只旋转，不产生额外位移。
+
+### 实体陪伴单元检查
+
+- 第一幕父母对话结束后，米娅面向实体陪伴单元按 E 进入检查时，改为和门口终端一致的短距离平移镜头。
+- 默认进入与退出各约 `0.5s`；检查界面本身不再叠黑场。其他剧情幕次的渐黑/渐亮切换保持原样。
+- 本条是当前第三户正式演出规则，后续只需在 `UnitInspectionCameraTransition_17F03` 调节节奏，不需改台词或交互顺序。

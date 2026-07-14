@@ -62,6 +62,10 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
     [SerializeField] private Camera physicalUnitInspectionCamera;
     [SerializeField] private Hearth17F03UnitInteractable physicalUnitInteractable;
 
+    [Header("Unit Inspection Camera Transition")]
+    [SerializeField] private bool useSmoothInspectionCameraTransition = true;
+    [SerializeField] private HearthTerminalCameraTransition inspectionCameraTransition;
+
     [Header("Replay Anchors")]
     [SerializeField] private Transform middayRobotAnchor;
     [SerializeField] private Transform middayRobotCameraAnchor;
@@ -301,6 +305,11 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
             inspectionPanel.Close();
         }
 
+        if (inspectionCameraTransition != null)
+        {
+            inspectionCameraTransition.CancelTransition();
+        }
+
         SetInspectionCameraActive(false);
         RestoreHumanHud();
         SetHumanControl(true, true, true);
@@ -372,7 +381,20 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
         SuppressHumanHud();
         if (physicalUnitInteractable != null) physicalUnitInteractable.SetAvailable(false);
 
-        yield return FadeBlackTo(1f, fadeOutSeconds);
+        bool usedSmoothTransition = CanUseSmoothInspectionEnterTransition();
+        if (usedSmoothTransition)
+        {
+            SetBlackoutAlpha(0f);
+            yield return inspectionCameraTransition.TransitionToTerminal(
+                humanCamera,
+                physicalUnitInspectionCamera,
+                null);
+        }
+        else
+        {
+            yield return FadeBlackTo(1f, fadeOutSeconds);
+        }
+
         SetInspectionCameraActive(true);
         if (inspectionPanel != null)
         {
@@ -381,21 +403,47 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
         }
 
         currentStep = ReplayStep.UnitInspection;
-        yield return FadeBlackTo(0f, fadeInSeconds);
+        if (!usedSmoothTransition)
+        {
+            yield return FadeBlackTo(0f, fadeInSeconds);
+        }
+
         activeRoutine = null;
     }
 
     private IEnumerator CloseInspectionRoutine()
     {
-        yield return FadeBlackTo(1f, fadeOutSeconds);
         if (inspectionPanel != null) inspectionPanel.Close();
+
+        bool usedSmoothTransition = CanUseSmoothInspectionExitTransition();
+        if (usedSmoothTransition)
+        {
+            SetBlackoutAlpha(0f);
+            yield return inspectionCameraTransition.TransitionToPlayer(
+                humanCamera,
+                physicalUnitInspectionCamera,
+                null,
+                true,
+                false,
+                true,
+                false);
+        }
+        else
+        {
+            yield return FadeBlackTo(1f, fadeOutSeconds);
+        }
+
         SetInspectionCameraActive(false);
         RestoreSavedHumanPose();
         RestoreHumanHud();
         SetHumanControl(true, true, true);
         currentStep = ReplayStep.AwaitingUnitInspection;
         if (physicalUnitInteractable != null) physicalUnitInteractable.SetAvailable(true);
-        yield return FadeBlackTo(0f, fadeInSeconds);
+        if (!usedSmoothTransition)
+        {
+            yield return FadeBlackTo(0f, fadeInSeconds);
+        }
+
         activeRoutine = null;
     }
 
@@ -856,6 +904,20 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
         SetCameraAndListener(physicalUnitInspectionCamera, inspectionActive);
         if (humanCamera != null) humanCamera.tag = inspectionActive ? "Untagged" : "MainCamera";
         if (physicalUnitInspectionCamera != null) physicalUnitInspectionCamera.tag = inspectionActive ? "MainCamera" : "Untagged";
+    }
+
+    private bool CanUseSmoothInspectionEnterTransition()
+    {
+        return useSmoothInspectionCameraTransition &&
+               inspectionCameraTransition != null &&
+               inspectionCameraTransition.CanRunEnterTransition(humanCamera, physicalUnitInspectionCamera);
+    }
+
+    private bool CanUseSmoothInspectionExitTransition()
+    {
+        return useSmoothInspectionCameraTransition &&
+               inspectionCameraTransition != null &&
+               inspectionCameraTransition.CanRunExitTransition(humanCamera, physicalUnitInspectionCamera);
     }
 
     private static void SetCameraAndListener(Camera camera, bool active)

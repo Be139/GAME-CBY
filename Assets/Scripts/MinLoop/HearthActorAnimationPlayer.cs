@@ -131,6 +131,17 @@ public class HearthActorAnimationPlayer : MonoBehaviour
         return PlayInternal(slot, true);
     }
 
+    public float PlayLoopAtSpeed(string clipId, float playbackSpeed)
+    {
+        ClipSlot slot = FindClip(clipId);
+        if (slot == null)
+        {
+            return 0f;
+        }
+
+        return PlayInternal(slot, true, Mathf.Max(0.01f, playbackSpeed));
+    }
+
     public float PlayOnce(string clipId)
     {
         ClipSlot slot = FindClip(clipId);

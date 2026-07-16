@@ -240,3 +240,15 @@
 - 剧情仍调用 `Open()` / `Close()`，不受直接交互开关影响。
 - 门轴对象是 `DoorHinge_17F03`；只调整 `Open Local Euler Offset`、`Move Duration`，不要移动门根或给门叠加第二个旋转父级。
 - 米娅检查实体机器人继续使用 `OpenUnitInspection()` / `CancelFlow()`；`UnitInspectionCameraTransition_17F03` 控制进入和退出的 0.5 秒平移。
+
+## 分关卡剧情音效接口（2026-07-16）
+
+- 通用播放器：`HearthSfxCuePlayer.PlayCue()`、`PlayCueOneShot()`、`StartCueLoop()`、`StopCue()`、`StopAllCues()`。
+- 运行时替换素材：`AssignPrimaryClip(cueId, clip)`；Inspector 中优先直接修改 `Primary Clip / Alternate Clips`。
+- 17F02 控制器自动触发：`Wife.StandUp / Wife.Walk / Dining.TableFoley / System.DataScan / System.Glitch / System.PowerOff`。
+- 17F03 控制器自动触发：`Mother.StandUp / Daughter.StandUp / Daughter.Walk / Daughter.Keypad / System.Glitch / System.PowerOff`。
+- 17F04 控制器自动触发：`Photo.Memory / Unit.PowerOff`。
+- `Wife.SitOnBed` 是保留接口，当前不自动触发。确认女主实际坐下时刻后，接到对应 Dialogue/Animation Event 即可。
+- 两个移动 Cue 的 AudioSource 位于 `MIN_LOOP_ROOT/Audio`，但通过 `Follow Target` 实时跟随人物 RuntimeRoot；不需要把音效对象手动放进人物模型。
+- 门、HUD、TV、主角脚步和机器人脚步继续使用原本的专用接口，禁止再用同一个 Clip 在 StorySFX 中重复触发。
+- 所有 Cue 在 Clip 为空时静默跳过，剧情不会停住，也不会输出错误。

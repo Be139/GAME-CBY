@@ -155,6 +155,15 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
     [SerializeField] private UnityEvent onForcedShutdownStarted = new UnityEvent();
     [SerializeField] private UnityEvent onReplayFinished = new UnityEvent();
 
+    [Header("Story SFX")]
+    [SerializeField] private HearthSfxCuePlayer sfxCuePlayer;
+    [SerializeField] private string wifeStandCueId = "Wife.StandUp";
+    [SerializeField] private string wifeWalkCueId = "Wife.Walk";
+    [SerializeField] private string diningFoleyCueId = "Dining.TableFoley";
+    [SerializeField] private string dataScanCueId = "System.DataScan";
+    [SerializeField] private string glitchCueId = "System.Glitch";
+    [SerializeField] private string powerOffCueId = "System.PowerOff";
+
     [Header("Runtime")]
     [SerializeField] private ReplayStep currentStep = ReplayStep.Inactive;
 
@@ -182,6 +191,7 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
     private void OnDisable()
     {
         UnsubscribeHud();
+        StopAllStorySfx();
     }
 
     private void OnValidate()
@@ -219,6 +229,7 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
         ResolveReferences();
         EnsureBlackoutOverlay();
         StopActiveRoutine();
+        StopAllStorySfx();
         currentStep = ReplayStep.Inactive;
         bedroomAcknowledged = false;
         shutdownConfirmed = false;
@@ -258,6 +269,7 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
     public void CancelReplay()
     {
         StopActiveRoutine();
+        StopAllStorySfx();
         currentStep = ReplayStep.Inactive;
         bedroomAcknowledged = false;
         shutdownConfirmed = false;
@@ -408,6 +420,7 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
 
         currentStep = ReplayStep.DiningObservation;
         onDiningObservationStarted.Invoke();
+        PlayStorySfx(diningFoleyCueId);
         SetStageActors(false, true, false);
         PlayActorLoopOrPose(diningWifeAnimation, diningWifeAnimationId, diningWifePose, diningSittingPoseId);
         PlayActorLoopOrPose(diningHusbandAnimation, diningHusbandAnimationId, diningHusbandPose, diningSittingPoseId);
@@ -440,6 +453,7 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
 
         currentStep = ReplayStep.LivingRoomTerminal;
         onLivingRoomTerminalStarted.Invoke();
+        PlayStorySfx(dataScanCueId);
         SetStageActors(false, false, true);
         PlayActorLoopOrPose(terminalHusbandAnimation, terminalHusbandAnimationId, terminalHusbandPose, terminalHusbandPoseId);
         TeleportRobot(livingRoomTerminalAnchor, livingRoomTerminalCameraAnchor);
@@ -471,6 +485,7 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
         if (companionHud != null)
         {
             companionHud.SetHoldPromptVisible(false);
+            PlayStorySfx(glitchCueId);
             companionHud.PlayShutdownGlitch();
         }
 
@@ -478,6 +493,8 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
         {
             yield return WaitForReplaySeconds(shutdownEffectSeconds);
         }
+
+        PlayStorySfx(powerOffCueId);
 
         currentStep = ReplayStep.BlackAudio;
         ShowHudScene(blackAudioSceneId, false);
@@ -500,6 +517,7 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
         }
 
         currentStep = ReplayStep.ReturningToTerminal;
+        StopAllStorySfx();
         SetRobotControl(false, false, false);
 
         if (companionHud != null)
@@ -667,8 +685,10 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
 
     private IEnumerator MoveSimpleWifeExitRoute(Transform moveRoot)
     {
+        PlayStorySfx(wifeStandCueId);
         yield return PlayActorOnceAndWait(bedroomWifeAnimation, bedroomWifeSitToStandAnimationId);
         PlayActorLoop(bedroomWifeAnimation, bedroomWifeWalkLoopAnimationId);
+        StartStorySfxLoop(wifeWalkCueId);
 
         bool hasExplicitSimpleRoute = HasPathPoints(wifeBeforeDoorPathPoints) || HasPathPoints(wifeAfterDoorPathPoints);
         if (hasExplicitSimpleRoute)
@@ -687,6 +707,7 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
         }
 
         StopActorAndHold(bedroomWifeAnimation);
+        StopStorySfx(wifeWalkCueId);
 
         if (wifeDoorPauseSeconds > 0f)
         {
@@ -701,6 +722,7 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
         }
 
         PlayActorLoop(bedroomWifeAnimation, bedroomWifeWalkLoopAnimationId);
+        StartStorySfxLoop(wifeWalkCueId);
 
         if (hasExplicitSimpleRoute)
         {
@@ -713,18 +735,22 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
         }
 
         yield return MoveActorToAnchor(moveRoot, wifeExitOutsideAnchor);
+        StopStorySfx(wifeWalkCueId);
         StopActorAndHold(bedroomWifeAnimation);
     }
 
     private IEnumerator MoveLegacyWifeExitRoute(Transform moveRoot)
     {
+        PlayStorySfx(wifeStandCueId);
         yield return PlayActorOnceAndWait(bedroomWifeAnimation, bedroomWifeSitToStandAnimationId);
         PlayActorLoop(bedroomWifeAnimation, bedroomWifeWalkLoopAnimationId);
+        StartStorySfxLoop(wifeWalkCueId);
 
         int splitIndex = ResolveDoorOpenPathSplitIndex();
         yield return MoveActorAlongPath(moveRoot, wifeExitPathPoints, 0, splitIndex);
         yield return MoveActorToAnchor(moveRoot, wifeDoorPauseAnchor);
         StopActorAndHold(bedroomWifeAnimation);
+        StopStorySfx(wifeWalkCueId);
 
         if (wifeDoorPauseSeconds > 0f)
         {
@@ -739,9 +765,48 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
         }
 
         PlayActorLoop(bedroomWifeAnimation, bedroomWifeWalkLoopAnimationId);
+        StartStorySfxLoop(wifeWalkCueId);
         yield return MoveActorAlongPath(moveRoot, wifeExitPathPoints, splitIndex, GetPathLength(wifeExitPathPoints));
         yield return MoveActorToAnchor(moveRoot, wifeExitOutsideAnchor);
+        StopStorySfx(wifeWalkCueId);
         StopActorAndHold(bedroomWifeAnimation);
+    }
+
+    public void SetSfxCuePlayer(HearthSfxCuePlayer player)
+    {
+        sfxCuePlayer = player;
+    }
+
+    private void PlayStorySfx(string cueId)
+    {
+        if (sfxCuePlayer != null)
+        {
+            sfxCuePlayer.PlayCue(cueId);
+        }
+    }
+
+    private void StartStorySfxLoop(string cueId)
+    {
+        if (sfxCuePlayer != null)
+        {
+            sfxCuePlayer.StartCueLoop(cueId);
+        }
+    }
+
+    private void StopStorySfx(string cueId)
+    {
+        if (sfxCuePlayer != null)
+        {
+            sfxCuePlayer.StopCue(cueId);
+        }
+    }
+
+    private void StopAllStorySfx()
+    {
+        if (sfxCuePlayer != null)
+        {
+            sfxCuePlayer.StopAllCues();
+        }
     }
 
     private IEnumerator PlayOpenDoorAnimationAndTriggerDoor()

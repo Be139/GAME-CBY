@@ -296,6 +296,21 @@
 | 低信任关闭 | `SFX-15`、`SFX-16` | 三段警告后再关机；三次 Space 不应重复结算 |
 | 结局黑幕 | `SFX-02` 或静音 | 保持极低环境层，最后只留一个收束声；不使用对白替代素材 |
 
+### 6.6 当前 Unity 空槽落地状态
+
+- 已在 `MIN_LOOP_ROOT/Audio` 建立 `StorySFX_17F02 / StorySFX_17F03 / StorySFX_17F04`。
+- 共 15 个剧情音效 Cue，每个 Cue 都有独立空 AudioSource、SFX 通道、空间范围和跟随目标；当前没有导入或绑定本清单候选素材。
+- `AUTO_*` 发声点已经接入关卡流程，后续只需把选定素材拖入对应 `HearthSfxCuePlayer / Cues / Primary Clip`。
+- `TBD_17F02_Wife_SitOnBed` 只完成发声位置和空槽。现有流程无法可靠识别黑屏对白中女主实际落座的精确时刻，所以暂不自动触发。
+- 17F02/17F03 的人物走路音源会边移动边跟随 RuntimeRoot；门口停顿和路径结束时停止。
+- 17F02、17F03 的剧情门继续使用各自 `SmartDoorController` 的 `Open Clip / Close Clip`，避免和 StorySFX 重复播放。
+- 17F01 继续复用现有环境声、机器人脚步、长按完成声和 TV/HUD 音效字段；没有创建小男孩或床铺相关发声点。
+- 猫咪没有任何音效槽。
+
+应用/修复菜单：`Tools / Hearth / Audio / Apply Story SFX Placeholder Setup`。
+
+验证菜单：`Tools / Hearth / Audio / Validate Story SFX Placeholder Setup`。
+
 ## 7. 其他可用音效网站
 
 | 网站 | 适合内容 | 授权注意 |
@@ -343,4 +358,3 @@ Pixabay 候选受 [Pixabay Content License](https://pixabay.com/service/license-
 4. 接入 `SFX-01/02` 三条最终 Room Tone，并做循环测试。
 5. 按 17F02、17F03 动画时间补 `SFX-07/08/09/12/13`。
 6. 最后接入 17F04 相框 `SFX-18`，做全流程响度回归。
-

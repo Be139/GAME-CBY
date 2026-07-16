@@ -39,6 +39,10 @@ public class Hearth17F04CatGuideController : MonoBehaviour
     [SerializeField] private string lieTransitionClipId = "Lie_to";
     [SerializeField] private string lieIdleClipId = "Lie_idle";
 
+    [Header("Animation Playback")]
+    [Tooltip("Only affects Walk_F cadence. Route durations and Run_F / lie animation speeds are unchanged.")]
+    [SerializeField, Min(0.01f)] private float walkPlaybackSpeed = 2f;
+
     [Header("Start Pose")]
     [SerializeField] private bool hasStartPose;
     [SerializeField] private Vector3 startWorldPosition;
@@ -96,6 +100,7 @@ public class Hearth17F04CatGuideController : MonoBehaviour
     {
         jumpArcHeight = Mathf.Max(0f, jumpArcHeight);
         pathSmoothing = Mathf.Clamp01(pathSmoothing);
+        walkPlaybackSpeed = Mathf.Max(0.01f, walkPlaybackSpeed);
         if (routeSteps == null)
         {
             routeSteps = Array.Empty<RouteStep>();
@@ -367,7 +372,7 @@ public class Hearth17F04CatGuideController : MonoBehaviour
 
         if (currentMotion != CatMotion.Walk)
         {
-            PlayLoopOrWarn(walkClipId);
+            PlayLoopOrWarn(walkClipId, walkPlaybackSpeed);
             currentMotion = CatMotion.Walk;
         }
     }
@@ -385,13 +390,25 @@ public class Hearth17F04CatGuideController : MonoBehaviour
 
     private void PlayLoopOrWarn(string clipId)
     {
+        PlayLoopOrWarn(clipId, -1f);
+    }
+
+    private void PlayLoopOrWarn(string clipId, float playbackSpeedOverride)
+    {
         if (animationPlayer == null || animationPlayer.GetClipLength(clipId) <= 0f)
         {
             WarnMissingClip(clipId);
             return;
         }
 
-        animationPlayer.PlayLoop(clipId);
+        if (playbackSpeedOverride > 0f)
+        {
+            animationPlayer.PlayLoopAtSpeed(clipId, playbackSpeedOverride);
+        }
+        else
+        {
+            animationPlayer.PlayLoop(clipId);
+        }
     }
 
     private void WarnMissingClip(string clipId)

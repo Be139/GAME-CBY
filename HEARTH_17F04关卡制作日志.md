@@ -208,3 +208,11 @@ Apply 会清理 TV3/TV4 错误的 17F02 终端并补齐引用，但保留同名 
 - 路线位置改为具有连续节点速度的 Hermite 插值，`Path Smoothing` 默认 `0.75`；第 6 到第 7 点仍叠加原有跳跃弧线。
 - 路线朝向使用平滑缓入缓出，经过参考点时不再瞬间切换角速度；每个参考点的最终位置和朝向仍会精确到达。
 - MCP Play Mode 完整复测：`Walk_F` 长度 `1.667s`，路线结束后 `IsRunning = false`、`HasReachedPhoto = true`，猫咪相关 Warning/Error 为 `0`，测试结束后已退出 Play Mode。
+
+## 2026-07-16 Walk_F 步频与剧情音效空槽
+
+- `Hearth17F04CatGuideController` 新增 `Walk Playback Speed`，当前设为 `2.0`。只加快 `Walk_F` 腿部动作，路线时长、`Run_F` 跳跃和两个趴卧动作不变。
+- 当前第 4、5、6 个参考点继续由运行时直接读取，重跑绑定工具未覆盖其位置或朝向。
+- MCP 独立路线预览到达第 7 点：`HasReachedPhoto = true`，最终位置为 `(-2301.916, 112.297, 562.254)`，与当前第 7 点一致。
+- 正式猫和七只参考猫的旧 Legacy `Animation` 已移除；Play Mode 不再出现 `Drop_L_sit must be marked as Legacy`。
+- `MIN_LOOP_ROOT/Audio/StorySFX_17F04` 新增相框记忆提示和陪伴单元关机两个空 Clip 槽。猫咪不配置声音。

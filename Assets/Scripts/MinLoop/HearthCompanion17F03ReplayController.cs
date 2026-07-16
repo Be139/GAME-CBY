@@ -139,6 +139,7 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
     [SerializeField] private float afterMediationSeconds = 0.8f;
     [SerializeField] private float afterDoorOpenSeconds = 0.35f;
     [SerializeField] private float deepSleepSeconds = 3.5f;
+    [SerializeField] private float deepSleepPowerOffDelaySeconds = 0.65f;
     [SerializeField] private bool useUnscaledTime = true;
 
     [Header("Blackout Overlay")]
@@ -155,6 +156,15 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
     [SerializeField] private UnityEvent onDispositionA = new UnityEvent();
     [SerializeField] private UnityEvent onDispositionB = new UnityEvent();
     [SerializeField] private UnityEvent onHouseholdCompleted = new UnityEvent();
+
+    [Header("Story SFX")]
+    [SerializeField] private HearthSfxCuePlayer sfxCuePlayer;
+    [SerializeField] private string motherStandCueId = "Mother.StandUp";
+    [SerializeField] private string daughterStandCueId = "Daughter.StandUp";
+    [SerializeField] private string daughterWalkCueId = "Daughter.Walk";
+    [SerializeField] private string keypadCueId = "Daughter.Keypad";
+    [SerializeField] private string glitchCueId = "System.Glitch";
+    [SerializeField] private string powerOffCueId = "System.PowerOff";
 
     [Header("Runtime")]
     [SerializeField] private ReplayStep currentStep = ReplayStep.Inactive;
@@ -210,6 +220,7 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
         UnsubscribeInspectionPanel();
         UnsubscribeFlow();
         UnsubscribeHud();
+        StopAllStorySfx();
     }
 
     private void OnValidate()
@@ -225,6 +236,7 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
         afterMediationSeconds = Mathf.Max(0f, afterMediationSeconds);
         afterDoorOpenSeconds = Mathf.Max(0f, afterDoorOpenSeconds);
         deepSleepSeconds = Mathf.Max(0f, deepSleepSeconds);
+        deepSleepPowerOffDelaySeconds = Mathf.Max(0f, deepSleepPowerOffDelaySeconds);
     }
 
     public void BeginHumanEntry()
@@ -289,6 +301,7 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
     public void CancelFlow()
     {
         StopActiveRoutine();
+        StopAllStorySfx();
         currentStep = ReplayStep.Inactive;
         daughterConfirmed = false;
         motherConfirmed = false;
@@ -485,6 +498,7 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
         SetGazeTarget(Hearth17F03GazeInteractable.Target.Daughter);
         while (!daughterConfirmed) yield return null;
 
+        PlayStorySfx(daughterStandCueId);
         yield return PlayActorOnceAndDialogueThenLoop(
             daughterAnimation,
             daughterSitupId,
@@ -521,7 +535,9 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
 
         yield return WaitSeconds(afterDoorOpenSeconds);
         PlayActorLoop(daughterAnimation, daughterWalkId);
+        StartStorySfxLoop(daughterWalkCueId);
         yield return MoveActorAlongPath(daughterMoveRoot, daughterNightPathPoints);
+        StopStorySfx(daughterWalkCueId);
 
         currentStep = ReplayStep.NightDialogue;
         PlayActorLoop(daughterAnimation, daughterTalkingId);
@@ -530,9 +546,22 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
 
         currentStep = ReplayStep.NightShutdown;
         ShowHudScene(deepSleepSceneId);
+        PlayStorySfx(keypadCueId);
         yield return PlayActorOnceAndDialogueThenHold(daughterAnimation, daughterEnteringCodeId, nightShutdownSequence);
+        PlayStorySfx(glitchCueId);
         if (companionHud != null) companionHud.PlayDeepSleep();
-        yield return WaitSeconds(deepSleepSeconds);
+
+        float powerOffDelay = Mathf.Min(deepSleepSeconds, deepSleepPowerOffDelaySeconds);
+        if (powerOffDelay > 0f)
+        {
+            yield return WaitSeconds(powerOffDelay);
+        }
+
+        PlayStorySfx(powerOffCueId);
+        if (deepSleepSeconds > powerOffDelay)
+        {
+            yield return WaitSeconds(deepSleepSeconds - powerOffDelay);
+        }
 
         yield return ReturnToHumanAndDispositionRoutine();
         activeRoutine = null;
@@ -541,6 +570,7 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
     private IEnumerator ReturnToHumanAndDispositionRoutine()
     {
         currentStep = ReplayStep.ReturningToHuman;
+        StopStorySfx(daughterWalkCueId);
         SetRobotControl(false, false, false);
         SetGazeTarget(null);
         yield return FadeBlackTo(1f, fadeOutSeconds);
@@ -593,6 +623,7 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
 
     private IEnumerator PlayEntryParentPerformance()
     {
+        PlayStorySfx(motherStandCueId);
         float standSeconds = PlayActorOnce(motherAnimation, motherSitToStandId);
         Coroutine dialogueRoutine = StartCoroutine(PlayDialogue(humanParentSequence));
         if (standSeconds > 0f) yield return WaitSeconds(standSeconds);
@@ -623,6 +654,43 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
         if (animationSeconds > 0f) yield return WaitSeconds(animationSeconds);
         StopActorAndHold(driver);
         if (dialogueRoutine != null) yield return dialogueRoutine;
+    }
+
+    public void SetSfxCuePlayer(HearthSfxCuePlayer player)
+    {
+        sfxCuePlayer = player;
+    }
+
+    private void PlayStorySfx(string cueId)
+    {
+        if (sfxCuePlayer != null)
+        {
+            sfxCuePlayer.PlayCue(cueId);
+        }
+    }
+
+    private void StartStorySfxLoop(string cueId)
+    {
+        if (sfxCuePlayer != null)
+        {
+            sfxCuePlayer.StartCueLoop(cueId);
+        }
+    }
+
+    private void StopStorySfx(string cueId)
+    {
+        if (sfxCuePlayer != null)
+        {
+            sfxCuePlayer.StopCue(cueId);
+        }
+    }
+
+    private void StopAllStorySfx()
+    {
+        if (sfxCuePlayer != null)
+        {
+            sfxCuePlayer.StopAllCues();
+        }
     }
 
     private IEnumerator PlayDialogue(HearthDialogueSequence sequence)

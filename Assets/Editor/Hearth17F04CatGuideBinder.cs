@@ -16,6 +16,7 @@ public static class Hearth17F04CatGuideBinder
     private static readonly float[] DefaultDurations = { 1.5f, 1.5f, 1.5f, 1.5f, 7.5f, 0.5f, 0.5f };
     private static readonly float[] LegacyDefaultDurations = { 3f, 3f, 3f, 3f, 15f, 1f, 1f };
     private const float DefaultPathSmoothing = 0.75f;
+    private const float DefaultWalkPlaybackSpeed = 2f;
 
     [MenuItem("Tools/Hearth/Finale/Apply 17F04 Cat Guide Setup")]
     public static void ApplySetup()
@@ -111,12 +112,18 @@ public static class Hearth17F04CatGuideBinder
                 {
                     errors.Add("Cat path smoothing is disabled; sharp route turns can visibly hitch.");
                 }
+
+                SerializedProperty walkSpeed = guideSo.FindProperty("walkPlaybackSpeed");
+                if (walkSpeed == null || !Mathf.Approximately(walkSpeed.floatValue, DefaultWalkPlaybackSpeed))
+                {
+                    errors.Add("Walk_F playback speed should be 2.0 while Run_F and lie clips remain at 1.0.");
+                }
             }
 
             Animation[] legacyAnimations = runtimeCat.GetComponentsInChildren<Animation>(true);
-            if (legacyAnimations.Any(item => item != null && item.enabled))
+            if (legacyAnimations.Any(item => item != null))
             {
-                errors.Add("The runtime cat still has an enabled legacy Animation component.");
+                errors.Add("The runtime cat still has a legacy Animation component that can conflict with Playables.");
             }
         }
 
@@ -170,6 +177,12 @@ public static class Hearth17F04CatGuideBinder
         if (smoothing != null && smoothing.floatValue <= 0f)
         {
             smoothing.floatValue = DefaultPathSmoothing;
+        }
+
+        SerializedProperty walkSpeed = so.FindProperty("walkPlaybackSpeed");
+        if (walkSpeed != null && (walkSpeed.floatValue <= 0f || Mathf.Approximately(walkSpeed.floatValue, 1f)))
+        {
+            walkSpeed.floatValue = DefaultWalkPlaybackSpeed;
         }
 
         SerializedProperty route = so.FindProperty("routeSteps");
@@ -341,9 +354,10 @@ public static class Hearth17F04CatGuideBinder
 
         foreach (Animation legacy in runtimeCat.GetComponentsInChildren<Animation>(true))
         {
-            legacy.Stop();
-            legacy.enabled = false;
-            EditorUtility.SetDirty(legacy);
+            if (legacy != null)
+            {
+                Undo.DestroyObjectImmediate(legacy);
+            }
         }
 
         Transform animatorHost = runtimeCat.GetComponentsInChildren<Transform>(true)
@@ -368,9 +382,10 @@ public static class Hearth17F04CatGuideBinder
         GetOrAdd<HearthEditorOnlyReferenceModel>(reference);
         foreach (Animation legacy in reference.GetComponentsInChildren<Animation>(true))
         {
-            legacy.Stop();
-            legacy.enabled = false;
-            EditorUtility.SetDirty(legacy);
+            if (legacy != null)
+            {
+                Undo.DestroyObjectImmediate(legacy);
+            }
         }
 
         EditorUtility.SetDirty(reference);

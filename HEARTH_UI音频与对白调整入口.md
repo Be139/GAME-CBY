@@ -113,3 +113,44 @@
 4. 分别操控 Mia 和机器人，确认两套脚步配置互不覆盖。
 5. 给任意 Dialogue Sequence 一句拖入测试 AudioClip，确认字幕按所选 Duration Mode 推进。
 6. 走近单按 E 交互物，确认提示是英文且无方框。
+
+## 8. 分关卡剧情音效空槽
+
+场景总入口：`MIN_LOOP_ROOT / Audio`。
+
+现有三条 `Audio_Corridor_Ambience / Audio_Replay_Night_Ambience / Audio_Morning_Ambience` 继续负责持续环境声。新增剧情动作音效集中在：
+
+- `StorySFX_17F02`：女主起身、女主移动、餐桌 Foley、调取记录、故障、关机。
+- `StorySFX_17F03`：母亲起身、女儿起身、女儿移动、键盘输入、故障、深眠关机。
+- `StorySFX_17F04`：相框记忆提示、最终关闭陪伴单元。
+
+每个分组都挂 `HearthSfxCuePlayer`。展开 `Cues` 后，把选好的素材拖到对应 `Primary Clip`；需要多个随机版本时拖到 `Alternate Clips`。通常不需要修改子物体 AudioSource，也不需要重新运行菜单。
+
+命名规则：
+
+- `AUTO_*`：剧情脚本已经在准确阶段自动调用，拖入 Clip 后直接生效。
+- `TBD_*`：发声位置已建立，但触发时刻尚未确认，不会自动播放。
+- 当前唯一的 `TBD` 是 `TBD_17F02_Wife_SitOnBed`。需要先确认黑屏对白中的精确落座时刻，再调用 `StorySFX_17F02.PlayCue("Wife.SitOnBed")`。
+
+移动音源：
+
+- `AUTO_17F02_Wife_Walk` 会跟随 `Actor_Wife_17F02_BedroomRuntimeRoot`，门口停下时停止，继续出门时恢复。
+- `AUTO_17F03_Daughter_Walk` 会跟随 `Actor_Daughter_17F03_RuntimeRoot`，到达最后路径点后停止。
+- `HearthSfxCuePlayer / Follow Target` 是实际跟随对象；`Spatial Blend / Min Distance / Max Distance` 控制空间听感。
+- 猫咪音效明确排除，`CatGuide` 下没有创建任何音效槽。
+
+门音效仍使用门自身的 `SmartDoorController / Open Clip / Close Clip / Locked Clip`，不放进 StorySFX 重复播放。17F02 女主出门和 17F03 女儿开门已经补好 SFX AudioSource；拖入 Clip 即可。
+
+应用菜单：`Tools / Hearth / Audio / Apply Story SFX Placeholder Setup`。只有新增/删除发声点、引用丢失或重建场景时才运行。普通替换 Clip 不运行。
+
+验证菜单：`Tools / Hearth / Audio / Validate Story SFX Placeholder Setup`。空 Clip 是允许状态；验证重点是 Cue、AudioSource、空间跟随目标和剧情控制器绑定。
+
+17F01 没有新增剧情 Foley 分组：排除小男孩呼吸、翻身和床单声后，该户由现有 Room Tone、机器人脚步、Companion HUD 长按完成声和 TV 终端音效槽覆盖，避免重复播放。
+
+## 9. 17F04 猫咪动作频率
+
+- 正式对象：`MIN_LOOP_ROOT / Finale_17F04 / CatGuide / CatMoveRoot`。
+- 组件：`Hearth17F04CatGuideController / Walk Playback Speed`，当前为 `2.0`。
+- 该值只加快 `Walk_F` 的腿部动作频率；`Run_F / Lie_to / Lie_idle` 保持原速。
+- 路线时间仍为 `1.5 / 1.5 / 1.5 / 1.5 / 7.5 / 0.5 / 0.5` 秒。
+- 第 4、5、6 个参考点在运行开始时直接读取当前 Transform。移动这些参考点后重新 Play 即可，不需要同步菜单。

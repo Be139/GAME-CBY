@@ -93,6 +93,11 @@ public class Hearth17F04FinaleController : MonoBehaviour
     [Header("Events")]
     [SerializeField] private UnityEvent onFinaleCompleted = new UnityEvent();
 
+    [Header("Story SFX")]
+    [SerializeField] private HearthSfxCuePlayer sfxCuePlayer;
+    [SerializeField] private string photoMemoryCueId = "Photo.Memory";
+    [SerializeField] private string unitPowerOffCueId = "Unit.PowerOff";
+
     [Header("Runtime State")]
     [SerializeField] private FinaleStage currentStage = FinaleStage.Inactive;
 
@@ -155,6 +160,7 @@ public class Hearth17F04FinaleController : MonoBehaviour
     {
         RestoreFinalChoiceInputProfile();
         UnsubscribeEvents();
+        StopAllStorySfx();
     }
 
     private void LateUpdate()
@@ -192,6 +198,7 @@ public class Hearth17F04FinaleController : MonoBehaviour
         }
 
         SaveCorridorPose();
+        StopAllStorySfx();
         currentHighTrust = EvaluateHighTrust();
         currentStage = FinaleStage.HomeTerminal;
         StopParallelNarrativeCoroutines();
@@ -213,6 +220,7 @@ public class Hearth17F04FinaleController : MonoBehaviour
 
         photoUnlocked = false;
         currentStage = FinaleStage.Photo;
+        PlayStorySfx(photoMemoryCueId);
         photoDialogueRoutine = StartCoroutine(PhotoSequenceAfterGreetingRoutine());
     }
 
@@ -326,6 +334,7 @@ public class Hearth17F04FinaleController : MonoBehaviour
         }
         RestoreFinalChoiceInputProfile();
         if (catGuide != null) catGuide.ResetSequence();
+        StopAllStorySfx();
 
         currentStage = FinaleStage.Inactive;
         photoUnlocked = false;
@@ -510,7 +519,29 @@ public class Hearth17F04FinaleController : MonoBehaviour
             return;
         }
 
+        PlayStorySfx(unitPowerOffCueId);
         StartFlow(ShutdownResultRoutine());
+    }
+
+    public void SetSfxCuePlayer(HearthSfxCuePlayer player)
+    {
+        sfxCuePlayer = player;
+    }
+
+    private void PlayStorySfx(string cueId)
+    {
+        if (sfxCuePlayer != null)
+        {
+            sfxCuePlayer.PlayCue(cueId);
+        }
+    }
+
+    private void StopAllStorySfx()
+    {
+        if (sfxCuePlayer != null)
+        {
+            sfxCuePlayer.StopAllCues();
+        }
     }
 
     private void HandleShutdownChallengeCancelled()

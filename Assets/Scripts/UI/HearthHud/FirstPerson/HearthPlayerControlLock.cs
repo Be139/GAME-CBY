@@ -297,7 +297,7 @@ public class HearthPlayerControlLock : MonoBehaviour
         for (int i = 0; i < rigidbodiesToClear.Length; i++)
         {
             Rigidbody body = rigidbodiesToClear[i];
-            if (body != null)
+            if (body != null && body.gameObject.activeInHierarchy && !body.isKinematic)
             {
                 body.velocity = Vector3.zero;
                 body.angularVelocity = Vector3.zero;

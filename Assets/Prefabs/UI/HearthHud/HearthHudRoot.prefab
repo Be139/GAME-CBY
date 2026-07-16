@@ -7096,6 +7096,7 @@ GameObject:
   - component: {fileID: 4751450673691967686}
   - component: {fileID: 7784626217987247885}
   - component: {fileID: 3872536073396834315}
+  - component: {fileID: 6733841872141498333}
   m_Layer: 0
   m_Name: HearthHudRoot
   m_TagString: Untagged
@@ -7370,8 +7371,10 @@ MonoBehaviour:
   - {fileID: 3717887829128599767}
   - {fileID: 116394944663213969}
   finalChoiceFocusPadding: {x: 10, y: 6}
+  routeFinalChoiceInternally: 1
   dispositionHistoryView: {fileID: 4751450673691967686}
   settingsView: {fileID: 7784626217987247885}
+  quitApplicationOnExitConfirm: 1
   lockPlayerControlsWhileOverlayOpen: 1
   playerControlLock: {fileID: 6970336196579651927}
   audioSource: {fileID: 0}
@@ -7399,6 +7402,9 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   onForcedShutdownConfirmed:
+    m_PersistentCalls:
+      m_Calls: []
+  onShutdownCancelled:
     m_PersistentCalls:
       m_Calls: []
   onExitConfirmed:
@@ -7437,6 +7443,10 @@ MonoBehaviour:
   rightKey: 275
   chooseAKey: 97
   chooseBKey: 98
+  finalChoiceInputProfile:
+    navigationAxis: 0
+    allowDirectLetterKeys: 1
+    allowReturnSubmit: 1
   settingsVolumeStep: 5
 --- !u!114 &4751450673691967686
 MonoBehaviour:
@@ -7545,6 +7555,25 @@ MonoBehaviour:
   dialogueVolumeSlider: {fileID: 0}
   ambientVolumeSlider: {fileID: 0}
   sfxVolumeSlider: {fileID: 0}
+  masterVolumeTexts:
+  - {fileID: 5896612794754876651}
+  - {fileID: 2598064992509488122}
+  - {fileID: 6272912199459360743}
+  dialogueVolumeTexts:
+  - {fileID: 6620243771222098986}
+  - {fileID: 3997989881794916676}
+  - {fileID: 464384743828665149}
+  ambientVolumeTexts:
+  - {fileID: 5747216763312910210}
+  - {fileID: 2290070093002362070}
+  - {fileID: 3566983253924577064}
+  sfxVolumeTexts:
+  - {fileID: 7176998559226679319}
+  - {fileID: 549630656276725046}
+  - {fileID: 6101254185695357900}
+  audioSettings: {fileID: 6733841872141498333}
+  autoFindAudioSettings: 1
+  autoResolveValueTexts: 1
   volumeChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -7587,6 +7616,31 @@ MonoBehaviour:
   optionBDelta: -1
   showSyncTerminalOnAccessCard: 0
   updateRoundsFromDisposition: 1
+--- !u!114 &6733841872141498333
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1308166741296444761}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fa16559b3de2ef84bb6c98640d7d4443, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  defaultMasterVolume: 80
+  defaultDialogueVolume: 100
+  defaultAmbientVolume: 70
+  defaultSfxVolume: 80
+  loadSavedValuesOnAwake: 1
+  saveChangesImmediately: 1
+  masterVolume: 80
+  dialogueVolume: 100
+  ambientVolume: 70
+  sfxVolume: 80
+  volumeChanged:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &1311314607278152635
 GameObject:
   m_ObjectHideFlags: 0

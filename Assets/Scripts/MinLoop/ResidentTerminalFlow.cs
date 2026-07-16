@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class ResidentTerminalFlow : MonoBehaviour, IInteractable
 {
-    [SerializeField] private string fallbackDescription = "E 刷工牌";
+    [SerializeField] private string fallbackDescription = "E  SCAN ID";
     [SerializeField] private MinLoopFlowController flowController;
     [SerializeField] private bool findControllerOnAwake = true;
 

@@ -6,8 +6,8 @@ public class HearthTvTerminalInteractable : MonoBehaviour, IInteractable
     [SerializeField] private HearthTvTerminalController terminalController;
     [SerializeField] private bool findControllerInChildren = true;
     [SerializeField] private bool toggleWhenAlreadyOpen = true;
-    [SerializeField] private string openDescription = "E 查看终端";
-    [SerializeField] private string closeDescription = "E 退出终端";
+    [SerializeField] private string openDescription = "E  ACCESS TERMINAL";
+    [SerializeField] private string closeDescription = "E  LEAVE TERMINAL";
 
     private void Awake()
     {

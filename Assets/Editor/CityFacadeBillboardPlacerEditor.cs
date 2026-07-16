@@ -11,7 +11,7 @@ public class CityFacadeBillboardPlacerEditor : Editor
         CityFacadeBillboardPlacer placer = (CityFacadeBillboardPlacer)target;
 
         EditorGUILayout.Space(12f);
-        EditorGUILayout.HelpBox("Creates blank facade billboard placeholders under one shared root by default. Re-running can skip buildings that already have billboards, so hand-edited signs are not duplicated. Replace each billboard's ContentRoot later with image, video, or custom sign prefabs.", MessageType.Info);
+        EditorGUILayout.HelpBox("Creates blank facade billboard placeholders under one shared root by default. Re-running can skip buildings that already have billboards, so hand-edited signs are not duplicated. New screen surfaces automatically receive CityBillboardContentController; use CityBillboardContentDistributor for image/video pools, and keep ContentRoot for custom sign prefabs.", MessageType.Info);
 
         if (GUILayout.Button("Find Generated City Roots"))
         {

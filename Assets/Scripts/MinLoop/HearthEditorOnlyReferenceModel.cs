@@ -9,7 +9,10 @@ public class HearthEditorOnlyReferenceModel : MonoBehaviour
     [SerializeField] private bool makeRigidbodiesKinematicAlways = true;
     [SerializeField] private bool hideRenderersInPlay = true;
     [SerializeField] private bool disableAnimatorsInPlay = true;
+    [SerializeField] private bool disableLegacyAnimationsInPlay = true;
     [SerializeField] private bool disableAudioSourcesInPlay = true;
+    [SerializeField] private bool disableCamerasInPlay = true;
+    [SerializeField] private bool disableAudioListenersInPlay = true;
     [SerializeField] private bool disableNavigationInPlay = true;
     [SerializeField] private bool disableMonoBehavioursInPlay = true;
 
@@ -92,11 +95,36 @@ public class HearthEditorOnlyReferenceModel : MonoBehaviour
             }
         }
 
+        if (disableLegacyAnimationsInPlay)
+        {
+            foreach (Animation animation in GetComponentsInChildren<Animation>(true))
+            {
+                animation.Stop();
+                animation.enabled = false;
+            }
+        }
+
         if (disableAudioSourcesInPlay)
         {
             foreach (AudioSource audioSource in GetComponentsInChildren<AudioSource>(true))
             {
                 audioSource.enabled = false;
+            }
+        }
+
+        if (disableCamerasInPlay)
+        {
+            foreach (Camera camera in GetComponentsInChildren<Camera>(true))
+            {
+                camera.enabled = false;
+            }
+        }
+
+        if (disableAudioListenersInPlay)
+        {
+            foreach (AudioListener listener in GetComponentsInChildren<AudioListener>(true))
+            {
+                listener.enabled = false;
             }
         }
 

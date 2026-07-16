@@ -40,7 +40,8 @@ public class HearthFirstPersonHudFlowBinder : MonoBehaviour
 
         if (hudController != null)
         {
-            hudController.SetTrustScore(startingTrustScore);
+            int initialTrust = trustStateController != null ? trustStateController.CurrentTrust : startingTrustScore;
+            hudController.SetTrustScore(initialTrust);
             hudController.SetRoundsProgress(0, 3);
         }
     }

@@ -1,4 +1,29 @@
+using System;
 using UnityEngine;
+
+public enum HearthFinalChoiceNavigationAxis
+{
+    Horizontal,
+    Vertical
+}
+
+[Serializable]
+public struct HearthFinalChoiceInputProfile
+{
+    public HearthFinalChoiceNavigationAxis navigationAxis;
+    public bool allowDirectLetterKeys;
+    public bool allowReturnSubmit;
+
+    public HearthFinalChoiceInputProfile(
+        HearthFinalChoiceNavigationAxis navigationAxis,
+        bool allowDirectLetterKeys,
+        bool allowReturnSubmit)
+    {
+        this.navigationAxis = navigationAxis;
+        this.allowDirectLetterKeys = allowDirectLetterKeys;
+        this.allowReturnSubmit = allowReturnSubmit;
+    }
+}
 
 [DisallowMultipleComponent]
 public class HearthFirstPersonHudInput : MonoBehaviour
@@ -18,6 +43,10 @@ public class HearthFirstPersonHudInput : MonoBehaviour
     [SerializeField] private KeyCode rightKey = KeyCode.RightArrow;
     [SerializeField] private KeyCode chooseAKey = KeyCode.A;
     [SerializeField] private KeyCode chooseBKey = KeyCode.B;
+
+    [Header("Final Choice")]
+    [SerializeField] private HearthFinalChoiceInputProfile finalChoiceInputProfile =
+        new HearthFinalChoiceInputProfile(HearthFinalChoiceNavigationAxis.Horizontal, true, true);
 
     [Header("Settings")]
     [SerializeField] private int settingsVolumeStep = 5;
@@ -54,19 +83,23 @@ public class HearthFirstPersonHudInput : MonoBehaviour
             return;
         }
 
-        if (Input.GetKeyDown(submitKey) || Input.GetKeyDown(KeyCode.Return))
+        bool isFinalChoice = IsFinalChoicePage(page);
+        bool submitPressed = Input.GetKeyDown(submitKey) ||
+                             (Input.GetKeyDown(KeyCode.Return) &&
+                              (!isFinalChoice || finalChoiceInputProfile.allowReturnSubmit));
+        if (submitPressed)
         {
             controller.HandleSubmit();
             return;
         }
 
-        if (Input.GetKeyDown(chooseAKey) && IsFinalChoicePage(page))
+        if (finalChoiceInputProfile.allowDirectLetterKeys && Input.GetKeyDown(chooseAKey) && isFinalChoice)
         {
             controller.ChooseFinalA();
             return;
         }
 
-        if (Input.GetKeyDown(chooseBKey) && IsFinalChoicePage(page))
+        if (finalChoiceInputProfile.allowDirectLetterKeys && Input.GetKeyDown(chooseBKey) && isFinalChoice)
         {
             controller.ChooseFinalB();
             return;
@@ -107,6 +140,16 @@ public class HearthFirstPersonHudInput : MonoBehaviour
         enableKeyboardInput = value;
     }
 
+    public HearthFinalChoiceInputProfile GetFinalChoiceInputProfile()
+    {
+        return finalChoiceInputProfile;
+    }
+
+    public void SetFinalChoiceInputProfile(HearthFinalChoiceInputProfile profile)
+    {
+        finalChoiceInputProfile = profile;
+    }
+
     private void HandleMenuKey(HearthFirstPersonHudPageId page)
     {
         if (page == HearthFirstPersonHudPageId.Slide01PersistentHud ||
@@ -127,6 +170,13 @@ public class HearthFirstPersonHudInput : MonoBehaviour
 
     private void HandleVertical(HearthFirstPersonHudPageId page, int direction)
     {
+        if (IsFinalChoicePage(page) &&
+            finalChoiceInputProfile.navigationAxis == HearthFinalChoiceNavigationAxis.Vertical)
+        {
+            controller.MoveFinalChoiceFocus(direction);
+            return;
+        }
+
         if (page == HearthFirstPersonHudPageId.Slide03MainMenu)
         {
             controller.MoveMenuFocus(direction);
@@ -141,7 +191,8 @@ public class HearthFirstPersonHudInput : MonoBehaviour
 
     private void HandleHorizontal(HearthFirstPersonHudPageId page, int direction)
     {
-        if (IsFinalChoicePage(page))
+        if (IsFinalChoicePage(page) &&
+            finalChoiceInputProfile.navigationAxis == HearthFinalChoiceNavigationAxis.Horizontal)
         {
             controller.MoveFinalChoiceFocus(direction);
             return;

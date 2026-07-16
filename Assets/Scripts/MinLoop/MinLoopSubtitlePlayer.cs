@@ -34,6 +34,7 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
 
     [Header("Audio")]
     [SerializeField] private AudioSource audioSource;
+    [SerializeField] private HearthAudioChannelSource dialogueChannelSource;
 
     private Coroutine activeRoutine;
 
@@ -155,11 +156,7 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
             ShowLine(line.speaker, line.text);
             PlayVoice(line.voiceClip);
 
-            float holdSeconds = line.holdSeconds > 0f ? line.holdSeconds : defaultHoldSeconds;
-            if (line.voiceClip != null)
-            {
-                holdSeconds = Mathf.Max(holdSeconds, line.voiceClip.length);
-            }
+            float holdSeconds = ResolveLineDuration(line);
 
             if (holdSeconds > 0f)
             {
@@ -203,7 +200,32 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
 
         audioSource.Stop();
         audioSource.clip = clip;
+        EnsureDialogueChannelSource();
+        if (dialogueChannelSource != null)
+        {
+            dialogueChannelSource.ApplyVolume();
+        }
         audioSource.Play();
+    }
+
+    private float ResolveLineDuration(MinLoopSubtitleLine line)
+    {
+        float manualDuration = line.holdSeconds > 0f ? line.holdSeconds : defaultHoldSeconds;
+        if (line.voiceClip == null)
+        {
+            return manualDuration;
+        }
+
+        float voiceDuration = line.voiceClip.length + Mathf.Max(0f, line.voiceTailSeconds);
+        switch (line.durationMode)
+        {
+            case HearthSubtitleDurationMode.ManualHold:
+                return manualDuration;
+            case HearthSubtitleDurationMode.LongerOfVoiceAndManual:
+                return Mathf.Max(manualDuration, voiceDuration);
+            default:
+                return voiceDuration;
+        }
     }
 
     private IEnumerator Wait(float seconds)
@@ -233,6 +255,8 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
 
     private void EnsureReferences()
     {
+        EnsureDialogueChannelSource();
+
         if (subtitlePanel != null && speakerText != null && bodyText != null)
         {
             if (canvasGroup == null)
@@ -252,6 +276,19 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
 
         ApplyConfiguredStyle();
         EnsureSubtitleCanvasSorting();
+    }
+
+    private void EnsureDialogueChannelSource()
+    {
+        if (audioSource == null)
+        {
+            return;
+        }
+
+        if (dialogueChannelSource == null)
+        {
+            dialogueChannelSource = audioSource.GetComponent<HearthAudioChannelSource>();
+        }
     }
 
     private void CreateFallbackUI()

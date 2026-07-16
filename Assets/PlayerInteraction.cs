@@ -15,9 +15,14 @@ public class PlayerInteraction : MonoBehaviour
     [Header("Prompt UI")]
     public GameObject uiInteraction;
     public TMP_Text uiInteractionText;
-    [SerializeField] private string fallbackDescription = "E 交互";
+    [SerializeField] private string fallbackDescription = "E  INTERACT";
     [SerializeField] private bool refreshPromptEveryFrame;
     [SerializeField] private float descriptionRefreshInterval = 0.1f;
+
+    [Header("Single-Press Prompt Format")]
+    [SerializeField] private bool englishPromptsOnly = true;
+    [SerializeField] private bool normalizeSinglePressPrompts = true;
+    [SerializeField] private string interactionKeyLabel = "E";
 
     private readonly RaycastHit[] hitBuffer = new RaycastHit[8];
     private Collider currentCollider;
@@ -60,6 +65,16 @@ public class PlayerInteraction : MonoBehaviour
     {
         interactionRange = Mathf.Max(0f, interactionRange);
         descriptionRefreshInterval = Mathf.Max(0f, descriptionRefreshInterval);
+
+        if (englishPromptsOnly && ContainsNonAscii(fallbackDescription))
+        {
+            fallbackDescription = "E  INTERACT";
+        }
+
+        if (string.IsNullOrWhiteSpace(interactionKeyLabel))
+        {
+            interactionKeyLabel = "E";
+        }
     }
 
     private void Update()
@@ -132,7 +147,7 @@ public class PlayerInteraction : MonoBehaviour
                 continue;
             }
 
-            IInteractable interactable = FindInteractable(hit.collider);
+            IInteractable interactable = FindAvailableInteractable(hit.collider);
             if (interactable == null)
             {
                 continue;
@@ -152,15 +167,30 @@ public class PlayerInteraction : MonoBehaviour
         SetCurrentTarget(bestInteractable, bestCollider);
     }
 
-    private IInteractable FindInteractable(Collider hitCollider)
+    private IInteractable FindAvailableInteractable(Collider hitCollider)
     {
-        IInteractable interactable = hitCollider.GetComponent<IInteractable>();
-        if (interactable != null || !searchParentForInteractable)
+        Transform cursor = hitCollider != null ? hitCollider.transform : null;
+        while (cursor != null)
         {
-            return interactable;
+            MonoBehaviour[] behaviours = cursor.GetComponents<MonoBehaviour>();
+            for (int i = 0; i < behaviours.Length; i++)
+            {
+                IInteractable interactable = behaviours[i] as IInteractable;
+                if (interactable != null && IsInteractionAvailable(interactable))
+                {
+                    return interactable;
+                }
+            }
+
+            if (!searchParentForInteractable)
+            {
+                break;
+            }
+
+            cursor = cursor.parent;
         }
 
-        return hitCollider.GetComponentInParent<IInteractable>();
+        return null;
     }
 
     private void SetCurrentTarget(IInteractable interactable, Collider sourceCollider)
@@ -185,7 +215,13 @@ public class PlayerInteraction : MonoBehaviour
 
     private void TryInteract()
     {
-        if (CurrentInteractable == null || !Input.GetKeyDown(interactKey))
+        if (CurrentInteractable == null || !IsInteractionAvailable(CurrentInteractable))
+        {
+            ClearCurrentTarget();
+            return;
+        }
+
+        if (!Input.GetKeyDown(interactKey))
         {
             return;
         }
@@ -194,10 +230,17 @@ public class PlayerInteraction : MonoBehaviour
         RefreshPrompt(true);
     }
 
+    private static bool IsInteractionAvailable(IInteractable interactable)
+    {
+        IInteractionAvailability availability = interactable as IInteractionAvailability;
+        return availability == null || availability.IsInteractionAvailable;
+    }
+
     private void RefreshPrompt(bool forceTextUpdate)
     {
-        if (CurrentInteractable == null)
+        if (CurrentInteractable == null || !IsInteractionAvailable(CurrentInteractable))
         {
+            ClearCurrentTarget();
             SetInteractionPrompt(false);
             return;
         }
@@ -207,6 +250,8 @@ public class PlayerInteraction : MonoBehaviour
         {
             description = fallbackDescription;
         }
+
+        description = FormatPrompt(description);
 
         SetInteractionPrompt(true, description, forceTextUpdate || description != currentDescription);
         nextDescriptionRefreshTime = Time.time + descriptionRefreshInterval;
@@ -257,5 +302,76 @@ public class PlayerInteraction : MonoBehaviour
         {
             mainCamera = Camera.main;
         }
+    }
+
+    public void SetSinglePressPromptPolicy(bool englishOnly, bool normalize, string keyLabel)
+    {
+        englishPromptsOnly = englishOnly;
+        normalizeSinglePressPrompts = normalize;
+        interactionKeyLabel = string.IsNullOrWhiteSpace(keyLabel) ? "E" : keyLabel.Trim();
+        ForceRefreshPrompt();
+    }
+
+    private string FormatPrompt(string description)
+    {
+        string value = string.IsNullOrWhiteSpace(description) ? fallbackDescription : description.Trim();
+        if (englishPromptsOnly && ContainsNonAscii(value))
+        {
+            value = fallbackDescription;
+        }
+
+        if (!normalizeSinglePressPrompts)
+        {
+            return value;
+        }
+
+        string action = StripExistingKeyPrefix(value);
+        if (string.IsNullOrWhiteSpace(action))
+        {
+            action = "INTERACT";
+        }
+
+        return interactionKeyLabel.Trim().ToUpperInvariant() + "  " + action.Trim().ToUpperInvariant();
+    }
+
+    private static string StripExistingKeyPrefix(string value)
+    {
+        string trimmed = value.Trim();
+        string upper = trimmed.ToUpperInvariant();
+
+        if (upper.StartsWith("PRESS E", System.StringComparison.Ordinal))
+        {
+            return trimmed.Substring(7).TrimStart(' ', ':', '-', '_');
+        }
+
+        if (upper.StartsWith("[E]", System.StringComparison.Ordinal))
+        {
+            return trimmed.Substring(3).TrimStart(' ', ':', '-', '_');
+        }
+
+        if (upper.Length > 1 && upper[0] == 'E' && char.IsWhiteSpace(upper[1]))
+        {
+            return trimmed.Substring(1).TrimStart(' ', ':', '-', '_');
+        }
+
+        return trimmed;
+    }
+
+    private static bool ContainsNonAscii(string value)
+    {
+        if (string.IsNullOrEmpty(value))
+        {
+            return false;
+        }
+
+        for (int i = 0; i < value.Length; i++)
+        {
+            if (value[i] > 127)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

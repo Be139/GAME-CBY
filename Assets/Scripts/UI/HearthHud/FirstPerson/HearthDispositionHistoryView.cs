@@ -165,9 +165,11 @@ public class HearthDispositionHistoryView : MonoBehaviour
 
     private void RefreshFooters()
     {
+        int shiftTrustDelta = CalculateShiftTrustDelta();
+
         if (shiftTrustDeltaText != null)
         {
-            shiftTrustDeltaText.text = FormatDelta(currentTrustScore);
+            shiftTrustDeltaText.text = FormatDelta(shiftTrustDelta);
         }
 
         if (currentTrustText != null)
@@ -175,8 +177,27 @@ public class HearthDispositionHistoryView : MonoBehaviour
             currentTrustText.text = currentTrustScore.ToString();
         }
 
-        SetAllTexts(shiftTrustDeltaTexts, FormatDelta(currentTrustScore));
+        SetAllTexts(shiftTrustDeltaTexts, FormatDelta(shiftTrustDelta));
         SetAllTexts(currentTrustTexts, currentTrustScore.ToString());
+    }
+
+    private int CalculateShiftTrustDelta()
+    {
+        int total = 0;
+        if (records == null)
+        {
+            return total;
+        }
+
+        for (int i = 0; i < records.Count; i++)
+        {
+            if (records[i] != null)
+            {
+                total += records[i].trustDelta;
+            }
+        }
+
+        return total;
     }
 
     private static int MaxLength(TMP_Text[] values)

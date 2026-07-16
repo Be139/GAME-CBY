@@ -12,6 +12,7 @@ public class HearthActorAnimationPlayer : MonoBehaviour
         public string clipId;
         public AnimationClip clip;
         public bool loop = true;
+        public bool seamlessLoop;
         public bool applyRootMotion;
         public bool applyFootIk = true;
         public bool stabilizeAnimatorTransform;
@@ -40,6 +41,7 @@ public class HearthActorAnimationPlayer : MonoBehaviour
     private AnimationClip currentClip;
     private int currentInput = -1;
     private bool currentLoop;
+    private bool currentSeamlessLoop;
     private bool currentStabilizeAnimatorTransform;
     private bool hasStableAnimatorTransform;
     private Vector3 stableAnimatorLocalPosition;
@@ -76,7 +78,7 @@ public class HearthActorAnimationPlayer : MonoBehaviour
         double time = currentPlayable.GetTime();
         if (currentLoop)
         {
-            if (time >= length)
+            if (!currentSeamlessLoop && time >= length)
             {
                 currentPlayable.SetTime(time % length);
                 currentPlayable.SetDone(false);
@@ -140,6 +142,23 @@ public class HearthActorAnimationPlayer : MonoBehaviour
         return PlayInternal(slot, false);
     }
 
+    public float PlayOnceForDuration(string clipId, float duration)
+    {
+        ClipSlot slot = FindClip(clipId);
+        if (slot == null)
+        {
+            return 0f;
+        }
+
+        if (duration <= 0f || slot.clip == null)
+        {
+            return PlayInternal(slot, false);
+        }
+
+        float playbackSpeed = slot.clip.length / Mathf.Max(0.01f, duration);
+        return PlayInternal(slot, false, playbackSpeed);
+    }
+
     public void StopAndHold()
     {
         if (!currentPlayable.IsValid())
@@ -186,7 +205,7 @@ public class HearthActorAnimationPlayer : MonoBehaviour
         return slot.clip.length / speed;
     }
 
-    private float PlayInternal(ClipSlot slot, bool loop)
+    private float PlayInternal(ClipSlot slot, bool loop, float playbackSpeedOverride = -1f)
     {
         ResolveAnimator();
         if (animator == null || slot == null || slot.clip == null)
@@ -205,10 +224,13 @@ public class HearthActorAnimationPlayer : MonoBehaviour
 
         AnimationClipPlayable nextPlayable = AnimationClipPlayable.Create(graph, slot.clip);
         nextPlayable.SetApplyFootIK(slot.applyFootIk);
-        currentPlaybackSpeed = Mathf.Max(0.01f, slot.playbackSpeed);
+        bool useSeamlessLoop = loop && slot.seamlessLoop;
+        currentPlaybackSpeed = playbackSpeedOverride > 0f
+            ? Mathf.Max(0.01f, playbackSpeedOverride)
+            : Mathf.Max(0.01f, slot.playbackSpeed);
         nextPlayable.SetSpeed(currentPlaybackSpeed);
         nextPlayable.SetTime(0d);
-        nextPlayable.SetDuration(slot.clip.length);
+        nextPlayable.SetDuration(useSeamlessLoop ? double.PositiveInfinity : slot.clip.length);
 
         graph.Connect(nextPlayable, 0, mixer, nextInput);
         mixer.SetInputWeight(nextInput, 0f);
@@ -219,6 +241,7 @@ public class HearthActorAnimationPlayer : MonoBehaviour
         currentPlayable = nextPlayable;
         currentClip = slot.clip;
         currentLoop = loop;
+        currentSeamlessLoop = useSeamlessLoop;
 
         if (fadeRoutine != null)
         {
@@ -352,6 +375,7 @@ public class HearthActorAnimationPlayer : MonoBehaviour
         currentPlayable = default(AnimationClipPlayable);
         currentClip = null;
         currentInput = -1;
+        currentSeamlessLoop = false;
         currentStabilizeAnimatorTransform = false;
         hasStableAnimatorTransform = false;
     }

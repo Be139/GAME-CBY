@@ -69,9 +69,9 @@ public enum HearthFirstPersonHudActionType
 [Serializable]
 public class HearthDispositionRecord
 {
-    public string timestamp = "2026.09.15 · 18:47";
+    public string timestamp = "2026.09.15 - 18:47";
     public string unitId = "17F-01";
-    public string actionLabel = "Approve Upgrade · Deep Night Companion Pro";
+    public string actionLabel = "Approve Upgrade - Deep Night Companion Pro";
     public string statusLabel = "RECOMMENDED";
     public int trustDelta = 1;
 }

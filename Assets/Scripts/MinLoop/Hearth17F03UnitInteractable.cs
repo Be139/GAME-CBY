@@ -1,7 +1,7 @@
 using UnityEngine;
 
 [DisallowMultipleComponent]
-public class Hearth17F03UnitInteractable : MonoBehaviour, IInteractable
+public class Hearth17F03UnitInteractable : MonoBehaviour, IInteractable, IInteractionAvailability
 {
     [SerializeField] private HearthCompanion17F03ReplayController controller;
     [SerializeField] private Collider interactionCollider;
@@ -9,6 +9,7 @@ public class Hearth17F03UnitInteractable : MonoBehaviour, IInteractable
     [SerializeField] private bool available;
 
     public bool IsAvailable { get { return available; } }
+    public bool IsInteractionAvailable { get { return available; } }
     public Collider InteractionCollider { get { return interactionCollider; } }
 
     private void Awake()

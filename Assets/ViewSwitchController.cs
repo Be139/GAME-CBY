@@ -105,7 +105,7 @@ public class ViewSwitchController : MonoBehaviour
 
         public void ClearVelocity()
         {
-            if (rigidbody == null)
+            if (rigidbody == null || !rigidbody.gameObject.activeInHierarchy || rigidbody.isKinematic)
             {
                 return;
             }

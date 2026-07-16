@@ -8,3 +8,8 @@ public interface IInteractable
 
     string GetDescription();
 }
+
+public interface IInteractionAvailability
+{
+    bool IsInteractionAvailable { get; }
+}

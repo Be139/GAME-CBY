@@ -17,22 +17,22 @@ public class MinLoopTerminalPresenter : MonoBehaviour
     [SerializeField] private Behaviour[] gameplayBehavioursToDisable;
 
     [Header("Default Copy")]
-    [SerializeField] private string accessTitle = "17F-01 门口终端";
-    [SerializeField] private string accessBody = "请刷工牌以读取本户陪伴单元昨夜事件摘要。";
-    [SerializeField] private string summaryTitle = "住户摘要 / 17F-01";
+    [SerializeField] private string accessTitle = "17F-01 DOORWAY TERMINAL";
+    [SerializeField] private string accessBody = "Scan your ID to retrieve the companion unit's last-night event summary.";
+    [SerializeField] private string summaryTitle = "RESIDENT SUMMARY / 17F-01";
     [TextArea(4, 8)]
     [SerializeField] private string summaryBody =
-        "儿童：男孩，夜间噩梦醒来。\n" +
-        "设备：陪伴单元已在 02:47 自动介入。\n" +
-        "记录：孩子醒来后呼唤“妈妈”，随后接受系统安抚。\n" +
-        "检查原因：系统判定家庭回应模式存在长期替代风险。";
-    [SerializeField] private string dispositionTitle = "处置建议";
+        "CHILD: Boy awakened by a nightmare.\n" +
+        "UNIT: Automatic intervention at 02:47.\n" +
+        "RECORD: The child called for his mother, then accepted system soothing.\n" +
+        "REVIEW: Long-term substitution risk detected in the family response pattern.";
+    [SerializeField] private string dispositionTitle = "DISPOSITION";
     [TextArea(2, 4)]
-    [SerializeField] private string dispositionBody = "昨夜事件复盘结束。请选择本户后续处置。";
-    [SerializeField] private string optionALabel = "A 系统推荐：继续自动响应";
-    [SerializeField] private string optionBLabel = "B 低介入观察：提示家属亲自回应";
+    [SerializeField] private string dispositionBody = "The last-night replay is complete. Select the follow-up disposition.";
+    [SerializeField] private string optionALabel = "A  SYSTEM RECOMMENDED: CONTINUE AUTOMATIC RESPONSE";
+    [SerializeField] private string optionBLabel = "B  LOW INTERVENTION: REQUEST FAMILY RESPONSE";
     [TextArea(2, 4)]
-    [SerializeField] private string nextResidentBody = "本户记录已提交。\n下一户检查目标：17F-02。";
+    [SerializeField] private string nextResidentBody = "Household record submitted.\nNext inspection target: 17F-02.";
 
     [Header("Fallback UI")]
     [SerializeField] private Color fallbackPanelColor = new Color(0.04f, 0.05f, 0.06f, 0.96f);
@@ -127,7 +127,7 @@ public class MinLoopTerminalPresenter : MonoBehaviour
 
     public void ShowAccessCard(UnityAction confirmAction)
     {
-        if (TryShowBoundPage(accessTitle, accessBody, "刷工牌", confirmAction, null, null))
+        if (TryShowBoundPage(accessTitle, accessBody, "SCAN ID", confirmAction, null, null))
         {
             return;
         }
@@ -140,12 +140,12 @@ public class MinLoopTerminalPresenter : MonoBehaviour
 
         CreateTitle(root, accessTitle);
         CreateBody(root, accessBody);
-        CreateButton(root, "刷工牌", confirmAction);
+        CreateButton(root, "SCAN ID", confirmAction);
     }
 
     public void ShowResidentSummary(UnityAction replayAction)
     {
-        if (TryShowBoundPage(summaryTitle, summaryBody, "调出昨夜事件", replayAction, null, null))
+        if (TryShowBoundPage(summaryTitle, summaryBody, "RECALL LAST NIGHT'S EVENT", replayAction, null, null))
         {
             return;
         }
@@ -158,7 +158,7 @@ public class MinLoopTerminalPresenter : MonoBehaviour
 
         CreateTitle(root, summaryTitle);
         CreateBody(root, summaryBody);
-        CreateButton(root, "调出昨夜事件", replayAction);
+        CreateButton(root, "RECALL LAST NIGHT'S EVENT", replayAction);
     }
 
     public void ShowDispositionChoices(UnityAction chooseAAction, UnityAction chooseBAction)
@@ -184,9 +184,9 @@ public class MinLoopTerminalPresenter : MonoBehaviour
     {
         string choiceText = choice == MinLoopDispositionChoice.SystemRecommendedA ? optionALabel : optionBLabel;
         string deltaPrefix = delta >= 0 ? "+" : string.Empty;
-        string body = choiceText + "\n信任度变化：" + deltaPrefix + delta + "\n当前信任度：" + trustValue;
+        string body = choiceText + "\nTRUST DELTA: " + deltaPrefix + delta + "\nCURRENT TRUST: " + trustValue;
 
-        if (TryShowBoundPage("处置已提交", body, "查看下一户指引", continueAction, null, null))
+        if (TryShowBoundPage("DISPOSITION SUBMITTED", body, "VIEW NEXT HOUSEHOLD", continueAction, null, null))
         {
             return;
         }
@@ -197,14 +197,14 @@ public class MinLoopTerminalPresenter : MonoBehaviour
             return;
         }
 
-        CreateTitle(root, "处置已提交");
+        CreateTitle(root, "DISPOSITION SUBMITTED");
         CreateBody(root, body);
-        CreateButton(root, "查看下一户指引", continueAction);
+        CreateButton(root, "VIEW NEXT HOUSEHOLD", continueAction);
     }
 
     public void ShowNextResident(UnityAction closeAction)
     {
-        if (TryShowBoundPage("下一户指引", nextResidentBody, "关闭终端", closeAction, null, null))
+        if (TryShowBoundPage("NEXT HOUSEHOLD", nextResidentBody, "CLOSE TERMINAL", closeAction, null, null))
         {
             return;
         }
@@ -215,9 +215,9 @@ public class MinLoopTerminalPresenter : MonoBehaviour
             return;
         }
 
-        CreateTitle(root, "下一户指引");
+        CreateTitle(root, "NEXT HOUSEHOLD");
         CreateBody(root, nextResidentBody);
-        CreateButton(root, "关闭终端", closeAction);
+        CreateButton(root, "CLOSE TERMINAL", closeAction);
     }
 
     public void Close()

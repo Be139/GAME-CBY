@@ -1,9 +1,9 @@
 using UnityEngine;
 
-public class ComfortActionInteractable : MonoBehaviour, IInteractable
+public class ComfortActionInteractable : MonoBehaviour, IInteractable, IInteractionAvailability
 {
     [Header("Interaction")]
-    [SerializeField] private string interactionDescription = "执行安抚操作";
+    [SerializeField] private string interactionDescription = "E  PERFORM COMFORT ACTION";
     [SerializeField] private bool availableOnStart;
 
     [Header("References")]
@@ -24,6 +24,11 @@ public class ComfortActionInteractable : MonoBehaviour, IInteractable
     private bool isAvailable;
 
     public bool IsAvailable
+    {
+        get { return isAvailable; }
+    }
+
+    public bool IsInteractionAvailable
     {
         get { return isAvailable; }
     }

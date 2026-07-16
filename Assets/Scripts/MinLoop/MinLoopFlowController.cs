@@ -341,14 +341,14 @@ public class MinLoopFlowController : MonoBehaviour
         switch (currentStage)
         {
             case MinLoopStage.DispositionChoice:
-                return "E 提交处置意见";
+                return "E  SUBMIT DISPOSITION";
             case MinLoopStage.Complete:
-                return "E 查看下一户指引";
+                return "E  VIEW NEXT HOUSEHOLD";
             case MinLoopStage.AccessCard:
             case MinLoopStage.ResidentSummary:
-                return "E 查看终端";
+                return "E  ACCESS TERMINAL";
             default:
-                return "E 刷工牌";
+                return "E  SCAN ID";
         }
     }
 

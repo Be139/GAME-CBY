@@ -986,8 +986,21 @@ public static class Hearth17F03MinimalLoopBinder
 
     private static SmartDoorController ConfigureDoor(GameObject doorRoot)
     {
-        Transform moving = doorRoot.transform.GetComponentsInChildren<Transform>(true).FirstOrDefault(item => item.name == "Door");
+        Transform moving = doorRoot.transform.GetComponentsInChildren<Transform>(true)
+            .FirstOrDefault(item => item.name == "DoorHinge_17F03");
+        if (moving == null)
+        {
+            moving = doorRoot.transform.GetComponentsInChildren<Transform>(true)
+                .FirstOrDefault(item => item.name == "Door");
+        }
+
         if (moving == null) moving = doorRoot.transform;
+        if (moving != doorRoot.transform && moving.name != "DoorHinge_17F03")
+        {
+            Undo.RecordObject(moving.gameObject, "Name 17F03 door hinge");
+            moving.name = "DoorHinge_17F03";
+        }
+
         SmartDoorController door = moving.GetComponent<SmartDoorController>();
         if (door == null) door = Undo.AddComponent<SmartDoorController>(moving.gameObject);
         SerializedObject so = new SerializedObject(door);
@@ -1000,6 +1013,7 @@ public static class Hearth17F03MinimalLoopBinder
         SetFloat(so, "moveDuration", 0.55f);
         SetBool(so, "autoClose", false);
         SetBool(so, "startOpen", false);
+        SetBool(so, "allowDirectPlayerInteraction", false);
         SetObject(so, "audioSource", moving.GetComponent<AudioSource>());
         so.ApplyModifiedPropertiesWithoutUndo();
         return door;

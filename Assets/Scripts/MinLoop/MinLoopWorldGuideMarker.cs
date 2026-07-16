@@ -4,7 +4,7 @@ using UnityEngine;
 public class MinLoopWorldGuideMarker : MonoBehaviour
 {
     [Header("Guide Content")]
-    [SerializeField] private string markerLabel = "目标";
+    [SerializeField] private string markerLabel = "OBJECTIVE";
     [SerializeField] private Color markerColor = new Color(0.22f, 0.86f, 1f, 1f);
     [SerializeField] private Color labelColor = Color.white;
 

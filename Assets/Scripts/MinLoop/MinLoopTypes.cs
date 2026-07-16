@@ -27,6 +27,13 @@ public enum MinLoopDispositionChoice
     LowInterventionB
 }
 
+public enum HearthSubtitleDurationMode
+{
+    VoiceClipWhenAssigned,
+    ManualHold,
+    LongerOfVoiceAndManual
+}
+
 [Serializable]
 public class MinLoopStageEvent : UnityEvent<MinLoopStage>
 {
@@ -52,4 +59,11 @@ public class MinLoopSubtitleLine
     public float holdSeconds = 2.75f;
 
     public AudioClip voiceClip;
+
+    [Tooltip("Voice Clip When Assigned follows the clip length and falls back to Hold Seconds when no clip is assigned.")]
+    public HearthSubtitleDurationMode durationMode = HearthSubtitleDurationMode.VoiceClipWhenAssigned;
+
+    [Min(0f)]
+    [Tooltip("Extra silence after the voice clip before the next subtitle line starts.")]
+    public float voiceTailSeconds;
 }

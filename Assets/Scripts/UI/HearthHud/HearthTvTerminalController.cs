@@ -10,7 +10,8 @@ using UnityEngine.UI;
 public enum HearthTerminalPrimaryAction
 {
     RequestReplay,
-    EnterUnit
+    EnterUnit,
+    Custom
 }
 
 [DisallowMultipleComponent]
@@ -66,6 +67,7 @@ public class HearthTvTerminalController : MonoBehaviour
     [SerializeField] private string pageFocusFormat = "PAGE {0}/{1}";
     [SerializeField] private string replayFocusLabel = "RECALL EVENT | SPACE";
     [SerializeField] private string keyboardHintLabel = "TAB NEXT PAGE     LEFT/RIGHT SELECT     SPACE CONFIRM     ESC EXIT";
+    [SerializeField] private bool submitPrimaryActionFromCurrentPage;
 
     [Header("PPT Image State Navigation")]
     [SerializeField] private bool pageDrivenSelectionStates;
@@ -95,12 +97,15 @@ public class HearthTvTerminalController : MonoBehaviour
     [SerializeField] private ViewSwitchController viewSwitchController;
     [SerializeField] private string replayResidentId = "";
     [SerializeField] private bool closeTerminalWhenReplayStarts = true;
+    [Tooltip("Keep the terminal camera active after a Custom action until the receiving flow finishes its blackout handoff.")]
+    [SerializeField] private bool deferCustomActionCloseUntilExternalFade;
     [SerializeField] private bool showFinalChoiceWhenReplayUnavailable = true;
     [SerializeField] private bool closeTerminalWhenChoiceSubmitted = true;
     [SerializeField] private bool preventRepeatedChoiceSubmission = true;
     [SerializeField] private bool routeChoicesToMinLoop = true;
     [SerializeField] private UnityEvent onRobotReplayRequested;
     [SerializeField] private UnityEvent onEnterUnitRequested;
+    [SerializeField] private UnityEvent onCustomPrimaryAction = new UnityEvent();
     [SerializeField] private UnityEvent onPostReplayChoiceShown;
     [SerializeField] private UnityEvent onChoiceASelected;
     [SerializeField] private UnityEvent onChoiceBSelected;
@@ -130,6 +135,7 @@ public class HearthTvTerminalController : MonoBehaviour
     private bool postReplayChoicesAvailable;
     private bool choiceSubmitted;
     private int pageDrivenChoiceLocalIndex;
+    private bool customActionHandoffPending;
 
     public bool IsOpen { get; private set; }
 
@@ -161,6 +167,16 @@ public class HearthTvTerminalController : MonoBehaviour
     public HearthTerminalPrimaryAction PrimaryAction
     {
         get { return primaryAction; }
+    }
+
+    public UnityEvent OnCustomPrimaryAction
+    {
+        get { return onCustomPrimaryAction; }
+    }
+
+    public bool IsCustomActionHandoffPending
+    {
+        get { return customActionHandoffPending; }
     }
 
     private void Reset()
@@ -330,6 +346,7 @@ public class HearthTvTerminalController : MonoBehaviour
     private IEnumerator OpenTerminalRoutine()
     {
         IsOpen = true;
+        customActionHandoffPending = false;
         terminalInputReady = false;
         previousCursorLockState = Cursor.lockState;
         previousCursorVisible = Cursor.visible;
@@ -381,6 +398,7 @@ public class HearthTvTerminalController : MonoBehaviour
 
     private IEnumerator CloseTerminalRoutine(bool smoothCamera)
     {
+        customActionHandoffPending = false;
         terminalInputReady = false;
         SetTerminalInputEnabled(false);
         if (selectionHighlighter != null)
@@ -560,9 +578,28 @@ public class HearthTvTerminalController : MonoBehaviour
     public void SetPrimaryAction(HearthTerminalPrimaryAction action)
     {
         primaryAction = action;
-        replayFocusLabel = action == HearthTerminalPrimaryAction.EnterUnit
-            ? "ENTER UNIT | SPACE"
-            : "RECALL EVENT | SPACE";
+        if (action == HearthTerminalPrimaryAction.EnterUnit)
+        {
+            replayFocusLabel = "ENTER UNIT | SPACE";
+        }
+        else if (action == HearthTerminalPrimaryAction.Custom)
+        {
+            replayFocusLabel = "CONFIRM | SPACE";
+        }
+        else
+        {
+            replayFocusLabel = "RECALL EVENT | SPACE";
+        }
+    }
+
+    public void SetSubmitPrimaryActionFromCurrentPage(bool value)
+    {
+        submitPrimaryActionFromCurrentPage = value;
+    }
+
+    public void SetDeferCustomActionCloseUntilExternalFade(bool value)
+    {
+        deferCustomActionCloseUntilExternalFade = value;
     }
 
     public string GetReplayResidentId()
@@ -578,6 +615,12 @@ public class HearthTvTerminalController : MonoBehaviour
 
     public void RequestRobotReplay()
     {
+        if (primaryAction == HearthTerminalPrimaryAction.Custom)
+        {
+            RequestCustomPrimaryAction();
+            return;
+        }
+
         if (primaryAction == HearthTerminalPrimaryAction.EnterUnit)
         {
             RequestEnterUnit();
@@ -630,6 +673,62 @@ public class HearthTvTerminalController : MonoBehaviour
         }
 
         Debug.LogWarning("[HearthTvTerminalController] Robot replay requested, but no MinLoopFlowController or ViewSwitchController is assigned.", this);
+    }
+
+    public void RequestCustomPrimaryAction()
+    {
+        if (customActionHandoffPending)
+        {
+            return;
+        }
+
+        PlayClip(submitClip);
+
+        bool deferClose = closeTerminalWhenReplayStarts &&
+                          deferCustomActionCloseUntilExternalFade &&
+                          IsOpen;
+        if (deferClose)
+        {
+            customActionHandoffPending = true;
+            terminalInputReady = false;
+            SetTerminalInputEnabled(false);
+            if (selectionHighlighter != null)
+            {
+                selectionHighlighter.SetVisible(false);
+            }
+        }
+        else if (closeTerminalWhenReplayStarts)
+        {
+            CloseTerminalInstant();
+        }
+
+        if (onCustomPrimaryAction != null)
+        {
+            onCustomPrimaryAction.Invoke();
+        }
+    }
+
+    public void CompleteCustomActionHandoff()
+    {
+        customActionHandoffPending = false;
+        if (IsOpen)
+        {
+            CloseTerminalInstant();
+        }
+    }
+
+    public void CancelCustomActionHandoff()
+    {
+        if (!customActionHandoffPending)
+        {
+            return;
+        }
+
+        customActionHandoffPending = false;
+        terminalInputReady = true;
+        SetTerminalInputEnabled(true);
+        SyncKeyboardFocusToCurrentPage();
+        RefreshKeyboardHint();
     }
 
     public void RequestEnterUnit()
@@ -1286,7 +1385,7 @@ public class HearthTvTerminalController : MonoBehaviour
                 playerInteraction.SetInteractionEnabled(false);
             }
 
-            if (playerRigidbody != null)
+            if (playerRigidbody != null && !playerRigidbody.isKinematic)
             {
                 playerRigidbody.velocity = Vector3.zero;
                 playerRigidbody.angularVelocity = Vector3.zero;
@@ -1412,6 +1511,12 @@ public class HearthTvTerminalController : MonoBehaviour
         if (pageDrivenSelectionStates)
         {
             SubmitPageDrivenSelection();
+            return;
+        }
+
+        if (submitPrimaryActionFromCurrentPage)
+        {
+            RequestRobotReplay();
             return;
         }
 
@@ -1700,6 +1805,11 @@ public class HearthTvTerminalController : MonoBehaviour
         normalized = normalized.Replace("_", string.Empty);
         normalized = normalized.Replace(" ", string.Empty);
 
+        if (normalized.Contains("17F04") || normalized.Contains("ROOM4"))
+        {
+            return "17F04";
+        }
+
         if (normalized.Contains("17F03") || normalized.Contains("ROOM3"))
         {
             return "17F03";
@@ -1888,6 +1998,7 @@ public class HearthTvTerminalController : MonoBehaviour
             cameraFocusRoutine = null;
         }
 
+        customActionHandoffPending = false;
         terminalInputReady = false;
         SetTerminalInputEnabled(false);
         if (selectionHighlighter != null)

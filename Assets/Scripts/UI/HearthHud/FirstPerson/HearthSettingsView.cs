@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
@@ -34,6 +35,17 @@ public class HearthSettingsView : MonoBehaviour
     [SerializeField] private Slider ambientVolumeSlider;
     [SerializeField] private Slider sfxVolumeSlider;
 
+    [Header("Additional Value Texts")]
+    [SerializeField] private TMP_Text[] masterVolumeTexts;
+    [SerializeField] private TMP_Text[] dialogueVolumeTexts;
+    [SerializeField] private TMP_Text[] ambientVolumeTexts;
+    [SerializeField] private TMP_Text[] sfxVolumeTexts;
+
+    [Header("Audio Settings")]
+    [SerializeField] private HearthAudioSettingsController audioSettings;
+    [SerializeField] private bool autoFindAudioSettings = true;
+    [SerializeField] private bool autoResolveValueTexts = true;
+
     [Header("Events")]
     [SerializeField] private HearthSettingsVolumeEvent volumeChanged = new HearthSettingsVolumeEvent();
     [SerializeField] private UnityEvent onExitRequested = new UnityEvent();
@@ -55,8 +67,17 @@ public class HearthSettingsView : MonoBehaviour
 
     private void Awake()
     {
+        ResolveAudioSettings();
+        ResolveValueTexts();
+        SyncFromAudioSettings();
         Refresh();
         RefreshFocus();
+    }
+
+    private void Start()
+    {
+        SyncFromAudioSettings();
+        Refresh();
     }
 
     public void ResetFocus()
@@ -115,6 +136,7 @@ public class HearthSettingsView : MonoBehaviour
     public void SetMasterVolume(int value)
     {
         masterVolume = ClampVolume(value);
+        ApplyVolume(HearthAudioChannel.Master, masterVolume);
         Refresh();
         volumeChanged.Invoke("Master", masterVolume);
     }
@@ -122,6 +144,7 @@ public class HearthSettingsView : MonoBehaviour
     public void SetDialogueVolume(int value)
     {
         dialogueVolume = ClampVolume(value);
+        ApplyVolume(HearthAudioChannel.Dialogue, dialogueVolume);
         Refresh();
         volumeChanged.Invoke("Dialogue", dialogueVolume);
     }
@@ -129,6 +152,7 @@ public class HearthSettingsView : MonoBehaviour
     public void SetAmbientVolume(int value)
     {
         ambientVolume = ClampVolume(value);
+        ApplyVolume(HearthAudioChannel.Ambient, ambientVolume);
         Refresh();
         volumeChanged.Invoke("Ambient", ambientVolume);
     }
@@ -136,6 +160,7 @@ public class HearthSettingsView : MonoBehaviour
     public void SetSfxVolume(int value)
     {
         sfxVolume = ClampVolume(value);
+        ApplyVolume(HearthAudioChannel.SFX, sfxVolume);
         Refresh();
         volumeChanged.Invoke("SFX", sfxVolume);
     }
@@ -162,14 +187,32 @@ public class HearthSettingsView : MonoBehaviour
 
     public void Refresh()
     {
+        ResolveValueTexts();
         SetOptionalText(masterVolumeText, masterVolume);
         SetOptionalText(dialogueVolumeText, dialogueVolume);
         SetOptionalText(ambientVolumeText, ambientVolume);
         SetOptionalText(sfxVolumeText, sfxVolume);
+        SetAllTexts(masterVolumeTexts, masterVolume);
+        SetAllTexts(dialogueVolumeTexts, dialogueVolume);
+        SetAllTexts(ambientVolumeTexts, ambientVolume);
+        SetAllTexts(sfxVolumeTexts, sfxVolume);
         SetOptionalSlider(masterVolumeSlider, masterVolume);
         SetOptionalSlider(dialogueVolumeSlider, dialogueVolume);
         SetOptionalSlider(ambientVolumeSlider, ambientVolume);
         SetOptionalSlider(sfxVolumeSlider, sfxVolume);
+    }
+
+    public void RefreshFromAudioSettings()
+    {
+        ResolveAudioSettings();
+        SyncFromAudioSettings();
+        Refresh();
+    }
+
+    public void SetAudioSettingsController(HearthAudioSettingsController controller)
+    {
+        audioSettings = controller;
+        RefreshFromAudioSettings();
     }
 
     private void RefreshFocus()
@@ -207,6 +250,153 @@ public class HearthSettingsView : MonoBehaviour
             slider.minValue = 0;
             slider.maxValue = 100;
             slider.value = value;
+        }
+    }
+
+    private void ResolveAudioSettings()
+    {
+        if (audioSettings != null || !autoFindAudioSettings)
+        {
+            return;
+        }
+
+        audioSettings = GetComponent<HearthAudioSettingsController>();
+        if (audioSettings == null)
+        {
+            audioSettings = GetComponentInParent<HearthAudioSettingsController>();
+        }
+
+        if (audioSettings == null)
+        {
+            audioSettings = FindObjectOfType<HearthAudioSettingsController>();
+        }
+    }
+
+    private void SyncFromAudioSettings()
+    {
+        if (audioSettings == null)
+        {
+            return;
+        }
+
+        masterVolume = audioSettings.GetVolume(HearthAudioChannel.Master);
+        dialogueVolume = audioSettings.GetVolume(HearthAudioChannel.Dialogue);
+        ambientVolume = audioSettings.GetVolume(HearthAudioChannel.Ambient);
+        sfxVolume = audioSettings.GetVolume(HearthAudioChannel.SFX);
+    }
+
+    private void ApplyVolume(HearthAudioChannel channel, int value)
+    {
+        ResolveAudioSettings();
+        if (audioSettings != null)
+        {
+            audioSettings.SetVolume(channel, value);
+        }
+        else if (channel == HearthAudioChannel.Master)
+        {
+            AudioListener.volume = value / 100f;
+        }
+    }
+
+    private void ResolveValueTexts()
+    {
+        if (!autoResolveValueTexts)
+        {
+            return;
+        }
+
+        TMP_Text[] allTexts = GetComponentsInChildren<TMP_Text>(true);
+        if (masterVolumeTexts == null || masterVolumeTexts.Length == 0)
+        {
+            masterVolumeTexts = FindValueTexts(allTexts, "Master Volume");
+        }
+
+        if (dialogueVolumeTexts == null || dialogueVolumeTexts.Length == 0)
+        {
+            dialogueVolumeTexts = FindValueTexts(allTexts, "Dialogue Volume");
+        }
+
+        if (ambientVolumeTexts == null || ambientVolumeTexts.Length == 0)
+        {
+            ambientVolumeTexts = FindValueTexts(allTexts, "Ambient Volume");
+        }
+
+        if (sfxVolumeTexts == null || sfxVolumeTexts.Length == 0)
+        {
+            sfxVolumeTexts = FindValueTexts(allTexts, "SFX Volume");
+        }
+    }
+
+    private static TMP_Text[] FindValueTexts(TMP_Text[] allTexts, string label)
+    {
+        List<TMP_Text> values = new List<TMP_Text>();
+        if (allTexts == null)
+        {
+            return values.ToArray();
+        }
+
+        for (int i = 0; i < allTexts.Length; i++)
+        {
+            TMP_Text labelText = allTexts[i];
+            if (labelText == null || !string.Equals(labelText.text, label, System.StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            HearthFirstPersonHudPage page = labelText.GetComponentInParent<HearthFirstPersonHudPage>(true);
+            if (page == null)
+            {
+                continue;
+            }
+
+            TMP_Text best = null;
+            float bestDistance = float.MaxValue;
+            Vector2 labelPosition = labelText.rectTransform.anchoredPosition;
+
+            for (int j = 0; j < allTexts.Length; j++)
+            {
+                TMP_Text candidate = allTexts[j];
+                int parsedValue;
+                if (candidate == null || candidate == labelText ||
+                    candidate.GetComponentInParent<HearthFirstPersonHudPage>(true) != page ||
+                    !int.TryParse(candidate.text, out parsedValue))
+                {
+                    continue;
+                }
+
+                Vector2 candidatePosition = candidate.rectTransform.anchoredPosition;
+                if (candidatePosition.x <= labelPosition.x || Mathf.Abs(candidatePosition.y - labelPosition.y) > 12f)
+                {
+                    continue;
+                }
+
+                float distance = Mathf.Abs(candidatePosition.x - labelPosition.x);
+                if (distance < bestDistance)
+                {
+                    best = candidate;
+                    bestDistance = distance;
+                }
+            }
+
+            if (best != null && !values.Contains(best))
+            {
+                values.Add(best);
+            }
+        }
+
+        return values.ToArray();
+    }
+
+    private static void SetAllTexts(TMP_Text[] texts, int value)
+    {
+        if (texts == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < texts.Length; i++)
+        {
+            SetOptionalText(texts[i], value);
         }
     }
 

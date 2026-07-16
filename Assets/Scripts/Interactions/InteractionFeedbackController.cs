@@ -2,7 +2,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.Events;
 
-public class InteractionFeedbackController : MonoBehaviour, IInteractable
+public class InteractionFeedbackController : MonoBehaviour, IInteractable, IInteractionAvailability
 {
     private static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
     private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
@@ -10,7 +10,7 @@ public class InteractionFeedbackController : MonoBehaviour, IInteractable
 
     [Header("Interaction")]
     [SerializeField] private bool canInteract = true;
-    [SerializeField] private string interactionDescription = "E 交互";
+    [SerializeField] private string interactionDescription = "E  INTERACT";
     [SerializeField] private bool playFeedbackOnInteract = true;
     [SerializeField] private bool oneShot;
     [SerializeField] private float cooldown = 0.25f;
@@ -49,6 +49,11 @@ public class InteractionFeedbackController : MonoBehaviour, IInteractable
     private MaterialPropertyBlock[] rendererStates;
 
     public bool CanInteract
+    {
+        get { return canInteract; }
+    }
+
+    public bool IsInteractionAvailable
     {
         get { return canInteract; }
     }

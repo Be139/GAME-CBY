@@ -1,0 +1,64 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bf2d7532251303545ab78ab68b00d5cf, type: 3}
+  m_Name: 17F04_Shutdown_High
+  m_EditorClassIdentifier: 
+  sequenceId: 17F04_Shutdown_High
+  notes: High-trust graceful shutdown after one confirmation.
+  lines:
+  - startDelay: 0.5
+    speaker: Home Companion
+    text: Lily, Mom is here. I can go now.
+    holdSeconds: 3.4
+    voiceClip: {fileID: 0}
+  - startDelay: 0.3
+    speaker: Home Companion
+    text: You are afraid of thunder. From now on, tell Mom. Mom will come.
+    holdSeconds: 4.6
+    voiceClip: {fileID: 0}
+  - startDelay: 0.3
+    speaker: Home Companion
+    text: You hid yesterday's drawing in the notebook in the second desk drawer.
+      Mom will not think it is bad.
+    holdSeconds: 5.4
+    voiceClip: {fileID: 0}
+  - startDelay: 0.2
+    speaker: Lily
+    text: Why did you tell her?
+    holdSeconds: 2.4
+    voiceClip: {fileID: 0}
+  - startDelay: 0.2
+    speaker: Home Companion
+    text: If I do not, no one will say it for you later.
+    holdSeconds: 3.5
+    voiceClip: {fileID: 0}
+  - startDelay: 0.4
+    speaker: Home Companion
+    text: Mia. I will leave the rest to you.
+    holdSeconds: 3.2
+    voiceClip: {fileID: 0}
+  - startDelay: 0.2
+    speaker: Mia
+    text: Okay.
+    holdSeconds: 1.8
+    voiceClip: {fileID: 0}
+  - startDelay: 0.8
+    speaker: Lily
+    text: Mom, I miss it a little.
+    holdSeconds: 3
+    voiceClip: {fileID: 0}
+  - startDelay: 0.2
+    speaker: Mia
+    text: Mom knows.
+    holdSeconds: 2.2
+    voiceClip: {fileID: 0}
+  postSequenceDelay: 0

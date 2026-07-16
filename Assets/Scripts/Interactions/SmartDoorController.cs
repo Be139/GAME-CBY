@@ -2,7 +2,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.Events;
 
-public class SmartDoorController : MonoBehaviour, IInteractable
+public class SmartDoorController : MonoBehaviour, IInteractable, IInteractionAvailability
 {
     public enum DoorMotionMode
     {
@@ -12,11 +12,12 @@ public class SmartDoorController : MonoBehaviour, IInteractable
     }
 
     [Header("Interaction")]
-    [SerializeField] private string closedDescription = "E 开门";
-    [SerializeField] private string openDescription = "E 关门";
-    [SerializeField] private string lockedDescription = "门已锁定";
+    [SerializeField] private string closedDescription = "E  OPEN DOOR";
+    [SerializeField] private string openDescription = "E  CLOSE DOOR";
+    [SerializeField] private string lockedDescription = "DOOR LOCKED";
     [SerializeField] private bool canToggle = true;
     [SerializeField] private bool locked;
+    [SerializeField] private bool allowDirectPlayerInteraction = true;
 
     [Header("Motion")]
     [SerializeField] private Transform movingRoot;
@@ -54,6 +55,16 @@ public class SmartDoorController : MonoBehaviour, IInteractable
 
     public bool IsOpen { get; private set; }
     public bool IsMoving { get; private set; }
+    public bool IsInteractionAvailable
+    {
+        get { return allowDirectPlayerInteraction; }
+    }
+
+    public bool AllowDirectPlayerInteraction
+    {
+        get { return allowDirectPlayerInteraction; }
+    }
+
     public bool IsLocked
     {
         get { return locked; }
@@ -82,6 +93,11 @@ public class SmartDoorController : MonoBehaviour, IInteractable
 
     public void Interact()
     {
+        if (!allowDirectPlayerInteraction)
+        {
+            return;
+        }
+
         if (locked)
         {
             PlayClip(lockedClip);
@@ -139,6 +155,11 @@ public class SmartDoorController : MonoBehaviour, IInteractable
     public void SetLocked(bool value)
     {
         locked = value;
+    }
+
+    public void SetDirectPlayerInteractionAllowed(bool value)
+    {
+        allowDirectPlayerInteraction = value;
     }
 
     public void SnapOpen()

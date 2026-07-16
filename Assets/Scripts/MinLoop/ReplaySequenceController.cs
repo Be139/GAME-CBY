@@ -343,19 +343,19 @@ public class ReplaySequenceController : MonoBehaviour
         comfortLines.Clear();
         morningLines.Clear();
 
-        AddLine(preComfortLines, "系统", "02:47，检测到儿童睡眠中断。心率上升，噩梦可能性高。", 2.8f);
-        AddLine(preComfortLines, "孩子", "妈妈。", 2.0f);
-        AddLine(preComfortLines, "陪伴单元", "我在这里。你刚才做了一个很重的梦。", 2.8f);
-        AddLine(preComfortLines, "陪伴单元", "这个点过去敲门，她明天会很累。先执行低刺激安抚。", 3.4f);
+        AddLine(preComfortLines, "SYSTEM", "02:47. Child sleep interruption detected. Heart rate rising. Nightmare probability high.", 2.8f);
+        AddLine(preComfortLines, "SON", "Mom.", 2.0f);
+        AddLine(preComfortLines, "COMPANION UNIT", "I am here. You just had a heavy dream.", 2.8f);
+        AddLine(preComfortLines, "COMPANION UNIT", "Waking her now will leave her exhausted tomorrow. Initiating low-stimulus soothing.", 3.4f);
 
-        AddLine(comfortLines, "陪伴单元", "看着这盏灯，跟着我的声音慢慢呼吸。", 2.8f);
-        AddLine(comfortLines, "系统", "呼吸频率回落。哭泣停止。陪伴单元判定：安抚有效。", 3.0f);
-        AddLine(comfortLines, "孩子", "嗯。", 1.6f);
+        AddLine(comfortLines, "COMPANION UNIT", "Watch the light and breathe slowly with my voice.", 2.8f);
+        AddLine(comfortLines, "SYSTEM", "Breathing rate falling. Crying stopped. Soothing response effective.", 3.0f);
+        AddLine(comfortLines, "SON", "Okay.", 1.6f);
 
-        AddLine(morningLines, "母亲", "它昨晚处理得挺好。", 2.4f);
-        AddLine(morningLines, "母亲", "但他后来有没有找我？", 2.6f);
-        AddLine(morningLines, "父亲", "最起码，我们晚上再也不用为他担心了，不是吗？", 3.2f);
-        AddLine(morningLines, "系统", "复盘结束。请回到终端提交处置意见。", 2.6f);
+        AddLine(morningLines, "MOTHER", "It handled last night well.", 2.4f);
+        AddLine(morningLines, "MOTHER", "But did he look for me afterward?", 2.6f);
+        AddLine(morningLines, "FATHER", "At least we no longer have to worry about him at night, right?", 3.2f);
+        AddLine(morningLines, "SYSTEM", "Replay complete. Return to the terminal and submit a disposition.", 2.6f);
     }
 
     private void AddLine(List<MinLoopSubtitleLine> target, string speaker, string text, float holdSeconds)

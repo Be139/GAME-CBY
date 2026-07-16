@@ -149,3 +149,94 @@
 - 可调组件：`MIN_LOOP_ROOT/ReplayRoom_17F03/UnitInspectionCameraTransition_17F03`。可在 Inspector 修改 `Enter Duration`、`Exit Duration`、缓动曲线和是否平滑退出。
 - 后备规则：若平移组件、人类 Camera 或 `ROBOT/Camera (1)` 的任一引用缺失，流程自动使用旧黑场切换，避免剧情卡死。
 - 与终端的关系：该组件复用 `HearthTerminalCameraTransition` 的镜头平移能力，但只服务第三户“实体陪伴单元检查”；门口 TV 终端转场逻辑不受影响。
+
+## 17F04 自宅终局接口
+
+### 正式流程入口
+
+- TV3 入口：`Hearth17F04FinaleController.BeginFromHomeTerminal()`。
+- 当前 TV3 使用 `HearthTvTerminalController.PrimaryAction = Custom`，`On Custom Primary Action` 已绑定上述入口。
+- TV3 使用 `Defer Custom Action Close Until External Fade = true`：Space 后保持终端固定相机，17F04 黑幕完全遮住时再调用 `CompleteCustomActionHandoff()`。若入口条件不满足，则调用 `CancelCustomActionHandoff()` 恢复终端输入。
+- 状态顺序：`HomeTerminal -> LivingRoom -> Photo -> LivingRoom -> DaughterRoom -> Dialogue -> FinalChoice -> ApproachUnit/直接结局 -> Shutdown -> Epilogue -> Complete`。
+- `Require Previous Households` 当前为 `false`；以后开启后由 `HearthHouseholdProgressState.AreFirstThreeCompleted` 决定是否允许进入。
+- 住户完成写入：`HearthHouseholdProgressState.MarkHouseholdCompleted(residentId)`；存档读取后可重复调用，脚本会去重。
+
+### 相框与女儿房间
+
+- 相框入口：`HearthPhotoFrameInteractable.OpenView()`；正常由玩家看向 `TV (4)` 后按 E 调用。
+- 相框完成：照片对白结束后流程调用 `NotifyDialogueComplete()`；玩家再按 Space/Esc，组件平滑返回并调用 `Hearth17F04FinaleController.CompletePhotoInspection()`。
+- 房门入口：`Hearth17F04FinaleController.EnterDaughterRoom()`；正常由 `Hearth17F04RoomDoorInteractable` 在照片和客厅对白完成后开放。
+- 女儿房间对白期间，正式人类控制器保持移动、视角和普通交互开启；进入 A/B 页面后才锁定。
+- 第二张照片：新建一个 `HearthDialogueSequence`，复制相框交互组件并接入新的完成事件；不要把照片做回 TV 终端分页。
+
+### 最终 A/B 与信任分支
+
+- A：`Hearth17F04FinaleController.ChooseAnswerSelf()`。
+- B：`Hearth17F04FinaleController.ChooseCompanionAnswer()`。
+- 第一人称 HUD 在本流程中调用 `SetRouteFinalChoiceInternally(false)`，因此按钮只发事件，不会进入旧结局页。
+- 同一轮只接受第一次选择；重复 Space 不会重复提交，也不会重复结算。
+- 本次选择不改变信任度。分支只读取前三户结果：`trust > 0` 为 High，`trust < 0` 为 Low；`0` 仅用于预览，默认 High 并输出警告。
+- A 路线完成对白后开放 `ROBOT (1)/InteractionVolume_17F04`；B 路线不会开放关闭交互。
+
+### 陪伴单元关闭挑战
+
+- 开始：`Hearth17F04FinaleController.BeginUnitShutdown()`。
+- 当前挑战：`HearthSequentialShutdownChallenge`。
+- High：一次 Space；Low：三段警告各一次 Space。
+- 可替换抽象接口：`HearthShutdownChallenge.BeginChallenge(bool)`、`Submit()`、`Cancel()`、`Completed`、`Cancelled`。
+- 后续做滑块/中央判定小游戏时，新组件继承 `HearthShutdownChallenge` 并拖入控制器 `Shutdown Challenge` 字段；终局状态机、A/B 和结局文本不需要重写。
+
+### 对白、语音与黑幕
+
+- 全部 17F04 文本资产位于 `Assets/Data/MinLoop/Dialogues/17F04/`。
+- 每句可直接修改 `Speaker`、`Text`、`Start Delay`、`Hold Seconds` 和 `Voice Clip`。
+- 场景对白使用 `MIN_LOOP_ROOT/Finale_17F04/UI/SceneDialogue_17F04`；黑幕结局使用 `EpilogueDialogue_17F04`。
+- 四种黑幕资产：`17F04_Epilogue_High_Retain`、`High_Shutdown`、`Low_Retain`、`Low_Shutdown`。
+- 语音接入方法：把录音导入 Unity 后，拖到对应 Dialogue Sequence 每句的 `Voice Clip`；字幕播放器会按音频/句子时长推进。需要混音时，在两个 `MinLoopSubtitlePlayer` 的 `Audio Source` 接入 AudioMixer Group。
+- 黑幕文字位于 16:9 正中央、宽约屏幕三分之二；不要改用旧的偏下普通对白层。
+
+### 结束与后续系统
+
+- 正常结束：`Hearth17F04FinaleController.CompleteFinale()`，返回 `Anchor_Mia_17F04_CorridorReturn`；Anchor 缺失时恢复进入 TV3 前保存的位置。
+- 完成事件：`Hearth17F04FinaleController.OnFinaleCompleted`。
+
+### 17F04 猫咪引导与并发对白
+
+- 猫咪控制器：`Hearth17F04CatGuideController`，场景对象为 `MIN_LOOP_ROOT/Finale_17F04/CatGuide/CatMoveRoot`。
+- 开始/复位/停止：`BeginSequence()`、`ResetSequence()`、`StopSequence()`。
+- 状态：`IsRunning`、`HasReachedPhoto`；事件：`OnReachedPhoto`、`OnSequenceCompleted`。
+- 猫咪只是视觉引导，禁止用 `HasReachedPhoto` 作为相框或 Door1 的开放条件。
+- 当前七段路线时间为 `1.5 / 1.5 / 1.5 / 1.5 / 7.5 / 0.5 / 0.5` 秒。直接在正式猫 `Hearth17F04CatGuideController / Route Steps` 中修改即可。
+- `Walk_F` 使用 XZ 原地烘焙，世界位移由路线控制；`Run_F` 保持原设置并只用于最后的跳跃段。
+- 路线转弯平滑度由同一组件的 `Path Smoothing` 控制，默认 `0.75`；正常只调整 `0.5-1.0`，设为 `0` 会恢复逐段直线移动。
+- `Walk_F` 和 `Lie_idle` 的动画 Slot 使用 `Seamless Loop`；替换循环动画时应同时在 FBX Import Settings 开启 `Loop Time / Loop Pose`。
+- 相框可用条件由 `Hearth17F04FinaleController.CanInspectPhoto` 提供；客厅渐亮后立即为真。
+- 若相框在欢迎对白期间打开，控制器先完成欢迎对白，再播放 `17F04_ChristmasPhoto`。相框组件只有收到 `NotifyDialogueComplete()` 后才允许 Space/Esc 返回。
+
+### 17F04 最终选择输入配置
+
+- 输入配置类型：`HearthFinalChoiceInputProfile`。
+- 设置/读取：`HearthFirstPersonHudInput.SetFinalChoiceInputProfile(...)`、`GetFinalChoiceInputProfile()`。
+- 17F04 临时值：`Navigation Axis = Vertical`、`Allow Direct Letter Keys = false`、`Allow Return Submit = false`。
+- 关卡控制器负责保存和恢复旧配置；其他关卡不要永久修改全局 HUD Input。
+- 后续可在该事件上接主菜单、结局动画、存档、成就或新页面；当前只返回走廊。
+- 测试重置：`ResetForPreview()`，只用于 Play Mode 快速测试，不作为正式新游戏/读档接口。
+- 机位接口：`CaptureCurrentHumanCameraPivot()` 用于运行时重新读取正式玩家相机的本地枢轴；通常在 Edit Mode 调好 `First Person Camera` 后重新进入 Play 即可，不必手动调用。
+
+## 全局对白、语音与音量接口（2026-07-16）
+
+- 正式对白数据统一使用 `HearthDialogueSequence`；当前 34 个资产位于 `Assets/Data/MinLoop/Dialogues/`。
+- 每句可自由增删和排序，字段为 `Speaker / Text / Start Delay / Hold Seconds / Voice Clip / Duration Mode / Voice Tail Seconds`。
+- 推荐 `Duration Mode = VoiceClipWhenAssigned`：有录音时自动跟随真实录音长度，无录音时继续使用手动 Hold，不需要在流程控制器硬编码秒数。
+- 当前 215 个 Voice Clip 槽位均未绑定真实语音。后续录好每句声音后，直接拖到对应行，不需要改脚本或关卡状态机。
+- 三个正式 `MinLoopSubtitlePlayer` 的 AudioSource 已接 Dialogue 通道；设置页 Dialogue 音量会实时影响它们。
+- `MIN_LOOP_ROOT/Audio` 下 Corridor、Replay Night、Morning 三个现有 Ambience 音源已接 Ambient；其他环境声和新 SFX 在目标 AudioSource 同物体添加 `HearthAudioChannelSource`，Channel 分别选 Ambient 或 SFX。
+- 人类和机器人脚步入口已分离，具体层级和字段见 `HEARTH_UI音频与对白调整入口.md`。
+- 对白行数量变化后，后续 E/切幕仍以整段 Sequence 实际播放完成为准；不要额外补固定等待时间。
+
+## 17F03 门与检查补充接口
+
+- `Door_2_Brown (7)` 的 `SmartDoorController.Allow Direct Player Interaction = false`；玩家不可 E 开门。
+- 剧情仍调用 `Open()` / `Close()`，不受直接交互开关影响。
+- 门轴对象是 `DoorHinge_17F03`；只调整 `Open Local Euler Offset`、`Move Duration`，不要移动门根或给门叠加第二个旋转父级。
+- 米娅检查实体机器人继续使用 `OpenUnitInspection()` / `CancelFlow()`；`UnitInspectionCameraTransition_17F03` 控制进入和退出的 0.5 秒平移。

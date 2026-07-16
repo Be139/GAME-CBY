@@ -40,10 +40,14 @@ public class HearthFirstPersonHudController : MonoBehaviour
     [SerializeField] private RectTransform finalChoiceFocusRect;
     [SerializeField] private RectTransform[] finalChoiceFocusTargets;
     [SerializeField] private Vector2 finalChoiceFocusPadding = new Vector2(10f, 6f);
+    [SerializeField] private bool routeFinalChoiceInternally = true;
 
     [Header("Sub Views")]
     [SerializeField] private HearthDispositionHistoryView dispositionHistoryView;
     [SerializeField] private HearthSettingsView settingsView;
+
+    [Header("System Actions")]
+    [SerializeField] private bool quitApplicationOnExitConfirm = true;
 
     [Header("Player Control Lock")]
     [SerializeField] private bool lockPlayerControlsWhileOverlayOpen = true;
@@ -67,6 +71,7 @@ public class HearthFirstPersonHudController : MonoBehaviour
     [SerializeField] private UnityEvent onFinalChoiceB = new UnityEvent();
     [SerializeField] private UnityEvent onGracefulShutdownConfirmed = new UnityEvent();
     [SerializeField] private UnityEvent onForcedShutdownConfirmed = new UnityEvent();
+    [SerializeField] private UnityEvent onShutdownCancelled = new UnityEvent();
     [SerializeField] private UnityEvent onExitConfirmed = new UnityEvent();
     [SerializeField] private UnityEvent onExitCancelled = new UnityEvent();
     [SerializeField] private HearthFirstPersonEndingEvent endingShown = new HearthFirstPersonEndingEvent();
@@ -79,6 +84,7 @@ public class HearthFirstPersonHudController : MonoBehaviour
     private int menuSelectionIndex;
     private int finalChoiceSelectionIndex;
     private Coroutine trustDeltaRoutine;
+    private bool listeningToSettings;
 
     public HearthFirstPersonHudPageId CurrentPageId
     {
@@ -110,6 +116,36 @@ public class HearthFirstPersonHudController : MonoBehaviour
         get { return onExitConfirmed; }
     }
 
+    public UnityEvent OnFinalChoiceA
+    {
+        get { return onFinalChoiceA; }
+    }
+
+    public UnityEvent OnFinalChoiceB
+    {
+        get { return onFinalChoiceB; }
+    }
+
+    public UnityEvent OnGracefulShutdownConfirmed
+    {
+        get { return onGracefulShutdownConfirmed; }
+    }
+
+    public UnityEvent OnForcedShutdownConfirmed
+    {
+        get { return onForcedShutdownConfirmed; }
+    }
+
+    public UnityEvent OnShutdownCancelled
+    {
+        get { return onShutdownCancelled; }
+    }
+
+    public bool RouteFinalChoiceInternally
+    {
+        get { return routeFinalChoiceInternally; }
+    }
+
     private void Awake()
     {
         BuildPageMap();
@@ -122,6 +158,11 @@ public class HearthFirstPersonHudController : MonoBehaviour
     private void Start()
     {
         ShowPage(startingPage);
+    }
+
+    private void OnEnable()
+    {
+        SubscribeToSettings();
     }
 
     public void ConfigurePages(HearthFirstPersonHudPage[] newPages)
@@ -172,6 +213,7 @@ public class HearthFirstPersonHudController : MonoBehaviour
 
     private void OnDisable()
     {
+        UnsubscribeFromSettings();
         SetPlayerControlsLocked(false);
     }
 
@@ -247,6 +289,7 @@ public class HearthFirstPersonHudController : MonoBehaviour
     {
         if (settingsView != null)
         {
+            settingsView.RefreshFromAudioSettings();
             settingsView.ResetFocus();
         }
 
@@ -299,6 +342,11 @@ public class HearthFirstPersonHudController : MonoBehaviour
         PlayOneShot(confirmClip);
         onFinalChoiceA.Invoke();
 
+        if (!routeFinalChoiceInternally)
+        {
+            return;
+        }
+
         if (trustScore >= finalChoiceTrustThreshold)
         {
             ShowPage(HearthFirstPersonHudPageId.Slide10ShutdownConfirm);
@@ -314,20 +362,34 @@ public class HearthFirstPersonHudController : MonoBehaviour
     {
         PlayOneShot(confirmClip);
         onFinalChoiceB.Invoke();
-        ShowEnding(HearthFirstPersonEndingPath.CompanionB);
+        if (routeFinalChoiceInternally)
+        {
+            ShowEnding(HearthFirstPersonEndingPath.CompanionB);
+        }
     }
 
     public void ConfirmGracefulShutdown()
     {
         PlayOneShot(confirmClip);
         onGracefulShutdownConfirmed.Invoke();
-        ShowEnding(HearthFirstPersonEndingPath.GracefulA);
+        if (routeFinalChoiceInternally)
+        {
+            ShowEnding(HearthFirstPersonEndingPath.GracefulA);
+        }
     }
 
     public void CancelShutdownDecision()
     {
         PlayOneShot(cancelClip);
-        ShowFinalChoice(true);
+        onShutdownCancelled.Invoke();
+        if (routeFinalChoiceInternally)
+        {
+            ShowFinalChoice(true);
+        }
+        else
+        {
+            HideOverlay();
+        }
     }
 
     public void ContinueWarning()
@@ -346,14 +408,42 @@ public class HearthFirstPersonHudController : MonoBehaviour
         else if (currentPageId == HearthFirstPersonHudPageId.Slide13Warning03)
         {
             onForcedShutdownConfirmed.Invoke();
-            ShowEnding(HearthFirstPersonEndingPath.ForcedA);
+            if (routeFinalChoiceInternally)
+            {
+                ShowEnding(HearthFirstPersonEndingPath.ForcedA);
+            }
         }
     }
 
     public void CancelWarning()
     {
         PlayOneShot(cancelClip);
-        ShowFinalChoice(true);
+        onShutdownCancelled.Invoke();
+        if (routeFinalChoiceInternally)
+        {
+            ShowFinalChoice(true);
+        }
+        else
+        {
+            HideOverlay();
+        }
+    }
+
+    public void SetRouteFinalChoiceInternally(bool value)
+    {
+        routeFinalChoiceInternally = value;
+    }
+
+    public void ShowShutdownConfirmation(bool highTrust)
+    {
+        if (highTrust)
+        {
+            ShowPage(HearthFirstPersonHudPageId.Slide10ShutdownConfirm);
+            return;
+        }
+
+        SetHudState(HearthFirstPersonHudState.AlertPendingReview);
+        ShowPage(HearthFirstPersonHudPageId.Slide11Warning01);
     }
 
     public void ShowEnding(HearthFirstPersonEndingPath path)
@@ -378,6 +468,17 @@ public class HearthFirstPersonHudController : MonoBehaviour
     {
         PlayOneShot(confirmClip);
         onExitConfirmed.Invoke();
+
+        if (!quitApplicationOnExitConfirm)
+        {
+            return;
+        }
+
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
+        Application.Quit();
+#endif
     }
 
     public void CancelExitGame()
@@ -470,10 +571,10 @@ public class HearthFirstPersonHudController : MonoBehaviour
                     statusText.text = "DORMANT";
                     break;
                 case HearthFirstPersonHudState.AlertPendingReview:
-                    statusText.text = "ALERT · PENDING REVIEW";
+                    statusText.text = "ALERT - PENDING REVIEW";
                     break;
                 case HearthFirstPersonHudState.AlertHighRisk:
-                    statusText.text = "ALERT · HIGH-RISK";
+                    statusText.text = "ALERT - HIGH-RISK";
                     break;
             }
         }
@@ -510,7 +611,7 @@ public class HearthFirstPersonHudController : MonoBehaviour
 
         if (taskText != null)
         {
-            taskText.text = "CURRENT TASK\nNIGHT ROUNDS · BLOCK A · 17F\n" + completedRounds + "/" + totalRounds;
+            taskText.text = "CURRENT TASK\nNIGHT ROUNDS - BLOCK A - 17F\n" + completedRounds + "/" + totalRounds;
         }
     }
 
@@ -533,8 +634,8 @@ public class HearthFirstPersonHudController : MonoBehaviour
     {
         string unitId = "17F-" + Mathf.Clamp((dispositionHistoryView != null ? dispositionHistoryView.RecordCount : completedRounds) + 1, 1, 3).ToString("00");
         string actionLabel = choice == MinLoopDispositionChoice.SystemRecommendedA
-            ? "Approve Upgrade · Deep Night Companion Pro"
-            : "Recommend Family Counseling · Pause unit";
+            ? "Approve Upgrade - Deep Night Companion Pro"
+            : "Recommend Family Counseling - Pause unit";
         string statusLabel = choice == MinLoopDispositionChoice.SystemRecommendedA ? "RECOMMENDED" : string.Empty;
         RecordDisposition(unitId, actionLabel, statusLabel, trustDelta, currentTrustAfter);
     }
@@ -766,6 +867,39 @@ public class HearthFirstPersonHudController : MonoBehaviour
         {
             playerControlLock = FindObjectOfType<HearthPlayerControlLock>();
         }
+    }
+
+    private void SubscribeToSettings()
+    {
+        if (listeningToSettings)
+        {
+            return;
+        }
+
+        if (settingsView == null)
+        {
+            settingsView = GetComponentInChildren<HearthSettingsView>(true);
+        }
+
+        if (settingsView == null || settingsView.OnExitRequested == null)
+        {
+            return;
+        }
+
+        settingsView.OnExitRequested.AddListener(OpenExitConfirm);
+        listeningToSettings = true;
+    }
+
+    private void UnsubscribeFromSettings()
+    {
+        if (!listeningToSettings || settingsView == null || settingsView.OnExitRequested == null)
+        {
+            listeningToSettings = false;
+            return;
+        }
+
+        settingsView.OnExitRequested.RemoveListener(OpenExitConfirm);
+        listeningToSettings = false;
     }
 
     private bool ShouldLockPlayerControls(HearthFirstPersonHudPageId pageId)

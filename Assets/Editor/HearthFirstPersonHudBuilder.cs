@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEditor;
-using UnityEditor.Events;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.UI;
@@ -33,6 +32,7 @@ public static class HearthFirstPersonHudBuilder
         HearthFirstPersonHudInput input = root.GetComponent<HearthFirstPersonHudInput>();
         HearthDispositionHistoryView historyView = root.GetComponent<HearthDispositionHistoryView>();
         HearthSettingsView settingsView = root.GetComponent<HearthSettingsView>();
+        HearthAudioSettingsController audioSettings = root.GetComponent<HearthAudioSettingsController>();
         HearthPlayerControlLock playerControlLock = root.GetComponent<HearthPlayerControlLock>();
 
         RectTransform rootRect = root.GetComponent<RectTransform>();
@@ -90,8 +90,7 @@ public static class HearthFirstPersonHudBuilder
         BindHistoryView(historyView, historyRows, historyShiftTexts, historyTrustTexts);
 
         BindInput(input, controller, settingsView);
-        BindSettingsView(settingsView, settingsFocus, settingsTargets);
-        UnityEventTools.AddPersistentListener(settingsView.OnExitRequested, controller.OpenExitConfirm);
+        BindSettingsView(settingsView, settingsFocus, settingsTargets, audioSettings);
 
         PrefabUtility.SaveAsPrefabAsset(root, RootPrefabPath);
         UnityEngine.Object.DestroyImmediate(root);
@@ -141,6 +140,7 @@ public static class HearthFirstPersonHudBuilder
             typeof(CanvasScaler),
             typeof(GraphicRaycaster),
             typeof(AudioSource),
+            typeof(HearthAudioSettingsController),
             typeof(HearthPlayerControlLock),
             typeof(HearthFirstPersonHudController),
             typeof(HearthFirstPersonHudInput),
@@ -746,11 +746,16 @@ public static class HearthFirstPersonHudBuilder
         serialized.ApplyModifiedPropertiesWithoutUndo();
     }
 
-    private static void BindSettingsView(HearthSettingsView settingsView, RectTransform focusRect, RectTransform[] focusTargets)
+    private static void BindSettingsView(
+        HearthSettingsView settingsView,
+        RectTransform focusRect,
+        RectTransform[] focusTargets,
+        HearthAudioSettingsController audioSettings)
     {
         SerializedObject serialized = new SerializedObject(settingsView);
         SetObject(serialized, "focusRect", focusRect);
         SetObjectArray(serialized, "focusTargets", focusTargets);
+        SetObject(serialized, "audioSettings", audioSettings);
         SetVector2(serialized, "focusPadding", new Vector2(8f, 4f));
         serialized.ApplyModifiedPropertiesWithoutUndo();
     }

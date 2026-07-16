@@ -998,6 +998,7 @@ public class CityFacadeBillboardPlacer : MonoBehaviour
 
         CityBillboardPlacementSlot marker = billboard.AddComponent<CityBillboardPlacementSlot>();
         marker.Configure(slot, plan.Facade.Side.ToString(), plan.Size, plan.LocalPosition.y, surfaceRoot.transform, contentRoot.transform);
+        EnsureContentController(surfaceRoot.transform);
     }
 
     private void CreateBillboard(Transform sourceRoot, Transform parent, BillboardPlan plan, int billboardIndex, System.Random random)
@@ -1037,6 +1038,7 @@ public class CityFacadeBillboardPlacer : MonoBehaviour
 
         CityBillboardPlacementSlot marker = billboard.AddComponent<CityBillboardPlacementSlot>();
         marker.Configure(sourceRoot, plan.Facade.Side.ToString(), plan.Size, plan.LocalPosition.y, surfaceRoot.transform, contentRoot.transform);
+        EnsureContentController(surfaceRoot.transform);
     }
 
     private static string SanitizeName(string source)
@@ -1082,6 +1084,39 @@ public class CityFacadeBillboardPlacer : MonoBehaviour
         {
             renderer.sharedMaterial = GetPlaceholderMaterial();
         }
+    }
+
+    private static void EnsureContentController(Transform surfaceRoot)
+    {
+        if (surfaceRoot == null)
+        {
+            return;
+        }
+
+        Renderer renderer = surfaceRoot.GetComponentInChildren<Renderer>(true);
+        if (renderer == null)
+        {
+            return;
+        }
+
+        CityBillboardContentController controller = renderer.GetComponent<CityBillboardContentController>();
+        if (controller == null)
+        {
+#if UNITY_EDITOR
+            if (!Application.isPlaying)
+            {
+                controller = Undo.AddComponent<CityBillboardContentController>(renderer.gameObject);
+            }
+            else
+            {
+                controller = renderer.gameObject.AddComponent<CityBillboardContentController>();
+            }
+#else
+            controller = renderer.gameObject.AddComponent<CityBillboardContentController>();
+#endif
+        }
+
+        controller.Configure(renderer);
     }
 
     private Material GetPlaceholderMaterial()

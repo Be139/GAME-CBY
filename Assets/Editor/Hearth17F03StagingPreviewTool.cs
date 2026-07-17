@@ -220,6 +220,8 @@ public static class Hearth17F03StagingPreviewTool
             }
         }
 
+        HearthP0StabilityTools.DisableCityPeopleAutoplayInHierarchy(preview, true);
+
         Hearth17F03StagingPoseProxy proxy = preview.GetComponent<Hearth17F03StagingPoseProxy>();
         if (proxy == null)
         {

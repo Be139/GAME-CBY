@@ -5,7 +5,7 @@ using UnityEngine.EventSystems;
 public class MinLoopSceneValidator : MonoBehaviour
 {
     [Header("Validation")]
-    [SerializeField] private bool validateOnStart = true;
+    [SerializeField] private bool validateOnStart;
     [SerializeField] private bool includeInactiveObjects = true;
     [SerializeField] private bool logSuccessDetails = true;
 

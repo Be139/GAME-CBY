@@ -134,6 +134,16 @@
 | STAB-06 | 建立最小 Play Mode 冒烟测试 | 自动验证启动、Tab、三户完成写入、信任度、17F04 A/B 单次提交 |
 | STAB-07 | 固定一个“演示基线”版本 | 场景、Prefabs、Dialogue 和配置在同一提交/备份中，可回退 |
 
+#### 2026-07-17 执行进度
+
+- `STAB-01` 已完成：从 `Door_2_Brown / Milk / White` 三份源 Prefab 清除失效旧门脚本。清空 Console 后启动 10 秒，原有 18 条 `Door / DoorHinge_17F03 Missing Script` 不再出现；剧情门继续由 `SmartDoorController` 控制。
+- `STAB-02` 已完成：正式猫与七个参考猫均不含 Legacy `Animation`，继续使用 `Animator + HearthActorAnimationPlayer`；猫咪专用验证菜单通过，启动无 `Drop_L_sit` Legacy Error。
+- `STAB-03` 已完成：当前场景 15 个受剧情控制或用于分幕预览的 CityPeople 随机行为已停用；17F03 预览工具会在新建或更新预览时继续强制停用该行为。启动 10 秒无 `Animator.GotoState` 或 `Invalid Layer Index` Error。
+- `STAB-05` 已完成：新增只读菜单 `Tools / Hearth / Replay / Validate 17F01 Minimal Loop Setup` 与 `Validate 17F02 Minimal Loop Setup`。两者已验证交互、Camera、AudioListener、唯一正式 ViewSwitch、控制器、对白和终端绑定并通过；同时修复了 17F02 终端仍指向旧 1F ViewSwitch 的引用。
+- 新增统一稳定性入口：`Tools / Hearth / Stability / Apply P0 01-03 Repairs` 和 `Validate P0 01-03`。Apply 可安全重跑，Validate 只读。
+- 旧 `MinLoopSceneValidator` 仍可在 Inspector 手动运行，但不再 Play 自动执行；其占位时期建议项已由正式 17F01/02 验证器取代。
+- 本轮启动仍会报告 `STAB-04` 对应的负缩放 BoxCollider；它不属于本次选择的 `01/02/03/05`，尚未标记完成。
+
 ### P1：形成真正完整的 PC Demo
 
 | ID | 工作 | 验收标准 |

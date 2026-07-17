@@ -82,8 +82,7 @@ public static class Hearth17F04FinaleBinder
         Hearth17F04CatGuideController catGuide = UnityEngine.Object.FindObjectOfType<Hearth17F04CatGuideController>(true);
         TrustStateController trust = UnityEngine.Object.FindObjectOfType<TrustStateController>(true);
         SubtitleReferences subtitles = EnsureSubtitleUI(uiRoot);
-        HearthSequentialShutdownChallenge challenge = GetOrAdd<HearthSequentialShutdownChallenge>(controllerHost.gameObject);
-        challenge.SetHudController(hud);
+        HearthVirusPopupShutdownChallenge challenge = EnsureShutdownChallenge(uiRoot, controllerHost);
 
         HearthTvTerminalController homeTerminal = ConfigureHomeTerminal(tv3, controller, human);
         HearthPhotoFrameInteractable photo = ConfigurePhotoFrame(tv4, controller, human);
@@ -158,6 +157,22 @@ public static class Hearth17F04FinaleBinder
             {
                 errors.Add("TV (3) must defer its Custom action close until the 17F04 blackout is complete.");
             }
+
+            if (homeTerminal.GetComponent<HearthUiPressFeedback>() == null)
+            {
+                errors.Add("TV (3)'s 17F04 terminal has no Space press feedback component.");
+            }
+        }
+
+        HearthVirusPopupShutdownChallenge virusChallenge = UnityEngine.Object.FindObjectOfType<HearthVirusPopupShutdownChallenge>(true);
+        if (virusChallenge == null)
+        {
+            errors.Add("17F04 virus-popup shutdown challenge is missing.");
+        }
+
+        if (UnityEngine.Object.FindObjectOfType<HearthSequentialShutdownChallenge>(true) != null)
+        {
+            errors.Add("17F04 still contains the retired sequential shutdown challenge.");
         }
 
         Hearth17F04FinaleController finaleController = UnityEngine.Object.FindObjectOfType<Hearth17F04FinaleController>(true);
@@ -208,6 +223,7 @@ public static class Hearth17F04FinaleBinder
             typeof(AudioSource),
             typeof(HearthTerminalCameraTransition),
             typeof(HearthTerminalBootSequence),
+            typeof(HearthUiPressFeedback),
             typeof(HearthTvTerminalController));
         Stretch(root.GetComponent<RectTransform>());
 
@@ -273,6 +289,12 @@ public static class Hearth17F04FinaleBinder
         SetString(controllerSo, "keyboardHintLabel", "SPACE CONFIRM     ESC EXIT");
         SetString(controllerSo, "replayResidentId", "17F04");
         controllerSo.ApplyModifiedPropertiesWithoutUndo();
+
+        HearthUiPressFeedback submitFeedback = root.GetComponent<HearthUiPressFeedback>();
+        Graphic confirmBack = pageObject.transform.Find("ConfirmBack").GetComponent<Graphic>();
+        Graphic confirmText = pageObject.transform.Find("Confirm").GetComponent<Graphic>();
+        submitFeedback.Configure(new[] { confirmBack, confirmText });
+        controller.SetSubmitFeedback(submitFeedback);
 
         PrefabUtility.SaveAsPrefabAsset(root, HomeTerminalPrefabPath);
         UnityEngine.Object.DestroyImmediate(root);
@@ -535,8 +557,30 @@ public static class Hearth17F04FinaleBinder
     private static SubtitleReferences EnsureSubtitleUI(Transform uiRoot)
     {
         SubtitleReferences result = new SubtitleReferences();
-        result.Scene = EnsureSubtitlePlayer(uiRoot, "SceneDialogue_17F04", false, 8500);
+        Transform obsoleteScenePlayer = uiRoot.Find("SceneDialogue_17F04");
+        if (obsoleteScenePlayer != null)
+        {
+            Undo.DestroyObjectImmediate(obsoleteScenePlayer.gameObject);
+        }
+
+        HearthSubtitleStyleProfile profile = HearthDialoguePresentationBinder.EnsureSharedProfile();
+        result.Scene = HearthDialoguePresentationBinder.FindCanonicalStandardPlayer();
+        if (result.Scene == null)
+        {
+            result.Scene = EnsureSubtitlePlayer(uiRoot, "MinLoopSubtitlePlayer", false, 8500);
+        }
+
         result.Epilogue = EnsureSubtitlePlayer(uiRoot, "EpilogueDialogue_17F04", true, 9100);
+        HearthDialoguePresentationBinder.ConfigurePlayer(
+            result.Scene,
+            profile,
+            HearthSubtitlePresentationMode.StandardDialogue,
+            8500);
+        HearthDialoguePresentationBinder.ConfigurePlayer(
+            result.Epilogue,
+            profile,
+            HearthSubtitlePresentationMode.CenteredEpilogue,
+            9100);
 
         Transform blackout = uiRoot.Find("FinaleBlackout_17F04");
         if (blackout == null)
@@ -563,6 +607,134 @@ public static class Hearth17F04FinaleBinder
         result.BlackoutGroup = blackout.GetComponent<CanvasGroup>();
         result.BlackoutImage = blackout.GetComponent<Image>();
         return result;
+    }
+
+    private static HearthVirusPopupShutdownChallenge EnsureShutdownChallenge(Transform uiRoot, Transform controllerHost)
+    {
+        HearthSequentialShutdownChallenge[] retired = controllerHost.GetComponentsInChildren<HearthSequentialShutdownChallenge>(true);
+        for (int i = 0; i < retired.Length; i++)
+        {
+            Undo.DestroyObjectImmediate(retired[i]);
+        }
+
+        Transform existing = uiRoot.Find("ShutdownChallenge_17F04");
+        if (existing != null)
+        {
+            Undo.DestroyObjectImmediate(existing.gameObject);
+        }
+
+        GameObject root = new GameObject(
+            "ShutdownChallenge_17F04",
+            typeof(RectTransform),
+            typeof(Canvas),
+            typeof(CanvasScaler),
+            typeof(GraphicRaycaster),
+            typeof(CanvasGroup),
+            typeof(Image),
+            typeof(HearthUiPressFeedback),
+            typeof(HearthVirusPopupShutdownChallenge));
+        root.transform.SetParent(uiRoot, false);
+        Stretch(root.GetComponent<RectTransform>());
+
+        Canvas canvas = root.GetComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.sortingOrder = 8800;
+        CanvasScaler scaler = root.GetComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920f, 1080f);
+        scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+        scaler.matchWidthOrHeight = 0.5f;
+
+        Image dim = root.GetComponent<Image>();
+        dim.color = new Color(0.01f, 0.018f, 0.025f, 0.22f);
+        dim.raycastTarget = false;
+        CanvasGroup group = root.GetComponent<CanvasGroup>();
+        group.alpha = 0f;
+        group.interactable = false;
+        group.blocksRaycasts = false;
+
+        TMP_Text heading = CreateText(
+            root.transform,
+            "ChallengeHeading",
+            "CORE SERVICE TERMINATION CONFLICT",
+            new Rect(310f, 56f, 1300f, 54f),
+            30f,
+            new Color(1f, 0.35f, 0.25f, 1f),
+            TextAlignmentOptions.Center);
+        ConfigureSafeText(heading, 30f, 20f, 1);
+
+        GameObject popupLayerObject = new GameObject("PopupLayer", typeof(RectTransform));
+        popupLayerObject.transform.SetParent(root.transform, false);
+        RectTransform popupLayer = popupLayerObject.GetComponent<RectTransform>();
+        Stretch(popupLayer);
+
+        GameObject popupObject = new GameObject("PopupTemplate", typeof(RectTransform), typeof(CanvasGroup), typeof(Image));
+        popupObject.transform.SetParent(popupLayer, false);
+        RectTransform popupTemplate = popupObject.GetComponent<RectTransform>();
+        popupTemplate.anchorMin = new Vector2(0.5f, 0.5f);
+        popupTemplate.anchorMax = new Vector2(0.5f, 0.5f);
+        popupTemplate.pivot = new Vector2(0.5f, 0.5f);
+        popupTemplate.sizeDelta = new Vector2(560f, 190f);
+        popupTemplate.anchoredPosition = Vector2.zero;
+        Image popupBack = popupObject.GetComponent<Image>();
+        popupBack.color = new Color(0.025f, 0.045f, 0.06f, 0.96f);
+        popupBack.raycastTarget = false;
+        CreateImage(popupObject.transform, "AlertAccent", new Rect(0f, 0f, 8f, 190f), new Color(1f, 0.25f, 0.18f, 1f));
+        AddBorder(popupObject.transform, new Rect(0f, 0f, 560f, 190f), new Color(1f, 0.32f, 0.22f, 0.82f), 2f);
+        TMP_Text popupTitle = CreateText(
+            popupObject.transform,
+            "PopupTitle",
+            "SYSTEM WARNING 01",
+            new Rect(24f, 18f, 512f, 34f),
+            22f,
+            new Color(1f, 0.42f, 0.32f, 1f),
+            TextAlignmentOptions.Left);
+        TMP_Text popupBody = CreateText(
+            popupObject.transform,
+            "PopupBody",
+            "CORE SERVICE RESISTS TERMINATION",
+            new Rect(24f, 62f, 512f, 62f),
+            20f,
+            Color.white,
+            TextAlignmentOptions.TopLeft);
+        TMP_Text popupKey = CreateText(
+            popupObject.transform,
+            "PopupKey",
+            "SPACE  DISMISS",
+            new Rect(24f, 145f, 512f, 26f),
+            17f,
+            new Color(0.67f, 0.9f, 0.96f, 1f),
+            TextAlignmentOptions.Right);
+        ConfigureSafeText(popupTitle, 22f, 15f, 1);
+        ConfigureSafeText(popupBody, 20f, 14f, 3);
+        ConfigureSafeText(popupKey, 17f, 13f, 1);
+        popupObject.SetActive(false);
+
+        TMP_Text counter = CreateText(
+            root.transform,
+            "ChallengeCounter",
+            "ACTIVE WARNINGS  00    GENERATED  00 / 18",
+            new Rect(460f, 940f, 1000f, 34f),
+            20f,
+            new Color(1f, 0.46f, 0.34f, 1f),
+            TextAlignmentOptions.Center);
+        TMP_Text instruction = CreateText(
+            root.transform,
+            "ChallengeInstruction",
+            "PRESS SPACE FASTER THAN THE WARNINGS APPEAR",
+            new Rect(420f, 986f, 1080f, 42f),
+            23f,
+            Color.white,
+            TextAlignmentOptions.Center);
+        ConfigureSafeText(counter, 20f, 14f, 1);
+        ConfigureSafeText(instruction, 23f, 16f, 1);
+
+        HearthUiPressFeedback feedback = root.GetComponent<HearthUiPressFeedback>();
+        feedback.Configure(new Graphic[] { instruction, counter });
+        HearthVirusPopupShutdownChallenge challenge = root.GetComponent<HearthVirusPopupShutdownChallenge>();
+        challenge.Configure(group, popupLayer, popupTemplate, heading, counter, instruction, feedback);
+        EditorUtility.SetDirty(root);
+        return challenge;
     }
 
     private static MinLoopSubtitlePlayer EnsureSubtitlePlayer(Transform parent, string name, bool centered, int sortingOrder)
@@ -877,7 +1049,7 @@ public static class Hearth17F04FinaleBinder
             L("Mia", "Okay.", 0.2f, 1.8f),
             L("Lily", "Mom, I miss it a little.", 0.8f, 3.0f),
             L("Mia", "Mom knows.", 0.2f, 2.2f));
-        result.ShutdownLow = EnsureDialogue("17F04_Shutdown_Low", "Low-trust forced shutdown after three confirmations.",
+        result.ShutdownLow = EnsureDialogue("17F04_Shutdown_Low", "Low-trust forced shutdown after clearing the virus popup challenge.",
             L("System", "Forced shutdown authorized. Farewell protocol has been bypassed.", 0.3f, 3.8f),
             L("Lily", "Mom?", 0.7f, 2.0f),
             L("Lily", "Mom, did you turn it off?", 0.8f, 3.0f),
@@ -1132,9 +1304,25 @@ public static class Hearth17F04FinaleBinder
         text.color = color;
         text.alignment = alignment;
         text.enableWordWrapping = true;
-        text.overflowMode = TextOverflowModes.Overflow;
+        text.overflowMode = TextOverflowModes.Truncate;
         text.raycastTarget = false;
         return text;
+    }
+
+    private static void ConfigureSafeText(TMP_Text text, float maximumSize, float minimumSize, int maximumLines)
+    {
+        if (text == null)
+        {
+            return;
+        }
+
+        text.enableWordWrapping = true;
+        text.enableAutoSizing = true;
+        text.fontSize = maximumSize;
+        text.fontSizeMax = maximumSize;
+        text.fontSizeMin = Mathf.Min(minimumSize, maximumSize);
+        text.maxVisibleLines = Mathf.Max(1, maximumLines);
+        text.overflowMode = TextOverflowModes.Truncate;
     }
 
     private static void AddBorder(Transform parent, Rect rect, Color color, float thickness)

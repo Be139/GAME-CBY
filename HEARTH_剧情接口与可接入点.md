@@ -181,16 +181,18 @@
 ### 陪伴单元关闭挑战
 
 - 开始：`Hearth17F04FinaleController.BeginUnitShutdown()`。
-- 当前挑战：`HearthSequentialShutdownChallenge`。
-- High：一次 Space；Low：三段警告各一次 Space。
+- 当前挑战：`HearthVirusPopupShutdownChallenge`，场景对象为 `MIN_LOOP_ROOT/Finale_17F04/UI/ShutdownChallenge_17F04`。
+- High：一个授权窗口，按一次 Space。
+- Low：警告窗持续从四个屏幕边缘生成，Space 每次关闭最上层窗口；所有窗口生成完且清空后完成。
+- 主要节奏接口：`Total Popup Count / Initial Popup Count / Spawn Interval / Popup Enter Seconds / Popup Dismiss Seconds`。
 - 可替换抽象接口：`HearthShutdownChallenge.BeginChallenge(bool)`、`Submit()`、`Cancel()`、`Completed`、`Cancelled`。
-- 后续做滑块/中央判定小游戏时，新组件继承 `HearthShutdownChallenge` 并拖入控制器 `Shutdown Challenge` 字段；终局状态机、A/B 和结局文本不需要重写。
+- 旧 `HearthSequentialShutdownChallenge` 已从第四户场景解绑；后续如替换玩法，新组件继续继承 `HearthShutdownChallenge`，终局状态机、A/B 和结局文本不需要重写。
 
 ### 对白、语音与黑幕
 
 - 全部 17F04 文本资产位于 `Assets/Data/MinLoop/Dialogues/17F04/`。
 - 每句可直接修改 `Speaker`、`Text`、`Start Delay`、`Hold Seconds` 和 `Voice Clip`。
-- 场景对白使用 `MIN_LOOP_ROOT/Finale_17F04/UI/SceneDialogue_17F04`；黑幕结局使用 `EpilogueDialogue_17F04`。
+- 场景对白统一使用全局 `MinLoopSubtitlePlayer`；黑幕结局使用 `EpilogueDialogue_17F04`。
 - 四种黑幕资产：`17F04_Epilogue_High_Retain`、`High_Shutdown`、`Low_Retain`、`Low_Shutdown`。
 - 语音接入方法：把录音导入 Unity 后，拖到对应 Dialogue Sequence 每句的 `Voice Clip`；字幕播放器会按音频/句子时长推进。需要混音时，在两个 `MinLoopSubtitlePlayer` 的 `Audio Source` 接入 AudioMixer Group。
 - 黑幕文字位于 16:9 正中央、宽约屏幕三分之二；不要改用旧的偏下普通对白层。
@@ -229,10 +231,19 @@
 - 每句可自由增删和排序，字段为 `Speaker / Text / Start Delay / Hold Seconds / Voice Clip / Duration Mode / Voice Tail Seconds`。
 - 推荐 `Duration Mode = VoiceClipWhenAssigned`：有录音时自动跟随真实录音长度，无录音时继续使用手动 Hold，不需要在流程控制器硬编码秒数。
 - 当前 215 个 Voice Clip 槽位均未绑定真实语音。后续录好每句声音后，直接拖到对应行，不需要改脚本或关卡状态机。
-- 三个正式 `MinLoopSubtitlePlayer` 的 AudioSource 已接 Dialogue 通道；设置页 Dialogue 音量会实时影响它们。
+- 普通对白共用一个正式 `MinLoopSubtitlePlayer`，17F04 黑幕使用一个 `EpilogueDialogue_17F04`；两者的 AudioSource 均接 Dialogue 通道。
 - `MIN_LOOP_ROOT/Audio` 下 Corridor、Replay Night、Morning 三个现有 Ambience 音源已接 Ambient；其他环境声和新 SFX 在目标 AudioSource 同物体添加 `HearthAudioChannelSource`，Channel 分别选 Ambient 或 SFX。
 - 人类和机器人脚步入口已分离，具体层级和字段见 `HEARTH_UI音频与对白调整入口.md`。
 - 对白行数量变化后，后续 E/切幕仍以整段 Sequence 实际播放完成为准；不要额外补固定等待时间。
+
+## 四户共享字幕样式接口（2026-07-17）
+
+- 唯一样式资产：`Assets/Data/MinLoop/UI/Hearth_SubtitleStyle.asset`。
+- `Standard Dialogue` 同时控制 17F01、17F02、17F03、17F04 普通对白的位置、宽度、字号、最小字号、最大行数和行距。
+- `Centered Epilogue` 只控制第四户最终黑幕，仍位于屏幕正中央。
+- 只改样式数值时无需运行菜单，重新 Play 即生效；只有新建播放器或引用丢失时运行 `Tools / Hearth / Dialogue / Apply Shared Subtitle Presentation`。
+- 运行 `Validate Shared Subtitle Presentation` 可检查四户是否仍绑定到统一普通播放器，避免第三户再次误接黑幕播放器。
+- 每句文字、句数、时长和语音仍在各自 `HearthDialogueSequence` 修改；共享样式只控制表现，不改剧情内容。
 
 ## 17F03 门与检查补充接口
 

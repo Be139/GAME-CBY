@@ -13,31 +13,41 @@ MonoBehaviour:
   m_Name: 17F04_Shutdown_Low
   m_EditorClassIdentifier: 
   sequenceId: 17F04_Shutdown_Low
-  notes: Low-trust forced shutdown after three confirmations.
+  notes: Low-trust forced shutdown after clearing the virus popup challenge.
   lines:
   - startDelay: 0.3
     speaker: System
     text: Forced shutdown authorized. Farewell protocol has been bypassed.
     holdSeconds: 3.8
     voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0
   - startDelay: 0.7
     speaker: Lily
     text: Mom?
     holdSeconds: 2
     voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0
   - startDelay: 0.8
     speaker: Lily
     text: Mom, did you turn it off?
     holdSeconds: 3
     voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0
   - startDelay: 0.2
     speaker: Mia
     text: Yes. Mom turned it off.
     holdSeconds: 2.8
     voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0
   - startDelay: 0.4
     speaker: Mia
     text: From now on, Mom will spend more time with you.
     holdSeconds: 3.6
     voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0
   postSequenceDelay: 0

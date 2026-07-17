@@ -51,6 +51,7 @@ public class HearthTvTerminalController : MonoBehaviour
     [Header("Presentation")]
     [SerializeField] private HearthTerminalBootSequence bootSequence;
     [SerializeField] private HearthTerminalSelectionHighlighter selectionHighlighter;
+    [SerializeField] private HearthUiPressFeedback submitFeedback;
 
     [Header("Keyboard Navigation")]
     [SerializeField] private bool keyboardNavigationEnabled = true;
@@ -600,6 +601,11 @@ public class HearthTvTerminalController : MonoBehaviour
     public void SetDeferCustomActionCloseUntilExternalFade(bool value)
     {
         deferCustomActionCloseUntilExternalFade = value;
+    }
+
+    public void SetSubmitFeedback(HearthUiPressFeedback feedback)
+    {
+        submitFeedback = feedback;
     }
 
     public string GetReplayResidentId()
@@ -1508,6 +1514,11 @@ public class HearthTvTerminalController : MonoBehaviour
 
     private void SubmitKeyboardFocus()
     {
+        if (submitFeedback != null)
+        {
+            submitFeedback.PlayFeedback();
+        }
+
         if (pageDrivenSelectionStates)
         {
             SubmitPageDrivenSelection();

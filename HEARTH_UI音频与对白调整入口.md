@@ -22,7 +22,7 @@
 音频归类：
 
 - Master：直接控制 `AudioListener.volume`。
-- Dialogue：已绑定三个正式 `MinLoopSubtitlePlayer` 的语音 AudioSource。
+- Dialogue：已绑定全局标准对白播放器和终局黑幕播放器的语音 AudioSource。
 - SFX：已绑定正式人类/机器人脚步声，以及 HUD/TV 上已有的短音效 AudioSource。
 - Ambient：已绑定 `MIN_LOOP_ROOT/Audio` 下 Corridor、Replay Night、Morning 三个 Ambience 占位音源；以后给其他环境 AudioSource 添加 `HearthAudioChannelSource`，把 `Channel` 设为 `Ambient` 即可接入。
 
@@ -78,6 +78,22 @@
 - `Voice Tail Seconds`：语音结束后额外停顿多久再进入下一句。
 
 增删句子、改文字、改时长或拖语音后直接保存资产即可，关卡会在下一次 Play 时读取；不需要重跑场景绑定菜单。流程会等待整段 Dialogue Sequence 播放完，再开放后续 E、切幕或选项。
+
+### 四户统一字幕外观
+
+共享样式资产：`Assets/Data/MinLoop/UI/Hearth_SubtitleStyle.asset`
+
+- `Standard Dialogue`：统一控制 17F01、17F02、17F03、17F04 普通对白；修改一次，四户一起生效。
+- `Centered Epilogue`：只控制 17F04 最终纯黑画面中的居中结局文字，不会把普通对白挪到屏幕中央。
+- `Width Fraction`：字幕最大宽度；默认约为屏幕宽度的三分之二，过长内容会自动居中换行。
+- `Speaker Center Y / Body Center Y`：说话人名称和正文的垂直位置。
+- `Speaker Height / Body Height`：两个文字区域的高度。
+- `Speaker/Body Max Font Size` 与 `Min Font Size`：自动字号的上下限。
+- `Body Max Visible Lines` 与 `Body Line Spacing`：最大行数与行距。超出安全区域时会自动缩小字号和换行，不应再越出屏幕。
+
+只调整这些位置、大小或换行参数时，直接保存共享样式资产即可，不需要运行菜单。新增字幕播放器、引用丢失或重建场景后，运行 `Tools / Hearth / Dialogue / Apply Shared Subtitle Presentation`；随后可运行同目录下的验证菜单检查四户是否仍共用一套样式。
+
+注意：共享样式只负责“怎么显示”。每句台词、说话人、句数、等待时间与语音仍在对应的 `HearthDialogueSequence` 资产中修改。
 
 ## 5. 单按 E 与长按 E
 

@@ -217,14 +217,16 @@ public class HearthCompanion17F01ReplayController : MonoBehaviour
 
     public void CompleteCurrentStep()
     {
+        if (activeRoutine != null)
+        {
+            return;
+        }
+
         switch (currentStep)
         {
             case ReplayStep.LookAtBoyPrompt:
                 StopBedroomPrelude();
                 activeRoutine = StartCoroutine(BeginBedsideSoothingInPlaceRoutine());
-                break;
-            case ReplayStep.BedsideSoothing:
-                activeRoutine = StartCoroutine(SoothingRoutine());
                 break;
             case ReplayStep.LivingRoomObservation:
                 ReturnToTerminalForDisposition();
@@ -361,11 +363,11 @@ public class HearthCompanion17F01ReplayController : MonoBehaviour
         {
             companionHud.ShowScene(bedsideSceneId);
             companionHud.ResetHoldPrompt();
-            companionHud.SetHoldPromptVisible(true);
+            companionHud.SetHoldPromptVisible(false);
         }
 
+        yield return SoothingRoutine();
         activeRoutine = null;
-        yield break;
     }
 
     private IEnumerator SoothingRoutine()
@@ -507,10 +509,6 @@ public class HearthCompanion17F01ReplayController : MonoBehaviour
             return;
         }
 
-        if (currentStep == ReplayStep.BedsideSoothing && string.Equals(sceneId, bedsideSceneId, System.StringComparison.OrdinalIgnoreCase))
-        {
-            CompleteCurrentStep();
-        }
     }
 
     private void SetStep(ReplayStep step)

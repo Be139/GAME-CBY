@@ -6,6 +6,10 @@ using UnityEngine.UI;
 
 public class MinLoopSubtitlePlayer : MonoBehaviour
 {
+    [Header("Shared Presentation")]
+    [SerializeField] private HearthSubtitleStyleProfile styleProfile;
+    [SerializeField] private HearthSubtitlePresentationMode presentationMode = HearthSubtitlePresentationMode.StandardDialogue;
+
     [Header("UI")]
     [SerializeField] private GameObject subtitlePanel;
     [SerializeField] private TMP_Text speakerText;
@@ -39,6 +43,16 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
     private Coroutine activeRoutine;
 
     public bool IsPlaying { get; private set; }
+
+    public HearthSubtitleStyleProfile StyleProfile
+    {
+        get { return styleProfile; }
+    }
+
+    public HearthSubtitlePresentationMode PresentationMode
+    {
+        get { return presentationMode; }
+    }
 
     private void Awake()
     {
@@ -103,6 +117,13 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
             canvasGroup.alpha = 1f;
         }
 
+        ApplyConfiguredStyle();
+    }
+
+    public void SetPresentation(HearthSubtitleStyleProfile profile, HearthSubtitlePresentationMode mode)
+    {
+        styleProfile = profile;
+        presentationMode = mode;
         ApplyConfiguredStyle();
     }
 
@@ -388,20 +409,52 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
 
         EnsureSubtitleCanvasSorting();
 
-        float halfWidth = Mathf.Clamp01(subtitleWidthFraction) * 0.5f;
+        HearthSubtitleLayoutSettings sharedLayout = styleProfile != null
+            ? styleProfile.GetLayout(presentationMode)
+            : null;
+        float width = sharedLayout != null ? sharedLayout.widthFraction : subtitleWidthFraction;
+        float speakerY = sharedLayout != null ? sharedLayout.speakerCenterY : speakerCenterY;
+        float speakerHeight = sharedLayout != null ? sharedLayout.speakerHeightFraction : speakerHeightFraction;
+        float bodyY = sharedLayout != null ? sharedLayout.bodyCenterY : bodyCenterY;
+        float bodyHeight = sharedLayout != null ? sharedLayout.bodyHeightFraction : bodyHeightFraction;
+        float speakerSize = sharedLayout != null ? sharedLayout.speakerFontSize : cleanSpeakerFontSize;
+        float bodySize = sharedLayout != null ? sharedLayout.bodyFontSize : cleanBodyFontSize;
+        float speakerMinSize = sharedLayout != null ? sharedLayout.speakerMinimumFontSize : Mathf.Max(12f, speakerSize * 0.72f);
+        float bodyMinSize = sharedLayout != null ? sharedLayout.bodyMinimumFontSize : Mathf.Max(14f, bodySize * 0.64f);
+        int bodyMaxLines = sharedLayout != null ? sharedLayout.bodyMaximumLines : 5;
+        float lineSpacing = sharedLayout != null ? sharedLayout.lineSpacing : 0f;
+        Color textColor = styleProfile != null ? styleProfile.TextColor : cleanTextColor;
+
+        float halfWidth = Mathf.Clamp01(width) * 0.5f;
         ApplyTextStyle(
             speakerText,
-            MakeCenteredAnchor(speakerCenterY, speakerHeightFraction, halfWidth),
-            cleanSpeakerFontSize,
+            MakeCenteredAnchor(speakerY, speakerHeight, halfWidth),
+            speakerSize,
+            speakerMinSize,
+            1,
+            0f,
+            textColor,
             FontStyles.Bold);
         ApplyTextStyle(
             bodyText,
-            MakeCenteredAnchor(bodyCenterY, bodyHeightFraction, halfWidth),
-            cleanBodyFontSize,
+            MakeCenteredAnchor(bodyY, bodyHeight, halfWidth),
+            bodySize,
+            bodyMinSize,
+            bodyMaxLines,
+            lineSpacing,
+            textColor,
             FontStyles.Normal);
     }
 
-    private void ApplyTextStyle(TMP_Text text, Rect anchorRect, float fontSize, FontStyles style)
+    private void ApplyTextStyle(
+        TMP_Text text,
+        Rect anchorRect,
+        float fontSize,
+        float minimumFontSize,
+        int maximumLines,
+        float lineSpacing,
+        Color color,
+        FontStyles style)
     {
         if (text == null)
         {
@@ -417,12 +470,17 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
             rect.offsetMax = Vector2.zero;
         }
 
-        text.color = cleanTextColor;
+        text.color = color;
         text.fontSize = fontSize;
+        text.fontSizeMax = fontSize;
+        text.fontSizeMin = Mathf.Min(minimumFontSize, fontSize);
+        text.enableAutoSizing = true;
         text.fontStyle = style;
         text.alignment = TextAlignmentOptions.Center;
         text.enableWordWrapping = true;
-        text.overflowMode = TextOverflowModes.Overflow;
+        text.maxVisibleLines = Mathf.Max(1, maximumLines);
+        text.lineSpacing = lineSpacing;
+        text.overflowMode = TextOverflowModes.Truncate;
     }
 
     private Rect MakeCenteredAnchor(float centerY, float height, float halfWidth)
@@ -444,13 +502,45 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
             return;
         }
 
-        Canvas subtitleCanvas = subtitlePanel.GetComponent<Canvas>();
-        if (subtitleCanvas == null)
+        Canvas subtitleCanvas = null;
+        Canvas[] parentCanvases = subtitlePanel.GetComponentsInParent<Canvas>(true);
+        for (int i = 0; i < parentCanvases.Length; i++)
         {
-            subtitleCanvas = subtitlePanel.AddComponent<Canvas>();
+            if (parentCanvases[i] != null && parentCanvases[i].isRootCanvas)
+            {
+                subtitleCanvas = parentCanvases[i];
+                break;
+            }
         }
 
-        subtitleCanvas.overrideSorting = true;
+        if (subtitleCanvas == null)
+        {
+            Canvas[] childCanvases = GetComponentsInChildren<Canvas>(true);
+            for (int i = 0; i < childCanvases.Length; i++)
+            {
+                if (childCanvases[i] != null && childCanvases[i].isRootCanvas)
+                {
+                    subtitleCanvas = childCanvases[i];
+                    break;
+                }
+            }
+        }
+
+        if (subtitleCanvas == null)
+        {
+            subtitleCanvas = subtitlePanel.GetComponent<Canvas>();
+            if (subtitleCanvas == null)
+            {
+                subtitleCanvas = subtitlePanel.AddComponent<Canvas>();
+            }
+        }
+
+        Canvas nestedCanvas = subtitlePanel.GetComponent<Canvas>();
+        if (nestedCanvas != null && nestedCanvas != subtitleCanvas)
+        {
+            nestedCanvas.overrideSorting = false;
+        }
+
         subtitleCanvas.sortingOrder = subtitleSortingOrder;
     }
 }

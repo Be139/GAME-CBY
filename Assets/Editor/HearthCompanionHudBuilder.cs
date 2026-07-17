@@ -76,6 +76,42 @@ public static class HearthCompanionHudBuilder
         Debug.Log("[HearthCompanionHudBuilder] Regenerated default companion unit scene data.");
     }
 
+    [MenuItem("Tools/Hearth/HUD/Apply Companion Special Effect Alignment")]
+    public static void ApplyCompanionSpecialEffectAlignment()
+    {
+        GameObject prefabContents = null;
+        try
+        {
+            prefabContents = PrefabUtility.LoadPrefabContents(RootPrefabPath);
+            HearthCompanionSpecialEffectsView prefabView = prefabContents.GetComponentInChildren<HearthCompanionSpecialEffectsView>(true);
+            if (prefabView != null)
+            {
+                prefabView.ApplyLayoutNow();
+                EditorUtility.SetDirty(prefabView);
+                PrefabUtility.SaveAsPrefabAsset(prefabContents, RootPrefabPath);
+            }
+        }
+        finally
+        {
+            if (prefabContents != null)
+            {
+                PrefabUtility.UnloadPrefabContents(prefabContents);
+            }
+        }
+
+        HearthCompanionSpecialEffectsView sceneView = Object.FindObjectOfType<HearthCompanionSpecialEffectsView>(true);
+        if (sceneView != null)
+        {
+            Undo.RecordObject(sceneView, "Align companion shutdown UI");
+            sceneView.ApplyLayoutNow();
+            EditorUtility.SetDirty(sceneView);
+            EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+        }
+
+        AssetDatabase.SaveAssets();
+        Debug.Log("[HearthCompanionHudBuilder] Centered the companion shutdown, deep-sleep, and warning text in both the prefab and open scene.");
+    }
+
     [MenuItem("Tools/Hearth/HUD/Regenerate 17F03 Companion Scene Data Defaults")]
     public static void Regenerate17F03SceneDataDefaults()
     {
@@ -278,9 +314,9 @@ public static class HearthCompanionHudBuilder
         Stretch(root.GetComponent<RectTransform>());
         CanvasGroup group = root.GetComponent<CanvasGroup>();
         Image overlay = CreateImage(root.transform, "BlackOverlay", new Rect(0f, 0f, ReferenceWidth, ReferenceHeight), Color.black);
-        TMP_Text title = CreateText(root.transform, "SpecialTitleText", string.Empty, PptRect(411.8f, 366.3f, 664.7f, 48f), 32f, new Color(0.46f, 0.88f, 1f, 1f), FontStyles.Bold, TextAlignmentOptions.Center);
-        TMP_Text body = CreateText(root.transform, "SpecialBodyText", string.Empty, PptRect(390f, 430f, 700f, 120f), 18f, new Color(0.78f, 0.9f, 1f, 0.9f), FontStyles.Normal, TextAlignmentOptions.Center);
-        TMP_Text status = CreateText(root.transform, "SpecialStatusText", string.Empty, PptRect(510f, 520f, 430f, 32f), 14f, new Color(0.46f, 0.88f, 1f, 0.9f), FontStyles.Bold, TextAlignmentOptions.Center);
+        TMP_Text title = CreateText(root.transform, "SpecialTitleText", string.Empty, PptRect(390f, 366.3f, 660f, 48f), 32f, new Color(0.46f, 0.88f, 1f, 1f), FontStyles.Bold, TextAlignmentOptions.Center);
+        TMP_Text body = CreateText(root.transform, "SpecialBodyText", string.Empty, PptRect(390f, 430f, 660f, 120f), 18f, new Color(0.78f, 0.9f, 1f, 0.9f), FontStyles.Normal, TextAlignmentOptions.Center);
+        TMP_Text status = CreateText(root.transform, "SpecialStatusText", string.Empty, PptRect(465f, 520f, 510f, 32f), 14f, new Color(0.46f, 0.88f, 1f, 0.9f), FontStyles.Bold, TextAlignmentOptions.Center);
         Image pulse = CreateImage(root.transform, "AudioPulseLine", PptRect(570f, 470f, 300f, 3f), new Color(0.46f, 0.88f, 1f, 0.5f));
         HearthCompanionSpecialEffectsView view = root.GetComponent<HearthCompanionSpecialEffectsView>();
         view.Configure(group, overlay, title, body, status, pulse);

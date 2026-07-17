@@ -26,7 +26,7 @@ flowchart TD
     E --> F["自由移动/转头听对白"]
     F --> G["最终 A/B"]
     G -->|"A 亲自回答"| H["走近 ROBOT1"]
-    H --> I["高信任 1 次 / 低信任 3 次 Space"]
+    H --> I["高信任单次确认 / 低信任病毒弹窗连按 Space"]
     G -->|"B 陪伴单元回答"| J["保留陪伴单元"]
     I --> K["关闭结局黑幕"]
     J --> L["保留结局黑幕"]
@@ -85,7 +85,7 @@ flowchart TD
 - B：`LET THE COMPANION ANSWER FOR HER`。
 - HUD 只发送事件，由 17F04 控制器决定后续，不进入旧结局流程。
 - High 关闭：一次 Space。
-- Low 关闭：三段警告、三次 Space。
+- Low 关闭：病毒式警告窗口从屏幕四周连续弹入；每次 Space 关闭最上层窗口，生成结束且窗口清空后才完成关闭。
 
 ### 黑幕
 
@@ -134,7 +134,7 @@ Apply 会清理 TV3/TV4 错误的 17F02 终端并补齐引用，但保留同名 
 - 女儿房间 `Dialogue` 阶段移动、视角、交互均保持开启。
 - `FinalChoice` 阶段控制锁定，A/B 只接受一次。
 - A 路线恢复移动并开放 ROBOT1；B 路线不开放。
-- High 一次提交结束；Low 三次提交按三段警告推进。
+- High 一次提交结束；Low 使用病毒警告弹窗压力流程推进。
 - 控制锁不再产生 Kinematic Rigidbody 速度写入警告。
 - 17F03 与 17F04 验证菜单均通过。
 
@@ -151,7 +151,7 @@ Apply 会清理 TV3/TV4 错误的 17F02 终端并补齐引用，但保留同名 
 - 第二张照片：新增 Dialogue Sequence、固定相机或同一相框的照片数据切换。
 - 语音：拖入各句 `Voice Clip`，再把字幕 AudioSource 接到 AudioMixer Group。
 - 存档：保存 `CompletedHouseholds`、信任分数和终局完成状态。
-- 低信任小游戏：继承 `HearthShutdownChallenge` 替换 `HearthSequentialShutdownChallenge`。
+- 低信任玩法已接入 `HearthVirusPopupShutdownChallenge`；后续只需在 Inspector 调弹窗数量、生成速度、关闭速度和警告文本。
 - 结局去向：在 `OnFinaleCompleted` 接主菜单、结局动画、成就或下一场景。
 - 前三户门槛：勾选 `Require Previous Households`，并确保前三户完成时调用 `MarkHouseholdCompleted`。
 
@@ -216,3 +216,14 @@ Apply 会清理 TV3/TV4 错误的 17F02 终端并补齐引用，但保留同名 
 - MCP 独立路线预览到达第 7 点：`HasReachedPhoto = true`，最终位置为 `(-2301.916, 112.297, 562.254)`，与当前第 7 点一致。
 - 正式猫和七只参考猫的旧 Legacy `Animation` 已移除；Play Mode 不再出现 `Drop_L_sit must be marked as Legacy`。
 - `MIN_LOOP_ROOT/Audio/StorySFX_17F04` 新增相框记忆提示和陪伴单元关机两个空 Clip 槽。猫咪不配置声音。
+
+## 2026-07-17 交互反馈、共享字幕与病毒弹窗验收
+
+- TV3 的 `SPACE ENTER HOME` 已绑定 `HearthUiPressFeedback`，提交时确认底板和文字短暂变灰。
+- 关闭陪伴单元时每次 Space 都会让底部指令/计数短暂灰显，提供明确输入反馈。
+- Low Trust 旧“三段警告各按一次”组件已从场景移除，改为 18 个默认警告窗、4 个初始窗口、每 `0.36s` 继续生成的压力玩法。
+- 玩家需要持续按 Space 清除窗口；只在全部生成并全部清空后完成。High Trust 仍只需一个授权窗口。
+- 弹窗模板使用自动字号、换行、最大行数和截断；1920x1080 视觉检查确认文字均在各自浮窗内。
+- 四户普通对白现共用 `Hearth_SubtitleStyle.asset / Standard Dialogue`；17F04 黑幕使用同资产的 `Centered Epilogue`。
+- 1920x1080 长句测试能够在屏幕中下部自动分成三行；第三户关闭画面的红色标题、白色正文和状态文字水平中心一致。
+- Unity 绑定验证通过：旧顺序关闭组件为 0，病毒弹窗组件存在，TV3 反馈目标为 2，一个有效 Camera、一个有效 AudioListener。

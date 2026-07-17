@@ -18,7 +18,28 @@ public class HearthCompanionSpecialEffectsView : MonoBehaviour
     [SerializeField] private bool useUnscaledTime = true;
     [SerializeField] private float fadeSeconds = 0.2f;
 
+    [Header("Centered Layout")]
+    [SerializeField] private bool enforceHorizontalCenter = true;
+    [SerializeField] private float referenceCanvasWidth = 1920f;
+
     private Coroutine activeRoutine;
+
+    private void Awake()
+    {
+        ApplyCenteredLayout();
+    }
+
+    private void OnEnable()
+    {
+        ApplyCenteredLayout();
+    }
+
+    private void OnValidate()
+    {
+        fadeSeconds = Mathf.Max(0.01f, fadeSeconds);
+        referenceCanvasWidth = Mathf.Max(1f, referenceCanvasWidth);
+        ApplyCenteredLayout();
+    }
 
     public void Configure(
         CanvasGroup newOverlayGroup,
@@ -34,7 +55,13 @@ public class HearthCompanionSpecialEffectsView : MonoBehaviour
         bodyText = newBodyText;
         statusText = newStatusText;
         pulseImage = newPulseImage;
+        ApplyCenteredLayout();
         HideImmediate();
+    }
+
+    public void ApplyLayoutNow()
+    {
+        ApplyCenteredLayout();
     }
 
     public void Apply(HearthCompanionHudSceneData scene)
@@ -143,6 +170,7 @@ public class HearthCompanionSpecialEffectsView : MonoBehaviour
 
     private void PrepareText(string title, string body, string status, Color accent)
     {
+        ApplyCenteredLayout();
         if (titleText != null)
         {
             titleText.text = title;
@@ -164,6 +192,53 @@ public class HearthCompanionSpecialEffectsView : MonoBehaviour
         {
             pulseImage.color = accent;
         }
+    }
+
+    private void ApplyCenteredLayout()
+    {
+        if (!enforceHorizontalCenter)
+        {
+            return;
+        }
+
+        CenterRect(titleText != null ? titleText.rectTransform : null);
+        CenterRect(bodyText != null ? bodyText.rectTransform : null);
+        CenterRect(statusText != null ? statusText.rectTransform : null);
+        CenterRect(pulseImage != null ? pulseImage.rectTransform : null);
+        ConfigureContainedText(titleText, 1, 18f);
+        ConfigureContainedText(bodyText, 5, 14f);
+        ConfigureContainedText(statusText, 2, 11f);
+    }
+
+    private void CenterRect(RectTransform rect)
+    {
+        if (rect == null)
+        {
+            return;
+        }
+
+        Vector2 position = rect.anchoredPosition;
+        rect.anchorMin = new Vector2(0f, 1f);
+        rect.anchorMax = new Vector2(0f, 1f);
+        rect.pivot = new Vector2(0f, 1f);
+        position.x = (referenceCanvasWidth - rect.sizeDelta.x) * 0.5f;
+        rect.anchoredPosition = position;
+    }
+
+    private static void ConfigureContainedText(TMP_Text text, int maximumLines, float minimumSize)
+    {
+        if (text == null)
+        {
+            return;
+        }
+
+        text.alignment = TextAlignmentOptions.Center;
+        text.enableWordWrapping = true;
+        text.enableAutoSizing = true;
+        text.fontSizeMax = text.fontSize;
+        text.fontSizeMin = Mathf.Min(minimumSize, text.fontSize);
+        text.maxVisibleLines = Mathf.Max(1, maximumLines);
+        text.overflowMode = TextOverflowModes.Truncate;
     }
 
     private void SetOverlayColor(Color color)

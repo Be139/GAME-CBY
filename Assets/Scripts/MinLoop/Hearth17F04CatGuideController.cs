@@ -32,6 +32,8 @@ public class Hearth17F04CatGuideController : MonoBehaviour
     [SerializeField] private RouteStep[] routeSteps = Array.Empty<RouteStep>();
     [SerializeField, Min(0f)] private float jumpArcHeight = 0.25f;
     [SerializeField, Range(0f, 1f)] private float pathSmoothing = 0.75f;
+    [Tooltip("Only shortens Walk route segments. RunJump and lie animation timing are not changed.")]
+    [SerializeField, Min(0.01f)] private float walkRouteSpeedMultiplier = 3f;
 
     [Header("Animation IDs")]
     [SerializeField] private string walkClipId = "Walk_F";
@@ -40,7 +42,7 @@ public class Hearth17F04CatGuideController : MonoBehaviour
     [SerializeField] private string lieIdleClipId = "Lie_idle";
 
     [Header("Animation Playback")]
-    [Tooltip("Only affects Walk_F cadence. Route durations and Run_F / lie animation speeds are unchanged.")]
+    [Tooltip("Base Walk_F cadence. The walk route multiplier is also applied so the paws keep up with faster movement.")]
     [SerializeField, Min(0.01f)] private float walkPlaybackSpeed = 2f;
 
     [Header("Start Pose")]
@@ -100,6 +102,7 @@ public class Hearth17F04CatGuideController : MonoBehaviour
     {
         jumpArcHeight = Mathf.Max(0f, jumpArcHeight);
         pathSmoothing = Mathf.Clamp01(pathSmoothing);
+        walkRouteSpeedMultiplier = Mathf.Max(0.01f, walkRouteSpeedMultiplier);
         walkPlaybackSpeed = Mathf.Max(0.01f, walkPlaybackSpeed);
         if (routeSteps == null)
         {
@@ -215,10 +218,11 @@ public class Hearth17F04CatGuideController : MonoBehaviour
                 continue;
             }
 
-            PlayMotion(step.motion, step.duration);
+            float effectiveDuration = GetEffectiveDuration(step);
+            PlayMotion(step.motion, effectiveDuration);
             yield return MoveTo(
                 step.target,
-                step.duration,
+                effectiveDuration,
                 step.motion == CatMotion.RunJump,
                 nodeVelocities[i],
                 nodeVelocities[i + 1]);
@@ -307,10 +311,23 @@ public class Hearth17F04CatGuideController : MonoBehaviour
         float[] durations = new float[routeSteps.Length];
         for (int i = 0; i < routeSteps.Length; i++)
         {
-            durations[i] = routeSteps[i] != null ? Mathf.Max(0.01f, routeSteps[i].duration) : 0.01f;
+            durations[i] = routeSteps[i] != null ? GetEffectiveDuration(routeSteps[i]) : 0.01f;
         }
 
         return durations;
+    }
+
+    private float GetEffectiveDuration(RouteStep step)
+    {
+        if (step == null)
+        {
+            return 0.01f;
+        }
+
+        float duration = Mathf.Max(0.01f, step.duration);
+        return step.motion == CatMotion.Walk
+            ? duration / Mathf.Max(0.01f, walkRouteSpeedMultiplier)
+            : duration;
     }
 
     private static Vector3[] BuildNodeVelocities(Vector3[] positions, float[] durations)
@@ -372,7 +389,7 @@ public class Hearth17F04CatGuideController : MonoBehaviour
 
         if (currentMotion != CatMotion.Walk)
         {
-            PlayLoopOrWarn(walkClipId, walkPlaybackSpeed);
+            PlayLoopOrWarn(walkClipId, walkPlaybackSpeed * walkRouteSpeedMultiplier);
             currentMotion = CatMotion.Walk;
         }
     }
@@ -482,7 +499,7 @@ public class Hearth17F04CatGuideController : MonoBehaviour
 #if UNITY_EDITOR
             Handles.Label(
                 step.target.position + Vector3.up * 0.12f,
-                (i + 1) + "  " + step.motion + "  " + step.duration.ToString("0.##") + "s");
+                (i + 1) + "  " + step.motion + "  " + GetEffectiveDuration(step).ToString("0.##") + "s");
 #endif
             previous = step.target;
         }

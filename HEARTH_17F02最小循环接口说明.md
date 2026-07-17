@@ -571,3 +571,15 @@ casual_Male_K (1)
 - 参考模型不是运行时演员，不播放剧情动作。
 - Play Mode 下参考模型应隐藏 Renderer、关闭 Collider，不能挡机器人移动。
 - 调整参考模型后，先运行 `Build 17F02 Wife Route From Female References`，再运行 `Apply 17F02 Minimal Loop Setup`。
+
+## 2026-07-17 最新动作衔接、开门与出门校正规则
+
+本节优先于上方旧的 `1s` 开门延迟和 Root Motion 建议。
+
+- 卧室女主 `HearthActorAnimatorDriver / Minimum Transition Seconds` 当前为 `0.32s`。SittingDisbelief、SittingTalking、SitToStand、WalkLoop、OpenDoorOutwards 五个状态都启用 `Stabilize Animator Transform`。
+- 若动作仍显得太急，可以先把最小过渡调到 `0.4-0.5s`；不要通过给剧情协程添加无关固定等待来掩盖动作切换。
+- 门的正式触发值为 `Door Open Delay After Animation Start Seconds = 0.5s`。这是“开门动作开始后等待多久打开实体门”，不是整段动作播放时长。
+- 女主出门完成后，控制器会停止动作、恢复可见模型的本地基准，并把 RuntimeRoot 再次精确放到 `Wife Exit Outside Anchor`，防止动画尾帧把她拉回门后。
+- 当前女主所有动作的世界 Root Motion 都不负责剧情位移；路线和最终站位只认 RuntimeRoot 与 Anchor。
+- 17F02 第三幕 `CompanionScene_07_17F02_04 / Center Message` 必须为空；中央只显示 `FAMILY LOG - TODAY` 投影面板。
+- MCP 直接运行女主离开协程的验收结果：最终 RuntimeRoot 与 ExitOutside 距离 `0.00000m`，门处于打开状态，额外等待后子模型没有闪回。

@@ -16,6 +16,7 @@ public static class Hearth17F04CatGuideBinder
     private static readonly float[] DefaultDurations = { 1.5f, 1.5f, 1.5f, 1.5f, 7.5f, 0.5f, 0.5f };
     private static readonly float[] LegacyDefaultDurations = { 3f, 3f, 3f, 3f, 15f, 1f, 1f };
     private const float DefaultPathSmoothing = 0.75f;
+    private const float DefaultWalkRouteSpeedMultiplier = 3f;
     private const float DefaultWalkPlaybackSpeed = 2f;
 
     [MenuItem("Tools/Hearth/Finale/Apply 17F04 Cat Guide Setup")]
@@ -104,7 +105,13 @@ public static class Hearth17F04CatGuideBinder
                 SerializedProperty route = guideSo.FindProperty("routeSteps");
                 if (!MatchesDurationProfile(route, DefaultDurations))
                 {
-                    errors.Add("The cat route does not use the current 2x-speed duration profile (1.5/1.5/1.5/1.5/7.5/0.5/0.5 seconds).");
+                    errors.Add("The cat route base durations should remain 1.5/1.5/1.5/1.5/7.5/0.5/0.5 seconds.");
+                }
+
+                SerializedProperty routeMultiplier = guideSo.FindProperty("walkRouteSpeedMultiplier");
+                if (routeMultiplier == null || !Mathf.Approximately(routeMultiplier.floatValue, DefaultWalkRouteSpeedMultiplier))
+                {
+                    errors.Add("Walk route speed multiplier should be 3.0; RunJump and lie timings remain unchanged.");
                 }
 
                 SerializedProperty smoothing = guideSo.FindProperty("pathSmoothing");
@@ -173,6 +180,7 @@ public static class Hearth17F04CatGuideBinder
         SetObject(so, "actorRoot", runtimeCat.transform);
         SetObject(so, "animationPlayer", animationPlayer);
         SetFloat(so, "jumpArcHeight", Mathf.Max(0.25f, GetFloat(so, "jumpArcHeight", 0.25f)));
+        SetFloat(so, "walkRouteSpeedMultiplier", DefaultWalkRouteSpeedMultiplier);
         SerializedProperty smoothing = so.FindProperty("pathSmoothing");
         if (smoothing != null && smoothing.floatValue <= 0f)
         {

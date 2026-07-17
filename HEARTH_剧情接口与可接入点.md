@@ -183,8 +183,8 @@
 - 开始：`Hearth17F04FinaleController.BeginUnitShutdown()`。
 - 当前挑战：`HearthVirusPopupShutdownChallenge`，场景对象为 `MIN_LOOP_ROOT/Finale_17F04/UI/ShutdownChallenge_17F04`。
 - High：一个授权窗口，按一次 Space。
-- Low：警告窗持续从四个屏幕边缘生成，Space 每次关闭最上层窗口；所有窗口生成完且清空后完成。
-- 主要节奏接口：`Total Popup Count / Initial Popup Count / Spawn Interval / Popup Enter Seconds / Popup Dismiss Seconds`。
+- Low：依次经历蓝、橙、红三轮。每轮先按 Space 关闭居中的主警告，再从四个屏幕边缘持续生成该轮浮窗；本轮生成完且清空后才进入下一轮。
+- 主要节奏接口：`Low Trust Waves` 数组中每轮的 `Popup Count / Initial Burst Count / Spawn Interval / Messages / Background Color / Accent Color`，以及公共 `Wave Transition Seconds / Popup Enter Seconds / Popup Dismiss Seconds`。
 - 可替换抽象接口：`HearthShutdownChallenge.BeginChallenge(bool)`、`Submit()`、`Cancel()`、`Completed`、`Cancelled`。
 - 旧 `HearthSequentialShutdownChallenge` 已从第四户场景解绑；后续如替换玩法，新组件继续继承 `HearthShutdownChallenge`，终局状态机、A/B 和结局文本不需要重写。
 
@@ -208,7 +208,7 @@
 - 开始/复位/停止：`BeginSequence()`、`ResetSequence()`、`StopSequence()`。
 - 状态：`IsRunning`、`HasReachedPhoto`；事件：`OnReachedPhoto`、`OnSequenceCompleted`。
 - 猫咪只是视觉引导，禁止用 `HasReachedPhoto` 作为相框或 Door1 的开放条件。
-- 当前七段路线时间为 `1.5 / 1.5 / 1.5 / 1.5 / 7.5 / 0.5 / 0.5` 秒。直接在正式猫 `Hearth17F04CatGuideController / Route Steps` 中修改即可。
+- `Route Steps` 当前编辑时长为 `1.5 / 1.5 / 1.5 / 1.5 / 7.5 / 0.5 / 0.5` 秒；`Walk Route Speed Multiplier = 3` 会在运行时只把前六个 Walk 段除以 3，6→7 的 RunJump 仍为 `0.5s`。
 - `Walk_F` 使用 XZ 原地烘焙，世界位移由路线控制；`Run_F` 保持原设置并只用于最后的跳跃段。
 - 路线转弯平滑度由同一组件的 `Path Smoothing` 控制，默认 `0.75`；正常只调整 `0.5-1.0`，设为 `0` 会恢复逐段直线移动。
 - `Walk_F` 和 `Lie_idle` 的动画 Slot 使用 `Seamless Loop`；替换循环动画时应同时在 FBX Import Settings 开启 `Loop Time / Loop Pose`。
@@ -263,3 +263,11 @@
 - 两个移动 Cue 的 AudioSource 位于 `MIN_LOOP_ROOT/Audio`，但通过 `Follow Target` 实时跟随人物 RuntimeRoot；不需要把音效对象手动放进人物模型。
 - 门、HUD、TV、主角脚步和机器人脚步继续使用原本的专用接口，禁止再用同一个 Clip 在 StorySFX 中重复触发。
 - 所有 Cue 在 Clip 为空时静默跳过，剧情不会停住，也不会输出错误。
+
+## 17F02 动作与门同步接口（2026-07-17）
+
+- 共享动作柔化入口：每个演员 `HearthActorAnimatorDriver / Minimum Transition Seconds`，当前为 `0.32s`；单个状态是否锁定 Animator 子模型偏移由 `State Slot / Stabilize Animator Transform` 控制。
+- 17F02 女主的世界位置必须继续由 `Actor_Wife_17F02_BedroomRuntimeRoot` 和路线 Anchor 控制；Mixamo 动作只控制骨骼。
+- 门提前量：`HearthCompanion17F02ReplayController / Door Open Delay After Animation Start Seconds = 0.5`。减小会更早开门，增大会更晚。
+- 女主出门完成后自动调用动画基准恢复并精确对齐 `Wife Exit Outside Anchor`；若以后替换动作后再次出现闪回，先检查对应 State 的稳定选项，再检查可见模型是否仍是 RuntimeRoot 子物体。
+- 第三幕中央蓝字来源为 `CompanionScene_07_17F02_04 / Center Message`，当前必须保持为空；家庭记录内容继续在 Projection Panel 数据中维护。

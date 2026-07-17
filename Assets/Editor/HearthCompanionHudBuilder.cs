@@ -402,7 +402,7 @@ public static class HearthCompanionHudBuilder
                 Arr("0x74D1 log_today_LOAD", "0x74D4 entry_17:50_BEDROOM", "0x74D5 vent_session", "0x74DA work_stress unit:12 male:0", "0x74DC daily_share unit:21 male:6", "0x74DD full_transcript_LOAD"),
                 false, "", false, "", "FAMILY LOG - TODAY",
                 "17:48 Female resident home\n17:50 Enters master bedroom\n17:50 Companion session begins\n17:50-17:58 Topic: work stress - venting\n17:58 Emotion 7.2 -> 4.5\n18:27 Male asks female's status\n18:27 Female responds (brief)\n\nMONTHLY TOPIC - UNIT VS MALE\nWork stress     12 - 0\nEmotional release     8 - 0\nDaily sharing     21 - 6",
-                "Subject content displayed.", false, "", "", false, "", "", "", 1.5f),
+                "", false, "", "", false, "", "", "", 1.5f),
 
             new SceneDefault("17F02_05", 8, "17F-02", HearthCompanionHudTemplate.ShutdownGlitch, HearthCompanionSpecialEffect.ShutdownGlitch, "COMPANION UNIT - FIRST PERSON - FORCED SHUTDOWN", orange,
                 "OPERATOR OVERRIDE", Lines(M("Male resident", "Approaching"), M("Action", "Reaching"), M("Target", "Main switch"), M("Unit", "Force-deactivated"), M("Last log", "18:47")), "FORCED SHUTDOWN",

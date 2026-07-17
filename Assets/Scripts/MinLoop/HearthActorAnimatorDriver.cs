@@ -13,6 +13,7 @@ public class HearthActorAnimatorDriver : MonoBehaviour
         public AnimationClip clip;
         public bool loop = true;
         public bool applyRootMotion;
+        public bool stabilizeAnimatorTransform;
         public float fadeSeconds = 0.18f;
         public float playbackSpeed = 1f;
     }
@@ -23,12 +24,21 @@ public class HearthActorAnimatorDriver : MonoBehaviour
     [Header("States")]
     [SerializeField] private StateSlot[] states = Array.Empty<StateSlot>();
 
+    [Header("Transitions")]
+    [Tooltip("Minimum cross-fade used when changing between two actor states. Individual states can request a longer fade.")]
+    [SerializeField, Min(0f)] private float minimumTransitionSeconds = 0.32f;
+
     [Header("Startup")]
     [SerializeField] private bool playOnEnable;
     [SerializeField] private string playOnEnableStateId;
 
     private int activeStateHash;
     private string activeStateId;
+    private bool currentStabilizeAnimatorTransform;
+    private bool hasAnimatorTransformBaseline;
+    private Vector3 animatorBaselineLocalPosition;
+    private Quaternion animatorBaselineLocalRotation;
+    private Vector3 animatorBaselineLocalScale;
 
     public Animator Animator
     {
@@ -46,9 +56,19 @@ public class HearthActorAnimatorDriver : MonoBehaviour
 
     private void OnEnable()
     {
+        ResolveAnimator();
+        CaptureAnimatorTransformBaseline();
         if (playOnEnable && !string.IsNullOrEmpty(playOnEnableStateId))
         {
             Play(playOnEnableStateId);
+        }
+    }
+
+    private void LateUpdate()
+    {
+        if (currentStabilizeAnimatorTransform)
+        {
+            RestoreAnimatorTransformNow();
         }
     }
 
@@ -58,6 +78,8 @@ public class HearthActorAnimatorDriver : MonoBehaviour
         {
             animator.speed = 1f;
         }
+
+        RestoreAnimatorTransformNow();
     }
 
     public float Play(string stateId)
@@ -114,12 +136,15 @@ public class HearthActorAnimatorDriver : MonoBehaviour
         animator.enabled = true;
         animator.applyRootMotion = slot.applyRootMotion;
         animator.speed = 1f;
+        currentStabilizeAnimatorTransform = slot.stabilizeAnimatorTransform;
         RestoreRootMotionChildBaseline();
+        RestoreAnimatorTransformNow();
         activeStateHash = Animator.StringToHash(statePath);
         activeStateId = slot.stateId;
         animator.Play(activeStateHash, 0, 0f);
         animator.Update(0f);
         RestoreRootMotionChildBaseline();
+        RestoreAnimatorTransformNow();
         animator.speed = 0f;
         return GetStateLength(stateId);
     }
@@ -154,6 +179,7 @@ public class HearthActorAnimatorDriver : MonoBehaviour
         }
 
         animator.speed = 0f;
+        RestoreAnimatorTransformNow();
     }
 
     public void StopPlayback()
@@ -165,6 +191,7 @@ public class HearthActorAnimatorDriver : MonoBehaviour
         }
 
         animator.speed = 0f;
+        RestoreAnimatorTransformNow();
     }
 
     public void SetRootMotion(bool value)
@@ -174,6 +201,57 @@ public class HearthActorAnimatorDriver : MonoBehaviour
         {
             animator.applyRootMotion = value;
         }
+    }
+
+    public void SetMinimumTransitionSeconds(float seconds)
+    {
+        minimumTransitionSeconds = Mathf.Max(0f, seconds);
+    }
+
+    public void SetAllStateStabilization(bool value)
+    {
+        if (states == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < states.Length; i++)
+        {
+            if (states[i] != null)
+            {
+                states[i].stabilizeAnimatorTransform = value;
+            }
+        }
+    }
+
+    public void CaptureAnimatorTransformBaseline()
+    {
+        ResolveAnimator();
+        hasAnimatorTransformBaseline = false;
+        if (animator == null || animator.transform == transform)
+        {
+            return;
+        }
+
+        Transform animatorTransform = animator.transform;
+        animatorBaselineLocalPosition = animatorTransform.localPosition;
+        animatorBaselineLocalRotation = animatorTransform.localRotation;
+        animatorBaselineLocalScale = animatorTransform.localScale;
+        hasAnimatorTransformBaseline = true;
+    }
+
+    public void RestoreAnimatorTransformNow()
+    {
+        ResolveAnimator();
+        if (!hasAnimatorTransformBaseline || animator == null || animator.transform == transform)
+        {
+            return;
+        }
+
+        Transform animatorTransform = animator.transform;
+        animatorTransform.localPosition = animatorBaselineLocalPosition;
+        animatorTransform.localRotation = animatorBaselineLocalRotation;
+        animatorTransform.localScale = animatorBaselineLocalScale;
     }
 
     public bool HasState(string stateId)
@@ -203,6 +281,8 @@ public class HearthActorAnimatorDriver : MonoBehaviour
         animator.enabled = true;
         animator.speed = Mathf.Max(0.01f, slot.playbackSpeed);
         animator.applyRootMotion = slot.applyRootMotion;
+        RestoreAnimatorTransformNow();
+        currentStabilizeAnimatorTransform = slot.stabilizeAnimatorTransform;
         RestoreRootMotionChildBaseline();
 
         string statePath = ResolveStatePath(slot.stateName);
@@ -215,7 +295,9 @@ public class HearthActorAnimatorDriver : MonoBehaviour
         }
 
         int stateHash = Animator.StringToHash(statePath);
-        float fade = Mathf.Max(0f, slot.fadeSeconds);
+        float fade = activeStateHash != 0
+            ? Mathf.Max(Mathf.Max(0f, slot.fadeSeconds), minimumTransitionSeconds)
+            : 0f;
         if (fade > 0f && activeStateHash != 0)
         {
             animator.CrossFadeInFixedTime(stateHash, fade, 0, 0f);
@@ -227,6 +309,7 @@ public class HearthActorAnimatorDriver : MonoBehaviour
 
         animator.Update(0f);
         RestoreRootMotionChildBaseline();
+        RestoreAnimatorTransformNow();
         activeStateHash = stateHash;
         activeStateId = slot.stateId;
         return slot.clip != null ? slot.clip.length / Mathf.Max(0.01f, slot.playbackSpeed) : 0f;
@@ -291,6 +374,10 @@ public class HearthActorAnimatorDriver : MonoBehaviour
         if (animator == null)
         {
             animator = GetComponentInChildren<Animator>(true);
+            if (animator != null && !hasAnimatorTransformBaseline)
+            {
+                CaptureAnimatorTransformBaseline();
+            }
         }
     }
 }

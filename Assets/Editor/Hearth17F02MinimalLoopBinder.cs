@@ -494,7 +494,7 @@ public static class Hearth17F02MinimalLoopBinder
         SetFloat(so, "wifeWalkSpeed", 1.15f);
         SetFloat(so, "wifeDoorPauseSeconds", 0.45f);
         SetFloat(so, "waitAfterDoorOpenSeconds", 0.55f);
-        SetFloat(so, "doorOpenDelayAfterAnimationStartSeconds", 1f);
+        SetFloat(so, "doorOpenDelayAfterAnimationStartSeconds", 0.5f);
         SetFloat(so, "bedroomTalkingMaxSeconds", 10f);
         SetBool(so, "useUnscaledReplayTime", true);
         SetBool(so, "manageActorVisibility", true);
@@ -1533,11 +1533,11 @@ public static class Hearth17F02MinimalLoopBinder
     {
         return new[]
         {
-            new ActorClipBinding("SittingDisbelief", "Assets/casual_Female_K@Sitting_Disbelief.fbx", "mixamo.com", true, false, 0.18f),
-            new ActorClipBinding("SittingTalking", "Assets/Sitting_Talking.fbx", "mixamo.com", false, false, 0.18f),
-            new ActorClipBinding("SitToStand", "Assets/X_Bot@Sit_To_Stand.fbx", "Sit_To_Stand", false, false, 0.12f),
-            new ActorClipBinding("WalkLoop", "Assets/casual_Female_K@Walking.fbx", "Walking", true, false, 0.15f),
-            new ActorClipBinding("OpenDoorOutwards", "Assets/Open_Door_Outwards.fbx", "mixamo.com", false, false, 0.12f),
+            new ActorClipBinding("SittingDisbelief", "Assets/casual_Female_K@Sitting_Disbelief.fbx", "mixamo.com", true, false, 0.18f, true),
+            new ActorClipBinding("SittingTalking", "Assets/Sitting_Talking.fbx", "mixamo.com", false, false, 0.18f, true),
+            new ActorClipBinding("SitToStand", "Assets/X_Bot@Sit_To_Stand.fbx", "Sit_To_Stand", false, false, 0.12f, true),
+            new ActorClipBinding("WalkLoop", "Assets/casual_Female_K@Walking.fbx", "Walking", true, false, 0.15f, true),
+            new ActorClipBinding("OpenDoorOutwards", "Assets/Open_Door_Outwards.fbx", "mixamo.com", false, false, 0.12f, true),
             new ActorClipBinding("Sitting", "Assets/Sitting.fbx", "mixamo.com", true, false, 0.18f),
             new ActorClipBinding("SittingIdle", "Assets/Sitting_Idle.fbx", "mixamo.com", true, false, 0.18f),
             new ActorClipBinding("ButtonPushing", "Assets/Button_Pushing.fbx", "mixamo.com", true, false, 0.18f)
@@ -1688,6 +1688,7 @@ public static class Hearth17F02MinimalLoopBinder
         HearthActorAnimatorDriver driver = GetOrAdd<HearthActorAnimatorDriver>(actor);
         SerializedObject so = new SerializedObject(driver);
         SetObject(so, "animator", animator);
+        SetFloat(so, "minimumTransitionSeconds", 0.32f);
 
         SerializedProperty states = so.FindProperty("states");
         if (states != null && states.isArray)
@@ -1702,6 +1703,11 @@ public static class Hearth17F02MinimalLoopBinder
                 slot.FindPropertyRelative("clip").objectReferenceValue = clip;
                 slot.FindPropertyRelative("loop").boolValue = bindings[i].loop;
                 slot.FindPropertyRelative("applyRootMotion").boolValue = bindings[i].applyRootMotion;
+                SerializedProperty stabilize = slot.FindPropertyRelative("stabilizeAnimatorTransform");
+                if (stabilize != null)
+                {
+                    stabilize.boolValue = bindings[i].stabilizeAnimatorTransform;
+                }
                 slot.FindPropertyRelative("fadeSeconds").floatValue = bindings[i].fadeSeconds;
                 slot.FindPropertyRelative("playbackSpeed").floatValue = 1f;
             }

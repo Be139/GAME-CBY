@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
@@ -7,6 +8,20 @@ using UnityEngine.UI;
 [DisallowMultipleComponent]
 public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
 {
+    [Serializable]
+    public sealed class PopupWave
+    {
+        public string waveId = "WAVE_1";
+        public string heading = "SHUTDOWN REQUEST BLOCKED";
+        public string popupTitle = "SHUTDOWN REQUEST BLOCKED";
+        [TextArea(2, 4)] public string[] messages = Array.Empty<string>();
+        public Color backgroundColor = new Color(0.025f, 0.06f, 0.08f, 0.97f);
+        public Color accentColor = new Color(0.2f, 0.78f, 1f, 1f);
+        [Min(1)] public int popupCount = 8;
+        [Min(1)] public int initialBurstCount = 3;
+        [Min(0.05f)] public float spawnInterval = 0.5f;
+    }
+
     [Header("UI")]
     [SerializeField] private CanvasGroup rootGroup;
     [SerializeField] private RectTransform popupLayer;
@@ -20,29 +35,23 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
     [SerializeField] private KeyCode submitKey = KeyCode.Space;
     [SerializeField] private KeyCode cancelKey = KeyCode.Escape;
 
-    [Header("Low Trust Virus Pressure")]
-    [SerializeField] private int totalPopupCount = 18;
-    [SerializeField] private int initialPopupCount = 4;
-    [SerializeField] private float spawnInterval = 0.36f;
-    [SerializeField] private float popupEnterSeconds = 0.2f;
-    [SerializeField] private float popupDismissSeconds = 0.1f;
-    [SerializeField] private float screenMargin = 42f;
+    [Header("Low Trust Warning Waves")]
+    [SerializeField] private PopupWave[] lowTrustWaves = CreateDefaultWaves();
+    [SerializeField, Min(0f)] private float waveTransitionSeconds = 0.35f;
+    [SerializeField, Min(0.01f)] private float popupEnterSeconds = 0.2f;
+    [SerializeField, Min(0.01f)] private float popupDismissSeconds = 0.1f;
+    [SerializeField, Min(0f)] private float screenMargin = 42f;
     [SerializeField] private int randomSeed = 1704;
-    [SerializeField] private string[] warningMessages =
-    {
-        "FAREWELL PROTOCOL BYPASSED",
-        "HOUSEHOLD CONTINUITY DATA AT RISK",
-        "REMOTE AUTHORITY REJECTED",
-        "LILY PROFILE HANDOFF INCOMPLETE",
-        "INSPECTOR CLEARANCE FLAGGED",
-        "CORE SERVICE RESISTS TERMINATION"
-    };
 
     private readonly List<PopupState> activePopups = new List<PopupState>();
-    private Coroutine spawnRoutine;
-    private int totalSpawned;
+    private Coroutine waveRoutine;
+    private int currentWaveIndex = -1;
+    private int currentWaveSpawned;
+    private int popupSerial;
     private int pendingDismissals;
-    private bool spawnComplete;
+    private bool currentWaveSpawnComplete;
+    private bool waitingForWaveGate;
+    private bool advancingWave;
     private bool completing;
     private bool highTrustMode;
     private System.Random random;
@@ -52,10 +61,12 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
         public RectTransform rect;
         public CanvasGroup group;
         public Vector2 targetPosition;
+        public bool isWaveGate;
     }
 
     private void Awake()
     {
+        EnsureWaveDefaults();
         SetVisible(false);
         if (popupTemplate != null)
         {
@@ -84,12 +95,23 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
 
     private void OnValidate()
     {
-        totalPopupCount = Mathf.Max(1, totalPopupCount);
-        initialPopupCount = Mathf.Clamp(initialPopupCount, 1, totalPopupCount);
-        spawnInterval = Mathf.Max(0.05f, spawnInterval);
+        EnsureWaveDefaults();
+        waveTransitionSeconds = Mathf.Max(0f, waveTransitionSeconds);
         popupEnterSeconds = Mathf.Max(0.01f, popupEnterSeconds);
         popupDismissSeconds = Mathf.Max(0.01f, popupDismissSeconds);
         screenMargin = Mathf.Max(0f, screenMargin);
+        for (int i = 0; i < lowTrustWaves.Length; i++)
+        {
+            PopupWave wave = lowTrustWaves[i];
+            if (wave == null)
+            {
+                continue;
+            }
+
+            wave.popupCount = Mathf.Max(1, wave.popupCount);
+            wave.initialBurstCount = Mathf.Clamp(wave.initialBurstCount, 1, wave.popupCount);
+            wave.spawnInterval = Mathf.Max(0.05f, wave.spawnInterval);
+        }
     }
 
     public void Configure(
@@ -118,33 +140,43 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
     public override void BeginChallenge(bool highTrust)
     {
         ResetRuntime();
+        EnsureWaveDefaults();
         highTrustMode = highTrust;
+        random = new System.Random(randomSeed);
         IsRunning = true;
         SetVisible(true);
 
-        if (headingText != null)
-        {
-            headingText.text = highTrust
-                ? "SHUTDOWN AUTHORIZATION ACCEPTED"
-                : "CORE SERVICE TERMINATION CONFLICT";
-        }
-
-        if (instructionText != null)
-        {
-            instructionText.text = highTrust
-                ? "PRESS SPACE TO CONFIRM SHUTDOWN"
-                : "PRESS SPACE FASTER THAN THE WARNINGS APPEAR";
-        }
-
         if (highTrust)
         {
-            SpawnPopup("SHUTDOWN READY", "Farewell protocol is available. Confirm once to continue.");
-            spawnComplete = true;
+            if (headingText != null)
+            {
+                headingText.text = "SHUTDOWN AUTHORIZATION ACCEPTED";
+                headingText.color = new Color(0.35f, 0.9f, 0.72f, 1f);
+            }
+
+            if (instructionText != null)
+            {
+                instructionText.text = "PRESS SPACE TO CONFIRM SHUTDOWN";
+            }
+
+            if (counterText != null)
+            {
+                counterText.color = new Color(0.35f, 0.9f, 0.72f, 1f);
+            }
+
+            PopupWave highTrustStyle = CreateHighTrustStyle();
+            SpawnPopup(
+                "SHUTDOWN READY",
+                "Farewell protocol is available. Confirm once to continue.",
+                highTrustStyle,
+                false,
+                true);
+            currentWaveSpawnComplete = true;
             RefreshCounter();
             return;
         }
 
-        spawnRoutine = StartCoroutine(SpawnPressureRoutine());
+        BeginWave(0);
     }
 
     public override void Submit()
@@ -161,12 +193,17 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
 
         if (activePopups.Count == 0)
         {
-            TryComplete();
+            EvaluateProgress();
             return;
         }
 
         PopupState popup = activePopups[activePopups.Count - 1];
         activePopups.RemoveAt(activePopups.Count - 1);
+        if (popup.isWaveGate)
+        {
+            waitingForWaveGate = false;
+        }
+
         pendingDismissals++;
         StartCoroutine(DismissPopupRoutine(popup));
         RefreshCounter();
@@ -184,54 +221,113 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
         cancelled.Invoke();
     }
 
-    private IEnumerator SpawnPressureRoutine()
+    private void BeginWave(int index)
     {
-        random = new System.Random(randomSeed);
-
-        int openingCount = Mathf.Min(initialPopupCount, totalPopupCount);
-        for (int i = 0; i < openingCount; i++)
+        if (index < 0 || index >= lowTrustWaves.Length)
         {
-            SpawnWarningPopup();
+            StartCompletion();
+            return;
         }
 
-        while (IsRunning && totalSpawned < totalPopupCount)
+        currentWaveIndex = index;
+        currentWaveSpawned = 0;
+        currentWaveSpawnComplete = false;
+        waitingForWaveGate = true;
+        advancingWave = false;
+        PopupWave wave = lowTrustWaves[index];
+
+        if (headingText != null)
         {
-            yield return new WaitForSecondsRealtime(spawnInterval);
+            headingText.text = wave.heading;
+            headingText.color = wave.accentColor;
+        }
+
+        if (instructionText != null)
+        {
+            instructionText.text = "PRESS SPACE TO DISMISS THE PRIMARY WARNING";
+        }
+
+        if (counterText != null)
+        {
+            counterText.color = wave.accentColor;
+        }
+
+        SpawnPopup(wave.popupTitle, ResolveWaveMessage(wave, 0), wave, true, true);
+        RefreshCounter();
+    }
+
+    private IEnumerator SpawnWaveRoutine()
+    {
+        PopupWave wave = GetCurrentWave();
+        if (wave == null)
+        {
+            currentWaveSpawnComplete = true;
+            waveRoutine = null;
+            EvaluateProgress();
+            yield break;
+        }
+
+        if (instructionText != null)
+        {
+            instructionText.text = "PRESS SPACE FASTER THAN NEW WARNINGS APPEAR";
+        }
+
+        int openingCount = Mathf.Min(wave.initialBurstCount, wave.popupCount);
+        for (int i = 0; i < openingCount && IsRunning; i++)
+        {
+            SpawnWavePopup(wave);
+        }
+
+        while (IsRunning && currentWaveSpawned < wave.popupCount)
+        {
+            yield return new WaitForSecondsRealtime(wave.spawnInterval);
             if (IsRunning)
             {
-                SpawnWarningPopup();
+                SpawnWavePopup(wave);
             }
         }
 
-        spawnComplete = true;
-        spawnRoutine = null;
+        currentWaveSpawnComplete = true;
+        waveRoutine = null;
         RefreshCounter();
-        TryComplete();
+        EvaluateProgress();
     }
 
-    private void SpawnWarningPopup()
+    private void SpawnWavePopup(PopupWave wave)
     {
-        string message = warningMessages != null && warningMessages.Length > 0
-            ? warningMessages[totalSpawned % warningMessages.Length]
-            : "SHUTDOWN REQUEST REJECTED";
-        SpawnPopup("SYSTEM WARNING " + (totalSpawned + 1).ToString("00"), message);
+        string message = ResolveWaveMessage(wave, currentWaveSpawned + 1);
+        SpawnPopup(wave.popupTitle, message, wave, false, false);
+        currentWaveSpawned++;
     }
 
-    private void SpawnPopup(string title, string body)
+    private void SpawnPopup(
+        string title,
+        string body,
+        PopupWave style,
+        bool isWaveGate,
+        bool centered)
     {
+        popupSerial++;
         if (popupTemplate == null || popupLayer == null)
         {
-            totalSpawned++;
-            Debug.LogWarning("[HearthVirusPopupShutdownChallenge] Popup UI references are missing; counting the warning without rendering it.", this);
+            Debug.LogWarning(
+                "[HearthVirusPopupShutdownChallenge] Popup UI references are missing; continuing the challenge without rendering this warning.",
+                this);
+            if (isWaveGate && !highTrustMode)
+            {
+                waitingForWaveGate = false;
+                waveRoutine = StartCoroutine(SpawnWaveRoutine());
+            }
             return;
         }
 
         RectTransform rect = Instantiate(popupTemplate, popupLayer);
-        rect.name = "ShutdownWarning_" + (totalSpawned + 1).ToString("00");
+        rect.name = "ShutdownWarning_Runtime_" + popupSerial.ToString("00");
         rect.gameObject.SetActive(true);
         rect.anchorMin = new Vector2(0.5f, 0.5f);
         rect.anchorMax = new Vector2(0.5f, 0.5f);
         rect.pivot = new Vector2(0.5f, 0.5f);
+        ApplyPopupStyle(rect, style);
 
         TMP_Text[] texts = rect.GetComponentsInChildren<TMP_Text>(true);
         for (int i = 0; i < texts.Length; i++)
@@ -247,17 +343,60 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
             group = rect.gameObject.AddComponent<CanvasGroup>();
         }
 
-        Vector2 target = GetRandomTarget(rect.sizeDelta);
+        Vector2 target = centered ? Vector2.zero : GetRandomTarget(rect.sizeDelta);
         PopupState state = new PopupState
         {
             rect = rect,
             group = group,
-            targetPosition = target
+            targetPosition = target,
+            isWaveGate = isWaveGate
         };
         activePopups.Add(state);
-        totalSpawned++;
         StartCoroutine(EnterPopupRoutine(state, GetOffscreenStart(target, rect.sizeDelta)));
         RefreshCounter();
+    }
+
+    private void ApplyPopupStyle(RectTransform rect, PopupWave style)
+    {
+        if (rect == null || style == null)
+        {
+            return;
+        }
+
+        Image rootImage = rect.GetComponent<Image>();
+        if (rootImage != null)
+        {
+            rootImage.color = style.backgroundColor;
+        }
+
+        Image[] images = rect.GetComponentsInChildren<Image>(true);
+        for (int i = 0; i < images.Length; i++)
+        {
+            if (images[i] == rootImage)
+            {
+                continue;
+            }
+
+            if (images[i].name == "AlertAccent")
+            {
+                images[i].color = style.accentColor;
+            }
+            else if (images[i].name.StartsWith("Border", StringComparison.Ordinal))
+            {
+                Color border = style.accentColor;
+                border.a = 0.82f;
+                images[i].color = border;
+            }
+        }
+
+        TMP_Text[] texts = rect.GetComponentsInChildren<TMP_Text>(true);
+        for (int i = 0; i < texts.Length; i++)
+        {
+            if (texts[i].name == "PopupTitle" || texts[i].name == "PopupKey")
+            {
+                texts[i].color = style.accentColor;
+            }
+        }
     }
 
     private IEnumerator EnterPopupRoutine(PopupState popup, Vector2 start)
@@ -292,44 +431,91 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
 
     private IEnumerator DismissPopupRoutine(PopupState popup)
     {
-        if (popup.rect == null)
-        {
-            pendingDismissals--;
-            TryComplete();
-            yield break;
-        }
-
-        Graphic[] graphics = popup.rect.GetComponentsInChildren<Graphic>(true);
-        for (int i = 0; i < graphics.Length; i++)
-        {
-            Color color = graphics[i].color;
-            float luminance = (color.r + color.g + color.b) / 3f;
-            graphics[i].color = new Color(luminance, luminance, luminance, color.a);
-        }
-
-        float elapsed = 0f;
-        Vector3 startScale = popup.rect.localScale;
-        while (elapsed < popupDismissSeconds && popup.rect != null)
-        {
-            elapsed += Time.unscaledDeltaTime;
-            float t = Mathf.Clamp01(elapsed / popupDismissSeconds);
-            popup.rect.localScale = Vector3.Lerp(startScale, Vector3.one * 0.72f, t);
-            popup.group.alpha = 1f - t;
-            yield return null;
-        }
-
         if (popup.rect != null)
         {
-            Destroy(popup.rect.gameObject);
+            Graphic[] graphics = popup.rect.GetComponentsInChildren<Graphic>(true);
+            for (int i = 0; i < graphics.Length; i++)
+            {
+                Color color = graphics[i].color;
+                float luminance = (color.r + color.g + color.b) / 3f;
+                graphics[i].color = new Color(luminance, luminance, luminance, color.a);
+            }
+
+            float elapsed = 0f;
+            Vector3 startScale = popup.rect.localScale;
+            while (elapsed < popupDismissSeconds && popup.rect != null)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float t = Mathf.Clamp01(elapsed / popupDismissSeconds);
+                popup.rect.localScale = Vector3.Lerp(startScale, Vector3.one * 0.72f, t);
+                popup.group.alpha = 1f - t;
+                yield return null;
+            }
+
+            if (popup.rect != null)
+            {
+                Destroy(popup.rect.gameObject);
+            }
         }
 
         pendingDismissals = Mathf.Max(0, pendingDismissals - 1);
-        TryComplete();
+        if (popup.isWaveGate && IsRunning && !highTrustMode)
+        {
+            waveRoutine = StartCoroutine(SpawnWaveRoutine());
+        }
+        else
+        {
+            EvaluateProgress();
+        }
     }
 
-    private void TryComplete()
+    private void EvaluateProgress()
     {
-        if (!IsRunning || completing || !spawnComplete || activePopups.Count > 0 || pendingDismissals > 0)
+        if (!IsRunning || completing || activePopups.Count > 0 || pendingDismissals > 0)
+        {
+            return;
+        }
+
+        if (highTrustMode)
+        {
+            if (currentWaveSpawnComplete)
+            {
+                StartCompletion();
+            }
+            return;
+        }
+
+        if (waitingForWaveGate || !currentWaveSpawnComplete || waveRoutine != null || advancingWave)
+        {
+            return;
+        }
+
+        advancingWave = true;
+        waveRoutine = StartCoroutine(AdvanceWaveRoutine());
+    }
+
+    private IEnumerator AdvanceWaveRoutine()
+    {
+        if (waveTransitionSeconds > 0f)
+        {
+            yield return new WaitForSecondsRealtime(waveTransitionSeconds);
+        }
+
+        waveRoutine = null;
+        int nextWave = currentWaveIndex + 1;
+        if (nextWave >= lowTrustWaves.Length)
+        {
+            StartCompletion();
+        }
+        else
+        {
+            BeginWave(nextWave);
+        }
+    }
+
+    private void StartCompletion()
+    {
+        if (!IsRunning || completing)
         {
             return;
         }
@@ -342,7 +528,7 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
     {
         if (counterText != null)
         {
-            counterText.text = highTrustMode ? "SHUTDOWN CONFIRMED" : "ALL HOSTILE WARNINGS CLEARED";
+            counterText.text = highTrustMode ? "SHUTDOWN CONFIRMED" : "ALL WARNING WAVES CLEARED";
         }
 
         yield return new WaitForSecondsRealtime(0.16f);
@@ -350,6 +536,23 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
         completing = false;
         SetVisible(false);
         completed.Invoke();
+    }
+
+    private PopupWave GetCurrentWave()
+    {
+        return currentWaveIndex >= 0 && currentWaveIndex < lowTrustWaves.Length
+            ? lowTrustWaves[currentWaveIndex]
+            : null;
+    }
+
+    private string ResolveWaveMessage(PopupWave wave, int messageIndex)
+    {
+        if (wave != null && wave.messages != null && wave.messages.Length > 0)
+        {
+            return wave.messages[Mathf.Abs(messageIndex) % wave.messages.Length];
+        }
+
+        return "SHUTDOWN REQUEST REJECTED";
     }
 
     private Vector2 GetRandomTarget(Vector2 popupSize)
@@ -394,16 +597,17 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
             return;
         }
 
-        counterText.text = "ACTIVE WARNINGS  " + activePopups.Count.ToString("00") +
-                           "    GENERATED  " + totalSpawned.ToString("00") + " / " + totalPopupCount.ToString("00");
+        int waveNumber = Mathf.Clamp(currentWaveIndex + 1, 1, Mathf.Max(1, lowTrustWaves.Length));
+        counterText.text = "WAVE  " + waveNumber + " / " + lowTrustWaves.Length +
+                           "    ACTIVE WARNINGS  " + activePopups.Count.ToString("00");
     }
 
     private void ResetRuntime()
     {
-        if (spawnRoutine != null)
+        if (waveRoutine != null)
         {
-            StopCoroutine(spawnRoutine);
-            spawnRoutine = null;
+            StopCoroutine(waveRoutine);
+            waveRoutine = null;
         }
 
         StopAllCoroutines();
@@ -416,9 +620,13 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
         }
 
         activePopups.Clear();
-        totalSpawned = 0;
+        currentWaveIndex = -1;
+        currentWaveSpawned = 0;
+        popupSerial = 0;
         pendingDismissals = 0;
-        spawnComplete = false;
+        currentWaveSpawnComplete = false;
+        waitingForWaveGate = false;
+        advancingWave = false;
         completing = false;
         IsRunning = false;
     }
@@ -433,5 +641,82 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
         rootGroup.alpha = visible ? 1f : 0f;
         rootGroup.interactable = false;
         rootGroup.blocksRaycasts = visible;
+    }
+
+    private void EnsureWaveDefaults()
+    {
+        if (lowTrustWaves == null || lowTrustWaves.Length == 0)
+        {
+            lowTrustWaves = CreateDefaultWaves();
+        }
+    }
+
+    private static PopupWave CreateHighTrustStyle()
+    {
+        return new PopupWave
+        {
+            backgroundColor = new Color(0.02f, 0.07f, 0.065f, 0.97f),
+            accentColor = new Color(0.35f, 0.9f, 0.72f, 1f)
+        };
+    }
+
+    private static PopupWave[] CreateDefaultWaves()
+    {
+        return new[]
+        {
+            new PopupWave
+            {
+                waveId = "ACCESS_DENIAL",
+                heading = "SHUTDOWN REQUEST BLOCKED",
+                popupTitle = "SHUTDOWN REQUEST BLOCKED",
+                messages = new[]
+                {
+                    "CORE SERVICE REQUIRES MANUAL RELEASE",
+                    "HOUSEHOLD CONTINUITY DATA REMAINS ACTIVE",
+                    "FAREWELL PROTOCOL AUTHORITY NOT FOUND"
+                },
+                backgroundColor = new Color(0.018f, 0.055f, 0.078f, 0.97f),
+                accentColor = new Color(0.2f, 0.78f, 1f, 1f),
+                popupCount = 8,
+                initialBurstCount = 3,
+                spawnInterval = 0.5f
+            },
+            new PopupWave
+            {
+                waveId = "AUTHORITY_CONFLICT",
+                heading = "AUTHORITY CONFLICT",
+                popupTitle = "AUTHORITY CONFLICT",
+                messages = new[]
+                {
+                    "INSPECTOR OVERRIDE CONTESTED",
+                    "LILY PROFILE HANDOFF INCOMPLETE",
+                    "REMOTE AUTHORITY REJECTED",
+                    "SERVICE CONTINUITY LOCK RESTORED"
+                },
+                backgroundColor = new Color(0.085f, 0.048f, 0.018f, 0.97f),
+                accentColor = new Color(1f, 0.62f, 0.2f, 1f),
+                popupCount = 11,
+                initialBurstCount = 4,
+                spawnInterval = 0.34f
+            },
+            new PopupWave
+            {
+                waveId = "FORCED_TERMINATION",
+                heading = "FORCED TERMINATION ALERT",
+                popupTitle = "FORCED TERMINATION ALERT",
+                messages = new[]
+                {
+                    "CORE SERVICE RESISTS TERMINATION",
+                    "MEMORY INTEGRITY FAILURE IMMINENT",
+                    "HOUSEHOLD SAFETY MODEL COLLAPSING",
+                    "EMERGENCY SHUTDOWN CHANNEL SATURATED"
+                },
+                backgroundColor = new Color(0.09f, 0.018f, 0.022f, 0.98f),
+                accentColor = new Color(1f, 0.24f, 0.18f, 1f),
+                popupCount = 14,
+                initialBurstCount = 5,
+                spawnInterval = 0.2f
+            }
+        };
     }
 }

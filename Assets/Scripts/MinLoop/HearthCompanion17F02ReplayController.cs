@@ -129,7 +129,7 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
     [SerializeField] private string bedroomWifeSitToStandAnimationId = "SitToStand";
     [SerializeField] private string bedroomWifeWalkLoopAnimationId = "WalkLoop";
     [SerializeField] private string bedroomWifeOpenDoorAnimationId = "OpenDoorOutwards";
-    [SerializeField] private float doorOpenDelayAfterAnimationStartSeconds = 1f;
+    [SerializeField] private float doorOpenDelayAfterAnimationStartSeconds = 0.5f;
     [SerializeField] private HearthActorAnimatorDriver diningWifeAnimation;
     [SerializeField] private string diningWifeAnimationId = "Sitting";
     [SerializeField] private HearthActorAnimatorDriver diningHusbandAnimation;
@@ -180,6 +180,7 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
     private void Awake()
     {
         ResolveReferences();
+        ConfigureBedroomWifeAnimationPolish();
         EnsureBlackoutOverlay();
     }
 
@@ -227,6 +228,7 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
     public void PrepareReplayStart()
     {
         ResolveReferences();
+        ConfigureBedroomWifeAnimationPolish();
         EnsureBlackoutOverlay();
         StopActiveRoutine();
         StopAllStorySfx();
@@ -736,7 +738,7 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
 
         yield return MoveActorToAnchor(moveRoot, wifeExitOutsideAnchor);
         StopStorySfx(wifeWalkCueId);
-        StopActorAndHold(bedroomWifeAnimation);
+        FinalizeActorAtAnchor(moveRoot, wifeExitOutsideAnchor, bedroomWifeAnimation);
     }
 
     private IEnumerator MoveLegacyWifeExitRoute(Transform moveRoot)
@@ -769,7 +771,7 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
         yield return MoveActorAlongPath(moveRoot, wifeExitPathPoints, splitIndex, GetPathLength(wifeExitPathPoints));
         yield return MoveActorToAnchor(moveRoot, wifeExitOutsideAnchor);
         StopStorySfx(wifeWalkCueId);
-        StopActorAndHold(bedroomWifeAnimation);
+        FinalizeActorAtAnchor(moveRoot, wifeExitOutsideAnchor, bedroomWifeAnimation);
     }
 
     public void SetSfxCuePlayer(HearthSfxCuePlayer player)
@@ -1171,6 +1173,35 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
             player.StopAndHold();
             player.SetRootMotion(false);
         }
+    }
+
+    private static void FinalizeActorAtAnchor(
+        Transform actor,
+        Transform anchor,
+        HearthActorAnimatorDriver player)
+    {
+        StopActorAndHold(player);
+        if (player != null)
+        {
+            player.RestoreAnimatorTransformNow();
+        }
+
+        if (actor != null && anchor != null)
+        {
+            actor.SetPositionAndRotation(anchor.position, anchor.rotation);
+        }
+    }
+
+    private void ConfigureBedroomWifeAnimationPolish()
+    {
+        if (bedroomWifeAnimation == null)
+        {
+            return;
+        }
+
+        bedroomWifeAnimation.SetMinimumTransitionSeconds(0.32f);
+        bedroomWifeAnimation.SetAllStateStabilization(true);
+        bedroomWifeAnimation.CaptureAnimatorTransformBaseline();
     }
 
     private void HandleHudHoldPromptConfirmed(string sceneId)

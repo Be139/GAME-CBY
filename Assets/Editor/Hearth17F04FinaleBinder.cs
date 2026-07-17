@@ -684,7 +684,7 @@ public static class Hearth17F04FinaleBinder
         TMP_Text popupTitle = CreateText(
             popupObject.transform,
             "PopupTitle",
-            "SYSTEM WARNING 01",
+            "SHUTDOWN REQUEST BLOCKED",
             new Rect(24f, 18f, 512f, 34f),
             22f,
             new Color(1f, 0.42f, 0.32f, 1f),
@@ -713,7 +713,7 @@ public static class Hearth17F04FinaleBinder
         TMP_Text counter = CreateText(
             root.transform,
             "ChallengeCounter",
-            "ACTIVE WARNINGS  00    GENERATED  00 / 18",
+            "WAVE  1 / 3    ACTIVE WARNINGS  00",
             new Rect(460f, 940f, 1000f, 34f),
             20f,
             new Color(1f, 0.46f, 0.34f, 1f),

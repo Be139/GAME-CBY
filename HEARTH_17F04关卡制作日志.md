@@ -229,10 +229,18 @@ Apply 会清理 TV3/TV4 错误的 17F02 终端并补齐引用，但保留同名 
 - 1920x1080 长句测试能够在屏幕中下部自动分成三行；第三户关闭画面的红色标题、白色正文和状态文字水平中心一致。
 - Unity 绑定验证通过：旧顺序关闭组件为 0，病毒弹窗组件存在，TV3 反馈目标为 2，一个有效 Camera、一个有效 AudioListener。
 
-## 2026-07-17 三轮警告与猫咪三倍 Walk 验收
+## 2026-07-17 三轮警告与猫咪三倍 Walk 初始验收（猫咪倍率随后已更正）
 
 - 三轮主警告分别以蓝、橙、红显示，底部状态文字同步当前轮颜色；浮窗标题没有可见编号。
 - MCP 1920x1080 截图已检查第一轮洪泛、第二轮主警告和第三轮主警告，文字均在各自浮窗内部。
 - `Walk Route Speed Multiplier = 3` 只加速前六个 Walk 段，RunJump 与趴卧动作保持原时长。
 - 完整猫咪路线 Play Mode 复测通过：`IsRunning = false`、`HasReachedPhoto = true`，最终位置与当前第 7 点误差 `0.0000m`。
 - 路线仍直接读取当前参考点 Transform；第 4、5、6、7 点的用户调整未被绑定工具覆盖。
+
+## 2026-07-17 猫咪速度口径更正
+
+- 上一条“Walk 路段加快 3 倍”来自口述误差，现已更正为当前基础速度的 `1.5` 倍。
+- `Walk Route Speed Multiplier` 从 `3` 改为 `1.5`；RunJump、Lie_to、Lie_idle 的时长继续保持不变。
+- Walk 腿部动作步频不跟随路线倍率继续放大，恢复为独立的 `Walk Playback Speed = 2.0`。
+- 第 4、5、6、7 个参考点位置和朝向没有被覆盖，运行时仍直接读取当前 Transform。
+- MCP 完整路线复测：运行时读取 `Multiplier = 1.5 / Cadence = 2.0`，最终 `HasReachedPhoto = true`，第 7 点位置误差 `0.0000m`，猫咪控制器无 Warning/Error。

@@ -208,7 +208,7 @@
 - 开始/复位/停止：`BeginSequence()`、`ResetSequence()`、`StopSequence()`。
 - 状态：`IsRunning`、`HasReachedPhoto`；事件：`OnReachedPhoto`、`OnSequenceCompleted`。
 - 猫咪只是视觉引导，禁止用 `HasReachedPhoto` 作为相框或 Door1 的开放条件。
-- `Route Steps` 当前编辑时长为 `1.5 / 1.5 / 1.5 / 1.5 / 7.5 / 0.5 / 0.5` 秒；`Walk Route Speed Multiplier = 3` 会在运行时只把前六个 Walk 段除以 3，6→7 的 RunJump 仍为 `0.5s`。
+- `Route Steps` 当前编辑时长为 `1.5 / 1.5 / 1.5 / 1.5 / 7.5 / 0.5 / 0.5` 秒；`Walk Route Speed Multiplier = 1.5` 会在运行时只把前六个 Walk 段除以 `1.5`，6→7 的 RunJump 仍为 `0.5s`。腿部动作仍只使用 `Walk Playback Speed = 2.0`，不会再乘路线倍率。
 - `Walk_F` 使用 XZ 原地烘焙，世界位移由路线控制；`Run_F` 保持原设置并只用于最后的跳跃段。
 - 路线转弯平滑度由同一组件的 `Path Smoothing` 控制，默认 `0.75`；正常只调整 `0.5-1.0`，设为 `0` 会恢复逐段直线移动。
 - `Walk_F` 和 `Lie_idle` 的动画 Slot 使用 `Seamless Loop`；替换循环动画时应同时在 FBX Import Settings 开启 `Loop Time / Loop Pose`。
@@ -263,6 +263,16 @@
 - 两个移动 Cue 的 AudioSource 位于 `MIN_LOOP_ROOT/Audio`，但通过 `Follow Target` 实时跟随人物 RuntimeRoot；不需要把音效对象手动放进人物模型。
 - 门、HUD、TV、主角脚步和机器人脚步继续使用原本的专用接口，禁止再用同一个 Clip 在 StorySFX 中重复触发。
 - 所有 Cue 在 Clip 为空时静默跳过，剧情不会停住，也不会输出错误。
+
+## 1F 大堂对白触发预留方案（2026-07-17，尚未实现）
+
+- 剧本来源：`HEARTH_Full_Game_Script_Native_English_Polished.md / Scene 1.1`。
+- 三个独立组：小女孩与 Public Unit、年轻男人与 Work Unit、老奶奶与 Care Unit。
+- 推荐每组使用两个范围：外层 `Awareness Volume` 只给轻微 HUD/声音提示；内层 `Conversation Volume` 自动开始正式对白。
+- 正式对白开始后调用现有 `HearthPlayerControlLock`：锁移动但保留鼠标视角；播放完成后自动恢复移动。
+- 对白继续使用 `HearthDialogueSequence + MinLoopSubtitlePlayer`，每句仍可修改文字、时间与 Voice Clip。
+- 每组完成状态由未来的 `HearthLobbyFlowController` 记录；三组全部完成后才点亮远端 Console 或开放离开大堂的流程，确保世界观对白不会漏听。
+- 范围建议使用带 `Is Trigger` 的 BoxCollider/CapsuleCollider，并用 Scene Gizmo 显示边界；游戏中 Collider 本身不可见，因此不会出现实体墙或辅助模型。
 
 ## 17F02 动作与门同步接口（2026-07-17）
 

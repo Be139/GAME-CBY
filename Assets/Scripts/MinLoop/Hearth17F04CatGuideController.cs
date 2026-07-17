@@ -33,7 +33,7 @@ public class Hearth17F04CatGuideController : MonoBehaviour
     [SerializeField, Min(0f)] private float jumpArcHeight = 0.25f;
     [SerializeField, Range(0f, 1f)] private float pathSmoothing = 0.75f;
     [Tooltip("Only shortens Walk route segments. RunJump and lie animation timing are not changed.")]
-    [SerializeField, Min(0.01f)] private float walkRouteSpeedMultiplier = 3f;
+    [SerializeField, Min(0.01f)] private float walkRouteSpeedMultiplier = 1.5f;
 
     [Header("Animation IDs")]
     [SerializeField] private string walkClipId = "Walk_F";
@@ -42,7 +42,7 @@ public class Hearth17F04CatGuideController : MonoBehaviour
     [SerializeField] private string lieIdleClipId = "Lie_idle";
 
     [Header("Animation Playback")]
-    [Tooltip("Base Walk_F cadence. The walk route multiplier is also applied so the paws keep up with faster movement.")]
+    [Tooltip("Only affects Walk_F cadence. Route speed changes do not multiply the leg animation speed.")]
     [SerializeField, Min(0.01f)] private float walkPlaybackSpeed = 2f;
 
     [Header("Start Pose")]
@@ -389,7 +389,7 @@ public class Hearth17F04CatGuideController : MonoBehaviour
 
         if (currentMotion != CatMotion.Walk)
         {
-            PlayLoopOrWarn(walkClipId, walkPlaybackSpeed * walkRouteSpeedMultiplier);
+            PlayLoopOrWarn(walkClipId, walkPlaybackSpeed);
             currentMotion = CatMotion.Walk;
         }
     }

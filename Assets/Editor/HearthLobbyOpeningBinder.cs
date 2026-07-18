@@ -90,9 +90,9 @@ public static class HearthLobbyOpeningBinder
         HearthTvTerminalController terminal = ConfigureAssignmentTerminal(taskTerminalRoot, human, flow);
         HearthLobbyElevatorInteractable elevatorInteraction = ConfigureElevatorInteraction(interactions, elevatorButton, flow);
 
-        HearthLobbyConversationZone girlZone = ConfigureConversationZone(girlZoneTransform, flow, human, dialogues.Girl);
-        HearthLobbyConversationZone youngManZone = ConfigureConversationZone(youngManZoneTransform, flow, human, dialogues.YoungMan);
-        HearthLobbyConversationZone grandmotherZone = ConfigureConversationZone(grandmotherZoneTransform, flow, human, dialogues.Grandmother);
+        HearthLobbyConversationZone girlZone = ConfigureConversationZone(girlZoneTransform, flow, human, dialogues.Girl, dialogues.GirlExit);
+        HearthLobbyConversationZone youngManZone = ConfigureConversationZone(youngManZoneTransform, flow, human, dialogues.YoungMan, dialogues.YoungManExit);
+        HearthLobbyConversationZone grandmotherZone = ConfigureConversationZone(grandmotherZoneTransform, flow, human, dialogues.Grandmother, dialogues.GrandmotherExit);
 
         MinLoopSubtitlePlayer subtitlePlayer = UnityEngine.Object.FindObjectOfType<MinLoopSubtitlePlayer>(true);
         if (subtitlePlayer == null)
@@ -196,6 +196,26 @@ public static class HearthLobbyOpeningBinder
             if (terminalRoot.GetComponent<HearthLobbyTaskTerminalInteractable>() == null)
             {
                 issues.Add("The lobby assignment terminal has no lobby-specific E interaction.");
+            }
+
+            Transform screenAnchor = terminalRoot.Find("TaskTerminalScreenAnchor");
+            Transform monitorCanvas = terminalRoot.Find("MonitorCanvas");
+            if (screenAnchor == null)
+            {
+                issues.Add("The lobby assignment terminal has no editable TaskTerminalScreenAnchor.");
+            }
+            else if (monitorCanvas == null)
+            {
+                issues.Add("The lobby assignment terminal has no MonitorCanvas.");
+            }
+            else
+            {
+                float positionError = Vector3.Distance(screenAnchor.position, monitorCanvas.position);
+                float rotationError = Quaternion.Angle(screenAnchor.rotation, monitorCanvas.rotation);
+                if (positionError > 0.003f || rotationError > 0.5f)
+                {
+                    issues.Add("MonitorCanvas is not aligned to TaskTerminalScreenAnchor (position " + positionError.ToString("F4") + "m, rotation " + rotationError.ToString("F2") + " deg).");
+                }
             }
 
             Camera terminalCamera = terminalRoot.GetComponentsInChildren<Camera>(true).FirstOrDefault(item => item.name == "Camera");
@@ -394,6 +414,8 @@ public static class HearthLobbyOpeningBinder
         terminal.SetPlayerCamera(humanCamera);
         terminal.SetTerminalCamera(terminalCamera);
         terminal.SetSwitchCameraWhileOpen(terminalCamera != null);
+        terminal.SetHideCanvasWhenClosed(true);
+        terminal.SetChoiceInputEnabled(true);
 
         SerializedObject terminalSo = new SerializedObject(terminal);
         SetBool(terminalSo, "closeTerminalWhenReplayStarts", false);
@@ -435,27 +457,39 @@ public static class HearthLobbyOpeningBinder
             return;
         }
 
-        Vector3 screenCenter = screenRenderer.bounds.center;
-        Vector3 towardCamera = terminalCamera != null
-            ? terminalCamera.transform.position - screenCenter
-            : terminalRoot.forward;
-        if (towardCamera.sqrMagnitude < 0.0001f)
+        Transform screenAnchor = terminalRoot.Find("TaskTerminalScreenAnchor");
+        if (screenAnchor == null)
         {
-            towardCamera = terminalRoot.forward;
-        }
-        towardCamera.Normalize();
+            GameObject anchorObject = new GameObject("TaskTerminalScreenAnchor");
+            Undo.RegisterCreatedObjectUndo(anchorObject, "Create task terminal screen anchor");
+            screenAnchor = anchorObject.transform;
+            screenAnchor.SetParent(terminalRoot, false);
 
-        Vector3 extents = screenRenderer.bounds.extents;
-        float surfaceDistance =
-            Mathf.Abs(towardCamera.x) * extents.x +
-            Mathf.Abs(towardCamera.y) * extents.y +
-            Mathf.Abs(towardCamera.z) * extents.z;
-        canvasTransform.position = screenCenter + towardCamera * (surfaceDistance + 0.008f);
-        // A World Space Canvas renders its readable face opposite its Transform.forward.
-        canvasTransform.rotation = Quaternion.LookRotation(-towardCamera, Vector3.up);
-        float horizontalWorldSize = Mathf.Max(screenRenderer.bounds.size.x, screenRenderer.bounds.size.z);
-        float scale = Mathf.Min(horizontalWorldSize / 1920f, screenRenderer.bounds.size.y / 1080f) * 0.92f;
-        canvasTransform.localScale = Vector3.one * Mathf.Max(0.0001f, scale);
+            Vector3 screenCenter = screenRenderer.bounds.center;
+            Vector3 towardCamera = terminalCamera != null
+                ? terminalCamera.transform.position - screenCenter
+                : terminalRoot.forward;
+            if (towardCamera.sqrMagnitude < 0.0001f)
+            {
+                towardCamera = terminalRoot.forward;
+            }
+            towardCamera.Normalize();
+
+            Vector3 extents = screenRenderer.bounds.extents;
+            float surfaceDistance =
+                Mathf.Abs(towardCamera.x) * extents.x +
+                Mathf.Abs(towardCamera.y) * extents.y +
+                Mathf.Abs(towardCamera.z) * extents.z;
+            screenAnchor.position = screenCenter + towardCamera * (surfaceDistance + 0.008f);
+            // A World Space Canvas renders its readable face opposite its Transform.forward.
+            screenAnchor.rotation = Quaternion.LookRotation(-towardCamera, Vector3.up);
+            float horizontalWorldSize = Mathf.Max(screenRenderer.bounds.size.x, screenRenderer.bounds.size.z);
+            float scale = Mathf.Min(horizontalWorldSize / 1920f, screenRenderer.bounds.size.y / 1080f) * 0.92f;
+            screenAnchor.localScale = Vector3.one * Mathf.Max(0.0001f, scale);
+        }
+
+        canvasTransform.SetPositionAndRotation(screenAnchor.position, screenAnchor.rotation);
+        canvasTransform.localScale = screenAnchor.localScale;
 
         Canvas canvas = canvasTransform.GetComponent<Canvas>();
         if (canvas != null)
@@ -463,33 +497,6 @@ public static class HearthLobbyOpeningBinder
             canvas.worldCamera = terminalCamera;
         }
 
-        FitTerminalCameraToCanvas(canvasTransform as RectTransform, terminalCamera);
-    }
-
-    private static void FitTerminalCameraToCanvas(RectTransform canvasTransform, Camera terminalCamera)
-    {
-        if (canvasTransform == null || terminalCamera == null)
-        {
-            return;
-        }
-
-        float distance = Vector3.Dot(
-            canvasTransform.position - terminalCamera.transform.position,
-            terminalCamera.transform.forward);
-        if (distance <= terminalCamera.nearClipPlane + 0.01f)
-        {
-            return;
-        }
-
-        Vector3 scale = canvasTransform.lossyScale;
-        float worldWidth = Mathf.Abs(canvasTransform.rect.width * scale.x);
-        float worldHeight = Mathf.Abs(canvasTransform.rect.height * scale.y);
-        float aspect = terminalCamera.aspect > 0.01f ? terminalCamera.aspect : 16f / 9f;
-        float requiredHalfHeight = Mathf.Max(worldHeight * 0.5f, worldWidth * 0.5f / aspect) * 1.08f;
-        float requiredFov = 2f * Mathf.Atan(requiredHalfHeight / distance) * Mathf.Rad2Deg;
-
-        terminalCamera.fieldOfView = Mathf.Clamp(Mathf.Max(terminalCamera.fieldOfView, requiredFov), 35f, 110f);
-        EditorUtility.SetDirty(terminalCamera);
     }
 
     private static void FitTerminalColliderToScreen(Transform terminalRoot)
@@ -550,7 +557,8 @@ public static class HearthLobbyOpeningBinder
         Transform zoneTransform,
         HearthLobbyFlowController flow,
         Transform human,
-        HearthDialogueSequence dialogue)
+        HearthDialogueSequence exchange,
+        HearthDialogueSequence exitCommentary)
     {
         Collider trigger = zoneTransform.GetComponent<Collider>();
         if (trigger == null)
@@ -561,7 +569,7 @@ public static class HearthLobbyOpeningBinder
         trigger.enabled = true;
 
         HearthLobbyConversationZone zone = GetOrAdd<HearthLobbyConversationZone>(zoneTransform.gameObject);
-        zone.Configure(flow, dialogue, human, true);
+        zone.Configure(flow, exchange, exitCommentary, human, true);
         EditorUtility.SetDirty(zone);
         return zone;
     }
@@ -746,9 +754,12 @@ public static class HearthLobbyOpeningBinder
             {
                 L("Lobby Girl", "Hi, everyone. I'm-"),
                 L("Public Unit", "You know it. You just rushed the first part. Start with your name and try it again."),
-                L("Lobby Girl", "Okay."),
-                L("Mia", "Huh. Guess these things really do help with kids.")
+                L("Lobby Girl", "Okay.")
             });
+        library.GirlExit = EnsureDialogue(
+            "Lobby_Group01_MiaExit",
+            "Mia's commentary after leaving the lobby-girl trigger.",
+            new[] { L("Mia", "Huh. Guess these things really do help with kids.") });
         library.YoungMan = EnsureDialogue(
             "Lobby_Group02_YoungMan",
             "Optional proximity dialogue: young man and work-assist unit.",
@@ -759,9 +770,12 @@ public static class HearthLobbyOpeningBinder
                 L("Work Unit", "Want me to bring in last week's chart?"),
                 L("Young Man", "Yeah, thanks."),
                 L("Work Unit", "You got it. Also, you've been sitting since three. How about two minutes on your feet?"),
-                L("Young Man", "In a minute."),
-                L("Mia", "It's not just work. It handles all the little day-to-day stuff, too. I've been using mine that way for years.")
+                L("Young Man", "In a minute.")
             });
+        library.YoungManExit = EnsureDialogue(
+            "Lobby_Group02_MiaExit",
+            "Mia's commentary after leaving the young-man trigger.",
+            new[] { L("Mia", "It's not just work. It handles all the little day-to-day stuff, too. I've been using mine that way for years.") });
         library.Grandmother = EnsureDialogue(
             "Lobby_Group03_Grandmother",
             "Optional proximity dialogue: Mrs. Ellis and care unit.",
@@ -773,9 +787,12 @@ public static class HearthLobbyOpeningBinder
                 L("Care Unit", "The two of you, holding hands."),
                 L("Mrs. Ellis", "Oh, that's sweet. Why didn't she show me?"),
                 L("Care Unit", "She did, Mrs. Ellis. This is the third time you've asked. Would you like to see it again?"),
-                L("Mrs. Ellis", "Yes, put it up."),
-                L("Mia", "Maybe I should get one of these for my parents.")
+                L("Mrs. Ellis", "Yes, put it up.")
             });
+        library.GrandmotherExit = EnsureDialogue(
+            "Lobby_Group03_MiaExit",
+            "Mia's commentary after leaving the Mrs. Ellis trigger.",
+            new[] { L("Mia", "Maybe I should get one of these for my parents.") });
         library.AssignmentLoaded = EnsureDialogue(
             "Lobby_AssignmentLoaded",
             "Plays after the assignment terminal closes and unlocks the elevator button.",
@@ -1147,8 +1164,11 @@ public static class HearthLobbyOpeningBinder
         public HearthDialogueSequence LilyMessage;
         public HearthDialogueSequence OpeningCloseout;
         public HearthDialogueSequence Girl;
+        public HearthDialogueSequence GirlExit;
         public HearthDialogueSequence YoungMan;
+        public HearthDialogueSequence YoungManExit;
         public HearthDialogueSequence Grandmother;
+        public HearthDialogueSequence GrandmotherExit;
         public HearthDialogueSequence AssignmentLoaded;
         public HearthDialogueSequence Elevator;
     }

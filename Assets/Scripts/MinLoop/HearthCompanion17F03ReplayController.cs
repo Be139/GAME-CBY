@@ -23,6 +23,9 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
         NightShutdown,
         ReturningToHuman,
         PostReplayExplanation,
+        AwaitingPostReplayDisposition,
+        PostReplayDisposition,
+        PostDispositionDialogue,
         ReturningToDoorTerminal,
         Complete
     }
@@ -125,6 +128,10 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
     [SerializeField] private HearthDialogueSequence nightShutdownLeadInSequence;
     [SerializeField] private HearthDialogueSequence nightShutdownSequence;
     [SerializeField] private HearthDialogueSequence postReplayExplanationSequence;
+    [SerializeField] private HearthDialogueSequence postReplayOptionASequence;
+    [SerializeField] private HearthDialogueSequence postReplayOptionBSequence;
+    [SerializeField] private HearthDialogueSequence postReplayNegativeTrustWarningSequence;
+    [SerializeField] private HearthDialogueSequence postReplayCompletionSequence;
 
     [Header("Companion HUD Scene Ids")]
     [SerializeField] private string conflictSceneId = "17F03_01";
@@ -185,6 +192,10 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
     private bool savedHumanHudInteractable;
     private bool savedHumanHudBlocksRaycasts;
     private bool listeningHud;
+    private MinLoopDispositionChoice pendingDispositionChoice;
+    private int pendingDispositionTrust;
+    private bool dispositionResultReceived;
+    private bool householdCompletionInvoked;
 
     public ReplayStep CurrentStep { get { return currentStep; } }
 
@@ -257,6 +268,12 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
 
     public void OpenUnitInspection()
     {
+        if (currentStep == ReplayStep.AwaitingPostReplayDisposition)
+        {
+            StartFlow(OpenDispositionInspectionRoutine());
+            return;
+        }
+
         if (currentStep != ReplayStep.AwaitingUnitInspection)
         {
             return;
@@ -306,6 +323,8 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
         currentStep = ReplayStep.Inactive;
         daughterConfirmed = false;
         motherConfirmed = false;
+        dispositionResultReceived = false;
+        householdCompletionInvoked = false;
         SetGazeTarget(null);
         RestoreRobotInteractionRange();
 
@@ -467,6 +486,48 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
         activeRoutine = null;
     }
 
+    private IEnumerator OpenDispositionInspectionRoutine()
+    {
+        SaveHumanPose();
+        SetHumanControl(false, false, false);
+        SuppressHumanHud();
+        if (physicalUnitInteractable != null) physicalUnitInteractable.SetAvailable(false);
+
+        bool usedSmoothTransition = CanUseSmoothInspectionEnterTransition();
+        if (usedSmoothTransition)
+        {
+            SetBlackoutAlpha(0f);
+            yield return inspectionCameraTransition.TransitionToTerminal(
+                humanCamera,
+                physicalUnitInspectionCamera,
+                null);
+        }
+        else
+        {
+            yield return FadeBlackTo(1f, fadeOutSeconds);
+        }
+
+        SetInspectionCameraActive(true);
+        currentStep = ReplayStep.PostReplayDisposition;
+        dispositionResultReceived = false;
+        if (flowController != null)
+        {
+            flowController.BeginExternalDispositionChoice("17F03");
+        }
+
+        if (inspectionPanel != null)
+        {
+            inspectionPanel.OpenDispositionChoice();
+        }
+
+        if (!usedSmoothTransition)
+        {
+            yield return FadeBlackTo(0f, fadeInSeconds);
+        }
+
+        activeRoutine = null;
+    }
+
     private IEnumerator RecordedReplayRoutine()
     {
         currentStep = ReplayStep.SwitchingToMidday;
@@ -609,23 +670,82 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
         onPostReplayStarted.Invoke();
         yield return PlayDialogue(postReplayExplanationSequence);
 
+        currentStep = ReplayStep.AwaitingPostReplayDisposition;
+        if (physicalUnitInteractable != null) physicalUnitInteractable.SetAvailable(true);
+        SetHumanControl(true, true, true);
+        activeRoutine = null;
+    }
+
+    private IEnumerator CompletePostReplayDispositionRoutine(MinLoopDispositionChoice choice)
+    {
+        currentStep = ReplayStep.PostDispositionDialogue;
+        yield return WaitSeconds(0.18f);
+        if (inspectionPanel != null) inspectionPanel.Close();
+
+        bool usedSmoothTransition = CanUseSmoothInspectionExitTransition();
+        if (usedSmoothTransition)
+        {
+            SetBlackoutAlpha(0f);
+            yield return inspectionCameraTransition.TransitionToPlayer(
+                humanCamera,
+                physicalUnitInspectionCamera,
+                null,
+                true,
+                false,
+                true,
+                false);
+        }
+        else
+        {
+            yield return FadeBlackTo(1f, fadeOutSeconds);
+        }
+
+        SetInspectionCameraActive(false);
+        RestoreSavedHumanPose();
+        RestoreHumanHud();
+        SetHumanControl(false, true, false);
+        if (!usedSmoothTransition)
+        {
+            yield return FadeBlackTo(0f, fadeInSeconds);
+        }
+
+        HearthDialogueSequence resultSequence = choice == MinLoopDispositionChoice.SystemRecommendedA
+            ? postReplayOptionASequence
+            : postReplayOptionBSequence;
+        yield return PlayDialogue(resultSequence);
+
+        if (choice == MinLoopDispositionChoice.LowInterventionB &&
+            dispositionResultReceived &&
+            pendingDispositionTrust < 0)
+        {
+            yield return PlayDialogue(postReplayNegativeTrustWarningSequence);
+        }
+
+        yield return PlayDialogue(postReplayCompletionSequence);
+
         SetHumanControl(false, false, false);
         yield return FadeBlackTo(1f, fadeOutSeconds);
         yield return WaitSeconds(blackHoldSeconds);
         TeleportHuman(humanDoorReturnAnchor, humanDoorReturnCameraAnchor);
-        SetHumanControl(true, true, true);
-        currentStep = ReplayStep.ReturningToDoorTerminal;
+        if (physicalUnitInteractable != null) physicalUnitInteractable.SetAvailable(false);
         yield return FadeBlackTo(0f, fadeInSeconds);
+        SetHumanControl(true, true, true);
+
+        if (!householdCompletionInvoked)
+        {
+            householdCompletionInvoked = true;
+            if (choice == MinLoopDispositionChoice.SystemRecommendedA) onDispositionA.Invoke();
+            else onDispositionB.Invoke();
+            onHouseholdCompleted.Invoke();
+        }
 
         if (flowController != null)
         {
-            flowController.SetActiveReplayResident("17F03", doorTerminal);
-            flowController.NotifyReplayCompleted();
+            flowController.CompleteExternalDisposition();
         }
-        else if (doorTerminal != null)
-        {
-            doorTerminal.ShowPostReplayChoicePage();
-        }
+
+        currentStep = ReplayStep.Complete;
+        activeRoutine = null;
     }
 
     private IEnumerator PlayEntryParentPerformance()
@@ -1149,6 +1269,8 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
         inspectionPanel.CloseRequested -= HandleInspectionCloseRequested;
         inspectionPanel.RecallRequested += HandleRecallRequested;
         inspectionPanel.CloseRequested += HandleInspectionCloseRequested;
+        inspectionPanel.ChoiceSubmitted -= HandleDispositionChoiceSubmitted;
+        inspectionPanel.ChoiceSubmitted += HandleDispositionChoiceSubmitted;
     }
 
     private void UnsubscribeInspectionPanel()
@@ -1156,6 +1278,7 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
         if (inspectionPanel == null) return;
         inspectionPanel.RecallRequested -= HandleRecallRequested;
         inspectionPanel.CloseRequested -= HandleInspectionCloseRequested;
+        inspectionPanel.ChoiceSubmitted -= HandleDispositionChoiceSubmitted;
     }
 
     private void HandleRecallRequested()
@@ -1169,6 +1292,24 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
         {
             StartFlow(CloseInspectionRoutine());
         }
+    }
+
+    private void HandleDispositionChoiceSubmitted(MinLoopDispositionChoice choice)
+    {
+        if (currentStep != ReplayStep.PostReplayDisposition)
+        {
+            return;
+        }
+
+        pendingDispositionChoice = choice;
+        dispositionResultReceived = false;
+        if (flowController == null || !flowController.SubmitDisposition(choice))
+        {
+            Debug.LogWarning("[HearthCompanion17F03ReplayController] The 17F03 disposition could not be submitted.", this);
+            return;
+        }
+
+        StartFlow(CompletePostReplayDispositionRoutine(choice));
     }
 
     private void SubscribeFlow()
@@ -1238,10 +1379,9 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
             return;
         }
 
-        if (choice == MinLoopDispositionChoice.SystemRecommendedA) onDispositionA.Invoke();
-        else onDispositionB.Invoke();
-        currentStep = ReplayStep.Complete;
-        onHouseholdCompleted.Invoke();
+        pendingDispositionChoice = choice;
+        pendingDispositionTrust = currentTrust;
+        dispositionResultReceived = true;
     }
 
     private void SetPhysicalUnitVisible(bool visible)

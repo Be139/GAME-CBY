@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   sequenceId: 17F03_HumanEntryParents
   notes: '17F03 parent explanation after Mia enters the unit. Source: HEARTH_Full_Game_Script_Expanded_Native_English_Lobby_Mia_Commentary.md,
-    Scene 3.2. Text is synchronized by Tools/Hearth/Dialogue/Sync All Dialogue From
-    Final Script.'
+    stable marker 17F03_HumanEntryParents. Text is synchronized by Tools/Hearth/Dialogue/Sync
+    All Dialogue From Final Script.'
   lines:
   - startDelay: 0.15
     speaker: Laura
@@ -35,10 +35,16 @@ MonoBehaviour:
     speaker: Laura
     text: Please tell me you can do it tonight. This thing has been a godsend. The
       past year has been quiet. Actually quiet. Ava and I used to blow up at each
-      other every few days. She's fourteen. You know how it is. Since we got the
-      unit, nobody yells in this house. Even my blood pressure's down. My doctor
-      asked what changed.
+      other every few days. She's fourteen.
     holdSeconds: 12
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Laura
+    text: You know how it is. Since we got the unit, nobody yells in this house.
+      Even my blood pressure's down. My doctor asked what changed.
+    holdSeconds: 10.5839615
     voiceClip: {fileID: 0}
     durationMode: 0
     voiceTailSeconds: 0.12

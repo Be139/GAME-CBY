@@ -327,12 +327,17 @@ public static class Hearth17F03MinimalLoopBinder
         }
         dialogues.InspectionRecallPrompt = AssetDatabase.LoadAssetAtPath<HearthDialogueSequence>(
             "Assets/Data/MinLoop/Dialogues/FinalScriptSupplemental/17F03_InspectionRecallPrompt.asset");
+        dialogues.PostReplayOptionA = LoadSupplementalDialogue("17F03_PostReplay_A");
+        dialogues.PostReplayOptionB = LoadSupplementalDialogue("17F03_PostReplay_B");
+        dialogues.PostReplayNegativeTrustWarning = LoadSupplementalDialogue("17F03_NegativeTrustSupervisorWarning");
+        dialogues.PostReplayCompletion = LoadSupplementalDialogue("17F03_AllInspectionsComplete");
         HearthCompanionHudController companionHud = FindSceneComponent<HearthCompanionHudController>();
         GameObject humanHudRoot = FindSceneObject(null, "HearthHudRoot");
         CanvasGroup humanHudCanvasGroup = humanHudRoot != null ? GetOrAdd<CanvasGroup>(humanHudRoot) : null;
         EnsureHumanInteractionPrompt(humanHudRoot, formalHuman.GetComponent<PlayerInteraction>());
         MinLoopSubtitlePlayer subtitlePlayer = FindSceneComponent<MinLoopSubtitlePlayer>();
         MinLoopFlowController flow = FindSceneComponent<MinLoopFlowController>();
+        HearthHouseholdProgressState householdProgress = FindSceneComponent<HearthHouseholdProgressState>();
 
         ConfigureCompanionHud(companionHud, formalViewSwitch);
         ConfigureCompanionInteractionLayout(companionHud);
@@ -368,6 +373,7 @@ public static class Hearth17F03MinimalLoopBinder
         {
             flow.SetViewSwitchController(formalViewSwitch);
             flow.SetCompanion17F03ReplayController(controller);
+            flow.SetHouseholdProgressState(householdProgress);
         }
 
         ConfigureTerminal(terminal, flow, formalViewSwitch, formalHumanCamera, formalHuman.GetComponent<PlayerInteraction>());
@@ -1093,8 +1099,35 @@ public static class Hearth17F03MinimalLoopBinder
         }
         TMP_Text recall = EnsureText(highlightRoot, "RecallAction", new Rect(0f, 0f, 480f, 72f), 25f, FontStyles.Bold, TextAlignmentOptions.Center);
 
+        Transform choiceRoot = panel.Find("DispositionChoiceRoot");
+        if (choiceRoot == null)
+        {
+            choiceRoot = CreateRect(panel, "DispositionChoiceRoot", new Rect(36f, 338f, 888f, 150f));
+        }
+
+        Transform choiceA = choiceRoot.Find("ChoiceA");
+        if (choiceA == null)
+        {
+            choiceA = CreateRect(choiceRoot, "ChoiceA", new Rect(0f, 0f, 888f, 64f));
+        }
+        Image choiceAImage = GetOrAdd<Image>(choiceA.gameObject);
+        choiceAImage.raycastTarget = false;
+        TMP_Text choiceAText = EnsureText(choiceA, "Label", new Rect(22f, 0f, 650f, 64f), 24f, FontStyles.Bold, TextAlignmentOptions.MidlineLeft);
+        TMP_Text recommended = EnsureText(choiceA, "Recommended", new Rect(680f, 0f, 182f, 64f), 18f, FontStyles.Bold, TextAlignmentOptions.Center);
+        recommended.color = Color.white;
+
+        Transform choiceB = choiceRoot.Find("ChoiceB");
+        if (choiceB == null)
+        {
+            choiceB = CreateRect(choiceRoot, "ChoiceB", new Rect(0f, 82f, 888f, 64f));
+        }
+        Image choiceBImage = GetOrAdd<Image>(choiceB.gameObject);
+        choiceBImage.raycastTarget = false;
+        TMP_Text choiceBText = EnsureText(choiceB, "Label", new Rect(22f, 0f, 840f, 64f), 24f, FontStyles.Bold, TextAlignmentOptions.MidlineLeft);
+
         Hearth17F03InspectionPanel component = root.GetComponent<Hearth17F03InspectionPanel>();
         component.Configure(group, title, status, detail, recall, highlightRoot.GetComponent<Image>());
+        component.ConfigureChoiceUi(choiceRoot.gameObject, choiceAImage, choiceBImage, choiceAText, choiceBText, recommended);
         group.alpha = 0f;
         group.interactable = false;
         group.blocksRaycasts = false;
@@ -1222,6 +1255,12 @@ public static class Hearth17F03MinimalLoopBinder
         return asset;
     }
 
+    private static HearthDialogueSequence LoadSupplementalDialogue(string id)
+    {
+        return AssetDatabase.LoadAssetAtPath<HearthDialogueSequence>(
+            "Assets/Data/MinLoop/Dialogues/FinalScriptSupplemental/" + id + ".asset");
+    }
+
     private static void ConfigureReplayController(
         HearthCompanion17F03ReplayController controller,
         MinLoopFlowController flow,
@@ -1314,6 +1353,10 @@ public static class Hearth17F03MinimalLoopBinder
         SetObject(so, "nightShutdownLeadInSequence", dialogues.NightShutdownLeadIn);
         SetObject(so, "nightShutdownSequence", dialogues.NightShutdown);
         SetObject(so, "postReplayExplanationSequence", dialogues.PostReplay);
+        SetObject(so, "postReplayOptionASequence", dialogues.PostReplayOptionA);
+        SetObject(so, "postReplayOptionBSequence", dialogues.PostReplayOptionB);
+        SetObject(so, "postReplayNegativeTrustWarningSequence", dialogues.PostReplayNegativeTrustWarning);
+        SetObject(so, "postReplayCompletionSequence", dialogues.PostReplayCompletion);
         SetObject(so, "blackoutCanvasGroup", blackout.Group);
         SetObject(so, "blackoutImage", blackout.Image);
         SetEnum(so, "currentStep", (int)HearthCompanion17F03ReplayController.ReplayStep.Inactive);
@@ -1900,6 +1943,10 @@ public static class Hearth17F03MinimalLoopBinder
         public HearthDialogueSequence NightShutdownLeadIn;
         public HearthDialogueSequence NightShutdown;
         public HearthDialogueSequence PostReplay;
+        public HearthDialogueSequence PostReplayOptionA;
+        public HearthDialogueSequence PostReplayOptionB;
+        public HearthDialogueSequence PostReplayNegativeTrustWarning;
+        public HearthDialogueSequence PostReplayCompletion;
     }
 
     private readonly struct BlackoutReferences

@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   sequenceId: 17F02_BedroomConfide
   notes: '17F02 companion-mode decision and Claire''s account. Source: HEARTH_Full_Game_Script_Expanded_Native_English_Lobby_Mia_Commentary.md,
-    Scene 2.2. Text is synchronized by Tools/Hearth/Dialogue/Sync All Dialogue From
-    Final Script.'
+    stable marker 17F02_BedroomConfide. Text is synchronized by Tools/Hearth/Dialogue/Sync
+    All Dialogue From Final Script.'
   lines:
   - startDelay: 0.15
     speaker: 17F-02 Synth Voice
@@ -36,9 +36,15 @@ MonoBehaviour:
     speaker: Claire
     text: My manager called me out again, in front of everybody. Same thing as last
       week. He said my numbers weren't 'presentation-ready.' I almost snapped at
-      him. I mean, I really almost did. I just stood there and took it, and I'm still
-      furious.
+      him. I mean, I really almost did.
     holdSeconds: 12
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Claire
+    text: I just stood there and took it, and I'm still furious.
+    holdSeconds: 5.3009434
     voiceClip: {fileID: 0}
     durationMode: 0
     voiceTailSeconds: 0.12

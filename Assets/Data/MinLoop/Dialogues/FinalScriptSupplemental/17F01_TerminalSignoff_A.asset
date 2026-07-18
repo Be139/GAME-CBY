@@ -13,18 +13,23 @@ MonoBehaviour:
   m_Name: 17F01_TerminalSignoff_A
   m_EditorClassIdentifier: 
   sequenceId: 17F01_TerminalSignoff_A
-  notes: '17F01 option A sign-off and next-household direction; ready for disposition
-    binding. Source: HEARTH_Full_Game_Script_Expanded_Native_English_Lobby_Mia_Commentary.md,
-    Scene 1.6. Text is synchronized by Tools/Hearth/Dialogue/Sync All Dialogue From
-    Final Script.'
+  notes: '17F01 option A sign-off and next-household direction. Source: HEARTH_Full_Game_Script_Expanded_Native_English_Lobby_Mia_Commentary.md,
+    stable marker 17F01_TerminalSignoff_A. Text is synchronized by Tools/Hearth/Dialogue/Sync
+    All Dialogue From Final Script.'
   lines:
   - startDelay: 0.15
     speaker: Field Unit
     text: Correct disposition. This is the standard outcome. The request has been
-      filed, and Daniel and Emily will receive confirmation in the morning. Household
-      operations should become smoother, and Noah's sleep metrics should stabilize
-      further.
-    holdSeconds: 12
+      filed, and Daniel and Emily will receive confirmation in the morning.
+    holdSeconds: 9.451886
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Field Unit
+    text: Household operations should become smoother, and Noah's sleep metrics should
+      stabilize further.
+    holdSeconds: 5.678302
     voiceClip: {fileID: 0}
     durationMode: 0
     voiceTailSeconds: 0.12

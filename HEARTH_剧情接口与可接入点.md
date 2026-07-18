@@ -227,10 +227,10 @@
 
 ## 全局对白、语音与音量接口（2026-07-16）
 
-- 正式对白数据统一使用 `HearthDialogueSequence`；当前 34 个资产位于 `Assets/Data/MinLoop/Dialogues/`。
+- 正式对白数据统一使用 `HearthDialogueSequence`；当前最终稿 `343` 个字幕段映射到 `Assets/Data/MinLoop/Dialogues/` 下 `59` 个资产，共 `407` 个资产行槽位。
 - 每句可自由增删和排序，字段为 `Speaker / Text / Start Delay / Hold Seconds / Voice Clip / Duration Mode / Voice Tail Seconds`。
 - 推荐 `Duration Mode = VoiceClipWhenAssigned`：有录音时自动跟随真实录音长度，无录音时继续使用手动 Hold，不需要在流程控制器硬编码秒数。
-- 当前 215 个 Voice Clip 槽位均未绑定真实语音。后续录好每句声音后，直接拖到对应行，不需要改脚本或关卡状态机。
+- 每个拆分段都保留独立 `Voice Clip`。后续录好每句声音后，直接拖到对应行，不需要改脚本或关卡状态机。
 - 普通对白共用一个正式 `MinLoopSubtitlePlayer`，17F04 黑幕使用一个 `EpilogueDialogue_17F04`；两者的 AudioSource 均接 Dialogue 通道。
 - `MIN_LOOP_ROOT/Audio` 下 Corridor、Replay Night、Morning 三个现有 Ambience 音源已接 Ambient；其他环境声和新 SFX 在目标 AudioSource 同物体添加 `HearthAudioChannelSource`，Channel 分别选 Ambient 或 SFX。
 - 人类和机器人脚步入口已分离，具体层级和字段见 `HEARTH_UI音频与对白调整入口.md`。
@@ -264,15 +264,9 @@
 - 门、HUD、TV、主角脚步和机器人脚步继续使用原本的专用接口，禁止再用同一个 Clip 在 StorySFX 中重复触发。
 - 所有 Cue 在 Clip 为空时静默跳过，剧情不会停住，也不会输出错误。
 
-## 1F 大堂对白触发预留方案（2026-07-17，尚未实现）
+## 1F 大堂对白触发旧方案（已废弃）
 
-- 剧本来源：`HEARTH_Full_Game_Script_Native_English_Polished.md / Scene 1.1`。
-- 三个独立组：小女孩与 Public Unit、年轻男人与 Work Unit、老奶奶与 Care Unit。
-- 推荐每组使用两个范围：外层 `Awareness Volume` 只给轻微 HUD/声音提示；内层 `Conversation Volume` 自动开始正式对白。
-- 正式对白开始后调用现有 `HearthPlayerControlLock`：锁移动但保留鼠标视角；播放完成后自动恢复移动。
-- 对白继续使用 `HearthDialogueSequence + MinLoopSubtitlePlayer`，每句仍可修改文字、时间与 Voice Clip。
-- 每组完成状态由未来的 `HearthLobbyFlowController` 记录；三组全部完成后才点亮远端 Console 或开放离开大堂的流程，确保世界观对白不会漏听。
-- 范围建议使用带 `Is Trigger` 的 BoxCollider/CapsuleCollider，并用 Scene Gizmo 显示边界；游戏中 Collider 本身不可见，因此不会出现实体墙或辅助模型。
+- 2026-07-17 的“双层 Trigger、三组全部完成才开放后续”只是早期预留方案，已被下方 2026-07-18 正式实现覆盖，后续不得再按旧方案绑定。
 
 ## 17F02 动作与门同步接口（2026-07-17）
 
@@ -289,6 +283,7 @@
 - 总控制器：`MIN_LOOP_ROOT/LobbyOpening/HearthLobbyFlowController`。
 - `BeginOpening()`：把正式米娅放到 `Person Controller (4)` 锚点，锁定移动和视角并播放开场。
 - `TryPlayOptionalConversation(...)`：播放任一大堂可选对白；播放时只锁移动，保留鼠标视角。
+- `TryPlayExitCommentary(...)`：NPC 对话完成并离开 Trigger 后播放 Mia 感想；播放时不锁移动和视角。
 - `AcquireAssignmentFromTerminal()`：在同步终端按 Space 后领取任务，并开放电梯按钮。
 - `BeginElevatorRide()`：渐黑进入 `Person Controller (5)` 电梯锚点，播放对白，再抵达 17 楼。
 - `ResetLobbyFlowForPreview()`：清空本轮状态，供 Play Mode 反复测试。
@@ -297,13 +292,15 @@
 ### 三个可选对白范围
 
 - 触发脚本为 `HearthLobbyConversationZone`，挂在 `space / space1 / space2` 的 Trigger Collider 上。
-- 每个范围直接引用自己的 `HearthDialogueSequence`；不要求三组全部完成，也不决定终端是否可用。
+- 每个范围包含 `Exchange Sequence` 与 `Exit Commentary Sequence`：前者在区域内播放 NPC 对话，后者在对话完成且玩家离开区域后播放 Mia 感想。
+- 不要求三组全部完成，也不决定终端是否可用。若上一段感想仍在播放，下一组 NPC 对话会等待共享字幕播放器空闲。
 - 调整范围只需移动或缩放对应 Collider。NPC 位置、朝向和动作不由该脚本修改。
 - `Play Once` 默认开启；需要重新测试时调用 `ResetConversation()` 或重置整个 Lobby Flow。
 
 ### 同步终端与电梯
 
 - 终端交互脚本：`HearthLobbyTaskTerminalInteractable`，复用 `HearthTvTerminalController` 的蓝色 E 提示、0.5 秒镜头平移、开机闪烁和 Space 主操作。
+- 任务终端启用 `Hide Canvas When Closed`：关闭时整个 World Space Canvas 不渲染；E 打开时才启用。`TaskTerminalScreenAnchor` 控制 Canvas 与实体屏幕的相对位置、朝向和大小，Lobby Apply 不覆盖终端 Camera。
 - 电梯交互脚本：`HearthLobbyElevatorInteractable`，实现 `IInteractionAvailability`；只有 `AssignmentLoaded = true` 时才显示 E。
 - 一楼终端 Prefab：`Assets/Prefabs/UI/HearthHud/Terminals/Terminal_Lobby_Assignment.prefab`。
 - 调整 `Person Controller (4)/(5)` 后，运行时会直接读取其位置与摄像机朝向；不需要重新执行绑定菜单。
@@ -315,8 +312,11 @@
 
 - 项目根目录 `HEARTH_Full_Game_Script_Expanded_Native_English_Lobby_Mia_Commentary.md` 是当前正式对白唯一来源。
 - 同步菜单：`Tools > Hearth > Dialogue > Sync All Dialogue From Final Script`。
+- 自然拆分菜单：`Tools > Hearth > Dialogue > Normalize Final Script To Two-Line Segments`。
 - 覆盖检查：`Tools > Hearth > Dialogue > Validate Final Script Coverage`。
-- 当前检查覆盖正式稿中的 `321` 条对白；同步范围包含一楼开场和四户流程。
+- 布局检查：`Tools > Hearth > Dialogue > Validate Two-Line Subtitle Layout`。
+- 当前检查覆盖正式稿中的 `343` 个字幕段；同步范围包含一楼开场和四户流程，并验证普通/黑幕字幕均不超过两行。
+- 最终稿使用 `<!-- HEARTH:SEQUENCES ... -->` 隐藏稳定标记绑定资产；不要删除这些标记，否则同步工具会报告覆盖缺口。
 
 ### 每句对白的可调字段
 
@@ -340,3 +340,21 @@
 
 - `Assets/Data/MinLoop/Dialogues/FinalScriptSupplemental/` 保存最终稿中暂时没有独立运行节点的终端说明、分支签退和检查提示。
 - 这些对白已经进入正式数据层，但不会自动插入不匹配的旧剧情节点。后续新增对应终端按钮或分支节点时，直接把相应 Asset 拖入控制器，无需再次抄写文本。
+
+## 三户处置对白与完成状态接口（2026-07-18）
+
+### 17F01 / 17F02 门口终端
+
+- `MinLoopFlowController.BeginDispositionBriefing(residentId)`：回放结束后进入处置推荐；页面先显示但锁住输入。
+- `HearthResidentDispositionDialogueSet`：每户配置推荐、A 评价、B 评价和可选公共指引。
+- `HearthTvTerminalController.SetChoiceInputEnabled(bool)`：推荐结束前为 `false`，结束后为 `true`。
+- `MinLoopFlowController.SubmitDisposition(choice)`：只接受第一次提交，返回是否成功；信任度、HUD 历史和完成事件不会因重复 Space 再次触发。
+- 评价与下一户指引播完后，流程才关闭终端并调用 `HearthHouseholdProgressState.MarkHouseholdCompleted(residentId)`。
+
+### 17F03 房内处置
+
+- 检查提示期间提前确认：`Hearth17F03InspectionPanel.QueueRecallRequest()`；状态通过 `RecallQueued` 查询。
+- 回放后再次 E：`HearthCompanion17F03ReplayController.OpenUnitInspection()`，平滑进入实体机器人固定摄像机并打开房内 A/B。
+- A/B：`OpenDispositionChoice()`、`MoveChoice(int)`、`SubmitChoice()`；正式输入为 `↑/↓ + Space`。
+- 共用信任结算：`MinLoopFlowController.BeginExternalDispositionChoice("17F03")`、`SubmitDisposition(choice)`、`CompleteExternalDisposition()`。
+- 17F03 的 `onHouseholdCompleted` 仍可接任务、存档或成就；正式住户进度同时写入 `HearthHouseholdProgressState`，重复写入会去重。

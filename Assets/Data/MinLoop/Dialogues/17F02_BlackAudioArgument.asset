@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   sequenceId: 17F02_BlackAudioArgument
   notes: '17F02 black-screen argument recording. Source: HEARTH_Full_Game_Script_Expanded_Native_English_Lobby_Mia_Commentary.md,
-    Scene 2.5. Text is synchronized by Tools/Hearth/Dialogue/Sync All Dialogue From
-    Final Script.'
+    stable marker 17F02_BlackAudioArgument. Text is synchronized by Tools/Hearth/Dialogue/Sync
+    All Dialogue From Final Script.'
   lines:
   - startDelay: 0.15
     speaker: Claire
@@ -147,9 +147,15 @@ MonoBehaviour:
     speaker: Claire
     text: Because you come home exhausted, Ben. Every night. The last time you asked
       before I said something was, what, two weeks ago? It's not that you don't care.
-      You just have nothing left by then. It does. It's always there. I start talking
-      and it catches me.
+      You just have nothing left by then.
     holdSeconds: 12
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Claire
+    text: It does. It's always there. I start talking and it catches me.
+    holdSeconds: 5.678302
     voiceClip: {fileID: 0}
     durationMode: 0
     voiceTailSeconds: 0.12

@@ -13,10 +13,9 @@ MonoBehaviour:
   m_Name: 17F01_TerminalSignoff_B
   m_EditorClassIdentifier: 
   sequenceId: 17F01_TerminalSignoff_B
-  notes: '17F01 option B sign-off and next-household direction; ready for disposition
-    binding. Source: HEARTH_Full_Game_Script_Expanded_Native_English_Lobby_Mia_Commentary.md,
-    Scene 1.6. Text is synchronized by Tools/Hearth/Dialogue/Sync All Dialogue From
-    Final Script.'
+  notes: '17F01 option B sign-off and next-household direction. Source: HEARTH_Full_Game_Script_Expanded_Native_English_Lobby_Mia_Commentary.md,
+    stable marker 17F01_TerminalSignoff_B. Text is synchronized by Tools/Hearth/Dialogue/Sync
+    All Dialogue From Final Script.'
   lines:
   - startDelay: 0.15
     speaker: Field Unit
@@ -44,8 +43,15 @@ MonoBehaviour:
     speaker: Field Unit
     text: One caution, Inspector. Daniel and Emily rate this module five out of five.
       When the observation period reduces its involvement, they may notice the change
-      and contact support. The company will document the rationale on our end.
-    holdSeconds: 12
+      and contact support.
+    holdSeconds: 11.716038
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Field Unit
+    text: The company will document the rationale on our end.
+    holdSeconds: 4.5462265
     voiceClip: {fileID: 0}
     durationMode: 0
     voiceTailSeconds: 0.12

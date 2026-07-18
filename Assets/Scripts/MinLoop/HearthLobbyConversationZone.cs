@@ -5,21 +5,28 @@ using UnityEngine;
 public class HearthLobbyConversationZone : MonoBehaviour
 {
     [SerializeField] private HearthLobbyFlowController flowController;
-    [SerializeField] private HearthDialogueSequence dialogueSequence;
+    [SerializeField] private HearthDialogueSequence exchangeSequence;
+    [SerializeField] private HearthDialogueSequence exitCommentarySequence;
     [SerializeField] private Transform formalPlayerRoot;
     [SerializeField] private bool playOnce = true;
-    [SerializeField] private bool completed;
+    [SerializeField] private bool exchangeCompleted;
+    [SerializeField] private bool exitCommentaryCompleted;
 
     private bool playerInside;
 
     public bool Completed
     {
-        get { return completed; }
+        get { return exchangeCompleted && (exitCommentarySequence == null || exitCommentaryCompleted); }
     }
 
-    public HearthDialogueSequence DialogueSequence
+    public HearthDialogueSequence ExchangeSequence
     {
-        get { return dialogueSequence; }
+        get { return exchangeSequence; }
+    }
+
+    public HearthDialogueSequence ExitCommentarySequence
+    {
+        get { return exitCommentarySequence; }
     }
 
     private void Reset()
@@ -37,6 +44,14 @@ public class HearthLobbyConversationZone : MonoBehaviour
         if (trigger != null)
         {
             trigger.isTrigger = true;
+        }
+    }
+
+    private void Update()
+    {
+        if (!playerInside && exchangeCompleted && !exitCommentaryCompleted)
+        {
+            TryStartExitCommentary();
         }
     }
 
@@ -67,45 +82,69 @@ public class HearthLobbyConversationZone : MonoBehaviour
         if (IsFormalPlayer(other))
         {
             playerInside = false;
+            TryStartExitCommentary();
         }
     }
 
     public void Configure(
         HearthLobbyFlowController flow,
-        HearthDialogueSequence sequence,
+        HearthDialogueSequence exchange,
+        HearthDialogueSequence exitCommentary,
         Transform playerRoot,
         bool once)
     {
         flowController = flow;
-        dialogueSequence = sequence;
+        exchangeSequence = exchange;
+        exitCommentarySequence = exitCommentary;
         formalPlayerRoot = playerRoot;
         playOnce = once;
     }
 
-    public void MarkCompleted()
+    public void MarkExchangeCompleted()
     {
-        completed = true;
+        exchangeCompleted = true;
+    }
+
+    public void MarkExitCommentaryCompleted()
+    {
+        exitCommentaryCompleted = true;
     }
 
     public void ResetConversation()
     {
-        completed = false;
+        exchangeCompleted = false;
+        exitCommentaryCompleted = false;
         playerInside = false;
     }
 
     private void TryStartConversation()
     {
-        if (!playerInside || flowController == null || dialogueSequence == null)
+        if (!playerInside || flowController == null || exchangeSequence == null)
         {
             return;
         }
 
-        if (playOnce && completed)
+        if (playOnce && exchangeCompleted)
         {
             return;
         }
 
-        flowController.TryPlayOptionalConversation(this, dialogueSequence);
+        flowController.TryPlayOptionalConversation(this, exchangeSequence);
+    }
+
+    private void TryStartExitCommentary()
+    {
+        if (playerInside || flowController == null || exitCommentarySequence == null || !exchangeCompleted)
+        {
+            return;
+        }
+
+        if (playOnce && exitCommentaryCompleted)
+        {
+            return;
+        }
+
+        flowController.TryPlayExitCommentary(this, exitCommentarySequence);
     }
 
     private bool IsFormalPlayer(Collider other)

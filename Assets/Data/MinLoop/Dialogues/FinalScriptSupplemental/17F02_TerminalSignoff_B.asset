@@ -13,10 +13,9 @@ MonoBehaviour:
   m_Name: 17F02_TerminalSignoff_B
   m_EditorClassIdentifier: 
   sequenceId: 17F02_TerminalSignoff_B
-  notes: '17F02 option B sign-off and 17F03 alert; ready for disposition binding.
-    Source: HEARTH_Full_Game_Script_Expanded_Native_English_Lobby_Mia_Commentary.md,
-    Scene 2.6. Text is synchronized by Tools/Hearth/Dialogue/Sync All Dialogue From
-    Final Script.'
+  notes: '17F02 option B sign-off and 17F03 alert. Source: HEARTH_Full_Game_Script_Expanded_Native_English_Lobby_Mia_Commentary.md,
+    stable marker 17F02_TerminalSignoff_B. Text is synchronized by Tools/Hearth/Dialogue/Sync
+    All Dialogue From Final Script.'
   lines:
   - startDelay: 0.15
     speaker: Field Unit
@@ -43,10 +42,16 @@ MonoBehaviour:
   - startDelay: 0.18
     speaker: Field Unit
     text: I need to note the risk. The household alarm will remain active throughout
-      the observation period, and company monitoring will continue. If Ben and Claire
-      separate, this disposition may be referred for post-incident review. You should
-      be prepared to explain it.
-    holdSeconds: 12
+      the observation period, and company monitoring will continue.
+    holdSeconds: 9.074528
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Field Unit
+    text: If Ben and Claire separate, this disposition may be referred for post-incident
+      review. You should be prepared to explain it.
+    holdSeconds: 8.697169
     voiceClip: {fileID: 0}
     durationMode: 0
     voiceTailSeconds: 0.12

@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   sequenceId: Lobby_OpeningBriefing
   notes: 'Lobby opening briefing; movement and view are locked. Source: HEARTH_Full_Game_Script_Expanded_Native_English_Lobby_Mia_Commentary.md,
-    Scene 1.1. Text is synchronized by Tools/Hearth/Dialogue/Sync All Dialogue From
-    Final Script.'
+    stable marker Lobby_OpeningBriefing. Text is synchronized by Tools/Hearth/Dialogue/Sync
+    All Dialogue From Final Script.'
   lines:
   - startDelay: 0.15
     speaker: Field Unit
@@ -42,9 +42,16 @@ MonoBehaviour:
     voiceTailSeconds: 0.12
   - startDelay: 0.18
     speaker: Field Unit
-    text: This is a routine service review. You'll check how each unit has been operating
-      in the home, identify any issues in its recent use, and decide whether its
-      role in the household should be adjusted going forward.
+    text: This is a routine service review.
+    holdSeconds: 3.414151
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Field Unit
+    text: You'll check how each unit has been operating in the home, identify any
+      issues in its recent use, and decide whether its role in the household should
+      be adjusted going forward.
     holdSeconds: 12
     voiceClip: {fileID: 0}
     durationMode: 0
@@ -69,9 +76,16 @@ MonoBehaviour:
   - startDelay: 0.18
     speaker: Field Unit
     text: 'Before you begin, take a moment to observe the lobby. You''ll see companion
-      units working throughout the community: our company''s defining product, and
-      the most successful companion technology in the world.'
-    holdSeconds: 12
+      units working throughout the community:'
+    holdSeconds: 7.9424524
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Field Unit
+    text: our company's defining product, and the most successful companion technology
+      in the world.
+    holdSeconds: 6.0556602
     voiceClip: {fileID: 0}
     durationMode: 0
     voiceTailSeconds: 0.12

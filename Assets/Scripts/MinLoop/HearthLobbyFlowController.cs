@@ -253,6 +253,24 @@ public class HearthLobbyFlowController : MonoBehaviour
         return true;
     }
 
+    public bool TryPlayExitCommentary(
+        HearthLobbyConversationZone zone,
+        HearthDialogueSequence sequence)
+    {
+        if (zone == null || sequence == null || busy || currentStage != HearthLobbyFlowStage.FreeExploration)
+        {
+            return false;
+        }
+
+        if (assignmentTerminal != null && assignmentTerminal.IsOpen)
+        {
+            return false;
+        }
+
+        StartFlowRoutine(ExitCommentaryRoutine(zone, sequence));
+        return true;
+    }
+
     public void AcquireAssignmentFromTerminal()
     {
         if (busy)
@@ -360,6 +378,11 @@ public class HearthLobbyFlowController : MonoBehaviour
 
         yield return PlayDialogue(openingCloseoutDialogue);
 
+        if (hudOverlay != null)
+        {
+            hudOverlay.DismissVoiceMessage();
+        }
+
         busy = false;
         currentStage = HearthLobbyFlowStage.FreeExploration;
         SetHumanControl(true, true, true, false);
@@ -383,7 +406,28 @@ public class HearthLobbyFlowController : MonoBehaviour
 
         if (zone != null)
         {
-            zone.MarkCompleted();
+            zone.MarkExchangeCompleted();
+        }
+
+        busy = false;
+        currentStage = HearthLobbyFlowStage.FreeExploration;
+        SetHumanControl(true, true, true, false);
+        activeRoutine = null;
+    }
+
+    private IEnumerator ExitCommentaryRoutine(
+        HearthLobbyConversationZone zone,
+        HearthDialogueSequence sequence)
+    {
+        busy = true;
+        currentStage = HearthLobbyFlowStage.OptionalConversation;
+        SetHumanControl(true, true, true, false);
+
+        yield return PlayDialogue(sequence);
+
+        if (zone != null)
+        {
+            zone.MarkExitCommentaryCompleted();
         }
 
         busy = false;

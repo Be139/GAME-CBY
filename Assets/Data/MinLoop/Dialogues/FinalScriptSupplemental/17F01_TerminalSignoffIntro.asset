@@ -13,19 +13,31 @@ MonoBehaviour:
   m_Name: 17F01_TerminalSignoffIntro
   m_EditorClassIdentifier: 
   sequenceId: 17F01_TerminalSignoffIntro
-  notes: '17F01 sign-off recommendation; ready for terminal choice binding. Source:
-    HEARTH_Full_Game_Script_Expanded_Native_English_Lobby_Mia_Commentary.md, Scene
-    1.6. Text is synchronized by Tools/Hearth/Dialogue/Sync All Dialogue From Final
-    Script.'
+  notes: '17F01 sign-off recommendation. Source: HEARTH_Full_Game_Script_Expanded_Native_English_Lobby_Mia_Commentary.md,
+    stable marker 17F01_TerminalSignoffIntro. Text is synchronized by Tools/Hearth/Dialogue/Sync
+    All Dialogue From Final Script.'
   lines:
   - startDelay: 0.15
     speaker: Field Unit
-    text: 'Household stability has remained in the safe range all year. Last night''s
-      response met every standard. Over the past twelve months, this unit has made
-      forty-seven comparable decisions, all within specification. Parent satisfaction
-      is five out of five, and the household is listed as a model night-care case.
-      Recommendation: approve the upgrade.'
-    holdSeconds: 12
+    text: Household stability has remained in the safe range all year. Last night's
+      response met every standard.
+    holdSeconds: 7.1877356
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Field Unit
+    text: Over the past twelve months, this unit has made forty-seven comparable
+      decisions, all within specification.
+    holdSeconds: 6.810377
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Field Unit
+    text: 'Parent satisfaction is five out of five, and the household is listed as
+      a model night-care case. Recommendation: approve the upgrade.'
+    holdSeconds: 9.074528
     voiceClip: {fileID: 0}
     durationMode: 0
     voiceTailSeconds: 0.12

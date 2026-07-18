@@ -14,15 +14,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   sequenceId: 17F04_ChristmasPhoto
   notes: '17F04 photo-frame narration. Source: HEARTH_Full_Game_Script_Expanded_Native_English_Lobby_Mia_Commentary.md,
-    Scene 4.2. Text is synchronized by Tools/Hearth/Dialogue/Sync All Dialogue From
-    Final Script.'
+    stable marker 17F04_ChristmasPhoto. Text is synchronized by Tools/Hearth/Dialogue/Sync
+    All Dialogue From Final Script.'
   lines:
   - startDelay: 0.15
     speaker: Field Unit
     text: This one is from Christmas 2024. You took half a day off and came home
       for dinner. The kitchen timer took the picture. Lily was seven. That is a piece
-      of turkey on her fork. You are both looking at the camera. You are both smiling.
+      of turkey on her fork.
     holdSeconds: 12
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Field Unit
+    text: You are both looking at the camera. You are both smiling.
+    holdSeconds: 5.3009434
     voiceClip: {fileID: 0}
     durationMode: 0
     voiceTailSeconds: 0.12
@@ -39,9 +46,15 @@ MonoBehaviour:
     speaker: Field Unit
     text: Her smile-stability score is higher in this photo than in the Christmas
       picture. Since the unit came online, Lily's overall emotional stability has
-      increased by twenty-three point four percent. That is one measurable benefit
-      to this household.
+      increased by twenty-three point four percent.
     holdSeconds: 12
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Field Unit
+    text: That is one measurable benefit to this household.
+    holdSeconds: 4.1688676
     voiceClip: {fileID: 0}
     durationMode: 0
     voiceTailSeconds: 0.12

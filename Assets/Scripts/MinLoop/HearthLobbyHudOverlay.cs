@@ -9,6 +9,8 @@ public class HearthLobbyHudOverlay : MonoBehaviour
     [SerializeField] private CanvasGroup pinnedMessageGroup;
     [SerializeField] private TMP_Text assignmentStatusText;
 
+    private bool voiceMessageDismissed;
+
     private void Awake()
     {
         HideAllImmediate();
@@ -29,6 +31,7 @@ public class HearthLobbyHudOverlay : MonoBehaviour
 
     public void HideAllImmediate()
     {
+        voiceMessageDismissed = false;
         SetGroup(activationGroup, false);
         SetGroup(expandedMessageGroup, false);
         SetGroup(pinnedMessageGroup, false);
@@ -47,14 +50,31 @@ public class HearthLobbyHudOverlay : MonoBehaviour
 
     public void ShowExpandedVoiceMessage()
     {
+        if (voiceMessageDismissed)
+        {
+            return;
+        }
+
         SetGroup(expandedMessageGroup, true);
         SetGroup(pinnedMessageGroup, false);
     }
 
     public void CollapseVoiceMessage()
     {
+        if (voiceMessageDismissed)
+        {
+            return;
+        }
+
         SetGroup(expandedMessageGroup, false);
         SetGroup(pinnedMessageGroup, true);
+    }
+
+    public void DismissVoiceMessage()
+    {
+        voiceMessageDismissed = true;
+        SetGroup(expandedMessageGroup, false);
+        SetGroup(pinnedMessageGroup, false);
     }
 
     public void SetAssignmentLoaded(bool loaded)

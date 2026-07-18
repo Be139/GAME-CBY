@@ -19,7 +19,7 @@ public class HearthSubtitleLayoutSettings
     public float speakerMinimumFontSize = 16f;
     public float bodyFontSize = 28f;
     public float bodyMinimumFontSize = 18f;
-    [Range(1, 8)] public int bodyMaximumLines = 5;
+    [Range(1, 2)] public int bodyMaximumLines = 2;
     public float lineSpacing;
 }
 
@@ -36,7 +36,7 @@ public class HearthSubtitleStyleProfile : ScriptableObject
         speakerFontSize = 23f,
         bodyFontSize = 30f,
         bodyMinimumFontSize = 20f,
-        bodyMaximumLines = 6
+        bodyMaximumLines = 2
     };
 
     public Color TextColor
@@ -68,6 +68,6 @@ public class HearthSubtitleStyleProfile : ScriptableObject
         layout.speakerMinimumFontSize = Mathf.Clamp(layout.speakerMinimumFontSize, 1f, layout.speakerFontSize);
         layout.bodyFontSize = Mathf.Max(1f, layout.bodyFontSize);
         layout.bodyMinimumFontSize = Mathf.Clamp(layout.bodyMinimumFontSize, 1f, layout.bodyFontSize);
-        layout.bodyMaximumLines = Mathf.Clamp(layout.bodyMaximumLines, 1, 8);
+        layout.bodyMaximumLines = Mathf.Clamp(layout.bodyMaximumLines, 1, 2);
     }
 }

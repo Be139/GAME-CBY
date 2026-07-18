@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bf2d7532251303545ab78ab68b00d5cf, type: 3}
+  m_Name: 17F03_NegativeTrustSupervisorWarning
+  m_EditorClassIdentifier: 
+  sequenceId: 17F03_NegativeTrustSupervisorWarning
+  notes: '17F03 option B warning used only when resulting trust is negative. Source:
+    HEARTH_Full_Game_Script_Expanded_Native_English_Lobby_Mia_Commentary.md, stable
+    marker 17F03_NegativeTrustSupervisorWarning. Text is synchronized by Tools/Hearth/Dialogue/Sync
+    All Dialogue From Final Script.'
+  lines:
+  - startDelay: 0.15
+    speaker: Field Unit
+    text: 'No procedural issues. One item remains: the guardian confirmation at your
+      residence. Handle it carefully, Inspector.'
+    holdSeconds: 7.1877356
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  postSequenceDelay: 0.18

@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   sequenceId: Lobby_ElevatorRide
   notes: 'Elevator briefing before arrival on floor 17. Source: HEARTH_Full_Game_Script_Expanded_Native_English_Lobby_Mia_Commentary.md,
-    Scene 1.2. Text is synchronized by Tools/Hearth/Dialogue/Sync All Dialogue From
-    Final Script.'
+    stable marker Lobby_ElevatorRide. Text is synchronized by Tools/Hearth/Dialogue/Sync
+    All Dialogue From Final Script.'
   lines:
   - startDelay: 0.15
     speaker: Field Unit
@@ -35,9 +35,15 @@ MonoBehaviour:
   - startDelay: 0.18
     speaker: Field Unit
     text: Each household is reviewed through its companion unit's inspection terminal.
-      Once you badge in, you'll see why the household purchased the unit, how it's
-      being used, and its current Household Emotional Stability Index.
-    holdSeconds: 12
+    holdSeconds: 4.923585
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Field Unit
+    text: Once you badge in, you'll see why the household purchased the unit, how
+      it's being used, and its current Household Emotional Stability Index.
+    holdSeconds: 9.829245
     voiceClip: {fileID: 0}
     durationMode: 0
     voiceTailSeconds: 0.12
@@ -78,19 +84,31 @@ MonoBehaviour:
     speaker: Field Unit
     text: For context, companion-unit adoption in this district is ninety-four point
       seven percent. According to this year's white paper, households with a unit
-      average eight point four out of ten on the stability index. Households without
-      one average five point nine.
+      average eight point four out of ten on the stability index.
     holdSeconds: 12
     voiceClip: {fileID: 0}
     durationMode: 0
     voiceTailSeconds: 0.12
   - startDelay: 0.18
     speaker: Field Unit
+    text: Households without one average five point nine.
+    holdSeconds: 3.7915094
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Field Unit
     text: The index is public data. Employers, insurers, schools, and community boards
-      have authorized access. A low score may be interpreted as a household spending
-      too much time and energy on conflict, and it can affect hiring, premiums, and
-      school placement.
-    holdSeconds: 12
+      have authorized access.
+    holdSeconds: 6.4330187
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Field Unit
+    text: A low score may be interpreted as a household spending too much time and
+      energy on conflict, and it can affect hiring, premiums, and school placement.
+    holdSeconds: 10.96132
     voiceClip: {fileID: 0}
     durationMode: 0
     voiceTailSeconds: 0.12
@@ -112,10 +130,16 @@ MonoBehaviour:
     speaker: Field Unit
     text: 'Tonight''s route: 17F-01, routine review. Daniel and Emily requested an
       upgrade to Night Companion Pro this morning. Review last night''s event before
-      signing off. 17F-02, Ben and Claire. Ben force-shut their unit at 6:47 this
-      evening. Full playback required. 17F-03 is flagged. I''ll brief you when we
-      get there.'
-    holdSeconds: 12
+      signing off. 17F-02, Ben and Claire.'
+    holdSeconds: 11.716038
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Field Unit
+    text: Ben force-shut their unit at 6:47 this evening. Full playback required.
+      17F-03 is flagged. I'll brief you when we get there.
+    holdSeconds: 9.074528
     voiceClip: {fileID: 0}
     durationMode: 0
     voiceTailSeconds: 0.12

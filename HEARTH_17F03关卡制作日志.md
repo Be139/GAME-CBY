@@ -109,3 +109,30 @@
 - 门的速度与方向：`17F/ROOM2/Door_2_Brown (7)/Door / SmartDoorController`。
 - 检查镜头速度与缓动：`MIN_LOOP_ROOT/ReplayRoom_17F03/UnitInspectionCameraTransition_17F03`。
 - 若要让女儿在门口等待更久，再调整 `HearthCompanion17F03ReplayController / After Door Open Seconds`；不要用门的旋转角度代替等待时间。
+
+## 2026-07-18 回放后房内处置改版
+
+本条覆盖本文较早的“深眠后回门口终端 A/B”记录。
+
+### 当前正式收尾
+
+1. 深眠回放结束后返回米娅住宅内视角。
+2. 播放正式稿中的技术说明与现有 Laura 询问。
+3. 对白结束后重新开放实体 `ROBOT` 的 E 检查。
+4. E 后以 0.5 秒平滑镜头进入固定检查摄像机。
+5. 检查页显示房内 A/B，使用 `↑/↓ + Space`，A 默认标记 `RECOMMENDED`。
+6. 提交只生效一次；随后平滑回米娅房内视角并播放对应评价。
+7. B 且结算后信任小于 0 时追加主管复核警告。
+8. 全部对白结束后渐黑到 `Anchor_Mia_17F03_DoorReturn`，恢复普通人类控制，不自动打开终端。
+
+### 检查页提前确认
+
+- 本地记录说明尚在播放时按 Space 会立刻灰显并记录排队。
+- 说明结束后自动进入回放；重复 Space 不会重复启动，Esc 会清除排队并退出。
+
+### 2026-07-18 验证
+
+- `Validate 17F03 Minimal Loop Setup` 已通过：动画、正式控制器、相机、AudioListener、ViewSwitch 与出生碰撞均正常。
+- `MinLoopFlowController` 已绑定 `HearthHouseholdProgressState`；第三户结果对白结束后登记 `17F03`，重复登记自动忽略。
+- Play Mode 启动检查只有一个启用 Camera 和一个 AudioListener；本次脚本无新增异常。
+- 仍存在 ROOM2/ROOM3 家具负缩放 `BoxCollider` 的旧场景错误，和本次 17F03 状态机修改无关，正式打包前仍需单独清理。

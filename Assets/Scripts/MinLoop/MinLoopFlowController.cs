@@ -12,12 +12,17 @@ public class MinLoopFlowController : MonoBehaviour
     [SerializeField] private HearthCompanion17F02ReplayController companion17F02ReplayController;
     [SerializeField] private HearthCompanion17F03ReplayController companion17F03ReplayController;
     [SerializeField] private TrustStateController trustStateController;
+    [SerializeField] private HearthHouseholdProgressState householdProgress;
+    [SerializeField] private MinLoopSubtitlePlayer subtitlePlayer;
     [SerializeField] private bool autoFindMissingReferences = true;
     [SerializeField] private bool useCompanion17F01ReplayController = true;
     [SerializeField] private bool useResidentSpecificReplayControllers = true;
 
     [Header("Active Resident")]
     [SerializeField] private string activeReplayResidentId = "17F01";
+
+    [Header("Disposition Dialogue")]
+    [SerializeField] private HearthResidentDispositionDialogueSet[] dispositionDialogueSets;
 
     [Header("Start")]
     [SerializeField] private bool resetFlowOnStart = true;
@@ -37,6 +42,7 @@ public class MinLoopFlowController : MonoBehaviour
     [SerializeField] private bool dispositionSubmitted;
 
     private Coroutine activeFlowRoutine;
+    private bool externalDispositionPresenter;
 
     public MinLoopStage CurrentStage
     {
@@ -80,6 +86,7 @@ public class MinLoopFlowController : MonoBehaviour
     {
         StopActiveFlowRoutine();
         dispositionSubmitted = false;
+        externalDispositionPresenter = false;
         SetStage(MinLoopStage.Corridor, true);
 
         if (trustStateController != null)
@@ -116,6 +123,11 @@ public class MinLoopFlowController : MonoBehaviour
         {
             terminalPresenter.Close();
         }
+
+        if (tvTerminalController != null)
+        {
+            tvTerminalController.SetChoiceInputEnabled(true);
+        }
     }
 
     public void SetTvTerminalController(HearthTvTerminalController controller)
@@ -136,6 +148,11 @@ public class MinLoopFlowController : MonoBehaviour
     public void SetCompanion17F02ReplayController(HearthCompanion17F02ReplayController controller)
     {
         companion17F02ReplayController = controller;
+    }
+
+    public void SetHouseholdProgressState(HearthHouseholdProgressState progressState)
+    {
+        householdProgress = progressState;
     }
 
     public void SetCompanion17F03ReplayController(HearthCompanion17F03ReplayController controller)
@@ -305,21 +322,55 @@ public class MinLoopFlowController : MonoBehaviour
 
     public void NotifyReplayCompleted()
     {
-        StartFlowRoutine(ReturnToTerminalForDisposition());
+        BeginDispositionBriefing(activeReplayResidentId);
     }
 
     public void ChooseDispositionA()
     {
-        ApplyDispositionChoice(MinLoopDispositionChoice.SystemRecommendedA);
+        SubmitDisposition(MinLoopDispositionChoice.SystemRecommendedA);
     }
 
     public void ChooseDispositionB()
     {
-        ApplyDispositionChoice(MinLoopDispositionChoice.LowInterventionB);
+        SubmitDisposition(MinLoopDispositionChoice.LowInterventionB);
+    }
+
+    public void BeginDispositionBriefing(string residentId)
+    {
+        SetActiveReplayResident(residentId);
+        externalDispositionPresenter = false;
+        StartFlowRoutine(ReturnToTerminalForDisposition());
+    }
+
+    public void BeginExternalDispositionChoice(string residentId)
+    {
+        StopActiveFlowRoutine();
+        SetActiveReplayResident(residentId);
+        dispositionSubmitted = false;
+        externalDispositionPresenter = true;
+        SetStage(MinLoopStage.DispositionChoice);
+    }
+
+    public bool SubmitDisposition(MinLoopDispositionChoice choice)
+    {
+        return ApplyDispositionChoice(choice);
+    }
+
+    public void CompleteExternalDisposition()
+    {
+        if (!externalDispositionPresenter)
+        {
+            return;
+        }
+
+        MarkActiveHouseholdCompleted();
+        externalDispositionPresenter = false;
+        SetStage(MinLoopStage.Complete);
     }
 
     public void ContinueToNextResident()
     {
+        MarkActiveHouseholdCompleted();
         SetStage(MinLoopStage.Complete);
 
         if (terminalPresenter != null)
@@ -444,31 +495,55 @@ public class MinLoopFlowController : MonoBehaviour
             }
         }
 
-        SetStage(MinLoopStage.DispositionChoice);
+        SetStage(MinLoopStage.DispositionBriefing);
         dispositionSubmitted = false;
+        externalDispositionPresenter = false;
+
+        HearthResidentDispositionDialogueSet dialogueSet = FindDispositionDialogueSet(activeReplayResidentId);
 
         if (tvTerminalController != null)
         {
+            tvTerminalController.SetCloseTerminalWhenChoiceSubmitted(false);
+            tvTerminalController.SetChoiceInputEnabled(false);
             tvTerminalController.ShowPostReplayChoicePage();
+            while (tvTerminalController.IsOpen && !tvTerminalController.IsPresentationReady)
+            {
+                yield return null;
+            }
         }
         else if (terminalPresenter != null)
         {
             terminalPresenter.ShowDispositionChoices(ChooseDispositionA, ChooseDispositionB);
         }
 
+        if (dialogueSet != null)
+        {
+            yield return PlayDialogue(dialogueSet.PreChoiceBriefing);
+        }
+
+        SetStage(MinLoopStage.DispositionChoice);
+        if (tvTerminalController != null)
+        {
+            tvTerminalController.SetChoiceInputEnabled(true);
+        }
+
         activeFlowRoutine = null;
     }
 
-    private void ApplyDispositionChoice(MinLoopDispositionChoice choice)
+    private bool ApplyDispositionChoice(MinLoopDispositionChoice choice)
     {
         ResolveReferences();
 
         if (dispositionSubmitted || currentStage != MinLoopStage.DispositionChoice)
         {
-            return;
+            return false;
         }
 
         dispositionSubmitted = true;
+        if (tvTerminalController != null && !externalDispositionPresenter)
+        {
+            tvTerminalController.SetChoiceInputEnabled(false);
+        }
         PlayFeedback(dispositionSubmitFeedback);
 
         int currentTrust = 0;
@@ -480,9 +555,20 @@ public class MinLoopFlowController : MonoBehaviour
             delta = trustStateController.LastDelta;
         }
 
+        if (dispositionApplied != null)
+        {
+            dispositionApplied.Invoke(choice, currentTrust, delta);
+        }
+
+        if (externalDispositionPresenter)
+        {
+            SetStage(MinLoopStage.DispositionResult);
+            return true;
+        }
+
         if (tvTerminalController != null)
         {
-            SetStage(MinLoopStage.Complete);
+            StartFlowRoutine(DispositionResultRoutine(choice));
 
             if (terminalPresenter != null)
             {
@@ -494,10 +580,72 @@ public class MinLoopFlowController : MonoBehaviour
             terminalPresenter.ShowDispositionResult(choice, currentTrust, delta, ContinueToNextResident);
         }
 
-        if (dispositionApplied != null)
+        return true;
+    }
+
+    private IEnumerator DispositionResultRoutine(MinLoopDispositionChoice choice)
+    {
+        SetStage(MinLoopStage.DispositionResult);
+        HearthResidentDispositionDialogueSet dialogueSet = FindDispositionDialogueSet(activeReplayResidentId);
+        if (dialogueSet != null)
         {
-            dispositionApplied.Invoke(choice, currentTrust, delta);
+            HearthDialogueSequence result = choice == MinLoopDispositionChoice.SystemRecommendedA
+                ? dialogueSet.OptionAResult
+                : dialogueSet.OptionBResult;
+            yield return PlayDialogue(result);
+            yield return PlayDialogue(dialogueSet.PostChoiceCommon);
         }
+
+        if (tvTerminalController != null && tvTerminalController.IsOpen)
+        {
+            tvTerminalController.CloseTerminal();
+            while (tvTerminalController.IsOpen)
+            {
+                yield return null;
+            }
+        }
+
+        MarkActiveHouseholdCompleted();
+        SetStage(MinLoopStage.Complete);
+        activeFlowRoutine = null;
+    }
+
+    private void MarkActiveHouseholdCompleted()
+    {
+        ResolveReferences();
+        if (householdProgress != null)
+        {
+            householdProgress.MarkHouseholdCompleted(activeReplayResidentId);
+        }
+    }
+
+    private IEnumerator PlayDialogue(HearthDialogueSequence sequence)
+    {
+        if (subtitlePlayer == null || sequence == null || !sequence.HasLines)
+        {
+            yield break;
+        }
+
+        yield return subtitlePlayer.PlaySequenceAsset(sequence);
+    }
+
+    private HearthResidentDispositionDialogueSet FindDispositionDialogueSet(string residentId)
+    {
+        if (dispositionDialogueSets == null)
+        {
+            return null;
+        }
+
+        for (int i = 0; i < dispositionDialogueSets.Length; i++)
+        {
+            HearthResidentDispositionDialogueSet candidate = dispositionDialogueSets[i];
+            if (candidate != null && candidate.Matches(residentId))
+            {
+                return candidate;
+            }
+        }
+
+        return null;
     }
 
     private void PlayFeedback(InteractionFeedbackController feedback)
@@ -586,6 +734,16 @@ public class MinLoopFlowController : MonoBehaviour
         if (trustStateController == null)
         {
             trustStateController = FindObjectOfType<TrustStateController>();
+        }
+
+        if (householdProgress == null)
+        {
+            householdProgress = FindObjectOfType<HearthHouseholdProgressState>();
+        }
+
+        if (subtitlePlayer == null)
+        {
+            subtitlePlayer = FindObjectOfType<MinLoopSubtitlePlayer>(true);
         }
     }
 

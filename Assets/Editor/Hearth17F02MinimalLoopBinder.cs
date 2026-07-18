@@ -525,6 +525,7 @@ public static class Hearth17F02MinimalLoopBinder
         SetObject(so, "trustStateController", trust);
         SetBool(so, "useResidentSpecificReplayControllers", true);
         so.ApplyModifiedPropertiesWithoutUndo();
+        HearthDispositionDialogueSetup.ConfigureEarlyHouseholds(flow, Object.FindObjectOfType<MinLoopSubtitlePlayer>(true));
         EditorUtility.SetDirty(flow);
     }
 
@@ -546,7 +547,7 @@ public static class Hearth17F02MinimalLoopBinder
         SetObject(so, "viewSwitchController", viewSwitch);
         SetObject(so, "playerCamera", person != null ? person.GetComponentInChildren<Camera>(true) : null);
         SetBool(so, "routeChoicesToMinLoop", true);
-        SetBool(so, "closeTerminalWhenChoiceSubmitted", true);
+        SetBool(so, "closeTerminalWhenChoiceSubmitted", false);
         SetBool(so, "preventRepeatedChoiceSubmission", true);
         so.ApplyModifiedPropertiesWithoutUndo();
         EditorUtility.SetDirty(terminal);

@@ -24,6 +24,8 @@ public class HearthTvTerminalController : MonoBehaviour
     [SerializeField] private CanvasGroup canvasGroup;
     [SerializeField] private Camera worldCamera;
     [SerializeField] private bool createEventSystemIfMissing = true;
+    [Tooltip("When enabled, the World Space Canvas is not rendered at all while the terminal is closed. Intended for the lobby task terminal whose UI must sit flush with the physical screen.")]
+    [SerializeField] private bool hideCanvasWhenClosed;
 
     [Header("Pages")]
     [SerializeField] private HearthHudPage[] pages;
@@ -132,6 +134,8 @@ public class HearthTvTerminalController : MonoBehaviour
     private Coroutine terminalRoutine;
     private Coroutine cameraFocusRoutine;
     private bool terminalInputReady;
+    private bool terminalPresentationReady;
+    private bool choiceInputEnabled = true;
     private bool postReplayChoiceMode;
     private bool postReplayChoicesAvailable;
     private bool choiceSubmitted;
@@ -180,6 +184,11 @@ public class HearthTvTerminalController : MonoBehaviour
         get { return customActionHandoffPending; }
     }
 
+    public bool IsPresentationReady
+    {
+        get { return terminalPresentationReady; }
+    }
+
     private void Reset()
     {
         EnsureReferences();
@@ -208,6 +217,8 @@ public class HearthTvTerminalController : MonoBehaviour
         {
             bootSequence.ApplyClosedInstant();
         }
+
+        SetCanvasPresentationVisible(!hideCanvasWhenClosed);
     }
 
     private void Start()
@@ -322,6 +333,8 @@ public class HearthTvTerminalController : MonoBehaviour
             return;
         }
 
+        SetCanvasPresentationVisible(true);
+
         if (pageDrivenSelectionStates && showStartingPageOnStart)
         {
             postReplayChoiceMode = false;
@@ -349,6 +362,7 @@ public class HearthTvTerminalController : MonoBehaviour
         IsOpen = true;
         customActionHandoffPending = false;
         terminalInputReady = false;
+        terminalPresentationReady = false;
         previousCursorLockState = Cursor.lockState;
         previousCursorVisible = Cursor.visible;
 
@@ -385,8 +399,9 @@ public class HearthTvTerminalController : MonoBehaviour
 
         CompleteCameraFocusIfNeeded(true);
 
-        terminalInputReady = true;
-        SetTerminalInputEnabled(true);
+        terminalPresentationReady = true;
+        terminalInputReady = choiceInputEnabled;
+        SetTerminalInputEnabled(terminalInputReady);
         RefreshKeyboardHint();
 
         if (onOpened != null)
@@ -401,6 +416,7 @@ public class HearthTvTerminalController : MonoBehaviour
     {
         customActionHandoffPending = false;
         terminalInputReady = false;
+        terminalPresentationReady = false;
         SetTerminalInputEnabled(false);
         if (selectionHighlighter != null)
         {
@@ -443,6 +459,7 @@ public class HearthTvTerminalController : MonoBehaviour
 
         SetGameplayLocked(false);
         IsOpen = false;
+        SetCanvasPresentationVisible(!hideCanvasWhenClosed);
 
         if (onClosed != null)
         {
@@ -593,6 +610,26 @@ public class HearthTvTerminalController : MonoBehaviour
         }
     }
 
+    public void SetHideCanvasWhenClosed(bool value)
+    {
+        hideCanvasWhenClosed = value;
+        EnsureReferences();
+        SetCanvasPresentationVisible(IsOpen || !hideCanvasWhenClosed);
+    }
+
+    public void SetChoiceInputEnabled(bool value)
+    {
+        choiceInputEnabled = value;
+        terminalInputReady = IsOpen && terminalPresentationReady && choiceInputEnabled;
+        SetTerminalInputEnabled(terminalInputReady);
+        RefreshKeyboardHint();
+    }
+
+    public void SetCloseTerminalWhenChoiceSubmitted(bool value)
+    {
+        closeTerminalWhenChoiceSubmitted = value;
+    }
+
     public void SetSubmitPrimaryActionFromCurrentPage(bool value)
     {
         submitPrimaryActionFromCurrentPage = value;
@@ -731,8 +768,8 @@ public class HearthTvTerminalController : MonoBehaviour
         }
 
         customActionHandoffPending = false;
-        terminalInputReady = true;
-        SetTerminalInputEnabled(true);
+        terminalInputReady = choiceInputEnabled;
+        SetTerminalInputEnabled(terminalInputReady);
         SyncKeyboardFocusToCurrentPage();
         RefreshKeyboardHint();
     }
@@ -986,6 +1023,14 @@ public class HearthTvTerminalController : MonoBehaviour
 
         canvasGroup.interactable = enabled;
         canvasGroup.blocksRaycasts = enabled;
+    }
+
+    private void SetCanvasPresentationVisible(bool visible)
+    {
+        if (canvas != null)
+        {
+            canvas.enabled = visible;
+        }
     }
 
     private void ApplyZoom()
@@ -2011,6 +2056,7 @@ public class HearthTvTerminalController : MonoBehaviour
 
         customActionHandoffPending = false;
         terminalInputReady = false;
+        terminalPresentationReady = false;
         SetTerminalInputEnabled(false);
         if (selectionHighlighter != null)
         {
@@ -2032,6 +2078,7 @@ public class HearthTvTerminalController : MonoBehaviour
 
         SetGameplayLocked(false);
         IsOpen = false;
+        SetCanvasPresentationVisible(!hideCanvasWhenClosed);
 
         if (onClosed != null)
         {

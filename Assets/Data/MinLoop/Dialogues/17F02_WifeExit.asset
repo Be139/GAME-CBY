@@ -13,22 +13,22 @@ MonoBehaviour:
   m_Name: 17F02_WifeExit
   m_EditorClassIdentifier: 
   sequenceId: 17F02_WifeExit
-  notes: Husband calls from the dining area. Wife answers him and leaves without
-    addressing the companion unit.
+  notes: '17F02 dinner call and Claire''s response. Source: HEARTH_Full_Game_Script_Expanded_Native_English_Lobby_Mia_Commentary.md,
+    Scene 2.3. Text is synchronized by Tools/Hearth/Dialogue/Sync All Dialogue From
+    Final Script.'
   lines:
-  - startDelay: 0.4
-    speaker: Husband
-    text: Dinner is ready. Are you coming?
-    holdSeconds: 2.6
+  - startDelay: 0.15
+    speaker: Ben
+    text: Babe, dinner's ready!
+    holdSeconds: 2.2820754
     voiceClip: {fileID: 0}
-  - startDelay: 0.2
-    speaker: Wife
-    text: Coming.
-    holdSeconds: 1.5
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Claire
+    text: Coming!
+    holdSeconds: 2.2
     voiceClip: {fileID: 0}
-  - startDelay: 0.3
-    speaker: SFX
-    text: '[she stands and walks to the door]'
-    holdSeconds: 1.8
-    voiceClip: {fileID: 0}
-  postSequenceDelay: 0
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  postSequenceDelay: 0.18

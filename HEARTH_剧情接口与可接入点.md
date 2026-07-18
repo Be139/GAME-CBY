@@ -281,3 +281,62 @@
 - 门提前量：`HearthCompanion17F02ReplayController / Door Open Delay After Animation Start Seconds = 0.5`。减小会更早开门，增大会更晚。
 - 女主出门完成后自动调用动画基准恢复并精确对齐 `Wife Exit Outside Anchor`；若以后替换动作后再次出现闪回，先检查对应 State 的稳定选项，再检查可见模型是否仍是 RuntimeRoot 子物体。
 - 第三幕中央蓝字来源为 `CompanionScene_07_17F02_04 / Center Message`，当前必须保持为空；家庭记录内容继续在 Projection Panel 数据中维护。
+
+## 1F 大堂、同步终端与电梯接口（2026-07-18，已实现）
+
+### 正式流程入口
+
+- 总控制器：`MIN_LOOP_ROOT/LobbyOpening/HearthLobbyFlowController`。
+- `BeginOpening()`：把正式米娅放到 `Person Controller (4)` 锚点，锁定移动和视角并播放开场。
+- `TryPlayOptionalConversation(...)`：播放任一大堂可选对白；播放时只锁移动，保留鼠标视角。
+- `AcquireAssignmentFromTerminal()`：在同步终端按 Space 后领取任务，并开放电梯按钮。
+- `BeginElevatorRide()`：渐黑进入 `Person Controller (5)` 电梯锚点，播放对白，再抵达 17 楼。
+- `ResetLobbyFlowForPreview()`：清空本轮状态，供 Play Mode 反复测试。
+- 事件接口：`onOpeningCompleted`、`onAssignmentLoaded`、`onElevatorEntered`、`onFloor17Arrived`。
+
+### 三个可选对白范围
+
+- 触发脚本为 `HearthLobbyConversationZone`，挂在 `space / space1 / space2` 的 Trigger Collider 上。
+- 每个范围直接引用自己的 `HearthDialogueSequence`；不要求三组全部完成，也不决定终端是否可用。
+- 调整范围只需移动或缩放对应 Collider。NPC 位置、朝向和动作不由该脚本修改。
+- `Play Once` 默认开启；需要重新测试时调用 `ResetConversation()` 或重置整个 Lobby Flow。
+
+### 同步终端与电梯
+
+- 终端交互脚本：`HearthLobbyTaskTerminalInteractable`，复用 `HearthTvTerminalController` 的蓝色 E 提示、0.5 秒镜头平移、开机闪烁和 Space 主操作。
+- 电梯交互脚本：`HearthLobbyElevatorInteractable`，实现 `IInteractionAvailability`；只有 `AssignmentLoaded = true` 时才显示 E。
+- 一楼终端 Prefab：`Assets/Prefabs/UI/HearthHud/Terminals/Terminal_Lobby_Assignment.prefab`。
+- 调整 `Person Controller (4)/(5)` 后，运行时会直接读取其位置与摄像机朝向；不需要重新执行绑定菜单。
+- 修改正式 17 楼到达点时，先在 Edit Mode 把正式玩家摆到目标位置，再执行 `Tools > Hearth > Lobby > Capture Current Player Pose As 17F Arrival`。
+
+## 最终对白稿与语音接口（2026-07-18）
+
+### 唯一文本来源
+
+- 项目根目录 `HEARTH_Full_Game_Script_Expanded_Native_English_Lobby_Mia_Commentary.md` 是当前正式对白唯一来源。
+- 同步菜单：`Tools > Hearth > Dialogue > Sync All Dialogue From Final Script`。
+- 覆盖检查：`Tools > Hearth > Dialogue > Validate Final Script Coverage`。
+- 当前检查覆盖正式稿中的 `321` 条对白；同步范围包含一楼开场和四户流程。
+
+### 每句对白的可调字段
+
+- `Speaker`：说话人名称。
+- `Text`：字幕正文。
+- `Start Delay Seconds`：本句开始前等待。
+- `Hold Seconds`：没有语音时的回退显示时长。
+- `Voice Clip`：本句真实语音。
+- `Duration Mode = Voice Clip When Assigned`：有语音时自动使用 `AudioClip.length`，无语音时使用 `Hold Seconds`。
+- `Voice Tail Seconds`：语音结束后字幕额外保留时间，当前同步默认 `0.12s`。
+
+### 语音接入步骤
+
+1. 在 `Assets/Data/MinLoop/Dialogues/` 找到对应关卡和场景的 `HearthDialogueSequence`。
+2. 展开 `Lines`，把每句对应的 `AudioClip` 拖入 `Voice Clip`。
+3. 保持 `Duration Mode` 为 `Voice Clip When Assigned`，按需要调整 `Start Delay` 和 `Voice Tail`。
+4. 文字有修改时先修改最终 Markdown，再运行同步菜单；同步只自动保留说话人与正文完全相同的语音绑定。
+5. 运行覆盖检查并试听完整场景，确认字幕、语音和下一句的间隔。
+
+### 补充数据接口
+
+- `Assets/Data/MinLoop/Dialogues/FinalScriptSupplemental/` 保存最终稿中暂时没有独立运行节点的终端说明、分支签退和检查提示。
+- 这些对白已经进入正式数据层，但不会自动插入不匹配的旧剧情节点。后续新增对应终端按钮或分支节点时，直接把相应 Asset 拖入控制器，无需再次抄写文本。

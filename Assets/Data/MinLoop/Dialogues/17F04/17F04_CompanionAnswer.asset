@@ -13,48 +13,69 @@ MonoBehaviour:
   m_Name: 17F04_CompanionAnswer
   m_EditorClassIdentifier: 
   sequenceId: 17F04_CompanionAnswer
-  notes: 'B route: the Companion Unit answers Lily.'
+  notes: '17F04 path B: the home unit answers and the Field Unit closes the shift.
+    Source: HEARTH_Full_Game_Script_Expanded_Native_English_Lobby_Mia_Commentary.md,
+    Scene 4.7. Text is synchronized by Tools/Hearth/Dialogue/Sync All Dialogue From
+    Final Script.'
   lines:
-  - startDelay: 0.3
-    speaker: Home Companion
-    text: Mom will see your performance summary, and she will prepare what you need.
-    holdSeconds: 4.4
+  - startDelay: 0.15
+    speaker: Mia's Home Unit
+    text: Mom will receive your progress report, and she'll make sure you have everything
+      you need. Let's finish tonight's run-through first, okay?
+    holdSeconds: 9.074528
     voiceClip: {fileID: 0}
     durationMode: 0
-    voiceTailSeconds: 0
-  - startDelay: 0.2
-    speaker: Home Companion
-    text: For tonight, finish this practice with me. All right?
-    holdSeconds: 3.5
-    voiceClip: {fileID: 0}
-    durationMode: 0
-    voiceTailSeconds: 0
-  - startDelay: 0.7
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
     speaker: Lily
-    text: ...Okay. Then we will finish it.
-    holdSeconds: 3.2
+    text: Mm.
+    holdSeconds: 2.2
     voiceClip: {fileID: 0}
     durationMode: 0
-    voiceTailSeconds: 0
-  - startDelay: 0.2
-    speaker: Home Companion
-    text: Good. We will start from your name and take it slowly.
-    holdSeconds: 3.8
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Lily
+    text: Okay. Let's just finish.
+    holdSeconds: 2.6594338
     voiceClip: {fileID: 0}
     durationMode: 0
-    voiceTailSeconds: 0
-  - startDelay: 0.6
-    speaker: Field Companion
-    text: Household emotional stability has returned to the safe zone.
-    holdSeconds: 3.5
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Mia's Home Unit
+    text: Okay. Start with your name. Nice and slow.
+    holdSeconds: 4.1688676
     voiceClip: {fileID: 0}
     durationMode: 0
-    voiceTailSeconds: 0
-  - startDelay: 0.2
-    speaker: Field Companion
-    text: 'This shift''s overall rating: excellent. The case can be archived.'
-    holdSeconds: 4
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Lily
+    text: Hi, everyone. I'm Lily, and today I want to tell you about my favorite
+      book...
+    holdSeconds: 6.810377
     voiceClip: {fileID: 0}
     durationMode: 0
-    voiceTailSeconds: 0
-  postSequenceDelay: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Mia's Home Unit
+    text: That's okay. Better than yesterday.
+    holdSeconds: 3.0367923
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Field Unit
+    text: Inspector, all reviews and the guardian confirmation are complete. Household
+      stability is back in the safe range. Tonight's shift is in the top performance
+      band. You are cleared to log off.
+    holdSeconds: 12
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Field Unit
+    text: You did well tonight.
+    holdSeconds: 2.6594338
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  postSequenceDelay: 0.18

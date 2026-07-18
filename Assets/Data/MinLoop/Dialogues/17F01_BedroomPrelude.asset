@@ -13,24 +13,37 @@ MonoBehaviour:
   m_Name: 17F01_BedroomPrelude
   m_EditorClassIdentifier: 
   sequenceId: 17F01_BedroomPrelude
-  notes: Plays after the companion replay begins in the boy's room. The E prompt
-    is gated until this sequence finishes, then the replay controller waits its prompt
-    delay.
+  notes: '17F01 bedroom playback before the soothe interaction. Source: HEARTH_Full_Game_Script_Expanded_Native_English_Lobby_Mia_Commentary.md,
+    Scene 1.4. Text is synchronized by Tools/Hearth/Dialogue/Sync All Dialogue From
+    Final Script.'
   lines:
-  - startDelay: 1.8
-    speaker: Son
-    text: ... No...
-    holdSeconds: 1.2
+  - startDelay: 0.15
+    speaker: Noah
+    text: Hello? Are you there?
+    holdSeconds: 2.6594338
     voiceClip: {fileID: 0}
-  - startDelay: 2.2
-    speaker: Son
-    text: ... Mom...
-    holdSeconds: 1.5
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: 17F-01 Home Unit
+    text: I'm right here, Noah.
+    holdSeconds: 2.6594338
     voiceClip: {fileID: 0}
-  - startDelay: 0.4
-    speaker: Synth Voice
-    text: 'Decision: initiate soothing protocol. Reason: service subject showing
-      signs of nightmare.'
-    holdSeconds: 3
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Noah
+    text: I had a really bad dream. Can I go get Mom and Dad?
+    holdSeconds: 6.0556602
     voiceClip: {fileID: 0}
-  postSequenceDelay: 0
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: 17F-01 Synth Voice
+    text: 'Decision: intervene. Reason: waking the parents would reduce their next-day
+      performance.'
+    holdSeconds: 5.3009434
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  postSequenceDelay: 0.18

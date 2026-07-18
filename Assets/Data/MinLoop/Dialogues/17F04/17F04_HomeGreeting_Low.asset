@@ -13,36 +13,41 @@ MonoBehaviour:
   m_Name: 17F04_HomeGreeting_Low
   m_EditorClassIdentifier: 
   sequenceId: 17F04_HomeGreeting_Low
-  notes: Low-trust greeting after entering Mia's home.
+  notes: '17F04 terminal-side guardian-confirmation exchange (negative trust variant).
+    Source: HEARTH_Full_Game_Script_Expanded_Native_English_Lobby_Mia_Commentary.md,
+    Scene 4.1. Text is synchronized by Tools/Hearth/Dialogue/Sync All Dialogue From
+    Final Script.'
   lines:
-  - startDelay: 0.2
-    speaker: Field Companion
-    text: Inspector, you are home.
-    holdSeconds: 2.4
+  - startDelay: 0.15
+    speaker: Lily
+    text: Mom? Are you coming tomorrow? Ms. Parker said it'd be better if a real
+      person came. Not just a system check-in.
+    holdSeconds: 9.074528
     voiceClip: {fileID: 0}
     durationMode: 0
-    voiceTailSeconds: 0
-  - startDelay: 0.2
-    speaker: Field Companion
-    text: Tonight, you chose low intervention in all three households. That is unusual
-      in your record.
-    holdSeconds: 4.8
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Mia's Home Unit
+    text: Mom will receive your progress report, and she'll make sure you have everything
+      you need. Let's finish tonight's run-through first, okay?
+    holdSeconds: 9.074528
     voiceClip: {fileID: 0}
     durationMode: 0
-    voiceTailSeconds: 0
-  - startDelay: 0.2
-    speaker: Field Companion
-    text: Handling cases this way takes effort. Most inspectors do not do it, because
-      following the system is easier.
-    holdSeconds: 5.2
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Field Unit
+    text: The reply was filed under 'attendance confirmation, bedtime routine, concurrent.'
+      Standard handling. You were at 17F-01 when it was issued. Please complete the
+      confirmation.
+    holdSeconds: 10.206603
     voiceClip: {fileID: 0}
     durationMode: 0
-    voiceTailSeconds: 0
-  - startDelay: 0.3
-    speaker: Field Companion
-    text: Are you still willing to spend that effort here?
-    holdSeconds: 3.5
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Mia
+    text: I know.
+    holdSeconds: 2.2
     voiceClip: {fileID: 0}
     durationMode: 0
-    voiceTailSeconds: 0
-  postSequenceDelay: 0
+    voiceTailSeconds: 0.12
+  postSequenceDelay: 0.18

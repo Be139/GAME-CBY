@@ -13,43 +13,59 @@ MonoBehaviour:
   m_Name: 17F03_NightDaughter
   m_EditorClassIdentifier: 
   sequenceId: 17F03_NightDaughter
-  notes: The daughter approaches the unit at night.
+  notes: '17F03 night conversation with Ava. Source: HEARTH_Full_Game_Script_Expanded_Native_English_Lobby_Mia_Commentary.md,
+    Scene 3.4. Text is synchronized by Tools/Hearth/Dialogue/Sync All Dialogue From
+    Final Script.'
   lines:
-  - startDelay: 0.3
-    speaker: Daughter
-    text: Can you stop speaking for us?
-    holdSeconds: 2.7
+  - startDelay: 0.15
+    speaker: 17F-03 Synth Voice
+    text: 'Decision: open dialogue mode. Reason: Ava initiated contact.'
+    holdSeconds: 4.1688676
     voiceClip: {fileID: 0}
-  - startDelay: 0.25
-    speaker: Companion Unit
-    text: If you want to speak directly to your parents, I can step aside.
-    holdSeconds: 4
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Ava
+    text: Can you please stop talking for us?
+    holdSeconds: 3.7915094
     voiceClip: {fileID: 0}
-  - startDelay: 0.25
-    speaker: Daughter
-    text: That is not what I mean.
-    holdSeconds: 2.2
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: 17F-03 Synth Voice
+    text: 'Decision: standard response. Reason: subject expression can be guided.'
+    holdSeconds: 4.5462265
     voiceClip: {fileID: 0}
-  - startDelay: 0.25
-    speaker: Daughter
-    text: My mother used to get angry with me. My father used to knock on my door
-      himself. Now neither of them does.
-    holdSeconds: 5.3
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: 17F-03 Home Unit
+    text: If you would rather speak to your parents directly, I can step aside.
+    holdSeconds: 6.0556602
     voiceClip: {fileID: 0}
-  - startDelay: 0.2
-    speaker: Daughter
-    text: Today Dad came home and asked you how I was. He asked you, not me.
-    holdSeconds: 4.2
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Ava
+    text: That's not what I mean.
+    holdSeconds: 3.0367923
     voiceClip: {fileID: 0}
-  - startDelay: 0.2
-    speaker: Daughter
-    text: At dinner the three of us sat at one table and nobody spoke. The food was
-      warm. The people were cold.
-    holdSeconds: 5.2
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Ava
+    text: Mom used to get on my case. Dad used to knock on my door himself. They
+      don't anymore. Mom talks to you more than she talks to me. Dad came home today
+      and asked you how I was. He didn't ask me. He didn't say one word to me.
+    holdSeconds: 12
     voiceClip: {fileID: 0}
-  - startDelay: 0.2
-    speaker: Daughter
-    text: You understand them more and more. They understand me less and less.
-    holdSeconds: 4.4
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Ava
+    text: You know them better every day. They know me less.
+    holdSeconds: 4.923585
     voiceClip: {fileID: 0}
-  postSequenceDelay: 0
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  postSequenceDelay: 0.18

@@ -13,70 +13,80 @@ MonoBehaviour:
   m_Name: 17F04_DaughterRoom_Low
   m_EditorClassIdentifier: 
   sequenceId: 17F04_DaughterRoom_Low
-  notes: Daughter-room dialogue before the final choice, low-trust variation.
+  notes: '17F04 daughter-room conversation (negative trust variant). Source: HEARTH_Full_Game_Script_Expanded_Native_English_Lobby_Mia_Commentary.md,
+    Scene 4.4. Text is synchronized by Tools/Hearth/Dialogue/Sync All Dialogue From
+    Final Script.'
   lines:
-  - startDelay: 0.2
-    speaker: Home Companion
-    text: You are back.
+  - startDelay: 0.15
+    speaker: Mia's Home Unit
+    text: You're home.
     holdSeconds: 2.2
     voiceClip: {fileID: 0}
     durationMode: 0
-    voiceTailSeconds: 0
-  - startDelay: 0.2
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
     speaker: Lily
-    text: ...Mom?
-    holdSeconds: 2
+    text: Mom?
+    holdSeconds: 2.2
     voiceClip: {fileID: 0}
     durationMode: 0
-    voiceTailSeconds: 0
-  - startDelay: 0.2
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
     speaker: Mia
-    text: It is Mom.
-    holdSeconds: 2
+    text: Hey. It's me.
+    holdSeconds: 2.2820754
     voiceClip: {fileID: 0}
     durationMode: 0
-    voiceTailSeconds: 0
-  - startDelay: 0.2
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
     speaker: Lily
-    text: This time, you came in yourself?
-    holdSeconds: 3
+    text: Did you come in on your own this time?
+    holdSeconds: 4.5462265
     voiceClip: {fileID: 0}
     durationMode: 0
-    voiceTailSeconds: 0
-  - startDelay: 0.2
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
     speaker: Mia
-    text: Yes.
-    holdSeconds: 1.8
+    text: I did.
+    holdSeconds: 2.2
     voiceClip: {fileID: 0}
     durationMode: 0
-    voiceTailSeconds: 0
-  - startDelay: 0.3
-    speaker: Home Companion
-    text: Inspector, if you allow me to finish tonight's practice, Lily's bedtime
-      will remain more stable.
-    holdSeconds: 5
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Mia's Home Unit
+    text: We have one more run-through. Let's finish that, then we can talk about
+      anything else. Okay?
+    holdSeconds: 7.1877356
     voiceClip: {fileID: 0}
     durationMode: 0
-    voiceTailSeconds: 0
-  - startDelay: 0.4
-    speaker: Mia
-    text: Enough. I understand.
-    holdSeconds: 2.8
-    voiceClip: {fileID: 0}
-    durationMode: 0
-    voiceTailSeconds: 0
-  - startDelay: 0.5
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
     speaker: Lily
-    text: Mom, will you come tomorrow?
-    holdSeconds: 3.2
+    text: Mom, I'm not asking about my speech.
+    holdSeconds: 3.7915094
     voiceClip: {fileID: 0}
     durationMode: 0
-    voiceTailSeconds: 0
-  - startDelay: 0.2
-    speaker: Field Companion
-    text: ...Inspector, the home unit is waiting for your instruction.
-    holdSeconds: 3.8
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Mia's Home Unit
+    text: Inspector, Lily's sleep will be more stable if I complete tonight's session.
+      I recommend that we finish.
+    holdSeconds: 7.565094
     voiceClip: {fileID: 0}
     durationMode: 0
-    voiceTailSeconds: 0
-  postSequenceDelay: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Mia
+    text: I heard you.
+    holdSeconds: 2.2820754
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Lily
+    text: Mom. Are you coming tomorrow?
+    holdSeconds: 3.0367923
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  postSequenceDelay: 0.18

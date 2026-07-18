@@ -13,65 +13,72 @@ MonoBehaviour:
   m_Name: 17F04_HearingDaughterRoom
   m_EditorClassIdentifier: 
   sequenceId: 17F04_HearingDaughterRoom
-  notes: Voices heard before the daughter's room becomes interactable.
+  notes: '17F04 dialogue heard outside Lily''s door. Source: HEARTH_Full_Game_Script_Expanded_Native_English_Lobby_Mia_Commentary.md,
+    Scene 4.3. Text is synchronized by Tools/Hearth/Dialogue/Sync All Dialogue From
+    Final Script.'
   lines:
-  - startDelay: 0.2
-    speaker: Home Companion
-    text: One more time, slower.
-    holdSeconds: 2.4
+  - startDelay: 0.15
+    speaker: Mia's Home Unit
+    text: Let's try it again. Slower this time.
+    holdSeconds: 3.7915094
     voiceClip: {fileID: 0}
     durationMode: 0
-    voiceTailSeconds: 0
-  - startDelay: 0.2
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
     speaker: Lily
-    text: Hello, everyone. My name is Lily. Today I want to share my favorite...
-      my favorite book.
-    holdSeconds: 4.8
+    text: Hi, everyone. I'm Lily, and today I want to tell you about my...
+    holdSeconds: 6.0556602
     voiceClip: {fileID: 0}
     durationMode: 0
-    voiceTailSeconds: 0
-  - startDelay: 0.2
-    speaker: Home Companion
-    text: You are getting stuck in the same place. Let us try again. You are much
-      better today than yesterday.
-    holdSeconds: 5.2
-    voiceClip: {fileID: 0}
-    durationMode: 0
-    voiceTailSeconds: 0
-  - startDelay: 0.2
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
     speaker: Lily
-    text: Will you always be beside me?
-    holdSeconds: 2.8
+    text: My favorite book.
+    holdSeconds: 2.2820754
     voiceClip: {fileID: 0}
     durationMode: 0
-    voiceTailSeconds: 0
-  - startDelay: 0.2
-    speaker: Home Companion
-    text: Tomorrow I will watch you from the audience. I am always here.
-    holdSeconds: 4
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Mia's Home Unit
+    text: Same spot. That's okay. Don't rush it. You're already doing better than
+      yesterday.
+    holdSeconds: 6.0556602
     voiceClip: {fileID: 0}
     durationMode: 0
-    voiceTailSeconds: 0
-  - startDelay: 0.25
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Lily
+    text: Will you be there tomorrow? Like, right next to me?
+    holdSeconds: 4.923585
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Mia's Home Unit
+    text: I'll be in the audience. I'll be right there.
+    holdSeconds: 4.5462265
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
     speaker: Lily
     text: What about Mom?
-    holdSeconds: 2.3
+    holdSeconds: 2.2820754
     voiceClip: {fileID: 0}
     durationMode: 0
-    voiceTailSeconds: 0
-  - startDelay: 0.5
-    speaker: Home Companion
-    text: Mom will be there too.
-    holdSeconds: 2.8
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Mia's Home Unit
+    text: She'll be there too.
+    holdSeconds: 2.6594338
     voiceClip: {fileID: 0}
     durationMode: 0
-    voiceTailSeconds: 0
-  - startDelay: 0.4
-    speaker: Field Companion
-    text: 'Lily''s current state is stable. Recommendation: do not interrupt this
-      practice round.'
-    holdSeconds: 4.6
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Mia's Home Unit
+    text: Good. You got through that one on your own.
+    holdSeconds: 4.5462265
     voiceClip: {fileID: 0}
     durationMode: 0
-    voiceTailSeconds: 0
-  postSequenceDelay: 0
+    voiceTailSeconds: 0.12
+  postSequenceDelay: 0.18

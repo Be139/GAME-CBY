@@ -13,26 +13,16 @@ MonoBehaviour:
   m_Name: 17F03_NightShutdownAction
   m_EditorClassIdentifier: 
   sequenceId: 17F03_NightShutdownAction
-  notes: Maintenance menu and core service shutdown after Entering Code begins.
+  notes: 'Compatibility copy of the 17F03 deep-sleep system line. Source: HEARTH_Full_Game_Script_Expanded_Native_English_Lobby_Mia_Commentary.md,
+    Scene 3.4. Text is synchronized by Tools/Hearth/Dialogue/Sync All Dialogue From
+    Final Script.'
   lines:
-  - startDelay: 0.5
-    speaker: System
-    text: 'Display opened. Operator: daughter. Permission: basic user.'
-    holdSeconds: 3.2
+  - startDelay: 0.15
+    speaker: 17F-03 Synth Voice
+    text: 'This unit is entering deep sleep. Reason: core services were disabled
+      by the user through the maintenance menu.'
+    holdSeconds: 7.9424524
     voiceClip: {fileID: 0}
-  - startDelay: 0.3
-    speaker: System
-    text: Maintenance menu accessed. Core services selected.
-    holdSeconds: 3
-    voiceClip: {fileID: 0}
-  - startDelay: 0.3
-    speaker: System
-    text: Core services shutting down. This unit will enter deep sleep.
-    holdSeconds: 3.5
-    voiceClip: {fileID: 0}
-  - startDelay: 0.3
-    speaker: Synth Voice
-    text: Deep sleep initiated. Normal restart path locked.
-    holdSeconds: 3.2
-    voiceClip: {fileID: 0}
-  postSequenceDelay: 0
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  postSequenceDelay: 0.18

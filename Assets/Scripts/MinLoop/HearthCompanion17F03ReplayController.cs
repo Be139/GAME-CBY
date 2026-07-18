@@ -117,6 +117,7 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
 
     [Header("Dialogue Assets")]
     [SerializeField] private HearthDialogueSequence humanParentSequence;
+    [SerializeField] private HearthDialogueSequence inspectionRecallPromptSequence;
     [SerializeField] private HearthDialogueSequence middayConflictSequence;
     [SerializeField] private HearthDialogueSequence mediateToDaughterSequence;
     [SerializeField] private HearthDialogueSequence mediateToMotherSequence;
@@ -411,7 +412,7 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
         SetInspectionCameraActive(true);
         if (inspectionPanel != null)
         {
-            inspectionPanel.SetRecallAvailable(true);
+            inspectionPanel.SetRecallAvailable(false);
             inspectionPanel.Open();
         }
 
@@ -419,6 +420,12 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
         if (!usedSmoothTransition)
         {
             yield return FadeBlackTo(0f, fadeInSeconds);
+        }
+
+        yield return PlayDialogue(inspectionRecallPromptSequence);
+        if (inspectionPanel != null)
+        {
+            inspectionPanel.SetRecallAvailable(true);
         }
 
         activeRoutine = null;

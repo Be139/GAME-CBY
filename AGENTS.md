@@ -102,3 +102,11 @@ v10 连接验证方法：
 如果 Unity MCP 未连接、Unity 未打开或 MCP 工具不可用，Codex 可以回退到读取项目文件、脚本和场景文本的方式，但需要在回复中说明当前没有通过 MCP 验证编辑器内状态。
 
 涉及新增、修改或重构 Unity / C# 脚本时，仍然必须同步更新 `脚本使用说明总表.md`。
+
+## 最终对白稿同步规则
+
+- 当前正式对白唯一来源是项目根目录 `HEARTH_Full_Game_Script_Expanded_Native_English_Lobby_Mia_Commentary.md`。
+- 除非用户明确提供并指定新的替代定稿，后续修改剧情、字幕、语音或关卡流程前，必须先读取这份文件，不得以旧下载稿、旧 Dialogue Asset 或聊天记忆覆盖它。
+- 正式稿变更后，优先运行 Unity 菜单 `Tools > Hearth > Dialogue > Sync All Dialogue From Final Script`，再运行 `Validate Final Script Coverage`；不要逐个手工复制全文到资产。
+- 同步会保留“说话人与文本均未变化”的已有 `AudioClip`；文本发生变化的行需要重新检查并绑定语音。
+- 所有正式对白继续使用 `HearthDialogueSequence`。语音存在时字幕显示时长必须跟随 `AudioClip.length`，无语音时才使用可编辑的回退时长。

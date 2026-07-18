@@ -1,0 +1,49 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bf2d7532251303545ab78ab68b00d5cf, type: 3}
+  m_Name: Lobby_Group01_Girl
+  m_EditorClassIdentifier: 
+  sequenceId: Lobby_Group01_Girl
+  notes: 'Optional lobby girl and public-unit conversation. Source: HEARTH_Full_Game_Script_Expanded_Native_English_Lobby_Mia_Commentary.md,
+    Scene 1.1. Text is synchronized by Tools/Hearth/Dialogue/Sync All Dialogue From
+    Final Script.'
+  lines:
+  - startDelay: 0.15
+    speaker: Lobby Girl
+    text: "Hi, everyone. I'm\u2014"
+    holdSeconds: 2.2820754
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Public Unit
+    text: You know it. You just rushed the first part. Start with your name and try
+      it again.
+    holdSeconds: 7.565094
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Lobby Girl
+    text: Okay.
+    holdSeconds: 2.2
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Mia
+    text: Huh. Guess these things really do help with kids.
+    holdSeconds: 4.5462265
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  postSequenceDelay: 0.18

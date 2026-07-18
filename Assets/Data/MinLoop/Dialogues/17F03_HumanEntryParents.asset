@@ -13,48 +13,63 @@ MonoBehaviour:
   m_Name: 17F03_HumanEntryParents
   m_EditorClassIdentifier: 
   sequenceId: 17F03_HumanEntryParents
-  notes: Parents explain the offline unit after Mia enters.
+  notes: '17F03 parent explanation after Mia enters the unit. Source: HEARTH_Full_Game_Script_Expanded_Native_English_Lobby_Mia_Commentary.md,
+    Scene 3.2. Text is synchronized by Tools/Hearth/Dialogue/Sync All Dialogue From
+    Final Script.'
   lines:
-  - startDelay: 0.25
-    speaker: Mother
-    text: You got here fast. Is this thing broken? Can you fix it?
-    holdSeconds: 3.2
+  - startDelay: 0.15
+    speaker: Laura
+    text: Oh, thank God. That was quick. Is it broken? Can you fix it?
+    holdSeconds: 6.0556602
     voiceClip: {fileID: 0}
-  - startDelay: 0.25
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
     speaker: Mia
-    text: Let me see what happened.
-    holdSeconds: 2
+    text: Let me take a look first.
+    holdSeconds: 3.414151
     voiceClip: {fileID: 0}
-  - startDelay: 0.2
-    speaker: Mother
-    text: Please get it running again. This machine really is good.
-    holdSeconds: 3
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Laura
+    text: Please tell me you can do it tonight. This thing has been a godsend. The
+      past year has been quiet. Actually quiet. Ava and I used to blow up at each
+      other every few days. She's fourteen. You know how it is. Since we got the
+      unit, nobody yells in this house. Even my blood pressure's down. My doctor
+      asked what changed.
+    holdSeconds: 12
     voiceClip: {fileID: 0}
-  - startDelay: 0.2
-    speaker: Mother
-    text: Before we bought it, my daughter and I argued every few days. This house
-      has been much quieter for the last year.
-    holdSeconds: 5
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Laura
+    text: Mark and I both work. No one's here during the day. It keeps Ava company.
+      She tells it things, it reports back to me, and I know what's going on. Then
+      tonight it just shuts off out of nowhere?
+    holdSeconds: 12
     voiceClip: {fileID: 0}
-  - startDelay: 0.2
-    speaker: Mother
-    text: We are both busy. She talks to the unit, and it reports her condition to
-      us. We know what is happening without missing work.
-    holdSeconds: 5.2
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Mark
+    text: We cycled the power a few times. The screen never came back.
+    holdSeconds: 5.678302
     voiceClip: {fileID: 0}
-  - startDelay: 0.3
-    speaker: Father
-    text: We tried the power switch several times. The display stayed black.
-    holdSeconds: 3.2
-    voiceClip: {fileID: 0}
-  - startDelay: 0.25
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
     speaker: Mia
-    text: ...All right. I will check today's record.
-    holdSeconds: 2.6
+    text: Okay. I'll pull the record.
+    holdSeconds: 3.0367923
     voiceClip: {fileID: 0}
-  - startDelay: 0.2
-    speaker: Mother
-    text: Please hurry. She has school tomorrow.
-    holdSeconds: 2.5
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Laura
+    text: Please hurry. Ava has school tomorrow.
+    holdSeconds: 3.414151
     voiceClip: {fileID: 0}
-  postSequenceDelay: 0
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  postSequenceDelay: 0.18

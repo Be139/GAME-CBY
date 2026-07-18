@@ -13,41 +13,57 @@ MonoBehaviour:
   m_Name: 17F04_Shutdown_Low
   m_EditorClassIdentifier: 
   sequenceId: 17F04_Shutdown_Low
-  notes: Low-trust forced shutdown after clearing the virus popup challenge.
+  notes: '17F04 negative-trust forced shutdown. Source: HEARTH_Full_Game_Script_Expanded_Native_English_Lobby_Mia_Commentary.md,
+    Scene 4.6. Text is synchronized by Tools/Hearth/Dialogue/Sync All Dialogue From
+    Final Script.'
   lines:
-  - startDelay: 0.3
-    speaker: System
-    text: Forced shutdown authorized. Farewell protocol has been bypassed.
-    holdSeconds: 3.8
+  - startDelay: 0.15
+    speaker: Mia
+    text: I'm shutting you down.
+    holdSeconds: 2.6594338
     voiceClip: {fileID: 0}
     durationMode: 0
-    voiceTailSeconds: 0
-  - startDelay: 0.7
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Mia's Home Unit
+    text: Okay.
+    holdSeconds: 2.2
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Mia's Home Unit
+    text: Lily, your mom is here now. I can go.
+    holdSeconds: 4.5462265
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
     speaker: Lily
     text: Mom?
-    holdSeconds: 2
+    holdSeconds: 2.2
     voiceClip: {fileID: 0}
     durationMode: 0
-    voiceTailSeconds: 0
-  - startDelay: 0.8
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
     speaker: Lily
     text: Mom, did you turn it off?
-    holdSeconds: 3
+    holdSeconds: 3.414151
     voiceClip: {fileID: 0}
     durationMode: 0
-    voiceTailSeconds: 0
-  - startDelay: 0.2
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
     speaker: Mia
-    text: Yes. Mom turned it off.
-    holdSeconds: 2.8
+    text: Yeah. I did.
+    holdSeconds: 2.2820754
     voiceClip: {fileID: 0}
     durationMode: 0
-    voiceTailSeconds: 0
-  - startDelay: 0.4
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
     speaker: Mia
-    text: From now on, Mom will spend more time with you.
-    holdSeconds: 3.6
+    text: I'm gonna be here more. I promise.
+    holdSeconds: 3.7915094
     voiceClip: {fileID: 0}
     durationMode: 0
-    voiceTailSeconds: 0
-  postSequenceDelay: 0
+    voiceTailSeconds: 0.12
+  postSequenceDelay: 0.18

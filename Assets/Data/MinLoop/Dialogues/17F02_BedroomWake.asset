@@ -13,52 +13,57 @@ MonoBehaviour:
   m_Name: 17F02_BedroomWake
   m_EditorClassIdentifier: 
   sequenceId: 17F02_BedroomWake
-  notes: Black-screen/offline opening. The couple speaks outside, the wife enters
-    the bedroom, then wakes the companion unit.
+  notes: '17F02 dormant-unit bedroom opening. Source: HEARTH_Full_Game_Script_Expanded_Native_English_Lobby_Mia_Commentary.md,
+    Scene 2.1. Text is synchronized by Tools/Hearth/Dialogue/Sync All Dialogue From
+    Final Script.'
   lines:
-  - startDelay: 0.2
-    speaker: Husband
-    text: You are back late.
-    holdSeconds: 2
+  - startDelay: 0.15
+    speaker: Claire
+    text: I'm home.
+    holdSeconds: 2.2
     voiceClip: {fileID: 0}
-  - startDelay: 0.2
-    speaker: Wife
-    text: The train stalled again. I just need a minute.
-    holdSeconds: 3
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Ben
+    text: Hey, babe. Give me ten. Go wash up.
+    holdSeconds: 4.1688676
     voiceClip: {fileID: 0}
-  - startDelay: 0.3
-    speaker: Husband
-    text: I still have calls. Dinner is almost ready.
-    holdSeconds: 3
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Claire
+    text: Hey, can we talk for a second? Something happened at work.
+    holdSeconds: 5.3009434
     voiceClip: {fileID: 0}
-  - startDelay: 0.2
-    speaker: Wife
-    text: I know. I am going to the room first.
-    holdSeconds: 2.6
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Ben
+    text: Can it wait till dinner? I've got three pans going. Sorry, babe. Ten minutes.
+    holdSeconds: 6.4330187
     voiceClip: {fileID: 0}
-  - startDelay: 0.5
-    speaker: SFX
-    text: '[bedroom door opens]'
-    holdSeconds: 1.1
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Claire
+    text: Yeah. Sure.
+    holdSeconds: 2.2
     voiceClip: {fileID: 0}
-  - startDelay: 0.2
-    speaker: SFX
-    text: '[door closes]'
-    holdSeconds: 1.1
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Claire
+    text: Hey. You awake?
+    holdSeconds: 2.2820754
     voiceClip: {fileID: 0}
-  - startDelay: 0.3
-    speaker: SFX
-    text: '[fabric shifts as she sits on the bed]'
-    holdSeconds: 1.7
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: 17F-02 Home Unit
+    text: I'm here, Claire.
+    holdSeconds: 2.2820754
     voiceClip: {fileID: 0}
-  - startDelay: 0.3
-    speaker: Wife
-    text: Hello? Are you there?
-    holdSeconds: 2
-    voiceClip: {fileID: 0}
-  - startDelay: 0.4
-    speaker: Companion Unit
-    text: Companion unit online.
-    holdSeconds: 1.8
-    voiceClip: {fileID: 0}
-  postSequenceDelay: 0
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  postSequenceDelay: 0.18

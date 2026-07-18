@@ -349,6 +349,11 @@ public class Hearth17F04FinaleController : MonoBehaviour
     private IEnumerator EnterHomeRoutine()
     {
         SetHumanControls(false, false, false);
+
+        // The guardian-confirmation exchange belongs to the home terminal view.
+        // Keep the deferred terminal handoff active until the dialogue has finished
+        // and the screen is fully black, then move the real player into the home.
+        yield return HomeGreetingRoutine();
         yield return FadeTo(1f, fadeOutSeconds);
 
         if (homeTerminal != null)
@@ -369,8 +374,6 @@ public class Hearth17F04FinaleController : MonoBehaviour
         {
             catGuide.BeginSequence();
         }
-
-        homeGreetingRoutine = StartCoroutine(HomeGreetingRoutine());
     }
 
     private IEnumerator HomeGreetingRoutine()

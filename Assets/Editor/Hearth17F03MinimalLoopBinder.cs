@@ -320,6 +320,13 @@ public static class Hearth17F03MinimalLoopBinder
         Hearth17F03GazeInteractable motherInteractable = EnsureGazeInteractable(mother.Root, controller, Hearth17F03GazeInteractable.Target.Mother);
 
         DialogueLibrary dialogues = EnsureDialogues();
+        if (!HearthFinalDialogueSync.SyncAllFromFinalScript(false))
+        {
+            Debug.LogError("[Hearth17F03MinimalLoopBinder] Setup stopped because the final dialogue source could not be synchronized.");
+            return;
+        }
+        dialogues.InspectionRecallPrompt = AssetDatabase.LoadAssetAtPath<HearthDialogueSequence>(
+            "Assets/Data/MinLoop/Dialogues/FinalScriptSupplemental/17F03_InspectionRecallPrompt.asset");
         HearthCompanionHudController companionHud = FindSceneComponent<HearthCompanionHudController>();
         GameObject humanHudRoot = FindSceneObject(null, "HearthHudRoot");
         CanvasGroup humanHudCanvasGroup = humanHudRoot != null ? GetOrAdd<CanvasGroup>(humanHudRoot) : null;
@@ -1299,6 +1306,7 @@ public static class Hearth17F03MinimalLoopBinder
         SetObject(so, "motherGazeInteractable", motherInteractable);
         SetObject(so, "daughterDoor", door);
         SetObject(so, "humanParentSequence", dialogues.HumanParents);
+        SetObject(so, "inspectionRecallPromptSequence", dialogues.InspectionRecallPrompt);
         SetObject(so, "middayConflictSequence", dialogues.MiddayConflict);
         SetObject(so, "mediateToDaughterSequence", dialogues.ToDaughter);
         SetObject(so, "mediateToMotherSequence", dialogues.ToMother);
@@ -1884,6 +1892,7 @@ public static class Hearth17F03MinimalLoopBinder
     private sealed class DialogueLibrary
     {
         public HearthDialogueSequence HumanParents;
+        public HearthDialogueSequence InspectionRecallPrompt;
         public HearthDialogueSequence MiddayConflict;
         public HearthDialogueSequence ToDaughter;
         public HearthDialogueSequence ToMother;

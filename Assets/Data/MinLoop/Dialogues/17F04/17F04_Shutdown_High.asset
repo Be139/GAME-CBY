@@ -13,70 +13,102 @@ MonoBehaviour:
   m_Name: 17F04_Shutdown_High
   m_EditorClassIdentifier: 
   sequenceId: 17F04_Shutdown_High
-  notes: High-trust graceful shutdown after one confirmation.
+  notes: '17F04 positive-trust shutdown and proper goodbye. Source: HEARTH_Full_Game_Script_Expanded_Native_English_Lobby_Mia_Commentary.md,
+    Scene 4.6. Text is synchronized by Tools/Hearth/Dialogue/Sync All Dialogue From
+    Final Script.'
   lines:
-  - startDelay: 0.5
-    speaker: Home Companion
-    text: Lily, Mom is here. I can go now.
-    holdSeconds: 3.4
-    voiceClip: {fileID: 0}
-    durationMode: 0
-    voiceTailSeconds: 0
-  - startDelay: 0.3
-    speaker: Home Companion
-    text: You are afraid of thunder. From now on, tell Mom. Mom will come.
-    holdSeconds: 4.6
-    voiceClip: {fileID: 0}
-    durationMode: 0
-    voiceTailSeconds: 0
-  - startDelay: 0.3
-    speaker: Home Companion
-    text: You hid yesterday's drawing in the notebook in the second desk drawer.
-      Mom will not think it is bad.
-    holdSeconds: 5.4
-    voiceClip: {fileID: 0}
-    durationMode: 0
-    voiceTailSeconds: 0
-  - startDelay: 0.2
-    speaker: Lily
-    text: Why did you tell her?
-    holdSeconds: 2.4
-    voiceClip: {fileID: 0}
-    durationMode: 0
-    voiceTailSeconds: 0
-  - startDelay: 0.2
-    speaker: Home Companion
-    text: If I do not, no one will say it for you later.
-    holdSeconds: 3.5
-    voiceClip: {fileID: 0}
-    durationMode: 0
-    voiceTailSeconds: 0
-  - startDelay: 0.4
-    speaker: Home Companion
-    text: Mia. I will leave the rest to you.
-    holdSeconds: 3.2
-    voiceClip: {fileID: 0}
-    durationMode: 0
-    voiceTailSeconds: 0
-  - startDelay: 0.2
+  - startDelay: 0.15
     speaker: Mia
+    text: I'm shutting you down.
+    holdSeconds: 2.6594338
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Mia's Home Unit
     text: Okay.
-    holdSeconds: 1.8
-    voiceClip: {fileID: 0}
-    durationMode: 0
-    voiceTailSeconds: 0
-  - startDelay: 0.8
-    speaker: Lily
-    text: Mom, I miss it a little.
-    holdSeconds: 3
-    voiceClip: {fileID: 0}
-    durationMode: 0
-    voiceTailSeconds: 0
-  - startDelay: 0.2
-    speaker: Mia
-    text: Mom knows.
     holdSeconds: 2.2
     voiceClip: {fileID: 0}
     durationMode: 0
-    voiceTailSeconds: 0
-  postSequenceDelay: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Mia's Home Unit
+    text: Lily, your mom is here now. I can go.
+    holdSeconds: 4.5462265
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Mia's Home Unit
+    text: Lily, before I go, I need you to hear something.
+    holdSeconds: 4.923585
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Mia's Home Unit
+    text: When it thunders, you get scared. You tell me. You don't tell Mom. Starting
+      tonight, tell her. She'll come.
+    holdSeconds: 8.319811
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Mia's Home Unit
+    text: And the drawing from yesterday. It is in the notebook in your second desk
+      drawer. You want to show Mom, but you're afraid it is not good enough. She
+      won't think it is bad.
+    holdSeconds: 12
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Lily
+    text: Why would you tell her that?
+    holdSeconds: 3.414151
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Mia's Home Unit
+    text: Because once I am gone, no one will be here to say it for you.
+    holdSeconds: 6.810377
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Mia's Home Unit
+    text: Mia.
+    holdSeconds: 2.2
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Mia's Home Unit
+    text: The rest is up to you now. She needs you.
+    holdSeconds: 4.923585
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Mia
+    text: Okay.
+    holdSeconds: 2.2
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Lily
+    text: Mom... I already miss it.
+    holdSeconds: 3.0367923
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Mia
+    text: I know, baby.
+    holdSeconds: 2.2820754
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  postSequenceDelay: 0.18

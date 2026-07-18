@@ -13,16 +13,29 @@ MonoBehaviour:
   m_Name: 17F03_NightShutdownLeadIn
   m_EditorClassIdentifier: 
   sequenceId: 17F03_NightShutdownLeadIn
-  notes: The unit responds before the daughter begins the shutdown operation.
+  notes: '17F03 failed standard response and Ava''s interruption. Source: HEARTH_Full_Game_Script_Expanded_Native_English_Lobby_Mia_Commentary.md,
+    Scene 3.4. Text is synchronized by Tools/Hearth/Dialogue/Sync All Dialogue From
+    Final Script.'
   lines:
-  - startDelay: 0.2
-    speaker: Companion Unit
-    text: I can tell that you are emotional today. Perhaps we can begin with-
-    holdSeconds: 3.7
+  - startDelay: 0.15
+    speaker: 17F-03 Synth Voice
+    text: 'Decision: reinitiate standard response. Reason: Ava requires further guidance.'
+    holdSeconds: 4.5462265
     voiceClip: {fileID: 0}
-  - startDelay: 0.1
-    speaker: Daughter
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: 17F-03 Home Unit
+    text: "I can tell you're upset, Ava. Maybe we can\u2014"
+    holdSeconds: 4.5462265
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Ava
     text: Enough.
-    holdSeconds: 1.6
+    holdSeconds: 2.2
     voiceClip: {fileID: 0}
-  postSequenceDelay: 0
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  postSequenceDelay: 0.18

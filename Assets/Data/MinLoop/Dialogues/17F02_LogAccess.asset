@@ -13,21 +13,103 @@ MonoBehaviour:
   m_Name: 17F02_LogAccess
   m_EditorClassIdentifier: 
   sequenceId: 17F02_LogAccess
-  notes: Living-room terminal/log access scene. The robot viewpoint is fixed.
+  notes: '17F02 household-log access and soft-guidance decision. Source: HEARTH_Full_Game_Script_Expanded_Native_English_Lobby_Mia_Commentary.md,
+    Scene 2.4. Text is synchronized by Tools/Hearth/Dialogue/Sync All Dialogue From
+    Final Script.'
   lines:
-  - startDelay: 0.2
-    speaker: Wife
-    text: I am going to shower.
+  - startDelay: 0.15
+    speaker: Claire
+    text: I'm gonna take a shower.
+    holdSeconds: 3.0367923
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Ben
+    text: Okay.
     holdSeconds: 2.2
     voiceClip: {fileID: 0}
-  - startDelay: 1
-    speaker: Husband
-    text: Show me today's companion log.
-    holdSeconds: 2.6
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Ben
+    text: Show me today's log.
+    holdSeconds: 2.6594338
     voiceClip: {fileID: 0}
-  - startDelay: 0.3
-    speaker: Companion Unit
-    text: Authorized resident. Log access granted.
-    holdSeconds: 2.8
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: 17F-02 Home Unit
+    text: Authorized user confirmed. Opening household log.
+    holdSeconds: 3.414151
     voiceClip: {fileID: 0}
-  postSequenceDelay: 0
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Ben
+    text: Nine times.
+    holdSeconds: 2.2
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Ben
+    text: Open today's session. The whole thing.
+    holdSeconds: 3.414151
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: 17F-02 Home Unit
+    text: Session content is available to authorized household members. Displaying
+      now.
+    holdSeconds: 4.923585
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Ben
+    text: She told you all of this?
+    holdSeconds: 3.414151
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Ben
+    text: How long has this been going on?
+    holdSeconds: 3.7915094
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: 17F-02 Home Unit
+    text: Please clarify.
+    holdSeconds: 2.2
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Ben
+    text: How long has Claire been coming home and talking to you before she talks
+      to me?
+    holdSeconds: 7.1877356
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: 17F-02 Home Unit
+    text: In the past fourteen days, I have been Claire's first point of contact
+      on nine occasions.
+    holdSeconds: 7.1877356
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: 17F-02 Synth Voice
+    text: 'Decision: initiate soft guidance. Reason: the unit''s role as Claire''s
+      confidant has triggered an exclusion response in Ben.'
+    holdSeconds: 7.9424524
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  postSequenceDelay: 0.18

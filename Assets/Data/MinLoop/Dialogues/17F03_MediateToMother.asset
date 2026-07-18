@@ -13,22 +13,23 @@ MonoBehaviour:
   m_Name: 17F03_MediateToMother
   m_EditorClassIdentifier: 
   sequenceId: 17F03_MediateToMother
-  notes: The unit speaks for the daughter.
+  notes: '17F03 mediation line addressed to Laura and completion cue. Source: HEARTH_Full_Game_Script_Expanded_Native_English_Lobby_Mia_Commentary.md,
+    Scene 3.3. Text is synchronized by Tools/Hearth/Dialogue/Sync All Dialogue From
+    Final Script.'
   lines:
-  - startDelay: 0.1
-    speaker: Companion Unit
-    text: She knows you are trying to help. She hopes you can trust her to make the
-      schedule herself.
-    holdSeconds: 4.8
+  - startDelay: 0.15
+    speaker: 17F-03 Home Unit
+    text: Ava knows you mean well, Laura. She wants you to trust her enough to set
+      her own hours.
+    holdSeconds: 7.9424524
     voiceClip: {fileID: 0}
-  - startDelay: 0.35
-    speaker: Mother
-    text: ...All right.
-    holdSeconds: 1.8
-    voiceClip: {fileID: 0}
-  - startDelay: 0.35
-    speaker: Synth Voice
-    text: De-escalation successful.
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: 17F-03 Synth Voice
+    text: Mediation complete.
     holdSeconds: 2.2
     voiceClip: {fileID: 0}
-  postSequenceDelay: 0
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  postSequenceDelay: 0.18

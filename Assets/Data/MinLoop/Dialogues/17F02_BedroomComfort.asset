@@ -13,26 +13,31 @@ MonoBehaviour:
   m_Name: 17F02_BedroomComfort
   m_EditorClassIdentifier: 
   sequenceId: 17F02_BedroomComfort
-  notes: Companion response after the player confirms the bedroom comfort interaction.
+  notes: '17F02 comfort response and session archive. Source: HEARTH_Full_Game_Script_Expanded_Native_English_Lobby_Mia_Commentary.md,
+    Scene 2.2. Text is synchronized by Tools/Hearth/Dialogue/Sync All Dialogue From
+    Final Script.'
   lines:
-  - startDelay: 0.1
-    speaker: Companion Unit
-    text: I am here. You are not alone in this room.
-    holdSeconds: 2.8
+  - startDelay: 0.15
+    speaker: 17F-02 Home Unit
+    text: You kept your composure when it mattered. That was a reasonable choice,
+      and it took effort. You're home now, Claire. You don't have to hold it in here.
+      Would you like the jazz playlist you usually use?
+    holdSeconds: 12
     voiceClip: {fileID: 0}
-  - startDelay: 0.2
-    speaker: Companion Unit
-    text: You do not have to solve the whole night right now. Start with one breath.
-    holdSeconds: 4.2
-    voiceClip: {fileID: 0}
-  - startDelay: 0.4
-    speaker: Wife
-    text: ...That helps.
-    holdSeconds: 1.8
-    voiceClip: {fileID: 0}
-  - startDelay: 0.3
-    speaker: Wife
-    text: I can go back out there.
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Claire
+    text: Yeah. Please.
     holdSeconds: 2.2
     voiceClip: {fileID: 0}
-  postSequenceDelay: 0
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: 17F-02 Synth Voice
+    text: Confiding session archived.
+    holdSeconds: 2.2820754
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  postSequenceDelay: 0.18

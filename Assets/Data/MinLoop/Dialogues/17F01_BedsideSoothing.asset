@@ -13,35 +13,67 @@ MonoBehaviour:
   m_Name: 17F01_BedsideSoothing
   m_EditorClassIdentifier: 
   sequenceId: 17F01_BedsideSoothing
-  notes: Plays after the player confirms the bedside interaction. Replace these lines
-    with the final soothing script and voice clips.
+  notes: '17F01 soothe interaction and event archive. Source: HEARTH_Full_Game_Script_Expanded_Native_English_Lobby_Mia_Commentary.md,
+    Scene 1.4. Text is synchronized by Tools/Hearth/Dialogue/Sync All Dialogue From
+    Final Script.'
   lines:
-  - startDelay: 0
-    speaker: Companion Unit
-    text: Was it a nightmare? Come on, with me, slowly. Deep breath. One, two...
-    holdSeconds: 3.5
+  - startDelay: 0.15
+    speaker: 17F-01 Home Unit
+    text: Bad dream? Okay, buddy. Breathe with me. Nice and slow. In... and out.
+      I've got you.
+    holdSeconds: 7.1877356
     voiceClip: {fileID: 0}
-  - startDelay: 0.2
-    speaker: Companion Unit
-    text: Mom and Dad should be asleep. If you go knock at this hour, she'll be very
-      tired tomorrow.
-    holdSeconds: 4
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Noah
+    text: Okay.
+    holdSeconds: 2.2
     voiceClip: {fileID: 0}
-  - startDelay: 0.2
-    speaker: Companion Unit
-    text: Let's calm down like this first. When you feel a little better, if you
-      still want to go, you can go then. Okay?
-    holdSeconds: 4.4
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: 17F-01 Home Unit
+    text: Mom and Dad are asleep. If you knock now, they'll be tired tomorrow. Let's
+      calm down here first. If you still want to go after that, you can. Deal?
+    holdSeconds: 12
     voiceClip: {fileID: 0}
-  - startDelay: 0.2
-    speaker: Companion Unit
-    text: Two more deep breaths. That's it. Good. Let's lie back down. I'll stay
-      with you until you fall asleep.
-    holdSeconds: 4.2
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Noah
+    text: Deal.
+    holdSeconds: 2.2
     voiceClip: {fileID: 0}
-  - startDelay: 0.6
-    speaker: Synth Voice
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: 17F-01 Home Unit
+    text: Two more breaths. There you go. Good job, Noah. Close your eyes. I'll stay
+      right here until you're asleep.
+    holdSeconds: 8.319811
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: Noah
+    text: Thanks. I feel better. I'm gonna go back to sleep.
+    holdSeconds: 4.923585
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: 17F-01 Home Unit
+    text: Go to sleep, buddy. I'm here.
+    holdSeconds: 3.414151
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - startDelay: 0.18
+    speaker: 17F-01 Synth Voice
     text: Event archived.
-    holdSeconds: 1.8
+    holdSeconds: 2.2
     voiceClip: {fileID: 0}
-  postSequenceDelay: 0
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  postSequenceDelay: 0.18

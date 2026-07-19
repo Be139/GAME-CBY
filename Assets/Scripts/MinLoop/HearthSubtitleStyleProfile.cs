@@ -4,7 +4,8 @@ using UnityEngine;
 public enum HearthSubtitlePresentationMode
 {
     StandardDialogue,
-    CenteredEpilogue
+    CenteredEpilogue,
+    TimeCard
 }
 
 [Serializable]
@@ -38,6 +39,20 @@ public class HearthSubtitleStyleProfile : ScriptableObject
         bodyMinimumFontSize = 20f,
         bodyMaximumLines = 2
     };
+    [SerializeField] private HearthSubtitleLayoutSettings timeCard = new HearthSubtitleLayoutSettings
+    {
+        widthFraction = 0.72f,
+        speakerCenterY = 0.56f,
+        speakerHeightFraction = 0.04f,
+        bodyCenterY = 0.5f,
+        bodyHeightFraction = 0.18f,
+        speakerFontSize = 1f,
+        speakerMinimumFontSize = 1f,
+        bodyFontSize = 34f,
+        bodyMinimumFontSize = 24f,
+        bodyMaximumLines = 2
+    };
+    [SerializeField, Min(0f)] private float timeCardFadeSeconds = 0.35f;
 
     public Color TextColor
     {
@@ -46,15 +61,28 @@ public class HearthSubtitleStyleProfile : ScriptableObject
 
     public HearthSubtitleLayoutSettings GetLayout(HearthSubtitlePresentationMode mode)
     {
-        return mode == HearthSubtitlePresentationMode.CenteredEpilogue
-            ? centeredEpilogue
-            : standardDialogue;
+        switch (mode)
+        {
+            case HearthSubtitlePresentationMode.CenteredEpilogue:
+                return centeredEpilogue;
+            case HearthSubtitlePresentationMode.TimeCard:
+                return timeCard;
+            default:
+                return standardDialogue;
+        }
+    }
+
+    public float TimeCardFadeSeconds
+    {
+        get { return timeCardFadeSeconds; }
     }
 
     private void OnValidate()
     {
         Sanitize(standardDialogue);
         Sanitize(centeredEpilogue);
+        Sanitize(timeCard);
+        timeCardFadeSeconds = Mathf.Max(0f, timeCardFadeSeconds);
     }
 
     private static void Sanitize(HearthSubtitleLayoutSettings layout)

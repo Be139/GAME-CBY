@@ -1,4 +1,5 @@
 using System.Collections;
+using TMPro;
 using UnityEngine;
 
 [DisallowMultipleComponent]
@@ -22,6 +23,9 @@ public class HearthPhotoFrameInteractable : MonoBehaviour, IInteractable, IInter
     [Header("Exit")]
     [SerializeField] private KeyCode confirmExitKey = KeyCode.Space;
     [SerializeField] private KeyCode cancelExitKey = KeyCode.Escape;
+    [SerializeField] private CanvasGroup exitHintGroup;
+    [SerializeField] private TMP_Text exitHintText;
+    [SerializeField] private string exitHintLabel = "SPACE  RETURN";
 
     private bool viewOpen;
     private bool dialogueComplete;
@@ -56,6 +60,7 @@ public class HearthPhotoFrameInteractable : MonoBehaviour, IInteractable, IInter
         {
             SetCameraState(photoCamera, false, false);
         }
+        SetExitHintVisible(false);
     }
 
     private void Update()
@@ -107,6 +112,7 @@ public class HearthPhotoFrameInteractable : MonoBehaviour, IInteractable, IInter
     public void NotifyDialogueComplete()
     {
         dialogueComplete = true;
+        SetExitHintVisible(true);
     }
 
     public void Configure(
@@ -129,6 +135,13 @@ public class HearthPhotoFrameInteractable : MonoBehaviour, IInteractable, IInter
         playerRigidbody = body;
     }
 
+    public void SetExitHint(CanvasGroup group, TMP_Text text)
+    {
+        exitHintGroup = group;
+        exitHintText = text;
+        SetExitHintVisible(false);
+    }
+
     private IEnumerator OpenViewRoutine()
     {
         ResolveReferences();
@@ -140,6 +153,7 @@ public class HearthPhotoFrameInteractable : MonoBehaviour, IInteractable, IInter
 
         transitioning = true;
         dialogueComplete = false;
+        SetExitHintVisible(false);
         CaptureStates();
         SetControlsEnabled(false);
 
@@ -182,6 +196,7 @@ public class HearthPhotoFrameInteractable : MonoBehaviour, IInteractable, IInter
 
         viewOpen = false;
         dialogueComplete = false;
+        SetExitHintVisible(false);
         transitioning = false;
         RestoreControls();
         finaleController.CompletePhotoInspection();
@@ -270,5 +285,23 @@ public class HearthPhotoFrameInteractable : MonoBehaviour, IInteractable, IInter
         {
             listener.enabled = audioEnabled;
         }
+    }
+
+    private void SetExitHintVisible(bool visible)
+    {
+        if (exitHintText != null)
+        {
+            exitHintText.text = exitHintLabel;
+        }
+
+        if (exitHintGroup == null)
+        {
+            return;
+        }
+
+        exitHintGroup.alpha = visible ? 1f : 0f;
+        exitHintGroup.interactable = false;
+        exitHintGroup.blocksRaycasts = false;
+        exitHintGroup.gameObject.SetActive(true);
     }
 }

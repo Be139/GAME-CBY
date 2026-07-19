@@ -26,6 +26,8 @@ public class HearthTvTerminalController : MonoBehaviour
     [SerializeField] private bool createEventSystemIfMissing = true;
     [Tooltip("When enabled, the World Space Canvas is not rendered at all while the terminal is closed. Intended for the lobby task terminal whose UI must sit flush with the physical screen.")]
     [SerializeField] private bool hideCanvasWhenClosed;
+    [Tooltip("Keeps this World Space Canvas visible while editing so its position and scale can be adjusted. Runtime visibility still follows Hide Canvas When Closed.")]
+    [SerializeField] private bool showCanvasInEditMode = true;
 
     [Header("Pages")]
     [SerializeField] private HearthHudPage[] pages;
@@ -67,6 +69,9 @@ public class HearthTvTerminalController : MonoBehaviour
     [SerializeField] private int keyboardCyclePageCount = 5;
     [SerializeField] private TMP_Text keyboardHintText;
     [SerializeField] private TMP_Text keyboardFocusText;
+    [SerializeField] private TMP_Text runtimePromptText;
+    [SerializeField] private Color runtimePromptReadyColor = new Color(0.78f, 0.96f, 1f, 0.96f);
+    [SerializeField] private Color runtimePromptWaitingColor = new Color(0.46f, 0.52f, 0.56f, 0.84f);
     [SerializeField] private string pageFocusFormat = "PAGE {0}/{1}";
     [SerializeField] private string replayFocusLabel = "RECALL EVENT | SPACE";
     [SerializeField] private string keyboardHintLabel = "TAB NEXT PAGE     LEFT/RIGHT SELECT     SPACE CONFIRM     ESC EXIT";
@@ -91,6 +96,13 @@ public class HearthTvTerminalController : MonoBehaviour
     [SerializeField] private AudioClip submitClip;
     [SerializeField] private AudioClip replayRequestClip;
     [SerializeField] private AudioClip viewSwitchClip;
+    [Tooltip("Optional continuous electrical hum/static while the terminal is open. Uses a separate AudioSource so short UI cues keep their own volume and pitch.")]
+    [SerializeField] private AudioSource activeLoopSource;
+    [SerializeField] private AudioClip activeLoopClip;
+    [SerializeField] private HearthSfxCuePlayer activeLoopCuePlayer;
+    [SerializeField] private string activeLoopCueId = string.Empty;
+    [Range(0f, 1f)]
+    [SerializeField] private float activeLoopVolume = 0.35f;
     [Range(0f, 1f)]
     [SerializeField] private float audioVolume = 1f;
 
@@ -136,11 +148,18 @@ public class HearthTvTerminalController : MonoBehaviour
     private bool terminalInputReady;
     private bool terminalPresentationReady;
     private bool choiceInputEnabled = true;
+    private bool primaryActionInputEnabled = true;
+    private bool closeInputEnabled = true;
+    private bool runtimePromptOverrideActive;
+    private string runtimePromptOverride = string.Empty;
     private bool postReplayChoiceMode;
     private bool postReplayChoicesAvailable;
     private bool choiceSubmitted;
     private int pageDrivenChoiceLocalIndex;
     private bool customActionHandoffPending;
+#if UNITY_EDITOR
+    [NonSerialized] private bool editorCanvasRefreshQueued;
+#endif
 
     public bool IsOpen { get; private set; }
 
@@ -177,6 +196,16 @@ public class HearthTvTerminalController : MonoBehaviour
     public UnityEvent OnCustomPrimaryAction
     {
         get { return onCustomPrimaryAction; }
+    }
+
+    public UnityEvent OnOpened
+    {
+        get { return onOpened; }
+    }
+
+    public UnityEvent OnClosed
+    {
+        get { return onClosed; }
     }
 
     public bool IsCustomActionHandoffPending
@@ -218,11 +247,13 @@ public class HearthTvTerminalController : MonoBehaviour
             bootSequence.ApplyClosedInstant();
         }
 
-        SetCanvasPresentationVisible(!hideCanvasWhenClosed);
+        RefreshCanvasPresentationVisibility();
+
     }
 
     private void Start()
     {
+        RefreshCanvasPresentationVisibility();
         if (showStartingPageOnStart)
         {
             ShowPage(startingPage);
@@ -237,7 +268,9 @@ public class HearthTvTerminalController : MonoBehaviour
         postReplayNavigationPageCount = Mathf.Max(1, postReplayNavigationPageCount);
         postReplayChoicePageCount = Mathf.Max(0, postReplayChoicePageCount);
         audioVolume = Mathf.Clamp01(audioVolume);
+        activeLoopVolume = Mathf.Clamp01(activeLoopVolume);
         ApplyZoom();
+        QueueEditorCanvasRefresh();
     }
 
     private void Update()
@@ -247,7 +280,7 @@ public class HearthTvTerminalController : MonoBehaviour
             return;
         }
 
-        if (Input.GetKeyDown(closeKey))
+        if (closeInputEnabled && Input.GetKeyDown(closeKey))
         {
             CloseTerminal();
             return;
@@ -387,6 +420,7 @@ public class HearthTvTerminalController : MonoBehaviour
         }
 
         PlayClip(bootClip);
+        StartActiveAudioLoop();
         Coroutine bootRoutine = bootSequence != null ? StartCoroutine(bootSequence.PlayOpenSequence()) : null;
         StartCameraFocusRoutine(true);
         yield return WaitForRealtime(Mathf.Max(GetExpectedCameraDuration(true), GetExpectedBootDuration(true)));
@@ -423,6 +457,7 @@ public class HearthTvTerminalController : MonoBehaviour
             selectionHighlighter.SetVisible(false);
         }
 
+        StopActiveAudioLoop();
         PlayClip(closeClip);
 
         Coroutine closeBootRoutine = bootSequence != null ? StartCoroutine(bootSequence.PlayCloseSequence()) : null;
@@ -459,7 +494,8 @@ public class HearthTvTerminalController : MonoBehaviour
 
         SetGameplayLocked(false);
         IsOpen = false;
-        SetCanvasPresentationVisible(!hideCanvasWhenClosed);
+        RefreshRuntimePrompt();
+        RefreshCanvasPresentationVisibility();
 
         if (onClosed != null)
         {
@@ -614,7 +650,27 @@ public class HearthTvTerminalController : MonoBehaviour
     {
         hideCanvasWhenClosed = value;
         EnsureReferences();
-        SetCanvasPresentationVisible(IsOpen || !hideCanvasWhenClosed);
+        RefreshCanvasPresentationVisibility();
+    }
+
+    public void SetShowCanvasInEditMode(bool value)
+    {
+        showCanvasInEditMode = value;
+        EnsureReferences();
+        RefreshCanvasPresentationVisibility();
+    }
+
+    public void SetActiveLoopAudio(AudioSource source, AudioClip clip)
+    {
+        activeLoopSource = source;
+        activeLoopClip = clip;
+        ConfigureActiveLoopSource();
+    }
+
+    public void SetActiveLoopCue(HearthSfxCuePlayer cuePlayer, string cueId)
+    {
+        activeLoopCuePlayer = cuePlayer;
+        activeLoopCueId = cueId ?? string.Empty;
     }
 
     public void SetChoiceInputEnabled(bool value)
@@ -622,6 +678,33 @@ public class HearthTvTerminalController : MonoBehaviour
         choiceInputEnabled = value;
         terminalInputReady = IsOpen && terminalPresentationReady && choiceInputEnabled;
         SetTerminalInputEnabled(terminalInputReady);
+        RefreshKeyboardHint();
+    }
+
+    public void SetPrimaryActionInputEnabled(bool value)
+    {
+        primaryActionInputEnabled = value;
+        RefreshKeyboardHint();
+    }
+
+    public void SetCloseInputEnabled(bool value)
+    {
+        closeInputEnabled = value;
+        RefreshKeyboardHint();
+    }
+
+    public void SetRuntimePrompt(string prompt)
+    {
+        EnsureReferences();
+        runtimePromptOverride = prompt ?? string.Empty;
+        runtimePromptOverrideActive = !string.IsNullOrWhiteSpace(runtimePromptOverride);
+        RefreshKeyboardHint();
+    }
+
+    public void ClearRuntimePrompt()
+    {
+        runtimePromptOverride = string.Empty;
+        runtimePromptOverrideActive = false;
         RefreshKeyboardHint();
     }
 
@@ -658,6 +741,11 @@ public class HearthTvTerminalController : MonoBehaviour
 
     public void RequestRobotReplay()
     {
+        if (!primaryActionInputEnabled)
+        {
+            return;
+        }
+
         if (primaryAction == HearthTerminalPrimaryAction.Custom)
         {
             RequestCustomPrimaryAction();
@@ -720,7 +808,7 @@ public class HearthTvTerminalController : MonoBehaviour
 
     public void RequestCustomPrimaryAction()
     {
-        if (customActionHandoffPending)
+        if (!primaryActionInputEnabled || customActionHandoffPending)
         {
             return;
         }
@@ -776,6 +864,11 @@ public class HearthTvTerminalController : MonoBehaviour
 
     public void RequestEnterUnit()
     {
+        if (!primaryActionInputEnabled)
+        {
+            return;
+        }
+
         PlayClip(replayRequestClip);
         string residentId = GetReplayResidentId();
 
@@ -910,6 +1003,12 @@ public class HearthTvTerminalController : MonoBehaviour
             keyboardFocusText = foundFocus != null ? foundFocus.GetComponent<TMP_Text>() : null;
         }
 
+        if (runtimePromptText == null)
+        {
+            Transform foundPrompt = transform.Find("KeyboardNavigationRoot/RuntimePromptText");
+            runtimePromptText = foundPrompt != null ? foundPrompt.GetComponent<TMP_Text>() : null;
+        }
+
         if (canvasGroup == null)
         {
             canvasGroup = GetComponent<CanvasGroup>();
@@ -934,6 +1033,14 @@ public class HearthTvTerminalController : MonoBehaviour
         {
             audioSource = GetComponent<AudioSource>();
         }
+
+        if (activeLoopSource == null)
+        {
+            Transform loopTransform = transform.Find("TerminalActiveLoop");
+            activeLoopSource = loopTransform != null ? loopTransform.GetComponent<AudioSource>() : null;
+        }
+
+        ConfigureActiveLoopSource();
     }
 
     private void EnsureEventSystem()
@@ -1032,6 +1139,41 @@ public class HearthTvTerminalController : MonoBehaviour
             canvas.enabled = visible;
         }
     }
+
+    private void RefreshCanvasPresentationVisibility()
+    {
+        bool visible = Application.isPlaying
+            ? IsOpen || !hideCanvasWhenClosed
+            : showCanvasInEditMode;
+        SetCanvasPresentationVisible(visible);
+    }
+
+    private void QueueEditorCanvasRefresh()
+    {
+#if UNITY_EDITOR
+        if (Application.isPlaying || editorCanvasRefreshQueued)
+        {
+            return;
+        }
+
+        editorCanvasRefreshQueued = true;
+        UnityEditor.EditorApplication.delayCall += ApplyQueuedEditorCanvasRefresh;
+#endif
+    }
+
+#if UNITY_EDITOR
+    private void ApplyQueuedEditorCanvasRefresh()
+    {
+        editorCanvasRefreshQueued = false;
+        if (this == null || Application.isPlaying)
+        {
+            return;
+        }
+
+        EnsureReferences();
+        RefreshCanvasPresentationVisibility();
+    }
+#endif
 
     private void ApplyZoom()
     {
@@ -1559,6 +1701,11 @@ public class HearthTvTerminalController : MonoBehaviour
 
     private void SubmitKeyboardFocus()
     {
+        if (!primaryActionInputEnabled)
+        {
+            return;
+        }
+
         if (submitFeedback != null)
         {
             submitFeedback.PlayFeedback();
@@ -1604,6 +1751,7 @@ public class HearthTvTerminalController : MonoBehaviour
         if (pageDrivenSelectionStates)
         {
             RefreshPageDrivenKeyboardHint();
+            RefreshRuntimePrompt();
             return;
         }
 
@@ -1615,6 +1763,7 @@ public class HearthTvTerminalController : MonoBehaviour
         if (keyboardFocusText == null)
         {
             RefreshSelectionHighlighter();
+            RefreshRuntimePrompt();
             return;
         }
 
@@ -1623,11 +1772,13 @@ public class HearthTvTerminalController : MonoBehaviour
         {
             keyboardFocusText.text = replayFocusLabel;
             RefreshSelectionHighlighter();
+            RefreshRuntimePrompt();
             return;
         }
 
         keyboardFocusText.text = string.Format(pageFocusFormat, keyboardFocusIndex + 1, normalCount);
         RefreshSelectionHighlighter();
+        RefreshRuntimePrompt();
     }
 
     private void RefreshSelectionHighlighter()
@@ -1773,7 +1924,7 @@ public class HearthTvTerminalController : MonoBehaviour
 
     private void SubmitPageDrivenChoice()
     {
-        if (preventRepeatedChoiceSubmission && choiceSubmitted)
+        if (!primaryActionInputEnabled || (preventRepeatedChoiceSubmission && choiceSubmitted))
         {
             return;
         }
@@ -1935,6 +2086,43 @@ public class HearthTvTerminalController : MonoBehaviour
         RefreshSelectionHighlighter();
     }
 
+    private void RefreshRuntimePrompt()
+    {
+        if (runtimePromptText == null)
+        {
+            return;
+        }
+
+        string prompt = string.Empty;
+        if (runtimePromptOverrideActive)
+        {
+            prompt = runtimePromptOverride;
+        }
+        else if (pageDrivenSelectionStates &&
+                 postReplayChoicesAvailable &&
+                 (postReplayChoiceMode || IsCurrentPageChoicePage()))
+        {
+            if (!choiceInputEnabled || !primaryActionInputEnabled)
+            {
+                prompt = "PLEASE WAIT";
+            }
+            else
+            {
+                string residentId = GetReplayResidentId();
+                prompt = residentId == "17F03" || residentId == "17F04"
+                    ? "UP / DOWN  SELECT     SPACE  CONFIRM"
+                    : "LEFT / RIGHT  SELECT     SPACE  CONFIRM";
+            }
+        }
+
+        runtimePromptText.text = prompt;
+        runtimePromptText.color = string.Equals(prompt, "PLEASE WAIT", System.StringComparison.Ordinal)
+            ? runtimePromptWaitingColor
+            : runtimePromptReadyColor;
+        runtimePromptText.gameObject.SetActive(
+            IsOpen && terminalPresentationReady && !string.IsNullOrEmpty(prompt));
+    }
+
     private bool IsCurrentPageChoicePage()
     {
         return IsPageIndexChoicePage(currentPageIndex);
@@ -2055,6 +2243,7 @@ public class HearthTvTerminalController : MonoBehaviour
         }
 
         customActionHandoffPending = false;
+        StopActiveAudioLoop();
         terminalInputReady = false;
         terminalPresentationReady = false;
         SetTerminalInputEnabled(false);
@@ -2078,7 +2267,8 @@ public class HearthTvTerminalController : MonoBehaviour
 
         SetGameplayLocked(false);
         IsOpen = false;
-        SetCanvasPresentationVisible(!hideCanvasWhenClosed);
+        RefreshRuntimePrompt();
+        RefreshCanvasPresentationVisibility();
 
         if (onClosed != null)
         {
@@ -2094,6 +2284,61 @@ public class HearthTvTerminalController : MonoBehaviour
         }
 
         audioSource.PlayOneShot(clip, audioVolume);
+    }
+
+    private void ConfigureActiveLoopSource()
+    {
+        if (activeLoopSource == null)
+        {
+            return;
+        }
+
+        activeLoopSource.playOnAwake = false;
+        activeLoopSource.loop = true;
+        activeLoopSource.volume = activeLoopVolume;
+        activeLoopSource.spatialBlend = 0f;
+    }
+
+    private void StartActiveAudioLoop()
+    {
+        if (activeLoopCuePlayer != null && !string.IsNullOrWhiteSpace(activeLoopCueId))
+        {
+            if (activeLoopCuePlayer.StartCueLoop(activeLoopCueId))
+            {
+                return;
+            }
+        }
+
+        AudioClip loopClip = activeLoopClip != null
+            ? activeLoopClip
+            : activeLoopSource != null ? activeLoopSource.clip : null;
+        if (activeLoopSource == null || loopClip == null)
+        {
+            return;
+        }
+
+        ConfigureActiveLoopSource();
+        if (activeLoopSource.isPlaying && activeLoopSource.clip == loopClip)
+        {
+            return;
+        }
+
+        activeLoopSource.Stop();
+        activeLoopSource.clip = loopClip;
+        activeLoopSource.Play();
+    }
+
+    private void StopActiveAudioLoop()
+    {
+        if (activeLoopCuePlayer != null && !string.IsNullOrWhiteSpace(activeLoopCueId))
+        {
+            activeLoopCuePlayer.StopCue(activeLoopCueId);
+        }
+
+        if (activeLoopSource != null)
+        {
+            activeLoopSource.Stop();
+        }
     }
 
     private int GetNormalCyclePageCount()

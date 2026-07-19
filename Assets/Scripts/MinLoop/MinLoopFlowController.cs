@@ -127,6 +127,8 @@ public class MinLoopFlowController : MonoBehaviour
         if (tvTerminalController != null)
         {
             tvTerminalController.SetChoiceInputEnabled(true);
+            tvTerminalController.SetPrimaryActionInputEnabled(true);
+            tvTerminalController.ClearRuntimePrompt();
         }
     }
 
@@ -505,6 +507,8 @@ public class MinLoopFlowController : MonoBehaviour
         {
             tvTerminalController.SetCloseTerminalWhenChoiceSubmitted(false);
             tvTerminalController.SetChoiceInputEnabled(false);
+            tvTerminalController.SetPrimaryActionInputEnabled(false);
+            tvTerminalController.SetRuntimePrompt("PLEASE WAIT");
             tvTerminalController.ShowPostReplayChoicePage();
             while (tvTerminalController.IsOpen && !tvTerminalController.IsPresentationReady)
             {
@@ -525,6 +529,8 @@ public class MinLoopFlowController : MonoBehaviour
         if (tvTerminalController != null)
         {
             tvTerminalController.SetChoiceInputEnabled(true);
+            tvTerminalController.SetPrimaryActionInputEnabled(true);
+            tvTerminalController.ClearRuntimePrompt();
         }
 
         activeFlowRoutine = null;
@@ -543,6 +549,8 @@ public class MinLoopFlowController : MonoBehaviour
         if (tvTerminalController != null && !externalDispositionPresenter)
         {
             tvTerminalController.SetChoiceInputEnabled(false);
+            tvTerminalController.SetPrimaryActionInputEnabled(false);
+            tvTerminalController.SetRuntimePrompt("PLEASE WAIT");
         }
         PlayFeedback(dispositionSubmitFeedback);
 
@@ -603,6 +611,12 @@ public class MinLoopFlowController : MonoBehaviour
             {
                 yield return null;
             }
+        }
+
+        if (tvTerminalController != null)
+        {
+            tvTerminalController.SetPrimaryActionInputEnabled(true);
+            tvTerminalController.ClearRuntimePrompt();
         }
 
         MarkActiveHouseholdCompleted();

@@ -24,12 +24,22 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
 
     [Header("UI")]
     [SerializeField] private CanvasGroup rootGroup;
+    [SerializeField] private Image backgroundDimmer;
     [SerializeField] private RectTransform popupLayer;
     [SerializeField] private RectTransform popupTemplate;
     [SerializeField] private TMP_Text headingText;
     [SerializeField] private TMP_Text counterText;
     [SerializeField] private TMP_Text instructionText;
     [SerializeField] private HearthUiPressFeedback pressFeedback;
+    [SerializeField] private Color highTrustDimColor = new Color(0.005f, 0.012f, 0.016f, 0.38f);
+    [SerializeField] private Color lowTrustDimColor = new Color(0.003f, 0.006f, 0.01f, 0.62f);
+
+    [Header("Sound Effects")]
+    [SerializeField] private HearthSfxCuePlayer sfxCuePlayer;
+    [SerializeField] private string popupSpawnCueId = "Popup.Spawn";
+    [SerializeField] private string popupDismissCueId = "Popup.Dismiss";
+    [SerializeField] private string waveEscalateCueId = "Popup.WaveEscalate";
+    [SerializeField] private string challengeCompleteCueId = "Popup.Success";
 
     [Header("Input")]
     [SerializeField] private KeyCode submitKey = KeyCode.Space;
@@ -124,6 +134,7 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
         HearthUiPressFeedback feedback)
     {
         rootGroup = group;
+        backgroundDimmer = group != null ? group.GetComponent<Image>() : null;
         popupLayer = layer;
         popupTemplate = template;
         headingText = heading;
@@ -144,6 +155,7 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
         highTrustMode = highTrust;
         random = new System.Random(randomSeed);
         IsRunning = true;
+        ApplyBackgroundDim(highTrust);
         SetVisible(true);
 
         if (highTrust)
@@ -197,6 +209,7 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
             return;
         }
 
+        PlayCue(popupDismissCueId);
         PopupState popup = activePopups[activePopups.Count - 1];
         activePopups.RemoveAt(activePopups.Count - 1);
         if (popup.isWaveGate)
@@ -234,6 +247,11 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
         currentWaveSpawnComplete = false;
         waitingForWaveGate = true;
         advancingWave = false;
+        if (index > 0)
+        {
+            PlayCue(waveEscalateCueId);
+        }
+
         PopupWave wave = lowTrustWaves[index];
 
         if (headingText != null)
@@ -352,6 +370,7 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
             isWaveGate = isWaveGate
         };
         activePopups.Add(state);
+        PlayCue(popupSpawnCueId);
         StartCoroutine(EnterPopupRoutine(state, GetOffscreenStart(target, rect.sizeDelta)));
         RefreshCounter();
     }
@@ -532,6 +551,7 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
         }
 
         yield return new WaitForSecondsRealtime(0.16f);
+        PlayCue(challengeCompleteCueId);
         IsRunning = false;
         completing = false;
         SetVisible(false);
@@ -641,6 +661,33 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
         rootGroup.alpha = visible ? 1f : 0f;
         rootGroup.interactable = false;
         rootGroup.blocksRaycasts = visible;
+    }
+
+    private void ApplyBackgroundDim(bool highTrust)
+    {
+        if (backgroundDimmer == null && rootGroup != null)
+        {
+            backgroundDimmer = rootGroup.GetComponent<Image>();
+        }
+
+        if (backgroundDimmer != null)
+        {
+            backgroundDimmer.color = highTrust ? highTrustDimColor : lowTrustDimColor;
+            backgroundDimmer.raycastTarget = false;
+        }
+    }
+
+    public void SetSfxCuePlayer(HearthSfxCuePlayer player)
+    {
+        sfxCuePlayer = player;
+    }
+
+    private void PlayCue(string cueId)
+    {
+        if (sfxCuePlayer != null && !string.IsNullOrWhiteSpace(cueId))
+        {
+            sfxCuePlayer.PlayCueOneShot(cueId);
+        }
     }
 
     private void EnsureWaveDefaults()

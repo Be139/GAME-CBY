@@ -1,4 +1,5 @@
 using System;
+using TMPro;
 using UnityEngine;
 
 public enum HearthFinalChoiceNavigationAxis
@@ -47,6 +48,7 @@ public class HearthFirstPersonHudInput : MonoBehaviour
     [Header("Final Choice")]
     [SerializeField] private HearthFinalChoiceInputProfile finalChoiceInputProfile =
         new HearthFinalChoiceInputProfile(HearthFinalChoiceNavigationAxis.Horizontal, true, true);
+    [SerializeField] private TMP_Text finalChoiceHintText;
 
     [Header("Settings")]
     [SerializeField] private int settingsVolumeStep = 5;
@@ -70,6 +72,7 @@ public class HearthFirstPersonHudInput : MonoBehaviour
         }
 
         HearthFirstPersonHudPageId page = controller.CurrentPageId;
+        RefreshFinalChoiceHint(page);
 
         if (Input.GetKeyDown(menuKey))
         {
@@ -138,6 +141,10 @@ public class HearthFirstPersonHudInput : MonoBehaviour
     public void SetKeyboardInputEnabled(bool value)
     {
         enableKeyboardInput = value;
+        if (!value && finalChoiceHintText != null)
+        {
+            finalChoiceHintText.gameObject.SetActive(false);
+        }
     }
 
     public HearthFinalChoiceInputProfile GetFinalChoiceInputProfile()
@@ -148,6 +155,10 @@ public class HearthFirstPersonHudInput : MonoBehaviour
     public void SetFinalChoiceInputProfile(HearthFinalChoiceInputProfile profile)
     {
         finalChoiceInputProfile = profile;
+        if (controller != null)
+        {
+            RefreshFinalChoiceHint(controller.CurrentPageId);
+        }
     }
 
     private void HandleMenuKey(HearthFirstPersonHudPageId page)
@@ -220,6 +231,20 @@ public class HearthFirstPersonHudInput : MonoBehaviour
         {
             settingsView = GetComponentInChildren<HearthSettingsView>(true);
         }
+    }
+
+    private void RefreshFinalChoiceHint(HearthFirstPersonHudPageId page)
+    {
+        if (finalChoiceHintText == null)
+        {
+            return;
+        }
+
+        bool visible = enableKeyboardInput && IsFinalChoicePage(page);
+        finalChoiceHintText.text = finalChoiceInputProfile.navigationAxis == HearthFinalChoiceNavigationAxis.Vertical
+            ? "UP / DOWN  SELECT     SPACE  CONFIRM"
+            : "LEFT / RIGHT  SELECT     SPACE  CONFIRM";
+        finalChoiceHintText.gameObject.SetActive(visible);
     }
 
     private static bool IsFinalChoicePage(HearthFirstPersonHudPageId page)

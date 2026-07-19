@@ -74,6 +74,9 @@ public class HearthCompanion17F01ReplayController : MonoBehaviour
     [SerializeField] private HearthDialogueSequence soothingSequence;
     [SerializeField] private HearthDialogueSequence livingRoomSequence;
 
+    [Header("Sound Effects")]
+    [SerializeField] private HearthSfxCuePlayer sfxCuePlayer;
+
     [Header("Fallback Subtitle Lines")]
     [SerializeField] private bool seedDefaultLinesIfEmpty = true;
     [SerializeField] private List<MinLoopSubtitleLine> bedroomPreludeLines = new List<MinLoopSubtitleLine>();
@@ -180,6 +183,8 @@ public class HearthCompanion17F01ReplayController : MonoBehaviour
         StopActiveRoutine();
         StopBedroomPrelude();
         SubscribeHud();
+        StopAllSfx();
+        StartSfxLoop("Bedroom.RoomTone");
 
         SetStep(ReplayStep.BedroomMonitor);
         TeleportRobot(childRoomStartAnchor);
@@ -226,6 +231,7 @@ public class HearthCompanion17F01ReplayController : MonoBehaviour
         {
             case ReplayStep.LookAtBoyPrompt:
                 StopBedroomPrelude();
+                PlaySfxCue("Interaction.ComfortConfirmed");
                 activeRoutine = StartCoroutine(BeginBedsideSoothingInPlaceRoutine());
                 break;
             case ReplayStep.LivingRoomObservation:
@@ -259,6 +265,8 @@ public class HearthCompanion17F01ReplayController : MonoBehaviour
         {
             subtitlePlayer.Hide();
         }
+
+        StopAllSfx();
     }
 
     public void SetReferences(
@@ -300,6 +308,11 @@ public class HearthCompanion17F01ReplayController : MonoBehaviour
     public void SetApproachInteractable(HearthCompanionReplayInteractable interactable)
     {
         approachBoyInteractable = interactable;
+    }
+
+    public void SetSfxCuePlayer(HearthSfxCuePlayer player)
+    {
+        sfxCuePlayer = player;
     }
 
     private IEnumerator BedroomPreludeRoutine()
@@ -399,6 +412,9 @@ public class HearthCompanion17F01ReplayController : MonoBehaviour
     private IEnumerator LivingRoomObservationRoutine()
     {
         SetStep(ReplayStep.LivingRoomObservation);
+        StopSfxCue("Bedroom.RoomTone");
+        PlaySfxCue("Replay.SceneTransition");
+        StartSfxLoop("LivingRoom.RoomTone");
         if (flowController != null)
         {
             flowController.NotifyMorningReviewStarted();
@@ -483,6 +499,7 @@ public class HearthCompanion17F01ReplayController : MonoBehaviour
         }
 
         SetStep(ReplayStep.ReturningToTerminal);
+        StopAllSfx();
         SetRobotControl(false, false, false);
 
         if (approachBoyInteractable != null)
@@ -514,6 +531,38 @@ public class HearthCompanion17F01ReplayController : MonoBehaviour
     private void SetStep(ReplayStep step)
     {
         currentStep = step;
+    }
+
+    private void PlaySfxCue(string cueId)
+    {
+        if (sfxCuePlayer != null)
+        {
+            sfxCuePlayer.PlayCue(cueId);
+        }
+    }
+
+    private void StartSfxLoop(string cueId)
+    {
+        if (sfxCuePlayer != null)
+        {
+            sfxCuePlayer.StartCueLoop(cueId);
+        }
+    }
+
+    private void StopSfxCue(string cueId)
+    {
+        if (sfxCuePlayer != null)
+        {
+            sfxCuePlayer.StopCue(cueId);
+        }
+    }
+
+    private void StopAllSfx()
+    {
+        if (sfxCuePlayer != null)
+        {
+            sfxCuePlayer.StopAllCues();
+        }
     }
 
     private void TeleportRobot(Transform anchor)

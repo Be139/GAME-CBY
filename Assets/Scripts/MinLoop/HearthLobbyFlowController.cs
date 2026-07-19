@@ -56,11 +56,15 @@ public class HearthLobbyFlowController : MonoBehaviour
     [SerializeField] private HearthDialogueSequence assignmentLoadedDialogue;
     [SerializeField] private HearthDialogueSequence elevatorDialogue;
 
+    [Header("Sound Effects")]
+    [SerializeField] private HearthSfxCuePlayer sfxCuePlayer;
+
     [Header("Timing")]
     [SerializeField] private float startupFadeSeconds = 0.35f;
     [SerializeField] private float transitionFadeOutSeconds = 0.5f;
     [SerializeField] private float transitionFadeInSeconds = 0.5f;
     [SerializeField] private float activationLeadSeconds = 0.45f;
+    [SerializeField] private float assignmentTerminalMinimumViewSeconds = 5f;
 
     [Header("Events")]
     [SerializeField] private UnityEvent onOpeningCompleted = new UnityEvent();
@@ -85,6 +89,8 @@ public class HearthLobbyFlowController : MonoBehaviour
     private bool hasCachedCameraPivot;
     private bool terminalHudSuppressed;
     private bool[] terminalHudCanvasWasEnabled;
+    private bool assignmentTerminalCloseAvailable;
+    private bool assignmentTerminalCloseRequested;
 
     public HearthLobbyFlowStage CurrentStage
     {
@@ -100,7 +106,8 @@ public class HearthLobbyFlowController : MonoBehaviour
     {
         get
         {
-            return !busy &&
+            return !assignmentLoaded &&
+                   !busy &&
                    (currentStage == HearthLobbyFlowStage.FreeExploration ||
                     currentStage == HearthLobbyFlowStage.AssignmentTerminal) &&
                    (assignmentTerminal == null || !assignmentTerminal.IsOpen);
@@ -163,6 +170,11 @@ public class HearthLobbyFlowController : MonoBehaviour
 
     private void OnDisable()
     {
+        if (sfxCuePlayer != null)
+        {
+            sfxCuePlayer.StopAllCues();
+        }
+
         RestoreTerminalHudVisibility();
         desiredControlStateActive = false;
         RestoreAuxiliaryInputs();
@@ -228,11 +240,17 @@ public class HearthLobbyFlowController : MonoBehaviour
         transitionFadeOutSeconds = Mathf.Max(0f, transitionFadeOutSeconds);
         transitionFadeInSeconds = Mathf.Max(0f, transitionFadeInSeconds);
         activationLeadSeconds = Mathf.Max(0f, activationLeadSeconds);
+        assignmentTerminalMinimumViewSeconds = Mathf.Max(0f, assignmentTerminalMinimumViewSeconds);
     }
 
     public void BeginOpening()
     {
         StartFlowRoutine(OpeningRoutine());
+    }
+
+    public void SetSfxCuePlayer(HearthSfxCuePlayer player)
+    {
+        sfxCuePlayer = player;
     }
 
     public bool TryPlayOptionalConversation(
@@ -273,21 +291,42 @@ public class HearthLobbyFlowController : MonoBehaviour
 
     public void AcquireAssignmentFromTerminal()
     {
-        if (busy)
+        if (currentStage == HearthLobbyFlowStage.AssignmentTerminal)
         {
+            ConfirmAssignmentTerminalClose();
             return;
         }
 
-        if (assignmentLoaded)
+        BeginAssignmentBriefingFromTerminal();
+    }
+
+    public void BeginAssignmentBriefingFromTerminal()
+    {
+        if (assignmentLoaded || busy || assignmentTerminal == null || !assignmentTerminal.IsOpen)
         {
-            if (assignmentTerminal != null && assignmentTerminal.IsOpen)
-            {
-                assignmentTerminal.CloseTerminal();
-            }
             return;
         }
 
         StartFlowRoutine(AssignmentLoadedRoutine());
+    }
+
+    public void ConfirmAssignmentTerminalClose()
+    {
+        if (currentStage != HearthLobbyFlowStage.AssignmentTerminal ||
+            !assignmentTerminalCloseAvailable ||
+            assignmentTerminalCloseRequested)
+        {
+            return;
+        }
+
+        assignmentTerminalCloseRequested = true;
+        assignmentTerminalCloseAvailable = false;
+        if (assignmentTerminal != null)
+        {
+            assignmentTerminal.SetPrimaryActionInputEnabled(false);
+            assignmentTerminal.SetRuntimePrompt("PLEASE WAIT");
+            assignmentTerminal.CloseTerminal();
+        }
     }
 
     public void BeginElevatorRide()
@@ -304,6 +343,8 @@ public class HearthLobbyFlowController : MonoBehaviour
     {
         StopActiveRoutine();
         assignmentLoaded = false;
+        assignmentTerminalCloseAvailable = false;
+        assignmentTerminalCloseRequested = false;
         busy = false;
         currentStage = HearthLobbyFlowStage.Inactive;
 
@@ -323,6 +364,13 @@ public class HearthLobbyFlowController : MonoBehaviour
             hudOverlay.HideAllImmediate();
         }
 
+        if (assignmentTerminal != null)
+        {
+            assignmentTerminal.SetPrimaryActionInputEnabled(true);
+            assignmentTerminal.SetCloseInputEnabled(true);
+            assignmentTerminal.ClearRuntimePrompt();
+        }
+
         BeginOpening();
     }
 
@@ -331,6 +379,7 @@ public class HearthLobbyFlowController : MonoBehaviour
         busy = true;
         currentStage = HearthLobbyFlowStage.Opening;
         assignmentLoaded = false;
+        StartSfxLoop("Lobby.RoomTone");
         SetHumanControl(false, false, false, true);
         TeleportHuman(lobbyStartAnchor, lobbyStartCameraAnchor);
 
@@ -441,6 +490,16 @@ public class HearthLobbyFlowController : MonoBehaviour
         busy = true;
         currentStage = HearthLobbyFlowStage.AssignmentTerminal;
         assignmentLoaded = true;
+        assignmentTerminalCloseAvailable = false;
+        assignmentTerminalCloseRequested = false;
+        PlaySfxCue("AssignmentTerminal.Confirm");
+
+        if (assignmentTerminal != null)
+        {
+            assignmentTerminal.SetPrimaryActionInputEnabled(false);
+            assignmentTerminal.SetCloseInputEnabled(false);
+            assignmentTerminal.SetRuntimePrompt("PLEASE WAIT");
+        }
 
         if (hudOverlay != null)
         {
@@ -452,17 +511,46 @@ public class HearthLobbyFlowController : MonoBehaviour
             onAssignmentLoaded.Invoke();
         }
 
-        if (assignmentTerminal != null && assignmentTerminal.IsOpen)
+        if (subtitlePlayer != null && assignmentLoadedDialogue != null && assignmentLoadedDialogue.HasLines)
         {
-            assignmentTerminal.CloseTerminal();
-            while (assignmentTerminal.IsOpen)
-            {
-                yield return null;
-            }
+            subtitlePlayer.PlaySequence(assignmentLoadedDialogue);
         }
 
-        SetHumanControl(false, true, false, true);
-        yield return PlayDialogue(assignmentLoadedDialogue);
+        float elapsed = 0f;
+        while (!assignmentTerminalCloseRequested)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            if (!assignmentTerminalCloseAvailable && elapsed >= assignmentTerminalMinimumViewSeconds)
+            {
+                assignmentTerminalCloseAvailable = true;
+                if (assignmentTerminal != null && assignmentTerminal.IsOpen)
+                {
+                    assignmentTerminal.SetPrimaryActionInputEnabled(true);
+                    assignmentTerminal.SetRuntimePrompt("SPACE  CLOSE TERMINAL");
+                }
+            }
+
+            yield return null;
+        }
+
+        while (assignmentTerminal != null && assignmentTerminal.IsOpen)
+        {
+            yield return null;
+        }
+
+        // The route briefing continues in-world. Mia can move and look, while
+        // all interaction remains locked until the final instruction ends.
+        SetHumanControl(true, true, false, true);
+        while (subtitlePlayer != null && subtitlePlayer.IsPlaying)
+        {
+            yield return null;
+        }
+
+        if (assignmentTerminal != null)
+        {
+            assignmentTerminal.SetCloseInputEnabled(true);
+            assignmentTerminal.ClearRuntimePrompt();
+        }
 
         busy = false;
         currentStage = HearthLobbyFlowStage.FreeExploration;
@@ -475,6 +563,9 @@ public class HearthLobbyFlowController : MonoBehaviour
         busy = true;
         currentStage = HearthLobbyFlowStage.ElevatorTransition;
         SetHumanControl(false, false, false, true);
+        PlaySfxCue("Elevator.Button");
+        PlaySfxCue("Elevator.DoorsClose");
+        StopSfxCue("Lobby.RoomTone");
 
         if (screenFader != null)
         {
@@ -483,6 +574,7 @@ public class HearthLobbyFlowController : MonoBehaviour
 
         TeleportHuman(elevatorAnchor, elevatorCameraAnchor);
         currentStage = HearthLobbyFlowStage.ElevatorRide;
+        StartSfxLoop("Elevator.Motor");
         SetHumanControl(false, true, false, true);
 
         if (onElevatorEntered != null)
@@ -497,6 +589,10 @@ public class HearthLobbyFlowController : MonoBehaviour
 
         yield return PlayDialogue(elevatorDialogue);
 
+        StopSfxCue("Elevator.Motor");
+        PlaySfxCue("Elevator.Arrival");
+        PlaySfxCue("Elevator.DoorsOpen");
+
         currentStage = HearthLobbyFlowStage.Floor17Transition;
         SetHumanControl(false, false, false, true);
         if (screenFader != null)
@@ -505,6 +601,7 @@ public class HearthLobbyFlowController : MonoBehaviour
         }
 
         TeleportHuman(floor17ArrivalAnchor, floor17ArrivalCameraAnchor);
+        StartSfxLoop("Corridor.RoomTone");
         if (locationProbe != null)
         {
             locationProbe.RefreshCurrentLocation();
@@ -524,6 +621,30 @@ public class HearthLobbyFlowController : MonoBehaviour
         }
 
         activeRoutine = null;
+    }
+
+    private void PlaySfxCue(string cueId)
+    {
+        if (sfxCuePlayer != null)
+        {
+            sfxCuePlayer.PlayCue(cueId);
+        }
+    }
+
+    private void StartSfxLoop(string cueId)
+    {
+        if (sfxCuePlayer != null)
+        {
+            sfxCuePlayer.StartCueLoop(cueId);
+        }
+    }
+
+    private void StopSfxCue(string cueId)
+    {
+        if (sfxCuePlayer != null)
+        {
+            sfxCuePlayer.StopCue(cueId);
+        }
     }
 
     private IEnumerator PlayDialogue(HearthDialogueSequence sequence)

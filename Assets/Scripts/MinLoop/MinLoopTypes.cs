@@ -36,6 +36,12 @@ public enum HearthSubtitleDurationMode
     LongerOfVoiceAndManual
 }
 
+public enum HearthSubtitleLinePresentationKind
+{
+    Dialogue,
+    TimeCard
+}
+
 [Serializable]
 public class MinLoopStageEvent : UnityEvent<MinLoopStage>
 {
@@ -49,6 +55,8 @@ public class MinLoopDispositionEvent : UnityEvent<MinLoopDispositionChoice, int,
 [Serializable]
 public class MinLoopSubtitleLine
 {
+    public HearthSubtitleLinePresentationKind presentationKind = HearthSubtitleLinePresentationKind.Dialogue;
+
     [Min(0f)]
     public float startDelay;
 

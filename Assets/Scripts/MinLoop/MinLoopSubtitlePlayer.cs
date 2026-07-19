@@ -95,11 +95,17 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
 
     public void ShowLine(string speaker, string text)
     {
+        ShowLine(speaker, text, presentationMode);
+    }
+
+    private void ShowLine(string speaker, string text, HearthSubtitlePresentationMode mode)
+    {
         EnsureReferences();
 
         if (speakerText != null)
         {
             speakerText.text = speaker;
+            speakerText.gameObject.SetActive(mode != HearthSubtitlePresentationMode.TimeCard);
         }
 
         if (bodyText != null)
@@ -117,7 +123,7 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
             canvasGroup.alpha = 1f;
         }
 
-        ApplyConfiguredStyle();
+        ApplyConfiguredStyle(mode);
     }
 
     public void SetPresentation(HearthSubtitleStyleProfile profile, HearthSubtitlePresentationMode mode)
@@ -174,12 +180,24 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
                 yield return Wait(line.startDelay);
             }
 
-            ShowLine(line.speaker, line.text);
+            HearthSubtitlePresentationMode linePresentation = line.presentationKind == HearthSubtitleLinePresentationKind.TimeCard
+                ? HearthSubtitlePresentationMode.TimeCard
+                : presentationMode;
+            ShowLine(line.speaker, line.text, linePresentation);
             PlayVoice(line.voiceClip);
 
             float holdSeconds = ResolveLineDuration(line);
-
-            if (holdSeconds > 0f)
+            if (linePresentation == HearthSubtitlePresentationMode.TimeCard)
+            {
+                float fadeSeconds = styleProfile != null ? styleProfile.TimeCardFadeSeconds : 0.35f;
+                yield return FadeCanvas(0f, 1f, fadeSeconds);
+                if (holdSeconds > 0f)
+                {
+                    yield return Wait(holdSeconds);
+                }
+                yield return FadeCanvas(1f, 0f, fadeSeconds);
+            }
+            else if (holdSeconds > 0f)
             {
                 yield return Wait(holdSeconds);
             }
@@ -259,6 +277,26 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
         {
             yield return new WaitForSeconds(seconds);
         }
+    }
+
+    private IEnumerator FadeCanvas(float from, float to, float seconds)
+    {
+        if (canvasGroup == null || seconds <= 0f)
+        {
+            if (canvasGroup != null) canvasGroup.alpha = to;
+            yield break;
+        }
+
+        canvasGroup.alpha = from;
+        float elapsed = 0f;
+        while (elapsed < seconds)
+        {
+            elapsed += useUnscaledTime ? Time.unscaledDeltaTime : Time.deltaTime;
+            canvasGroup.alpha = Mathf.Lerp(from, to, Mathf.Clamp01(elapsed / seconds));
+            yield return null;
+        }
+
+        canvasGroup.alpha = to;
     }
 
     private void HideImmediate()
@@ -380,6 +418,11 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
 
     private void ApplyConfiguredStyle()
     {
+        ApplyConfiguredStyle(presentationMode);
+    }
+
+    private void ApplyConfiguredStyle(HearthSubtitlePresentationMode mode)
+    {
         if (!useCleanCenteredStyle || subtitlePanel == null)
         {
             return;
@@ -410,7 +453,7 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
         EnsureSubtitleCanvasSorting();
 
         HearthSubtitleLayoutSettings sharedLayout = styleProfile != null
-            ? styleProfile.GetLayout(presentationMode)
+            ? styleProfile.GetLayout(mode)
             : null;
         float width = sharedLayout != null ? sharedLayout.widthFraction : subtitleWidthFraction;
         float speakerY = sharedLayout != null ? sharedLayout.speakerCenterY : speakerCenterY;

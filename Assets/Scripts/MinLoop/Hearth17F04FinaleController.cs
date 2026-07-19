@@ -181,6 +181,8 @@ public class Hearth17F04FinaleController : MonoBehaviour
         {
             if (homeTerminal != null)
             {
+                homeTerminal.SetPrimaryActionInputEnabled(true);
+                homeTerminal.ClearRuntimePrompt();
                 homeTerminal.CancelCustomActionHandoff();
             }
             return;
@@ -192,12 +194,19 @@ public class Hearth17F04FinaleController : MonoBehaviour
             Debug.LogWarning("[Hearth17F04FinaleController] The first three households are not complete, so 17F04 entry is blocked.", this);
             if (homeTerminal != null)
             {
+                homeTerminal.SetPrimaryActionInputEnabled(true);
+                homeTerminal.ClearRuntimePrompt();
                 homeTerminal.CancelCustomActionHandoff();
             }
             return;
         }
 
         SaveCorridorPose();
+        if (homeTerminal != null)
+        {
+            homeTerminal.SetPrimaryActionInputEnabled(false);
+            homeTerminal.SetRuntimePrompt("PLEASE WAIT");
+        }
         StopAllStorySfx();
         currentHighTrust = EvaluateHighTrust();
         currentStage = FinaleStage.HomeTerminal;
@@ -334,6 +343,11 @@ public class Hearth17F04FinaleController : MonoBehaviour
         }
         RestoreFinalChoiceInputProfile();
         if (catGuide != null) catGuide.ResetSequence();
+        if (homeTerminal != null)
+        {
+            homeTerminal.SetPrimaryActionInputEnabled(true);
+            homeTerminal.ClearRuntimePrompt();
+        }
         StopAllStorySfx();
 
         currentStage = FinaleStage.Inactive;
@@ -358,6 +372,7 @@ public class Hearth17F04FinaleController : MonoBehaviour
 
         if (homeTerminal != null)
         {
+            homeTerminal.ClearRuntimePrompt();
             homeTerminal.CompleteCustomActionHandoff();
             SetHumanControls(false, false, false);
         }

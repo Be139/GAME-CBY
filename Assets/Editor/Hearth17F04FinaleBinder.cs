@@ -26,7 +26,7 @@ public static class Hearth17F04FinaleBinder
     private const string DialogueFolder = "Assets/Data/MinLoop/Dialogues/17F04";
     private const string MaterialFolder = "Assets/materials/Hearth";
     private const string PhotoMaterialPath = MaterialFolder + "/17F04_Photo_Unlit.mat";
-    private const string PhotoTexturePath = "Assets/ChatGPT Image Jul 14, 2026, 10_10_35 AM.png";
+    private const string PhotoTexturePath = "Assets/Art/UI/HearthHud/Finale/FamilyPhoto.png";
 
     [MenuItem("Tools/Hearth/Finale/Apply 17F04 Home Finale Setup")]
     public static void ApplySetup()
@@ -85,7 +85,7 @@ public static class Hearth17F04FinaleBinder
         HearthVirusPopupShutdownChallenge challenge = EnsureShutdownChallenge(uiRoot, controllerHost);
 
         HearthTvTerminalController homeTerminal = ConfigureHomeTerminal(tv3, controller, human);
-        HearthPhotoFrameInteractable photo = ConfigurePhotoFrame(tv4, controller, human);
+        HearthPhotoFrameInteractable photo = ConfigurePhotoFrame(tv4, controller, human, uiRoot);
         Hearth17F04RoomDoorInteractable roomDoor = ConfigureRoomDoor(door1, controller);
         Hearth17F04HomeUnitInteractable unit = ConfigureHomeUnit(homeUnit, controller);
         Configure17F03DoorDirectInteraction();
@@ -253,6 +253,8 @@ public static class Hearth17F04FinaleBinder
         Stretch(keyboard.GetComponent<RectTransform>());
         CreateText(keyboard.transform, "KeyboardHintText", "SPACE CONFIRM     ESC EXIT", new Rect(80f, 1000f, 900f, 32f), 18f, new Color(0.67f, 0.86f, 0.93f, 0.88f), TextAlignmentOptions.TopLeft);
         CreateText(keyboard.transform, "KeyboardFocusText", "ENTER HOME | SPACE", new Rect(1100f, 1000f, 740f, 32f), 19f, new Color(0.34f, 0.94f, 0.78f, 0.98f), TextAlignmentOptions.TopRight);
+        TMP_Text runtimePrompt = CreateText(keyboard.transform, "RuntimePromptText", string.Empty, new Rect(560f, 92f, 800f, 38f), 19f, new Color(0.78f, 0.96f, 1f, 0.96f), TextAlignmentOptions.Center);
+        runtimePrompt.gameObject.SetActive(false);
 
         GameObject boot = new GameObject("TerminalBootOverlay", typeof(RectTransform), typeof(CanvasGroup));
         boot.transform.SetParent(root.transform, false);
@@ -338,7 +340,11 @@ public static class Hearth17F04FinaleBinder
         return terminal;
     }
 
-    private static HearthPhotoFrameInteractable ConfigurePhotoFrame(Transform tv, Hearth17F04FinaleController controller, Transform human)
+    private static HearthPhotoFrameInteractable ConfigurePhotoFrame(
+        Transform tv,
+        Hearth17F04FinaleController controller,
+        Transform human,
+        Transform uiRoot)
     {
         Transform monitorCanvas = FindDirectChild(tv, "MonitorCanvas");
         if (monitorCanvas != null)
@@ -391,6 +397,8 @@ public static class Hearth17F04FinaleBinder
             human.GetComponentInChildren<FirstPersonLook>(true),
             interaction,
             human.GetComponent<Rigidbody>());
+        PhotoExitHint hint = EnsurePhotoExitHint(uiRoot);
+        photo.SetExitHint(hint.Group, hint.Text);
 
         EnsureInteractionCollider(tv.gameObject);
         ConfigurePhotoMaterial(tv);
@@ -412,6 +420,69 @@ public static class Hearth17F04FinaleBinder
         EnsureInteractionCollider(door.gameObject);
         EditorUtility.SetDirty(interactable);
         return interactable;
+    }
+
+    private static PhotoExitHint EnsurePhotoExitHint(Transform uiRoot)
+    {
+        Transform existing = uiRoot.Find("PhotoExitHintCanvas");
+        if (existing != null)
+        {
+            CanvasGroup existingGroup = existing.GetComponentInChildren<CanvasGroup>(true);
+            TMP_Text existingText = existing.Find("HintPanel/HintText") != null
+                ? existing.Find("HintPanel/HintText").GetComponent<TMP_Text>()
+                : null;
+            if (existingGroup != null && existingText != null)
+            {
+                return new PhotoExitHint { Group = existingGroup, Text = existingText };
+            }
+        }
+
+        if (existing != null)
+        {
+            Undo.DestroyObjectImmediate(existing.gameObject);
+        }
+
+        GameObject canvasObject = new GameObject(
+            "PhotoExitHintCanvas",
+            typeof(RectTransform),
+            typeof(Canvas),
+            typeof(CanvasScaler),
+            typeof(GraphicRaycaster));
+        canvasObject.transform.SetParent(uiRoot, false);
+        Canvas canvas = canvasObject.GetComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.overrideSorting = true;
+        canvas.sortingOrder = 7800;
+        CanvasScaler scaler = canvasObject.GetComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920f, 1080f);
+
+        GameObject panel = new GameObject(
+            "HintPanel",
+            typeof(RectTransform),
+            typeof(CanvasGroup),
+            typeof(CanvasRenderer),
+            typeof(Image));
+        panel.transform.SetParent(canvasObject.transform, false);
+        SetTopLeft(panel.GetComponent<RectTransform>(), new Rect(710f, 932f, 500f, 54f));
+        Image back = panel.GetComponent<Image>();
+        back.color = new Color(0.01f, 0.025f, 0.04f, 0.56f);
+        back.raycastTarget = false;
+        CanvasGroup group = panel.GetComponent<CanvasGroup>();
+        group.alpha = 0f;
+        group.interactable = false;
+        group.blocksRaycasts = false;
+
+        TMP_Text text = CreateText(
+            panel.transform,
+            "HintText",
+            "SPACE  RETURN",
+            new Rect(0f, 10f, 500f, 34f),
+            19f,
+            new Color(0.78f, 0.96f, 1f, 0.96f),
+            TextAlignmentOptions.Center);
+        text.fontStyle = FontStyles.Bold;
+        return new PhotoExitHint { Group = group, Text = text };
     }
 
     private static Hearth17F04HomeUnitInteractable ConfigureHomeUnit(Transform unit, Hearth17F04FinaleController controller)
@@ -646,7 +717,7 @@ public static class Hearth17F04FinaleBinder
         scaler.matchWidthOrHeight = 0.5f;
 
         Image dim = root.GetComponent<Image>();
-        dim.color = new Color(0.01f, 0.018f, 0.025f, 0.22f);
+        dim.color = new Color(0.003f, 0.006f, 0.01f, 0.62f);
         dim.raycastTarget = false;
         CanvasGroup group = root.GetComponent<CanvasGroup>();
         group.alpha = 0f;
@@ -868,7 +939,7 @@ public static class Hearth17F04FinaleBinder
         Texture texture = AssetDatabase.LoadAssetAtPath<Texture2D>(PhotoTexturePath);
         if (texture == null)
         {
-            Material oldMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/image.mat");
+            Material oldMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Art/UI/HearthHud/Finale/PhotoFrame_Legacy.mat");
             if (oldMaterial != null && oldMaterial.HasProperty("_DetailAlbedoMap"))
             {
                 texture = oldMaterial.GetTexture("_DetailAlbedoMap");
@@ -975,10 +1046,12 @@ public static class Hearth17F04FinaleBinder
     {
         DialogueLibrary result = new DialogueLibrary();
         result.HomeHigh = EnsureDialogue("17F04_HomeGreeting_High", "High-trust greeting after entering Mia's home.",
+            L("Field Unit", "Inspector, this is the full message your daughter left at 4:42 PM-the notification you received in the lobby. Please listen before entering.", 0.2f, 5.4f),
             L("Field Companion", "Inspector, all three households have been processed tonight.", 0.2f, 3.4f),
             L("Field Companion", "Honestly, you have been one of the most cooperative inspectors I have worked with.", 0.2f, 4.2f),
             L("Field Companion", "Now that you are home, would you like to experience again the convenience a Companion Unit brings to you and Lily every day?", 0.2f, 5.4f));
         result.HomeLow = EnsureDialogue("17F04_HomeGreeting_Low", "Low-trust greeting after entering Mia's home.",
+            L("Field Unit", "Inspector, this is the full message your daughter left at 4:42 PM-the notification you received in the lobby. Please listen before entering.", 0.2f, 5.4f),
             L("Field Companion", "Inspector, you are home.", 0.2f, 2.4f),
             L("Field Companion", "Tonight, you chose low intervention in all three households. That is unusual in your record.", 0.2f, 4.8f),
             L("Field Companion", "Handling cases this way takes effort. Most inspectors do not do it, because following the system is easier.", 0.2f, 5.2f),
@@ -1399,6 +1472,12 @@ public static class Hearth17F04FinaleBinder
         public MinLoopSubtitlePlayer Epilogue;
         public CanvasGroup BlackoutGroup;
         public Image BlackoutImage;
+    }
+
+    private struct PhotoExitHint
+    {
+        public CanvasGroup Group;
+        public TMP_Text Text;
     }
 
     private struct DialogueLibrary

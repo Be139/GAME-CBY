@@ -36,6 +36,7 @@ public static class HearthFinalDialogueSync
         public string Prefix;
         public string Text;
         public int SourceLine;
+        public HearthSubtitleLinePresentationKind PresentationKind;
         public readonly List<string> SequenceIds = new List<string>();
     }
 
@@ -499,7 +500,13 @@ public static class HearthFinalDialogueSync
                 Speaker = dialogueMatch.Groups["speaker"].Value.Trim(),
                 Prefix = dialogueMatch.Groups["prefix"].Value,
                 Text = dialogueMatch.Groups["text"].Value.Trim(),
-                SourceLine = i + 1
+                SourceLine = i + 1,
+                PresentationKind = string.Equals(
+                    dialogueMatch.Groups["speaker"].Value.Trim(),
+                    "TIME CARD",
+                    StringComparison.OrdinalIgnoreCase)
+                    ? HearthSubtitleLinePresentationKind.TimeCard
+                    : HearthSubtitleLinePresentationKind.Dialogue
             };
             line.SequenceIds.AddRange(pendingMarkers);
             script.Scenes[currentScene].Add(line);
@@ -565,11 +572,20 @@ public static class HearthFinalDialogueSync
             DialogueLine source = lines[i];
             SerializedProperty target = targetLines.GetArrayElementAtIndex(i);
             target.FindPropertyRelative("startDelay").floatValue = i == 0 ? 0.15f : 0.18f;
-            target.FindPropertyRelative("speaker").stringValue = source.Speaker;
+            target.FindPropertyRelative("speaker").stringValue = source.PresentationKind == HearthSubtitleLinePresentationKind.TimeCard
+                ? string.Empty
+                : source.Speaker;
             target.FindPropertyRelative("text").stringValue = source.Text;
+            SerializedProperty presentationKind = target.FindPropertyRelative("presentationKind");
+            if (presentationKind != null)
+            {
+                presentationKind.enumValueIndex = (int)source.PresentationKind;
+            }
             target.FindPropertyRelative("holdSeconds").floatValue = EstimateHoldSeconds(source.Text);
             AudioClip preserved;
-            preservedClips.TryGetValue(BuildVoiceKey(source.Speaker, source.Text), out preserved);
+            preservedClips.TryGetValue(BuildVoiceKey(
+                source.PresentationKind == HearthSubtitleLinePresentationKind.TimeCard ? string.Empty : source.Speaker,
+                source.Text), out preserved);
             target.FindPropertyRelative("voiceClip").objectReferenceValue = preserved;
             target.FindPropertyRelative("durationMode").enumValueIndex = (int)HearthSubtitleDurationMode.VoiceClipWhenAssigned;
             target.FindPropertyRelative("voiceTailSeconds").floatValue = 0.12f;

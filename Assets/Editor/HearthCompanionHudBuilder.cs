@@ -15,6 +15,7 @@ public static class HearthCompanionHudBuilder
     private const string DataFolder = "Assets/Data/HearthHud/Companion";
     private const string PrefabFolder = "Assets/Prefabs/UI/HearthHud/Companion";
     private const string RootPrefabPath = PrefabFolder + "/HearthCompanionHudRoot.prefab";
+    private const string LayoutProfilePath = DataFolder + "/Hearth_CompanionHudLayout.asset";
 
     [MenuItem("Tools/Hearth/HUD/Rebuild Companion Unit HUD Prefab")]
     public static void RebuildCompanionHudPrefab()
@@ -24,7 +25,8 @@ public static class HearthCompanionHudBuilder
         AssetDatabase.Refresh();
 
         HearthCompanionHudSceneData[] sceneAssets = EnsureSceneDataAssets(false);
-        GameObject root = BuildRoot(sceneAssets);
+        HearthCompanionHudLayoutProfile layoutProfile = EnsureLayoutProfile();
+        GameObject root = BuildRoot(sceneAssets, layoutProfile);
         GameObject prefab = PrefabUtility.SaveAsPrefabAsset(root, RootPrefabPath);
         Object.DestroyImmediate(root);
 
@@ -61,6 +63,8 @@ public static class HearthCompanionHudBuilder
             rect.sizeDelta = new Vector2(ReferenceWidth, ReferenceHeight);
             rect.anchoredPosition = new Vector2(ReferenceWidth * 0.5f, ReferenceHeight * 0.5f);
         }
+
+        HearthRuntimeInterfaceBinder.BindFormalInteractionPromptsInOpenScene();
 
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
         Debug.Log("[HearthCompanionHudBuilder] Applied HearthCompanionHudRoot to the open scene.");
@@ -142,7 +146,9 @@ public static class HearthCompanionHudBuilder
         Debug.Log("[HearthCompanionHudBuilder] Regenerated 17F03 companion scene data defaults only.");
     }
 
-    private static GameObject BuildRoot(HearthCompanionHudSceneData[] sceneAssets)
+    private static GameObject BuildRoot(
+        HearthCompanionHudSceneData[] sceneAssets,
+        HearthCompanionHudLayoutProfile layoutProfile)
     {
         GameObject root = new GameObject(
             "HearthCompanionHudRoot",
@@ -155,7 +161,8 @@ public static class HearthCompanionHudBuilder
             typeof(HearthCompanionHudExclusiveMode),
             typeof(HearthCompanionHudController),
             typeof(HearthCompanionHudPreviewInput),
-            typeof(HearthCompanionHudFlowBinder));
+            typeof(HearthCompanionHudFlowBinder),
+            typeof(HearthCompanionHudLayoutController));
 
         RectTransform rootRect = root.GetComponent<RectTransform>();
         rootRect.sizeDelta = new Vector2(ReferenceWidth, ReferenceHeight);
@@ -202,8 +209,18 @@ public static class HearthCompanionHudBuilder
         HearthCompanionHudController controller = root.GetComponent<HearthCompanionHudController>();
         controller.Configure(sceneAssets, rootGroup, status, decision, stream, trigger, holdPrompt, projection, direction, special, modeLabel, centerMessage, audioSource);
 
+        List<TMP_Text> sharedTexts = new List<TMP_Text>();
+        sharedTexts.AddRange(decision.GetComponentsInChildren<TMP_Text>(true));
+        sharedTexts.AddRange(stream.GetComponentsInChildren<TMP_Text>(true));
+        root.GetComponent<HearthCompanionHudLayoutController>().Configure(
+            layoutProfile,
+            decision.GetComponent<RectTransform>(),
+            stream.GetComponent<RectTransform>(),
+            sharedTexts.ToArray());
+
         HearthCompanionHudPreviewInput preview = root.GetComponent<HearthCompanionHudPreviewInput>();
         preview.SetPreviewInputEnabled(true);
+        HearthRuntimeInterfaceBinder.EnsurePromptForHudRoot(root, true);
 
         return root;
     }
@@ -223,12 +240,17 @@ public static class HearthCompanionHudBuilder
     private static HearthCompanionDecisionPanelView BuildDecisionPanel(Transform parent)
     {
         GameObject panel = CreateTransparentGroup(parent, "DecisionPanel");
+        Rect panelRect = PptRect(1018f, 92f, 390f, 140f);
+        RectTransform panelTransform = panel.GetComponent<RectTransform>();
+        SetTopLeft(panelTransform, panelRect);
+        panelTransform.pivot = new Vector2(1f, 1f);
+        panelTransform.anchoredPosition = new Vector2(panelRect.xMax, -panelRect.y);
         CanvasGroup group = panel.GetComponent<CanvasGroup>();
         HearthCompanionDecisionPanelView view = panel.AddComponent<HearthCompanionDecisionPanelView>();
-        TMP_Text kicker = CreateText(panel.transform, "DecisionKickerText", string.Empty, PptRect(1031.2f, 92.1f, 310f, 22f), 13f, Color.white, FontStyles.Bold, TextAlignmentOptions.TopLeft);
-        TMP_Text title = CreateText(panel.transform, "DecisionTitleText", string.Empty, PptRect(1027.5f, 127.3f, 360f, 30f), 18f, new Color(0.92f, 0.98f, 1f, 0.96f), FontStyles.Bold, TextAlignmentOptions.TopLeft);
-        TMP_Text body = CreateText(panel.transform, "DecisionBodyText", string.Empty, PptRect(1027.5f, 160.3f, 340f, 70f), 14f, new Color(0.72f, 0.84f, 0.92f, 0.9f), FontStyles.Normal, TextAlignmentOptions.TopLeft);
-        Image accent = CreateImage(panel.transform, "DecisionAccent", PptRect(1018f, 92f, 3f, 118f), new Color(0.45f, 0.85f, 1f, 0.8f));
+        TMP_Text kicker = CreateText(panel.transform, "DecisionKickerText", string.Empty, ScaleRect(13.2f, 0.1f, 310f, 22f), 13f, Color.white, FontStyles.Bold, TextAlignmentOptions.TopLeft);
+        TMP_Text title = CreateText(panel.transform, "DecisionTitleText", string.Empty, ScaleRect(9.5f, 35.3f, 360f, 30f), 18f, new Color(0.92f, 0.98f, 1f, 0.96f), FontStyles.Bold, TextAlignmentOptions.TopLeft);
+        TMP_Text body = CreateText(panel.transform, "DecisionBodyText", string.Empty, ScaleRect(9.5f, 68.3f, 340f, 70f), 14f, new Color(0.72f, 0.84f, 0.92f, 0.9f), FontStyles.Normal, TextAlignmentOptions.TopLeft);
+        Image accent = CreateImage(panel.transform, "DecisionAccent", ScaleRect(0f, 0f, 3f, 118f), new Color(0.45f, 0.85f, 1f, 0.8f));
         view.Configure(group, kicker, title, body, accent);
         return view;
     }
@@ -388,7 +410,7 @@ public static class HearthCompanionHudBuilder
                 "PRESSURE RELEASE COMPLETE", Lines(M("Emotion index", "5.4 -> 4.5"), M("Today's stress", "Largely released")), "",
                 "Accept Confide - Companion Mode", "Female resident seeking unit support per household usage pattern.", "//confide channel - streaming",
                 Arr("0x72B1 prompt_ISSUED", "0x72B3 topic_work_stress", "0x72B4 emo_7.2 -> 6.8", "0x72B5 emo_6.1 -> 5.4", "0x72B7 music_jazz_PLAY", "0x72B8 emo_5.4 -> 4.5", "0x72B9 vent_COMPLETE"),
-                true, "[ \"...\" ]", false, "", "", "", "", false, "", "", false, "", "", "", 1.5f),
+                true, "HOLD E  OFFER REASSURANCE TO CLAIRE", false, "", "", "", "", false, "", "", false, "", "", "", 1.5f),
 
             new SceneDefault("17F02_03", 6, "17F-02", HearthCompanionHudTemplate.Standard, HearthCompanionSpecialEffect.None, "COMPANION UNIT - FIRST PERSON - MONITORING MODE", blue,
                 "FOLLOW COMPLETE", Lines(M("Viewpoint", "Living room corner"), M("Scene", "Dinner"), M("Residents", "Both present"), M("Female", "Brief pause"), M("Result", "Vent processed")), "STATUS ASSESSMENT",
@@ -576,6 +598,19 @@ public static class HearthCompanionHudBuilder
         EnsureFolder("Assets/Prefabs/UI");
         EnsureFolder("Assets/Prefabs/UI/HearthHud");
         EnsureFolder(PrefabFolder);
+    }
+
+    private static HearthCompanionHudLayoutProfile EnsureLayoutProfile()
+    {
+        HearthCompanionHudLayoutProfile profile = AssetDatabase.LoadAssetAtPath<HearthCompanionHudLayoutProfile>(LayoutProfilePath);
+        if (profile != null)
+        {
+            return profile;
+        }
+
+        profile = ScriptableObject.CreateInstance<HearthCompanionHudLayoutProfile>();
+        AssetDatabase.CreateAsset(profile, LayoutProfilePath);
+        return profile;
     }
 
     private static void EnsureFolder(string path)

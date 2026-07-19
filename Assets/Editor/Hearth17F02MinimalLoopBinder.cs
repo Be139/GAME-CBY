@@ -13,7 +13,7 @@ public static class Hearth17F02MinimalLoopBinder
     private const string BuildWifeRouteFromFemaleReferencesMenuPath = "Tools/Hearth/Replay/Build 17F02 Wife Route From Female References";
     private const string ValidateAnimationSetupMenuPath = "Tools/Hearth/Replay/Validate 17F02 Animation Setup";
     private const string DialogueFolder = "Assets/Data/MinLoop/Dialogues";
-    private const string ActorControllerFolder = "Assets/Animation/Hearth/17F02";
+    private const string ActorControllerFolder = "Assets/Animations/Hearth/17F02/Controllers";
     private const string BedroomWakeDialoguePath = DialogueFolder + "/17F02_BedroomWake.asset";
     private const string BedroomConfideDialoguePath = DialogueFolder + "/17F02_BedroomConfide.asset";
     private const string BedroomComfortDialoguePath = DialogueFolder + "/17F02_BedroomComfort.asset";
@@ -142,27 +142,27 @@ public static class Hearth17F02MinimalLoopBinder
             bedroomWife,
             ActorControllerFolder + "/BedroomWife17F02.controller",
             FemaleKBaseAvatarPath,
-            new ActorClipBinding("SittingDisbelief", "Assets/casual_Female_K@Sitting_Disbelief.fbx", "mixamo.com", true, false, 0.18f, true),
-            new ActorClipBinding("SittingTalking", "Assets/Sitting_Talking.fbx", "mixamo.com", false, false, 0.18f, true),
-            new ActorClipBinding("SitToStand", "Assets/X_Bot@Sit_To_Stand.fbx", "Sit_To_Stand", false, false, 0.12f, true),
-            new ActorClipBinding("WalkLoop", "Assets/casual_Female_K@Walking.fbx", "Walking", true, false, 0.15f, true),
-            new ActorClipBinding("OpenDoorOutwards", "Assets/Open_Door_Outwards.fbx", "mixamo.com", false, false, 0.12f, true));
+            new ActorClipBinding("SittingDisbelief", "Assets/Animations/Hearth/17F02/Clips/casual_Female_K@Sitting_Disbelief.fbx", "mixamo.com", true, false, 0.18f, true),
+            new ActorClipBinding("SittingTalking", "Assets/Animations/Hearth/17F02/Clips/Sitting_Talking.fbx", "mixamo.com", false, false, 0.18f, true),
+            new ActorClipBinding("SitToStand", "Assets/Animations/Hearth/17F02/Clips/X_Bot@Sit_To_Stand.fbx", "Sit_To_Stand", false, false, 0.12f, true),
+            new ActorClipBinding("WalkLoop", "Assets/Animations/Hearth/17F02/Clips/casual_Female_K@Walking.fbx", "Walking", true, false, 0.15f, true),
+            new ActorClipBinding("OpenDoorOutwards", "Assets/Animations/Hearth/17F02/Clips/Open_Door_Outwards.fbx", "mixamo.com", false, false, 0.12f, true));
         EnableRuntimeActorObject(bedroomWife);
         HearthActorAnimatorDriver diningWifeAnimation = ConfigureActorAnimator(
             diningWife,
             ActorControllerFolder + "/DiningWife17F02.controller",
             FemaleKBaseAvatarPath,
-            new ActorClipBinding("Sitting", "Assets/Sitting.fbx", "mixamo.com", true, false, 0.18f));
+            new ActorClipBinding("Sitting", "Assets/Animations/Hearth/17F02/Clips/Sitting.fbx", "mixamo.com", true, false, 0.18f));
         HearthActorAnimatorDriver diningHusbandAnimation = ConfigureActorAnimator(
             diningHusband,
             ActorControllerFolder + "/DiningHusband17F02.controller",
             MaleKBaseAvatarPath,
-            new ActorClipBinding("SittingIdle", "Assets/Sitting_Idle.fbx", "mixamo.com", true, false, 0.18f));
+            new ActorClipBinding("SittingIdle", "Assets/Animations/Hearth/17F02/Clips/Sitting_Idle.fbx", "mixamo.com", true, false, 0.18f));
         HearthActorAnimatorDriver terminalHusbandAnimation = ConfigureActorAnimator(
             terminalHusband,
             ActorControllerFolder + "/TerminalHusband17F02.controller",
             MaleKBaseAvatarPath,
-            new ActorClipBinding("ButtonPushing", "Assets/Button_Pushing.fbx", "mixamo.com", true, false, 0.18f));
+            new ActorClipBinding("ButtonPushing", "Assets/Animations/Hearth/17F02/Clips/Button_Pushing.fbx", "mixamo.com", true, false, 0.18f));
 
         GameObject replayControllerObject = FindOrCreateChild(replayRoot, "HearthCompanion17F02ReplayController").gameObject;
         HearthCompanion17F02ReplayController replayController = GetOrAdd<HearthCompanion17F02ReplayController>(replayControllerObject);
@@ -357,11 +357,11 @@ public static class Hearth17F02MinimalLoopBinder
             bedroomWife,
             ActorControllerFolder + "/BedroomWife17F02.controller",
             FemaleKBaseAvatarPath,
-            new ActorClipBinding("SittingDisbelief", "Assets/casual_Female_K@Sitting_Disbelief.fbx", "mixamo.com", true, false, 0.18f, true),
-            new ActorClipBinding("SittingTalking", "Assets/Sitting_Talking.fbx", "mixamo.com", false, false, 0.18f, true),
-            new ActorClipBinding("SitToStand", "Assets/X_Bot@Sit_To_Stand.fbx", "Sit_To_Stand", false, false, 0.12f, true),
-            new ActorClipBinding("WalkLoop", "Assets/casual_Female_K@Walking.fbx", "Walking", true, false, 0.15f, true),
-            new ActorClipBinding("OpenDoorOutwards", "Assets/Open_Door_Outwards.fbx", "mixamo.com", false, false, 0.12f, true));
+            new ActorClipBinding("SittingDisbelief", "Assets/Animations/Hearth/17F02/Clips/casual_Female_K@Sitting_Disbelief.fbx", "mixamo.com", true, false, 0.18f, true),
+            new ActorClipBinding("SittingTalking", "Assets/Animations/Hearth/17F02/Clips/Sitting_Talking.fbx", "mixamo.com", false, false, 0.18f, true),
+            new ActorClipBinding("SitToStand", "Assets/Animations/Hearth/17F02/Clips/X_Bot@Sit_To_Stand.fbx", "Sit_To_Stand", false, false, 0.12f, true),
+            new ActorClipBinding("WalkLoop", "Assets/Animations/Hearth/17F02/Clips/casual_Female_K@Walking.fbx", "Walking", true, false, 0.15f, true),
+            new ActorClipBinding("OpenDoorOutwards", "Assets/Animations/Hearth/17F02/Clips/Open_Door_Outwards.fbx", "mixamo.com", false, false, 0.12f, true));
         EnableRuntimeActorObject(bedroomWife);
         SerializedObject replaySo = new SerializedObject(replayController);
         SetObject(replaySo, "bedroomWifeAnimation", bedroomWifeAnimation);
@@ -1534,14 +1534,14 @@ public static class Hearth17F02MinimalLoopBinder
     {
         return new[]
         {
-            new ActorClipBinding("SittingDisbelief", "Assets/casual_Female_K@Sitting_Disbelief.fbx", "mixamo.com", true, false, 0.18f, true),
-            new ActorClipBinding("SittingTalking", "Assets/Sitting_Talking.fbx", "mixamo.com", false, false, 0.18f, true),
-            new ActorClipBinding("SitToStand", "Assets/X_Bot@Sit_To_Stand.fbx", "Sit_To_Stand", false, false, 0.12f, true),
-            new ActorClipBinding("WalkLoop", "Assets/casual_Female_K@Walking.fbx", "Walking", true, false, 0.15f, true),
-            new ActorClipBinding("OpenDoorOutwards", "Assets/Open_Door_Outwards.fbx", "mixamo.com", false, false, 0.12f, true),
-            new ActorClipBinding("Sitting", "Assets/Sitting.fbx", "mixamo.com", true, false, 0.18f),
-            new ActorClipBinding("SittingIdle", "Assets/Sitting_Idle.fbx", "mixamo.com", true, false, 0.18f),
-            new ActorClipBinding("ButtonPushing", "Assets/Button_Pushing.fbx", "mixamo.com", true, false, 0.18f)
+            new ActorClipBinding("SittingDisbelief", "Assets/Animations/Hearth/17F02/Clips/casual_Female_K@Sitting_Disbelief.fbx", "mixamo.com", true, false, 0.18f, true),
+            new ActorClipBinding("SittingTalking", "Assets/Animations/Hearth/17F02/Clips/Sitting_Talking.fbx", "mixamo.com", false, false, 0.18f, true),
+            new ActorClipBinding("SitToStand", "Assets/Animations/Hearth/17F02/Clips/X_Bot@Sit_To_Stand.fbx", "Sit_To_Stand", false, false, 0.12f, true),
+            new ActorClipBinding("WalkLoop", "Assets/Animations/Hearth/17F02/Clips/casual_Female_K@Walking.fbx", "Walking", true, false, 0.15f, true),
+            new ActorClipBinding("OpenDoorOutwards", "Assets/Animations/Hearth/17F02/Clips/Open_Door_Outwards.fbx", "mixamo.com", false, false, 0.12f, true),
+            new ActorClipBinding("Sitting", "Assets/Animations/Hearth/17F02/Clips/Sitting.fbx", "mixamo.com", true, false, 0.18f),
+            new ActorClipBinding("SittingIdle", "Assets/Animations/Hearth/17F02/Clips/Sitting_Idle.fbx", "mixamo.com", true, false, 0.18f),
+            new ActorClipBinding("ButtonPushing", "Assets/Animations/Hearth/17F02/Clips/Button_Pushing.fbx", "mixamo.com", true, false, 0.18f)
         };
     }
 

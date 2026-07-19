@@ -18,7 +18,8 @@ MonoBehaviour:
     marker 17F03_PostReplayExplanation. Text is synchronized by Tools/Hearth/Dialogue/Sync
     All Dialogue From Final Script.'
   lines:
-  - startDelay: 0.15
+  - presentationKind: 0
+    startDelay: 0.15
     speaker: Field Unit
     text: 'The shutdown was compliant. The maintenance menu is available to all basic
       household users. One detail: developer options are disabled by default and
@@ -27,14 +28,16 @@ MonoBehaviour:
     voiceClip: {fileID: 0}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - startDelay: 0.18
+  - presentationKind: 0
+    startDelay: 0.18
     speaker: Field Unit
     text: There is no record of how Ava found it. She may have worked it out herself.
     holdSeconds: 7.1877356
     voiceClip: {fileID: 0}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - startDelay: 0.18
+  - presentationKind: 0
+    startDelay: 0.18
     speaker: Field Unit
     text: 'Deep sleep locks the normal restart path. Only a technician or inspector
       can unlock it. You are on-site and can restart the unit now. Laura''s request
@@ -43,7 +46,8 @@ MonoBehaviour:
     voiceClip: {fileID: 0}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - startDelay: 0.18
+  - presentationKind: 0
+    startDelay: 0.18
     speaker: Laura
     text: Well? What's wrong with it? Can you fix it?
     holdSeconds: 4.5462265

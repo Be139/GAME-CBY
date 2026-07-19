@@ -17,14 +17,16 @@ MonoBehaviour:
     stable marker Lobby_OpeningCloseout. Text is synchronized by Tools/Hearth/Dialogue/Sync
     All Dialogue From Final Script.'
   lines:
-  - startDelay: 0.15
+  - presentationKind: 0
+    startDelay: 0.15
     speaker: Mia
     text: Did she say what it was about?
     holdSeconds: 3.7915094
     voiceClip: {fileID: 0}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - startDelay: 0.18
+  - presentationKind: 0
+    startDelay: 0.18
     speaker: Field Unit
     text: No. That was the whole message. She wants to tell you in person. I recommend
       finishing the three inspections first, then handling the home item when you
@@ -33,7 +35,8 @@ MonoBehaviour:
     voiceClip: {fileID: 0}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - startDelay: 0.18
+  - presentationKind: 0
+    startDelay: 0.18
     speaker: Mia
     text: Okay.
     holdSeconds: 2.2

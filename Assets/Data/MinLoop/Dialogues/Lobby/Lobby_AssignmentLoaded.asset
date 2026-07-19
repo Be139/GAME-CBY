@@ -18,7 +18,8 @@ MonoBehaviour:
     marker Lobby_AssignmentLoaded. Text is synchronized by Tools/Hearth/Dialogue/Sync
     All Dialogue From Final Script.'
   lines:
-  - startDelay: 0.15
+  - presentationKind: 0
+    startDelay: 0.15
     speaker: Field Unit
     text: Inspector, companion-request volume is currently high across Building A's
       public level. The children's area, work pods, and park-side assistance points
@@ -27,14 +28,16 @@ MonoBehaviour:
     voiceClip: {fileID: 0}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - startDelay: 0.18
+  - presentationKind: 0
+    startDelay: 0.18
     speaker: Mia
     text: I can see that.
     holdSeconds: 2.6594338
     voiceClip: {fileID: 0}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - startDelay: 0.18
+  - presentationKind: 0
+    startDelay: 0.18
     speaker: Field Unit
     text: Public companion deployment in this community is one unit for every four
       residents, above the residential average. Building A is one of the company's
@@ -43,11 +46,21 @@ MonoBehaviour:
     voiceClip: {fileID: 0}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - startDelay: 0.18
+  - presentationKind: 0
+    startDelay: 0.18
     speaker: Field Unit
     text: The benefit is fewer short gaps in care. Parents can continue what they're
       doing, and child users are less likely to be left waiting without a response.
     holdSeconds: 11.338679
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - presentationKind: 0
+    startDelay: 0.18
+    speaker: Field Unit
+    text: 'Route loaded. Proceed to the elevator and call it when you''re ready.
+      Destination: Floor Seventeen.'
+    holdSeconds: 6.810377
     voiceClip: {fileID: 0}
     durationMode: 0
     voiceTailSeconds: 0.12

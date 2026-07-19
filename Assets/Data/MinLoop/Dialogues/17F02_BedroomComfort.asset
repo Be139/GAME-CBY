@@ -17,7 +17,8 @@ MonoBehaviour:
     stable marker 17F02_BedroomComfort. Text is synchronized by Tools/Hearth/Dialogue/Sync
     All Dialogue From Final Script.'
   lines:
-  - startDelay: 0.15
+  - presentationKind: 0
+    startDelay: 0.15
     speaker: 17F-02 Home Unit
     text: You kept your composure when it mattered. That was a reasonable choice,
       and it took effort. You're home now, Claire. You don't have to hold it in here.
@@ -26,14 +27,16 @@ MonoBehaviour:
     voiceClip: {fileID: 0}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - startDelay: 0.18
+  - presentationKind: 0
+    startDelay: 0.18
     speaker: Claire
     text: Yeah. Please.
     holdSeconds: 2.2
     voiceClip: {fileID: 0}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - startDelay: 0.18
+  - presentationKind: 0
+    startDelay: 0.18
     speaker: 17F-02 Synth Voice
     text: Confiding session archived.
     holdSeconds: 2.2820754

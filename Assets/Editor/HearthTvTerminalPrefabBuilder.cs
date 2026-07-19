@@ -141,6 +141,15 @@ public static class HearthTvTerminalPrefabBuilder
         audioSource.playOnAwake = false;
         audioSource.spatialBlend = 0f;
 
+        GameObject activeLoopObject = new GameObject("TerminalActiveLoop", typeof(AudioSource), typeof(HearthAudioChannelSource));
+        activeLoopObject.transform.SetParent(root.transform, false);
+        AudioSource activeLoopSource = activeLoopObject.GetComponent<AudioSource>();
+        activeLoopSource.playOnAwake = false;
+        activeLoopSource.loop = true;
+        activeLoopSource.spatialBlend = 0f;
+        activeLoopSource.volume = 0.35f;
+        activeLoopObject.GetComponent<HearthAudioChannelSource>().Configure(activeLoopSource, HearthAudioChannel.SFX, 0.35f);
+
         Image screenGlass = CreateImage(root.transform, "TerminalScreenGlass", new Rect(0f, 0f, ReferenceWidth, ReferenceHeight), new Color(0.043f, 0.063f, 0.094f, 0.58f));
         screenGlass.raycastTarget = false;
 
@@ -185,6 +194,7 @@ public static class HearthTvTerminalPrefabBuilder
 
         HearthTvTerminalController controller = root.GetComponent<HearthTvTerminalController>();
         controller.Configure(null, null, contentRect, canvasGroup, pages.ToArray(), firstSlideNumber, startingPage, DefaultTerminalZoom);
+        controller.SetActiveLoopAudio(activeLoopSource, null);
         return root;
     }
 
@@ -197,6 +207,8 @@ public static class HearthTvTerminalPrefabBuilder
         CreateImage(root.transform, "KeyboardHintBackplate", new Rect(52f, 990f, 1816f, 46f), new Color(0f, 0f, 0f, 0.28f));
         CreateText(root.transform, "KeyboardHintText", "TAB NEXT PAGE     LEFT/RIGHT SELECT     SPACE CONFIRM     ESC EXIT", new Rect(72f, 1002f, 1160f, 26f), 17f, new Color(0.76f, 0.94f, 0.94f, 0.86f), FontStyles.Normal, TextAlignmentOptions.TopLeft);
         CreateText(root.transform, "KeyboardFocusText", "PAGE 1/5", new Rect(1300f, 1002f, 548f, 26f), 18f, new Color(0.16f, 0.94f, 0.56f, 0.94f), FontStyles.Bold, TextAlignmentOptions.TopRight);
+        TMP_Text runtimePrompt = CreateText(root.transform, "RuntimePromptText", string.Empty, new Rect(560f, 92f, 800f, 38f), 19f, new Color(0.78f, 0.96f, 1f, 0.96f), FontStyles.Bold, TextAlignmentOptions.Center);
+        runtimePrompt.gameObject.SetActive(false);
     }
 
     private static void BuildSelectionHighlighter(Transform contentParent, int firstSlideNumber, Dictionary<int, SlideData> slidesByNumber)

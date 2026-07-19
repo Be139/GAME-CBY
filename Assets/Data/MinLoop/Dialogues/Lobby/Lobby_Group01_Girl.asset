@@ -17,14 +17,16 @@ MonoBehaviour:
     stable marker Lobby_Group01_Girl. Text is synchronized by Tools/Hearth/Dialogue/Sync
     All Dialogue From Final Script.'
   lines:
-  - startDelay: 0.15
+  - presentationKind: 0
+    startDelay: 0.15
     speaker: Lobby Girl
     text: "Hi, everyone. I'm\u2014"
     holdSeconds: 2.2820754
     voiceClip: {fileID: 0}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - startDelay: 0.18
+  - presentationKind: 0
+    startDelay: 0.18
     speaker: Public Unit
     text: You know it. You just rushed the first part. Start with your name and try
       it again.
@@ -32,7 +34,8 @@ MonoBehaviour:
     voiceClip: {fileID: 0}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - startDelay: 0.18
+  - presentationKind: 0
+    startDelay: 0.18
     speaker: Lobby Girl
     text: Okay.
     holdSeconds: 2.2

@@ -76,13 +76,13 @@ public static class Hearth17F01MinimalLoopBinder
         DisableActorAnimatorsByNames("little_boy_B", "casual_Male_K", "casual_Female_K", "casual_Male_G", "casual_Female_G");
         HearthActorAnimationPlayer boyAnimation = ConfigureActorAnimation(
             boy,
-            new ActorClipBinding("LayingSleeping", "Assets/Laying_Sleeping.fbx", "mixamo.com", true, false, 0.18f));
+            new ActorClipBinding("LayingSleeping", "Assets/Animations/Hearth/17F01/Clips/Laying_Sleeping.fbx", "mixamo.com", true, false, 0.18f));
         HearthActorAnimationPlayer motherAnimation = ConfigureActorAnimation(
             mother,
-            new ActorClipBinding("SittingIdle", "Assets/casual_Female_G@Sitting_Idle.fbx", "mixamo.com", true, false, 0.18f));
+            new ActorClipBinding("SittingIdle", "Assets/Animations/Hearth/17F01/Clips/casual_Female_G@Sitting_Idle.fbx", "mixamo.com", true, false, 0.18f));
         HearthActorAnimationPlayer fatherAnimation = ConfigureActorAnimation(
             father,
-            new ActorClipBinding("Sitting", "Assets/casual_Male_G@Sitting.fbx", "mixamo.com", true, false, 0.18f));
+            new ActorClipBinding("Sitting", "Assets/Animations/Hearth/17F01/Clips/casual_Male_G@Sitting.fbx", "mixamo.com", true, false, 0.18f));
 
         if (boyInteractionTarget == null && boy != null)
         {

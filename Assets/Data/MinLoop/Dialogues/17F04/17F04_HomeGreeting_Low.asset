@@ -18,7 +18,17 @@ MonoBehaviour:
     stable marker 17F04_HomeGreeting_Low. Text is synchronized by Tools/Hearth/Dialogue/Sync
     All Dialogue From Final Script.'
   lines:
-  - startDelay: 0.15
+  - presentationKind: 0
+    startDelay: 0.15
+    speaker: Field Unit
+    text: "Inspector, this is the full message your daughter left at 4:42 PM\u2014the
+      notification you received in the lobby. Please listen before entering."
+    holdSeconds: 9.451886
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - presentationKind: 0
+    startDelay: 0.18
     speaker: Lily
     text: Mom? Are you coming tomorrow? Ms. Parker said it'd be better if a real
       person came. Not just a system check-in.
@@ -26,7 +36,8 @@ MonoBehaviour:
     voiceClip: {fileID: 0}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - startDelay: 0.18
+  - presentationKind: 0
+    startDelay: 0.18
     speaker: Mia's Home Unit
     text: Mom will receive your progress report, and she'll make sure you have everything
       you need. Let's finish tonight's run-through first, okay?
@@ -34,7 +45,8 @@ MonoBehaviour:
     voiceClip: {fileID: 0}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - startDelay: 0.18
+  - presentationKind: 0
+    startDelay: 0.18
     speaker: Field Unit
     text: The reply was filed under 'attendance confirmation, bedtime routine, concurrent.'
       Standard handling. You were at 17F-01 when it was issued. Please complete the
@@ -43,7 +55,8 @@ MonoBehaviour:
     voiceClip: {fileID: 0}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - startDelay: 0.18
+  - presentationKind: 0
+    startDelay: 0.18
     speaker: Mia
     text: I know.
     holdSeconds: 2.2

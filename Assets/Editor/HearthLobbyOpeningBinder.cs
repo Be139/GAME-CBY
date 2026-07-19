@@ -19,9 +19,9 @@ public static class HearthLobbyOpeningBinder
     private const string ElevatorReferencePath = "Player/Person Controller (5)";
     private const string TaskTerminalPath = "1F (1)/TvUnitSet5";
     private const string ElevatorButtonPath = "DIKUAIunity/Group1/Group144/Rectangle2106772232";
-    private const string GirlZonePath = "1F/Girl_A_Rigged (2)/space";
-    private const string YoungManZonePath = "1F/casual_Male_G@Sitting (1)/space1";
-    private const string GrandmotherZonePath = "1F/casual_Male_G@Sitting (1)/Sitting_Idle (2)/space2";
+    private const string GirlZonePath = "1F (1)/Girl_A_Rigged (2)/space";
+    private const string YoungManZonePath = "1F (1)/casual_Male_G@Sitting (1)/space1";
+    private const string GrandmotherZonePath = "1F (1)/casual_Male_G@Sitting (1)/Sitting_Idle (2)/space2";
     private const string DialogueFolder = "Assets/Data/MinLoop/Dialogues/Lobby";
     private const string TerminalPrefabPath = "Assets/Prefabs/UI/HearthHud/Terminals/Terminal_Lobby_Assignment.prefab";
     private const string FinalScriptFileName = "HEARTH_Full_Game_Script_Expanded_Native_English_Lobby_Mia_Commentary.md";
@@ -124,8 +124,10 @@ public static class HearthLobbyOpeningBinder
 
         if (terminal != null)
         {
+            ClearPersistentListeners(terminal.OnOpened);
             ClearPersistentListeners(terminal.OnCustomPrimaryAction);
-            UnityEventTools.AddPersistentListener(terminal.OnCustomPrimaryAction, flow.AcquireAssignmentFromTerminal);
+            UnityEventTools.AddPersistentListener(terminal.OnOpened, flow.BeginAssignmentBriefingFromTerminal);
+            UnityEventTools.AddPersistentListener(terminal.OnCustomPrimaryAction, flow.ConfirmAssignmentTerminalClose);
             EditorUtility.SetDirty(terminal);
         }
 
@@ -167,6 +169,79 @@ public static class HearthLobbyOpeningBinder
         EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
         EditorSceneManager.SaveScene(SceneManager.GetActiveScene());
         Debug.Log("[HearthLobbyOpeningBinder] Captured the current formal player pose as the 17F arrival destination.");
+    }
+
+    [MenuItem("Tools/Hearth/Lobby/Show And Align Task Terminal Canvas For Editing")]
+    public static void ShowAndAlignTaskTerminalCanvasForEditing()
+    {
+        if (Application.isPlaying)
+        {
+            Debug.LogError("[HearthLobbyOpeningBinder] Exit Play Mode before editing the task terminal Canvas.");
+            return;
+        }
+
+        Transform terminalRoot = FindTransform(TaskTerminalPath);
+        if (terminalRoot == null)
+        {
+            Debug.LogError("[HearthLobbyOpeningBinder] Task terminal was not found at " + TaskTerminalPath + ".");
+            return;
+        }
+
+        HearthTvTerminalController terminal = terminalRoot.GetComponentInChildren<HearthTvTerminalController>(true);
+        Transform monitorCanvas = terminalRoot.Find("MonitorCanvas");
+        Camera terminalCamera = terminalRoot.GetComponentsInChildren<Camera>(true).FirstOrDefault(item => item.name == "Camera")
+            ?? terminalRoot.GetComponentInChildren<Camera>(true);
+        if (terminal == null || monitorCanvas == null)
+        {
+            Debug.LogError("[HearthLobbyOpeningBinder] Task terminal controller or MonitorCanvas is missing. Run Apply Ground Floor Opening Setup first.");
+            return;
+        }
+
+        Undo.RecordObject(terminal, "Show task terminal Canvas in Edit Mode");
+        terminal.SetHideCanvasWhenClosed(true);
+        terminal.SetShowCanvasInEditMode(true);
+        AlignMonitorCanvasToScreen(terminalRoot, terminalCamera);
+
+        Canvas canvas = monitorCanvas.GetComponent<Canvas>();
+        if (canvas != null)
+        {
+            Undo.RecordObject(canvas, "Enable task terminal Canvas in Edit Mode");
+            canvas.enabled = true;
+            EditorUtility.SetDirty(canvas);
+        }
+
+        EditorUtility.SetDirty(terminal);
+        EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
+        EditorSceneManager.SaveScene(SceneManager.GetActiveScene());
+        Selection.activeGameObject = monitorCanvas.gameObject;
+        Debug.Log("[HearthLobbyOpeningBinder] Task terminal Canvas is visible in Edit Mode and aligned to TaskTerminalScreenAnchor. The terminal Camera was not changed.");
+    }
+
+    [MenuItem("Tools/Hearth/Lobby/Capture Task Terminal Canvas Placement")]
+    public static void CaptureTaskTerminalCanvasPlacement()
+    {
+        if (Application.isPlaying)
+        {
+            Debug.LogError("[HearthLobbyOpeningBinder] Exit Play Mode before capturing the task terminal Canvas placement.");
+            return;
+        }
+
+        Transform terminalRoot = FindTransform(TaskTerminalPath);
+        Transform monitorCanvas = terminalRoot != null ? terminalRoot.Find("MonitorCanvas") : null;
+        Transform screenAnchor = terminalRoot != null ? terminalRoot.Find("TaskTerminalScreenAnchor") : null;
+        if (monitorCanvas == null || screenAnchor == null)
+        {
+            Debug.LogError("[HearthLobbyOpeningBinder] MonitorCanvas or TaskTerminalScreenAnchor is missing.");
+            return;
+        }
+
+        Undo.RecordObject(screenAnchor, "Capture task terminal Canvas placement");
+        screenAnchor.SetPositionAndRotation(monitorCanvas.position, monitorCanvas.rotation);
+        screenAnchor.localScale = monitorCanvas.localScale;
+        EditorUtility.SetDirty(screenAnchor);
+        EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
+        EditorSceneManager.SaveScene(SceneManager.GetActiveScene());
+        Debug.Log("[HearthLobbyOpeningBinder] Current MonitorCanvas position, rotation, and scale were saved to TaskTerminalScreenAnchor.");
     }
 
     [MenuItem("Tools/Hearth/Lobby/Validate Ground Floor Opening Setup")]
@@ -285,6 +360,14 @@ public static class HearthLobbyOpeningBinder
         audio.playOnAwake = false;
         audio.spatialBlend = 0f;
 
+        GameObject activeLoopObject = new GameObject("TerminalActiveLoop", typeof(AudioSource), typeof(HearthAudioChannelSource));
+        activeLoopObject.transform.SetParent(root.transform, false);
+        AudioSource activeLoopSource = activeLoopObject.GetComponent<AudioSource>();
+        activeLoopSource.playOnAwake = false;
+        activeLoopSource.loop = true;
+        activeLoopSource.spatialBlend = 0f;
+        activeLoopObject.GetComponent<HearthAudioChannelSource>().Configure(activeLoopSource, HearthAudioChannel.SFX, 0.35f);
+
         CreateImage(root.transform, "TerminalScreenGlass", new Rect(0f, 0f, 1920f, 1080f), new Color(0.008f, 0.025f, 0.038f, 1f));
         GameObject content = new GameObject("TerminalContentRoot", typeof(RectTransform), typeof(CanvasGroup));
         content.transform.SetParent(root.transform, false);
@@ -303,6 +386,8 @@ public static class HearthLobbyOpeningBinder
         Stretch(keyboard.GetComponent<RectTransform>());
         CreateText(keyboard.transform, "KeyboardHintText", "SPACE LOAD ASSIGNMENT     ESC EXIT", new Rect(94f, 1005f, 1000f, 34f), 18f, new Color(0.65f, 0.86f, 0.92f, 0.9f), TextAlignmentOptions.TopLeft);
         CreateText(keyboard.transform, "KeyboardFocusText", "LOAD ROUTE | SPACE", new Rect(1120f, 1005f, 700f, 34f), 19f, new Color(0.35f, 0.95f, 0.78f, 0.98f), TextAlignmentOptions.TopRight);
+        TMP_Text runtimePrompt = CreateText(keyboard.transform, "RuntimePromptText", string.Empty, new Rect(560f, 92f, 800f, 38f), 19f, new Color(0.78f, 0.96f, 1f, 0.96f), TextAlignmentOptions.Center);
+        runtimePrompt.gameObject.SetActive(false);
 
         GameObject boot = new GameObject("TerminalBootOverlay", typeof(RectTransform), typeof(CanvasGroup));
         boot.transform.SetParent(root.transform, false);
@@ -330,6 +415,7 @@ public static class HearthLobbyOpeningBinder
 
         HearthTvTerminalController controller = root.GetComponent<HearthTvTerminalController>();
         controller.Configure(null, null, content.GetComponent<RectTransform>(), rootGroup, new[] { page }, 1, HearthHudPageId.Slide01PersistentActive, 1f);
+        controller.SetActiveLoopAudio(activeLoopSource, null);
         controller.SetPrimaryAction(HearthTerminalPrimaryAction.Custom);
         controller.SetSubmitPrimaryActionFromCurrentPage(true);
         SerializedObject controllerSo = new SerializedObject(controller);
@@ -392,12 +478,14 @@ public static class HearthLobbyOpeningBinder
         Transform human,
         HearthLobbyFlowController flow)
     {
-        if (!HearthTvTerminalPrefabBuilder.StandardizeTvTerminal(terminalRoot, TerminalPrefabPath))
+        HearthTvTerminalController terminal = terminalRoot.GetComponentInChildren<HearthTvTerminalController>(true);
+        bool createdTerminal = terminal == null;
+        if (createdTerminal && !HearthTvTerminalPrefabBuilder.StandardizeTvTerminal(terminalRoot, TerminalPrefabPath))
         {
             return null;
         }
 
-        HearthTvTerminalController terminal = terminalRoot.GetComponentInChildren<HearthTvTerminalController>(true);
+        terminal = terminalRoot.GetComponentInChildren<HearthTvTerminalController>(true);
         Camera terminalCamera = terminalRoot.GetComponentsInChildren<Camera>(true).FirstOrDefault(item => item.name == "Camera")
             ?? terminalRoot.GetComponentInChildren<Camera>(true);
         Camera humanCamera = human.GetComponentInChildren<Camera>(true);
@@ -415,7 +503,9 @@ public static class HearthLobbyOpeningBinder
         terminal.SetTerminalCamera(terminalCamera);
         terminal.SetSwitchCameraWhileOpen(terminalCamera != null);
         terminal.SetHideCanvasWhenClosed(true);
+        terminal.SetShowCanvasInEditMode(true);
         terminal.SetChoiceInputEnabled(true);
+        EnsureRuntimePromptText(terminal);
 
         SerializedObject terminalSo = new SerializedObject(terminal);
         SetBool(terminalSo, "closeTerminalWhenReplayStarts", false);
@@ -431,8 +521,11 @@ public static class HearthLobbyOpeningBinder
             if (listener != null) listener.enabled = false;
         }
 
-        AlignMonitorCanvasToScreen(terminalRoot, terminalCamera);
-        FitTerminalColliderToScreen(terminalRoot);
+        if (createdTerminal)
+        {
+            AlignMonitorCanvasToScreen(terminalRoot, terminalCamera);
+            FitTerminalColliderToScreen(terminalRoot);
+        }
 
         foreach (HearthTvTerminalInteractable oldInteractable in terminalRoot.GetComponents<HearthTvTerminalInteractable>())
         {
@@ -576,6 +669,31 @@ public static class HearthLobbyOpeningBinder
 
     private static LobbyUiReferences EnsureLobbyUi(Transform uiRoot)
     {
+        Transform existingNarrative = FindDirectChild(uiRoot, "LobbyNarrativeCanvas");
+        Transform existingBlackout = FindDirectChild(uiRoot, "LobbyBlackoutCanvas");
+        HearthLobbyHudOverlay existingOverlay = existingNarrative != null
+            ? existingNarrative.GetComponentInChildren<HearthLobbyHudOverlay>(true)
+            : null;
+        HearthScreenFader existingFader = existingBlackout != null
+            ? existingBlackout.GetComponentInChildren<HearthScreenFader>(true)
+            : null;
+        if (existingOverlay != null && existingFader != null)
+        {
+            Transform existingActivation = existingOverlay.transform.Find("ActivationPanel");
+            RectTransform activationRect = existingActivation != null
+                ? existingActivation.GetComponent<RectTransform>()
+                : null;
+            if (activationRect != null && Mathf.Abs(activationRect.anchoredPosition.y + 72f) < 0.5f)
+            {
+                activationRect.anchoredPosition = new Vector2(activationRect.anchoredPosition.x, -190f);
+            }
+
+            ReplaceText(existingOverlay.transform, "ExpandedLilyMessage/MessageMeta", "FROM  LILY\nTIME  4:42 PM");
+            ReplaceText(existingOverlay.transform, "PinnedLilyMessage/PinnedMessage", "LILY VOICE MESSAGE  /  READ  /  4:42 PM");
+            EditorUtility.SetDirty(existingOverlay);
+            return new LobbyUiReferences { Overlay = existingOverlay, Fader = existingFader };
+        }
+
         DestroyDirectChild(uiRoot, "LobbyNarrativeCanvas");
         DestroyDirectChild(uiRoot, "LobbyBlackoutCanvas");
 
@@ -595,7 +713,7 @@ public static class HearthLobbyOpeningBinder
         overlayObject.transform.SetParent(narrativeCanvasObject.transform, false);
         Stretch(overlayObject.GetComponent<RectTransform>());
 
-        CanvasGroup activation = CreateGroup(overlayObject.transform, "ActivationPanel", new Rect(88f, 72f, 690f, 148f));
+        CanvasGroup activation = CreateGroup(overlayObject.transform, "ActivationPanel", new Rect(88f, 190f, 690f, 148f));
         CreateImage(activation.transform, "ActivationBack", new Rect(0f, 0f, 690f, 148f), new Color(0.015f, 0.05f, 0.075f, 0.32f));
         CreateImage(activation.transform, "ActivationRule", new Rect(0f, 0f, 4f, 148f), new Color(0.35f, 0.91f, 0.98f, 0.92f));
         CreateText(activation.transform, "ActivationTitle", "FIELD COMPANION UNIT  /  ACTIVATED", new Rect(24f, 20f, 620f, 34f), 19f, new Color(0.45f, 0.9f, 0.98f, 0.98f), TextAlignmentOptions.TopLeft);
@@ -605,13 +723,13 @@ public static class HearthLobbyOpeningBinder
         CreateImage(expanded.transform, "MessageBack", new Rect(0f, 0f, 550f, 292f), new Color(0.015f, 0.04f, 0.062f, 0.58f));
         AddBorder(expanded.transform, new Rect(0f, 0f, 550f, 292f), new Color(0.32f, 0.82f, 0.92f, 0.55f), 1.5f);
         CreateText(expanded.transform, "MessageHeader", "INCOMING VOICE MESSAGE", new Rect(24f, 20f, 500f, 34f), 18f, new Color(0.42f, 0.9f, 0.98f, 0.98f), TextAlignmentOptions.TopLeft);
-        CreateText(expanded.transform, "MessageMeta", "FROM  LILY\nTIME  5:48 PM", new Rect(24f, 60f, 500f, 54f), 17f, Color.white, TextAlignmentOptions.TopLeft);
+        CreateText(expanded.transform, "MessageMeta", "FROM  LILY\nTIME  4:42 PM", new Rect(24f, 60f, 500f, 54f), 17f, Color.white, TextAlignmentOptions.TopLeft);
         CreateText(expanded.transform, "MessageTranscript", "Mom, are you getting home late tonight?\nI wanted to tell you something.\nWe can talk when you get home. I'll wait for you.\n...Don't forget, okay?", new Rect(24f, 128f, 500f, 140f), 18f, new Color(0.86f, 0.94f, 0.98f, 0.96f), TextAlignmentOptions.TopLeft);
 
         CanvasGroup pinned = CreateGroup(overlayObject.transform, "PinnedLilyMessage", new Rect(1370f, 72f, 460f, 112f));
         CreateImage(pinned.transform, "PinnedBack", new Rect(0f, 0f, 460f, 112f), new Color(0.012f, 0.035f, 0.052f, 0.34f));
         CreateImage(pinned.transform, "PinnedRule", new Rect(0f, 0f, 3f, 112f), new Color(0.32f, 0.82f, 0.92f, 0.75f));
-        CreateText(pinned.transform, "PinnedMessage", "LILY VOICE MESSAGE  /  READ  /  5:48 PM", new Rect(18f, 16f, 420f, 30f), 16f, new Color(0.65f, 0.88f, 0.94f, 0.94f), TextAlignmentOptions.TopLeft);
+        CreateText(pinned.transform, "PinnedMessage", "LILY VOICE MESSAGE  /  READ  /  4:42 PM", new Rect(18f, 16f, 420f, 30f), 16f, new Color(0.65f, 0.88f, 0.94f, 0.94f), TextAlignmentOptions.TopLeft);
         TMP_Text status = CreateText(pinned.transform, "AssignmentStatus", "ASSIGNMENT NOT LOADED", new Rect(18f, 62f, 420f, 30f), 16f, new Color(0.45f, 0.95f, 0.78f, 0.94f), TextAlignmentOptions.TopLeft);
 
         HearthLobbyHudOverlay overlay = overlayObject.GetComponent<HearthLobbyHudOverlay>();
@@ -687,6 +805,7 @@ public static class HearthLobbyOpeningBinder
         SetFloat(so, "startupFadeSeconds", 0.35f);
         SetFloat(so, "transitionFadeOutSeconds", 0.5f);
         SetFloat(so, "transitionFadeInSeconds", 0.5f);
+        SetFloat(so, "assignmentTerminalMinimumViewSeconds", 5f);
         so.ApplyModifiedPropertiesWithoutUndo();
     }
 
@@ -801,7 +920,8 @@ public static class HearthLobbyOpeningBinder
                 L("Field Unit", "Inspector, companion-request volume is currently high across Building A's public level. The children's area, work pods, and park-side assistance points are all connected to the synchronized network."),
                 L("Mia", "I can see that."),
                 L("Field Unit", "Public companion deployment in this community is one unit for every four residents, above the residential average. Building A is one of the company's priority demonstration sites."),
-                L("Field Unit", "The benefit is fewer short gaps in care. Parents can continue what they're doing, and child users are less likely to be left waiting without a response.")
+                L("Field Unit", "The benefit is fewer short gaps in care. Parents can continue what they're doing, and child users are less likely to be left waiting without a response."),
+                L("Field Unit", "Route loaded. Proceed to the elevator and call it when you're ready. Destination: Floor Seventeen.")
             });
         library.Elevator = EnsureDialogue(
             "Lobby_ElevatorRide",
@@ -975,6 +1095,44 @@ public static class HearthLobbyOpeningBinder
         text.overflowMode = TextOverflowModes.Truncate;
         text.raycastTarget = false;
         return text;
+    }
+
+    private static void EnsureRuntimePromptText(HearthTvTerminalController terminal)
+    {
+        if (terminal == null)
+        {
+            return;
+        }
+
+        Transform keyboard = terminal.transform.Find("KeyboardNavigationRoot");
+        if (keyboard == null || keyboard.Find("RuntimePromptText") != null)
+        {
+            return;
+        }
+
+        TMP_Text prompt = CreateText(
+            keyboard,
+            "RuntimePromptText",
+            string.Empty,
+            new Rect(560f, 92f, 800f, 38f),
+            19f,
+            new Color(0.78f, 0.96f, 1f, 0.96f),
+            TextAlignmentOptions.Center);
+        prompt.fontStyle = FontStyles.Bold;
+        prompt.gameObject.SetActive(false);
+    }
+
+    private static void ReplaceText(Transform root, string path, string value)
+    {
+        Transform target = root != null ? root.Find(path) : null;
+        TMP_Text text = target != null ? target.GetComponent<TMP_Text>() : null;
+        if (text == null)
+        {
+            return;
+        }
+
+        text.text = value;
+        EditorUtility.SetDirty(text);
     }
 
     private static void AddBorder(Transform parent, Rect rect, Color color, float thickness)

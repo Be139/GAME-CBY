@@ -23,6 +23,7 @@ public static class HearthStorySfxBinder
         public float volume;
         public float minDistance;
         public float maxDistance;
+        public HearthAudioChannel channel;
     }
 
     [MenuItem(MenuRoot + "Apply Story SFX Placeholder Setup")]
@@ -36,6 +37,9 @@ public static class HearthStorySfxBinder
         }
 
         Transform audioRoot = EnsureHierarchy(AudioRootPath);
+        ConfigureGlobal(audioRoot);
+        ConfigureLobby(audioRoot);
+        Configure17F01(audioRoot);
         Configure17F02(audioRoot);
         Configure17F03(audioRoot);
         Configure17F04(audioRoot);
@@ -56,13 +60,20 @@ public static class HearthStorySfxBinder
         int assignedClipCount = 0;
         int reservedCount = 0;
 
+        ValidatePlayer("MIN_LOOP_ROOT/Audio/StorySFX_Global", 9, issues, ref cueCount, ref assignedClipCount, ref reservedCount);
+        ValidatePlayer("MIN_LOOP_ROOT/Audio/StorySFX_Lobby", 9, issues, ref cueCount, ref assignedClipCount, ref reservedCount);
+        ValidatePlayer("MIN_LOOP_ROOT/Audio/StorySFX_17F01", 6, issues, ref cueCount, ref assignedClipCount, ref reservedCount);
         ValidatePlayer("MIN_LOOP_ROOT/Audio/StorySFX_17F02", 7, issues, ref cueCount, ref assignedClipCount, ref reservedCount);
         ValidatePlayer("MIN_LOOP_ROOT/Audio/StorySFX_17F03", 6, issues, ref cueCount, ref assignedClipCount, ref reservedCount);
-        ValidatePlayer("MIN_LOOP_ROOT/Audio/StorySFX_17F04", 2, issues, ref cueCount, ref assignedClipCount, ref reservedCount);
+        ValidatePlayer("MIN_LOOP_ROOT/Audio/StorySFX_17F04", 8, issues, ref cueCount, ref assignedClipCount, ref reservedCount);
 
+        HearthLobbyFlowController lobby = UnityEngine.Object.FindObjectOfType<HearthLobbyFlowController>(true);
+        HearthCompanion17F01ReplayController replay17F01 = UnityEngine.Object.FindObjectOfType<HearthCompanion17F01ReplayController>(true);
         HearthCompanion17F02ReplayController replay17F02 = UnityEngine.Object.FindObjectOfType<HearthCompanion17F02ReplayController>(true);
         HearthCompanion17F03ReplayController replay17F03 = UnityEngine.Object.FindObjectOfType<HearthCompanion17F03ReplayController>(true);
         Hearth17F04FinaleController finale17F04 = UnityEngine.Object.FindObjectOfType<Hearth17F04FinaleController>(true);
+        ValidateControllerBinding(lobby, "sfxCuePlayer", "StorySFX_Lobby", issues);
+        ValidateControllerBinding(replay17F01, "sfxCuePlayer", "StorySFX_17F01", issues);
         ValidateControllerBinding(replay17F02, "sfxCuePlayer", "StorySFX_17F02", issues);
         ValidateControllerBinding(replay17F03, "sfxCuePlayer", "StorySFX_17F03", issues);
         ValidateControllerBinding(finale17F04, "sfxCuePlayer", "StorySFX_17F04", issues);
@@ -97,6 +108,88 @@ public static class HearthStorySfxBinder
                 "[HearthStorySfxBinder] Validation found " + issues.Count + " issue(s):\n- " +
                 string.Join("\n- ", issues.ToArray()));
         }
+    }
+
+    private static void ConfigureGlobal(Transform audioRoot)
+    {
+        CueSpec[] specs =
+        {
+            Spec("UI.InteractSingle", "TBD_Global_UI_InteractSingle", "Reserved common single-press E feedback. Assign one restrained UI confirmation clip, then route special interactions here only when they do not already own a dedicated clip.", false, false, null, 0f, 0.8f, 1f, 1f),
+            Spec("UI.HoldProgress", "TBD_Global_UI_HoldProgress", "Reserved loop/tick bed for long-hold interactions. The hold widgets may keep their dedicated clip fields; use this as the shared fallback.", false, true, null, 0f, 0.55f, 1f, 1f),
+            Spec("UI.HoldComplete", "TBD_Global_UI_HoldComplete", "Reserved completion cue when a long-hold interaction reaches 100 percent.", false, false, null, 0f, 0.8f, 1f, 1f),
+            Spec("UI.Confirm", "TBD_Global_UI_Confirm", "Reserved shared confirm/submit cue for non-terminal UI.", false, false, null, 0f, 0.8f, 1f, 1f),
+            Spec("Transition.Blackout", "TBD_Global_Transition_Blackout", "Reserved short tonal transition for fade-to-black scene changes.", false, false, null, 0f, 0.65f, 1f, 1f),
+            Spec("Transition.CameraMove", "TBD_Global_Transition_CameraMove", "Reserved subtle camera glide cue for smooth fixed-view transitions.", false, false, null, 0f, 0.55f, 1f, 1f),
+            Spec("Terminal.PageSwitch", "TBD_Global_Terminal_PageSwitch", "Shared fallback for terminal page switching. Prefer each HearthTvTerminalController Page Switch Clip when a terminal needs a unique sound.", false, false, null, 0f, 0.7f, 1f, 1f),
+            Spec("Terminal.FocusMove", "TBD_Global_Terminal_FocusMove", "Shared fallback for keyboard focus movement inside terminal menus.", false, false, null, 0f, 0.62f, 1f, 1f),
+            Spec("Terminal.Submit", "TBD_Global_Terminal_Submit", "Shared fallback for terminal confirmation. Prefer the terminal Submit Clip field for per-terminal variation.", false, false, null, 0f, 0.78f, 1f, 1f),
+        };
+
+        ConfigurePlayer(audioRoot, "StorySFX_Global", specs);
+    }
+
+    private static void ConfigureLobby(Transform audioRoot)
+    {
+        HearthLobbyFlowController controller = UnityEngine.Object.FindObjectOfType<HearthLobbyFlowController>(true);
+        if (controller == null)
+        {
+            Debug.LogWarning("[HearthStorySfxBinder] Lobby flow controller was not found; its SFX placeholders were not created.");
+            return;
+        }
+
+        HearthTvTerminalController terminal = GetObject<HearthTvTerminalController>(controller, "assignmentTerminal");
+        Transform elevatorButton = FindTransform("DIKUAIunity/Group1/Group144/Rectangle2106772232");
+        CueSpec[] specs =
+        {
+            Spec("Lobby.RoomTone", "AUTO_Lobby_RoomTone", "Loops from the opening briefing through free lobby exploration, then stops when the elevator transition begins.", true, true, null, 0f, 0.42f, 1f, 1f, HearthAudioChannel.Ambient),
+            Spec("AssignmentTerminal.Hum", "TBD_Lobby_AssignmentTerminal_Hum", "Reserved spatial terminal electrical hum. Assign the same clip to the terminal Active Loop Clip when it must start and stop exactly with the terminal screen.", false, true, terminal != null ? terminal.transform : null, 1f, 0.35f, 0.6f, 7f),
+            Spec("AssignmentTerminal.Confirm", "AUTO_Lobby_AssignmentTerminal_Confirm", "Plays once when the assignment is successfully loaded.", true, false, terminal != null ? terminal.transform : null, 1f, 0.75f, 0.6f, 7f),
+            Spec("Elevator.Button", "AUTO_Lobby_Elevator_Button", "Plays when the unlocked elevator button is pressed.", true, false, elevatorButton, 1f, 0.75f, 0.5f, 6f),
+            Spec("Elevator.DoorsClose", "AUTO_Lobby_Elevator_DoorsClose", "Plays as the fade into the elevator begins. Replace with a door-close clip after the elevator prop timing is finalized.", true, false, elevatorButton, 1f, 0.75f, 1f, 12f),
+            Spec("Elevator.Motor", "AUTO_Lobby_Elevator_Motor", "Loops while the elevator briefing is playing and stops before arrival.", true, true, null, 0f, 0.52f, 1f, 1f, HearthAudioChannel.Ambient),
+            Spec("Elevator.Arrival", "AUTO_Lobby_Elevator_Arrival", "Plays after the elevator dialogue and before the floor-17 transition.", true, false, elevatorButton, 1f, 0.72f, 1f, 12f),
+            Spec("Elevator.DoorsOpen", "AUTO_Lobby_Elevator_DoorsOpen", "Plays with the arrival transition before the player appears on floor 17.", true, false, elevatorButton, 1f, 0.75f, 1f, 12f),
+            Spec("Corridor.RoomTone", "AUTO_17F_Corridor_RoomTone", "Starts when the player arrives on floor 17. Stop or replace it from later scene ambience controllers when entering a household replay.", true, true, null, 0f, 0.38f, 1f, 1f, HearthAudioChannel.Ambient),
+        };
+
+        HearthSfxCuePlayer player = ConfigurePlayer(audioRoot, "StorySFX_Lobby", specs);
+        if (terminal != null)
+        {
+            Undo.RecordObject(terminal, "Bind assignment terminal active loop cue");
+            terminal.SetActiveLoopCue(player, "AssignmentTerminal.Hum");
+            EditorUtility.SetDirty(terminal);
+        }
+
+        Undo.RecordObject(controller, "Bind lobby story SFX");
+        controller.SetSfxCuePlayer(player);
+        EditorUtility.SetDirty(controller);
+    }
+
+    private static void Configure17F01(Transform audioRoot)
+    {
+        HearthCompanion17F01ReplayController controller = UnityEngine.Object.FindObjectOfType<HearthCompanion17F01ReplayController>(true);
+        if (controller == null)
+        {
+            Debug.LogWarning("[HearthStorySfxBinder] 17F01 replay controller was not found; its SFX placeholders were not created.");
+            return;
+        }
+
+        Transform robot = GetObject<Transform>(controller, "robotRoot");
+        Transform livingAnchor = GetObject<Transform>(controller, "livingRoomStartAnchor");
+        CueSpec[] specs =
+        {
+            Spec("Bedroom.RoomTone", "AUTO_17F01_Bedroom_RoomTone", "Loops during the boy bedroom replay. Intentionally excludes boy breathing, sheets and sleep movement sounds.", true, true, null, 0f, 0.34f, 1f, 1f, HearthAudioChannel.Ambient),
+            Spec("LivingRoom.RoomTone", "AUTO_17F01_LivingRoom_RoomTone", "Loops during the living-room observation and stops when returning to the terminal.", true, true, null, 0f, 0.34f, 1f, 1f, HearthAudioChannel.Ambient),
+            Spec("Replay.SceneTransition", "AUTO_17F01_Replay_SceneTransition", "Plays when the replay moves from the bedside scene to the living-room observation.", true, false, null, 0f, 0.6f, 1f, 1f),
+            Spec("Interaction.ComfortConfirmed", "AUTO_17F01_Comfort_Confirmed", "Plays after the boy interaction hold completes and the soothing scene starts.", true, false, robot, 0.35f, 0.72f, 1f, 7f),
+            Spec("Parent.TableFoley", "TBD_17F01_Parent_TableFoley", "Reserved restrained table or chair foley during the living-room parent conversation. Trigger it only after exact subtitle timing is chosen.", false, false, livingAnchor, 1f, 0.45f, 1f, 8f),
+            Spec("Robot.ServoLoop", "TBD_17F01_Robot_ServoLoop", "Reserved companion-unit movement servo loop. Do not use human footsteps for the robot.", false, true, robot, 1f, 0.42f, 0.8f, 8f),
+        };
+
+        HearthSfxCuePlayer player = ConfigurePlayer(audioRoot, "StorySFX_17F01", specs);
+        Undo.RecordObject(controller, "Bind 17F01 story SFX");
+        controller.SetSfxCuePlayer(player);
+        EditorUtility.SetDirty(controller);
     }
 
     private static void Configure17F02(Transform audioRoot)
@@ -173,11 +266,25 @@ public static class HearthStorySfxBinder
 
         CueSpec[] specs =
         {
+            Spec("Home.RoomTone", "TBD_17F04_Home_RoomTone", "Reserved living-room ambience for Mia's home. Start and stop it from the finale flow after the final environment mix is approved.", false, true, null, 0f, 0.34f, 1f, 1f, HearthAudioChannel.Ambient),
+            Spec("DaughterRoom.RoomTone", "TBD_17F04_DaughterRoom_RoomTone", "Reserved daughter-room ambience. Use a separate loop only if the room needs a distinct acoustic bed from the living room.", false, true, null, 0f, 0.32f, 1f, 1f, HearthAudioChannel.Ambient),
             Spec("Photo.Memory", "AUTO_17F04_Photo_Memory", "Plays when the player starts the TV4 photo inspection. The camera transition remains controlled by the photo-frame script.", true, false, photo != null ? photo.transform : null, 1f, 0.65f, 1f, 8f),
+            Spec("Popup.Spawn", "AUTO_17F04_Popup_Spawn", "Plays for each low-trust shutdown warning that enters the screen. Keep it short so dense waves remain readable.", true, false, null, 0f, 0.42f, 1f, 1f),
+            Spec("Popup.Dismiss", "AUTO_17F04_Popup_Dismiss", "Plays each time Space dismisses one shutdown warning.", true, false, null, 0f, 0.5f, 1f, 1f),
+            Spec("Popup.WaveEscalate", "AUTO_17F04_Popup_WaveEscalate", "Plays once as warning wave two or three begins.", true, false, null, 0f, 0.72f, 1f, 1f),
+            Spec("Popup.Success", "AUTO_17F04_Popup_Success", "Plays once after all warning waves are cleared or high-trust shutdown is confirmed.", true, false, null, 0f, 0.78f, 1f, 1f),
             Spec("Unit.PowerOff", "AUTO_17F04_Unit_PowerOff", "Plays once after the high/low-trust shutdown challenge succeeds.", true, false, unit != null ? unit.transform : null, 1f, 0.9f, 1f, 9f),
         };
 
         HearthSfxCuePlayer player = ConfigurePlayer(audioRoot, "StorySFX_17F04", specs);
+        HearthVirusPopupShutdownChallenge popupChallenge = UnityEngine.Object.FindObjectOfType<HearthVirusPopupShutdownChallenge>(true);
+        if (popupChallenge != null)
+        {
+            Undo.RecordObject(popupChallenge, "Bind 17F04 popup SFX");
+            popupChallenge.SetSfxCuePlayer(player);
+            EditorUtility.SetDirty(popupChallenge);
+        }
+
         Undo.RecordObject(controller, "Bind 17F04 story SFX");
         controller.SetSfxCuePlayer(player);
         EditorUtility.SetDirty(controller);
@@ -211,6 +318,7 @@ public static class HearthStorySfxBinder
             cue.FindPropertyRelative("placementNote").stringValue = spec.note;
             cue.FindPropertyRelative("automaticallyTriggered").boolValue = spec.automatic;
             cue.FindPropertyRelative("loop").boolValue = spec.loop;
+            cue.FindPropertyRelative("channel").enumValueIndex = (int)spec.channel;
             cue.FindPropertyRelative("followTarget").objectReferenceValue = spec.followTarget;
             cue.FindPropertyRelative("followWhilePlaying").boolValue = true;
             cue.FindPropertyRelative("spatialBlend").floatValue = spec.spatialBlend;
@@ -220,7 +328,6 @@ public static class HearthStorySfxBinder
             if (wasNew)
             {
                 cue.FindPropertyRelative("restartIfPlaying").boolValue = true;
-                cue.FindPropertyRelative("channel").enumValueIndex = (int)HearthAudioChannel.SFX;
                 cue.FindPropertyRelative("baseVolume").floatValue = spec.volume;
                 cue.FindPropertyRelative("pitch").floatValue = 1f;
                 cue.FindPropertyRelative("randomPitchRange").floatValue = spec.loop ? 0f : 0.025f;
@@ -303,7 +410,7 @@ public static class HearthStorySfxBinder
             channel = Undo.AddComponent<HearthAudioChannelSource>(sourceTransform.gameObject);
         }
 
-        channel.Configure(source, HearthAudioChannel.SFX, spec.volume);
+        channel.Configure(source, spec.channel, spec.volume);
         EditorUtility.SetDirty(source);
         EditorUtility.SetDirty(channel);
         return source;
@@ -359,7 +466,8 @@ public static class HearthStorySfxBinder
         float spatialBlend,
         float volume,
         float minDistance,
-        float maxDistance)
+        float maxDistance,
+        HearthAudioChannel channel = HearthAudioChannel.SFX)
     {
         return new CueSpec
         {
@@ -373,6 +481,7 @@ public static class HearthStorySfxBinder
             volume = volume,
             minDistance = minDistance,
             maxDistance = maxDistance,
+            channel = channel,
         };
     }
 

@@ -17,7 +17,8 @@ MonoBehaviour:
     stable marker 17F02_TerminalIntro. Text is synchronized by Tools/Hearth/Dialogue/Sync
     All Dialogue From Final Script.'
   lines:
-  - startDelay: 0.15
+  - presentationKind: 0
+    startDelay: 0.15
     speaker: Field Unit
     text: Ben forced this unit offline at 6:47, Inspector. There is no live feed,
       though the household file and safety record are intact. Badge in and open the
@@ -26,7 +27,8 @@ MonoBehaviour:
     voiceClip: {fileID: 0}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - startDelay: 0.18
+  - presentationKind: 0
+    startDelay: 0.18
     speaker: Field Unit
     text: Playback continues until the shutdown. After that, there is no video, only
       safety-record audio. Start when you're ready.

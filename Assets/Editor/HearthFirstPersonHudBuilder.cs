@@ -70,6 +70,16 @@ public static class HearthFirstPersonHudBuilder
         RectTransform[] menuTargets = CreateMenuTargets(focusLayer, FindSlide(layout, 3));
         RectTransform finalFocus = CreateFocusRect(focusLayer, "FinalChoiceFocus", new Color(0.18f, 0.6f, 0.85f, 0.14f));
         RectTransform[] finalTargets = CreateFinalChoiceTargets(focusLayer, FindSlide(layout, 9));
+        TMP_Text finalChoiceHint = CreateText(
+            focusLayer,
+            "FinalChoiceInputHint",
+            "LEFT / RIGHT  SELECT     SPACE  CONFIRM",
+            new RectData(560f, 72f, 800f, 36f),
+            18f,
+            new Color(0.78f, 0.96f, 1f, 0.96f),
+            FontStyles.Bold,
+            TextAlignmentOptions.Center);
+        finalChoiceHint.gameObject.SetActive(false);
         RectTransform settingsFocus = CreateFocusRect(focusLayer, "SettingsFocus", new Color(0.18f, 0.6f, 0.85f, 0.14f));
         RectTransform[] settingsTargets = CreateSettingsTargets(focusLayer, FindSlide(layout, 22));
 
@@ -89,8 +99,9 @@ public static class HearthFirstPersonHudBuilder
             playerControlLock);
         BindHistoryView(historyView, historyRows, historyShiftTexts, historyTrustTexts);
 
-        BindInput(input, controller, settingsView);
+        BindInput(input, controller, settingsView, finalChoiceHint);
         BindSettingsView(settingsView, settingsFocus, settingsTargets, audioSettings);
+        HearthRuntimeInterfaceBinder.EnsurePromptForHudRoot(root, false);
 
         PrefabUtility.SaveAsPrefabAsset(root, RootPrefabPath);
         UnityEngine.Object.DestroyImmediate(root);
@@ -126,6 +137,8 @@ public static class HearthFirstPersonHudBuilder
             rect.anchoredPosition = new Vector2(ReferenceWidth * 0.5f, ReferenceHeight * 0.5f);
             rect.sizeDelta = new Vector2(ReferenceWidth, ReferenceHeight);
         }
+
+        HearthRuntimeInterfaceBinder.BindFormalInteractionPromptsInOpenScene();
 
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
         Debug.Log("[HearthFirstPersonHudBuilder] Applied vector HearthHudRoot to the open scene.");
@@ -738,11 +751,16 @@ public static class HearthFirstPersonHudBuilder
         serialized.ApplyModifiedPropertiesWithoutUndo();
     }
 
-    private static void BindInput(HearthFirstPersonHudInput input, HearthFirstPersonHudController controller, HearthSettingsView settingsView)
+    private static void BindInput(
+        HearthFirstPersonHudInput input,
+        HearthFirstPersonHudController controller,
+        HearthSettingsView settingsView,
+        TMP_Text finalChoiceHint)
     {
         SerializedObject serialized = new SerializedObject(input);
         SetObject(serialized, "controller", controller);
         SetObject(serialized, "settingsView", settingsView);
+        SetObject(serialized, "finalChoiceHintText", finalChoiceHint);
         serialized.ApplyModifiedPropertiesWithoutUndo();
     }
 

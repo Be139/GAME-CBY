@@ -14,16 +14,16 @@ using UnityEngine.UI;
 public static class Hearth17F03MinimalLoopBinder
 {
     private const string DialogueFolder = "Assets/Data/MinLoop/Dialogues";
-    private const string AnimationFolder = "Assets/Animations/Hearth17F03";
-    private const string MotherBasePath = "Assets/action/casual_Female_G@Sit_To_Stand.fbx";
-    private const string MotherArguingPath = "Assets/action/casual_Female_G@Standing_Arguing.fbx";
-    private const string MotherTalkingPath = "Assets/action/casual_Female_G@Talking.fbx";
-    private const string DaughterCodePath = "Assets/action/casual_Female_K@Entering_Code.fbx";
-    private const string DaughterWalkPath = "Assets/action/casual_Female_K@Female_Walk.fbx";
-    private const string DaughterSittingPath = "Assets/action/casual_Female_K@Male_Sitting_Pose.fbx";
-    private const string DaughterSitupPath = "Assets/action/casual_Female_K@Situp_To_Idle.fbx";
-    private const string DaughterTalkingPath = "Assets/action/casual_Female_K@Talking.fbx";
-    private const string FatherBasePath = "Assets/action/Doctor_Male_B@Male_Sitting_Pose.fbx";
+    private const string AnimationFolder = "Assets/Animations/Hearth/17F03/Controllers";
+    private const string MotherBasePath = "Assets/Animations/Hearth/17F03/Clips/casual_Female_G@Sit_To_Stand.fbx";
+    private const string MotherArguingPath = "Assets/Animations/Hearth/17F03/Clips/casual_Female_G@Standing_Arguing.fbx";
+    private const string MotherTalkingPath = "Assets/Animations/Hearth/17F03/Clips/casual_Female_G@Talking.fbx";
+    private const string DaughterCodePath = "Assets/Animations/Hearth/17F03/Clips/casual_Female_K@Entering_Code.fbx";
+    private const string DaughterWalkPath = "Assets/Animations/Hearth/17F03/Clips/casual_Female_K@Female_Walk.fbx";
+    private const string DaughterSittingPath = "Assets/Animations/Hearth/17F03/Clips/casual_Female_K@Male_Sitting_Pose.fbx";
+    private const string DaughterSitupPath = "Assets/Animations/Hearth/17F03/Clips/casual_Female_K@Situp_To_Idle.fbx";
+    private const string DaughterTalkingPath = "Assets/Animations/Hearth/17F03/Clips/casual_Female_K@Talking.fbx";
+    private const string FatherBasePath = "Assets/Animations/Hearth/17F03/Clips/Doctor_Male_B@Male_Sitting_Pose.fbx";
     private const string ReplayRoomPath = "MIN_LOOP_ROOT/ReplayRoom_17F03";
     private const string RuntimeActorsPath = ReplayRoomPath + "/RuntimeActors";
     private const string StagingPreviewRootName = "StagingPreview_17F03";

@@ -1,12 +1,15 @@
 using System;
+using TMPro;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.UI;
 
 public static class HearthRuntimeInterfaceBinder
 {
     private const string MenuRoot = "Tools/Hearth/Systems/";
     private const string HudPrefabPath = "Assets/Prefabs/UI/HearthHud/HearthHudRoot.prefab";
+    private const string CompanionHudPrefabPath = "Assets/Prefabs/UI/HearthHud/Companion/HearthCompanionHudRoot.prefab";
 
     [MenuItem(MenuRoot + "Apply HUD Audio And English Prompt Fixes")]
     public static void ApplyCurrentSceneSetup()
@@ -33,6 +36,8 @@ public static class HearthRuntimeInterfaceBinder
         BindDialogueSources();
         BindNamedAmbientSources();
         BindHudAndTerminalSources();
+        EnsureInteractionPromptPrefabs();
+        BindFormalInteractionPromptsInOpenScene();
         ApplyEnglishInteractionCopy();
 
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
@@ -57,6 +62,8 @@ public static class HearthRuntimeInterfaceBinder
 
         warnings += ValidateFootstepProfile("Player/Person Controller/First Person Audio", HearthFootstepRole.Human);
         warnings += ValidateFootstepProfile("Player/Robot Controller/Robot First Person Audio", HearthFootstepRole.Companion);
+        warnings += ValidateInteractionPromptBinding("Player/Person Controller", "HearthHudRoot");
+        warnings += ValidateInteractionPromptBinding("Player/Robot Controller", "HearthCompanionHudRoot");
         warnings += ValidateNamedAmbientSources();
 
         MonoBehaviour[] behaviours = UnityEngine.Object.FindObjectsOfType<MonoBehaviour>(true);
@@ -95,6 +102,235 @@ public static class HearthRuntimeInterfaceBinder
         {
             Debug.LogWarning("[HearthRuntimeInterfaceBinder] Validation finished with " + warnings + " warning(s). Review the Console entries above.");
         }
+    }
+
+    [MenuItem(MenuRoot + "Repair Interaction Prompt Bindings")]
+    public static void RepairInteractionPromptBindings()
+    {
+        if (!EditorSceneManager.GetActiveScene().IsValid())
+        {
+            Debug.LogError("[HearthRuntimeInterfaceBinder] No valid scene is open.");
+            return;
+        }
+
+        EnsureInteractionPromptPrefabs();
+        BindFormalInteractionPromptsInOpenScene();
+        EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+        EditorSceneManager.SaveOpenScenes();
+        AssetDatabase.SaveAssets();
+
+        Debug.Log("[HearthRuntimeInterfaceBinder] Restored the human and companion interaction prompt layers and bindings.");
+        ValidateCurrentSceneSetup();
+    }
+
+    public static GameObject EnsurePromptForHudRoot(GameObject hudRoot, bool companion)
+    {
+        if (hudRoot == null)
+        {
+            return null;
+        }
+
+        string layerName = companion ? "InteractionLayer" : "InteractionPromptLayer";
+        Transform layer = hudRoot.transform.Find(layerName);
+        if (layer == null)
+        {
+            GameObject layerObject = new GameObject(layerName, typeof(RectTransform));
+            layerObject.transform.SetParent(hudRoot.transform, false);
+            layer = layerObject.transform;
+            SetFullStretch(layerObject.GetComponent<RectTransform>());
+        }
+
+        if (!companion)
+        {
+            layer.SetAsLastSibling();
+        }
+
+        Transform prompt = layer.Find("PlayerInteractionPrompt");
+        if (prompt == null)
+        {
+            GameObject promptObject = new GameObject(
+                "PlayerInteractionPrompt",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image));
+            promptObject.transform.SetParent(layer, false);
+            prompt = promptObject.transform;
+        }
+
+        RectTransform promptRect = GetOrAddComponent<RectTransform>(prompt.gameObject);
+        SetTopLeft(promptRect, new Rect(650f, 790f, 620f, 68f));
+        Image fill = GetOrAddComponent<Image>(prompt.gameObject);
+        fill.color = new Color(0.015f, 0.055f, 0.075f, 0.72f);
+        fill.raycastTarget = false;
+
+        EnsureBorder(prompt, "Border_Top", new Rect(0f, 0f, 620f, 2f));
+        EnsureBorder(prompt, "Border_Bottom", new Rect(0f, 66f, 620f, 2f));
+        EnsureBorder(prompt, "Border_Left", new Rect(0f, 0f, 2f, 68f));
+        EnsureBorder(prompt, "Border_Right", new Rect(618f, 0f, 2f, 68f));
+
+        Transform labelTransform = prompt.Find("InteractionText");
+        if (labelTransform == null)
+        {
+            GameObject labelObject = new GameObject(
+                "InteractionText",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(TextMeshProUGUI));
+            labelObject.transform.SetParent(prompt, false);
+            labelTransform = labelObject.transform;
+        }
+
+        RectTransform labelRect = GetOrAddComponent<RectTransform>(labelTransform.gameObject);
+        SetTopLeft(labelRect, new Rect(18f, 0f, 584f, 68f));
+        TMP_Text label = GetOrAddComponent<TextMeshProUGUI>(labelTransform.gameObject);
+        label.text = "E  INTERACT";
+        label.fontSize = 19f;
+        label.fontStyle = FontStyles.Bold;
+        label.alignment = TextAlignmentOptions.Center;
+        label.color = new Color(0.79f, 0.94f, 1f, 0.98f);
+        label.enableWordWrapping = false;
+        label.overflowMode = TextOverflowModes.Ellipsis;
+        label.raycastTarget = false;
+        if (TMP_Settings.defaultFontAsset != null)
+        {
+            label.font = TMP_Settings.defaultFontAsset;
+        }
+
+        prompt.gameObject.SetActive(false);
+        EditorUtility.SetDirty(layer.gameObject);
+        EditorUtility.SetDirty(prompt.gameObject);
+        EditorUtility.SetDirty(label);
+        return prompt.gameObject;
+    }
+
+    public static void BindFormalInteractionPromptsInOpenScene()
+    {
+        BindFormalInteractionPrompt(
+            "Player/Person Controller",
+            FindSceneHudRoot("HearthHudRoot"),
+            false);
+        BindFormalInteractionPrompt(
+            "Player/Robot Controller",
+            FindSceneHudRoot("HearthCompanionHudRoot"),
+            true);
+    }
+
+    private static void EnsureInteractionPromptPrefabs()
+    {
+        EnsureInteractionPromptPrefab(HudPrefabPath, false);
+        EnsureInteractionPromptPrefab(CompanionHudPrefabPath, true);
+    }
+
+    private static void EnsureInteractionPromptPrefab(string prefabPath, bool companion)
+    {
+        if (AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath) == null)
+        {
+            Debug.LogWarning("[HearthRuntimeInterfaceBinder] HUD prefab not found: " + prefabPath);
+            return;
+        }
+
+        GameObject contents = PrefabUtility.LoadPrefabContents(prefabPath);
+        try
+        {
+            EnsurePromptForHudRoot(contents, companion);
+            PrefabUtility.SaveAsPrefabAsset(contents, prefabPath);
+        }
+        finally
+        {
+            PrefabUtility.UnloadPrefabContents(contents);
+        }
+    }
+
+    private static void BindFormalInteractionPrompt(string controllerPath, GameObject hudRoot, bool companion)
+    {
+        Transform controller = FindTransform(controllerPath);
+        if (controller == null)
+        {
+            Debug.LogWarning("[HearthRuntimeInterfaceBinder] Formal interaction controller not found: " + controllerPath);
+            return;
+        }
+
+        PlayerInteraction interaction = controller.GetComponent<PlayerInteraction>();
+        if (interaction == null)
+        {
+            Debug.LogWarning("[HearthRuntimeInterfaceBinder] PlayerInteraction is missing on " + controllerPath, controller);
+            return;
+        }
+
+        if (hudRoot == null)
+        {
+            Debug.LogWarning("[HearthRuntimeInterfaceBinder] HUD root is missing for " + controllerPath, controller);
+            return;
+        }
+
+        GameObject prompt = EnsurePromptForHudRoot(hudRoot, companion);
+        TMP_Text label = prompt != null ? prompt.GetComponentInChildren<TMP_Text>(true) : null;
+        if (prompt == null || label == null)
+        {
+            Debug.LogWarning("[HearthRuntimeInterfaceBinder] Could not create the interaction prompt for " + controllerPath, controller);
+            return;
+        }
+
+        Undo.RecordObject(interaction, "Bind HEARTH interaction prompt");
+        interaction.BindPromptUi(prompt, label);
+        EditorUtility.SetDirty(interaction);
+    }
+
+    private static GameObject FindSceneHudRoot(string rootName)
+    {
+        Canvas[] canvases = UnityEngine.Object.FindObjectsOfType<Canvas>(true);
+        for (int i = 0; i < canvases.Length; i++)
+        {
+            if (canvases[i].name == rootName
+                && canvases[i].gameObject.scene == EditorSceneManager.GetActiveScene())
+            {
+                return canvases[i].gameObject;
+            }
+        }
+
+        return null;
+    }
+
+    private static void EnsureBorder(Transform parent, string name, Rect rect)
+    {
+        Transform border = parent.Find(name);
+        if (border == null)
+        {
+            GameObject borderObject = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            borderObject.transform.SetParent(parent, false);
+            border = borderObject.transform;
+        }
+
+        SetTopLeft(GetOrAddComponent<RectTransform>(border.gameObject), rect);
+        Image image = GetOrAddComponent<Image>(border.gameObject);
+        image.color = new Color(0.32f, 0.82f, 1f, 0.76f);
+        image.raycastTarget = false;
+        EditorUtility.SetDirty(border.gameObject);
+    }
+
+    private static void SetFullStretch(RectTransform rect)
+    {
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
+        rect.localScale = Vector3.one;
+    }
+
+    private static void SetTopLeft(RectTransform rect, Rect bounds)
+    {
+        rect.anchorMin = new Vector2(0f, 1f);
+        rect.anchorMax = new Vector2(0f, 1f);
+        rect.pivot = new Vector2(0f, 1f);
+        rect.anchoredPosition = new Vector2(bounds.x, -bounds.y);
+        rect.sizeDelta = new Vector2(bounds.width, bounds.height);
+        rect.localScale = Vector3.one;
+    }
+
+    private static T GetOrAddComponent<T>(GameObject owner) where T : Component
+    {
+        T component = owner.GetComponent<T>();
+        return component != null ? component : owner.AddComponent<T>();
     }
 
     private static HearthAudioSettingsController EnsureAudioSettingsController()
@@ -359,6 +595,40 @@ public static class HearthRuntimeInterfaceBinder
         if (profile == null || profile.Role != role)
         {
             Debug.LogWarning("[HearthRuntimeInterfaceBinder] Missing or incorrect footstep profile on " + path, target);
+            return 1;
+        }
+
+        return 0;
+    }
+
+    private static int ValidateInteractionPromptBinding(string controllerPath, string expectedHudRoot)
+    {
+        Transform target = FindTransform(controllerPath);
+        if (target == null)
+        {
+            Debug.LogWarning("[HearthRuntimeInterfaceBinder] Missing formal interaction controller: " + controllerPath);
+            return 1;
+        }
+
+        PlayerInteraction interaction = target.GetComponent<PlayerInteraction>();
+        if (interaction == null)
+        {
+            Debug.LogWarning("[HearthRuntimeInterfaceBinder] PlayerInteraction is missing on " + controllerPath, target);
+            return 1;
+        }
+
+        if (interaction.uiInteraction == null || interaction.uiInteractionText == null)
+        {
+            Debug.LogWarning("[HearthRuntimeInterfaceBinder] Interaction prompt binding is missing on " + controllerPath, interaction);
+            return 1;
+        }
+
+        string promptPath = GetPath(interaction.uiInteraction.transform);
+        if (!promptPath.StartsWith(expectedHudRoot + "/", StringComparison.Ordinal))
+        {
+            Debug.LogWarning(
+                "[HearthRuntimeInterfaceBinder] " + controllerPath + " is bound to the wrong HUD prompt: " + promptPath,
+                interaction);
             return 1;
         }
 

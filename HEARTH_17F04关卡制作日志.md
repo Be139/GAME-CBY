@@ -75,7 +75,7 @@ flowchart TD
 ### TV4 相框
 
 - 材质：`Assets/materials/Hearth/17F04_Photo_Unlit.mat`。
-- 当前图片：`Assets/ChatGPT Image Jul 14, 2026, 10_10_35 AM.png`。
+- 当前图片：`Assets/Art/UI/HearthHud/Finale/FamilyPhoto.png`。
 - 使用 Unlit 主纹理显示；照片固定相机负责正面观看。
 - 完成相框对白前 Door1 不开放。
 

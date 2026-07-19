@@ -358,3 +358,55 @@ Pixabay 候选受 [Pixabay Content License](https://pixabay.com/service/license-
 4. 接入 `SFX-01/02` 三条最终 Room Tone，并做循环测试。
 5. 按 17F02、17F03 动画时间补 `SFX-07/08/09/12/13`。
 6. 最后接入 17F04 相框 `SFX-18`，做全流程响度回归。
+
+## 11. 2026-07-19 全游戏音频接口落地表
+
+当前场景已经建立 `45` 个剧情音效槽，全部位于 `MIN_LOOP_ROOT/Audio`。目前 `AudioClip` 仍为空，这是有意保留给最终试听素材的状态。
+
+| 层级/组件 | 槽数量 | 负责内容 | 放音频的位置 |
+| --- | ---: | --- | --- |
+| `StorySFX_Global` | 9 | 单按 E、长按进度/完成、普通确认、黑屏、镜头平移、终端翻页/焦点/提交 | `HearthSfxCuePlayer > Cues > Primary Clip` |
+| `StorySFX_Lobby` | 9 | 一楼大厅底噪、任务终端电流、领取确认、电梯按钮、关门、运行、到达、开门、17 楼走廊底噪 | 同上 |
+| `StorySFX_17F01` | 6 | 儿童房/客厅底噪、回放转场、安抚完成、餐桌 Foley、机器人伺服 | 同上 |
+| `StorySFX_17F02` | 7 | 坐床、起身、女主走路、餐桌、数据读取、故障、关机 | 同上 |
+| `StorySFX_17F03` | 6 | 母亲起身、女儿起身/走路/键盘、故障、深眠关机 | 同上 |
+| `StorySFX_17F04` | 8 | 客厅/女儿房底噪、相框、弹窗出现/关闭/升级/清空、最终关机 | 同上 |
+
+### 11.1 人类与机器人脚步
+
+- 人类：`Player/Person Controller/First Person Audio/HearthFootstepAudioProfile`。
+- 机器人：`Player/Robot Controller/Robot First Person Audio/HearthFootstepAudioProfile`。
+- 替换声音：拖到 `Walk Clip / Run Clip`。
+- 调整步频：改 `Walk Playback Speed / Run Playback Speed`。数值越低越慢；该字段通过 AudioSource Pitch 改变当前多步录音的播放速度。
+- 两套 Profile 独立，机器人不能复用人类脚步。若使用连续伺服声，放到相应关卡的 `Robot.ServoLoop`，不要塞进人类脚步槽。
+
+### 11.2 环境循环
+
+- 一楼、17 楼走廊及电梯：`StorySFX_Lobby`。
+- 第一户房间：`StorySFX_17F01`。
+- 通用最小循环还有 `MIN_LOOP_ROOT/.../MinLoopAudioStateController`，包含 `Audio_Corridor_Ambience`、`Audio_Replay_Night_Ambience`、`Audio_Morning_Ambience` 三个阶段循环源。
+- 17F04 的 `Home.RoomTone` 与 `DaughterRoom.RoomTone` 先作为保留槽，等最终环境混音确认后再决定是否由流程自动启动，避免同一空间叠两条底噪。
+
+### 11.3 终端与 HUD
+
+- 每台 `HearthTvTerminalController` 可单独替换 `Open / Close / Boot / Page Switch / Focus Move / Submit / Replay Request / View Switch Clip`。
+- 持续电流声使用 `Active Loop Cue Player / Active Loop Cue Id`。一楼任务终端已绑定 `StorySFX_Lobby / AssignmentTerminal.Hum`，终端打开时循环，退出时停止。
+- 人类 HUD：`HearthHudRoot/HearthFirstPersonHudController` 的 Menu、Page、Focus、Confirm、Cancel、Warning、Trust Delta 音效字段。
+- 机器人 HUD：`HearthCompanionHudRoot/HearthCompanionHudController` 的 Scene Changed、Hold Completed、Special Effect 字段。
+
+### 11.4 门、人物动作与低信任弹窗
+
+- 剧情门：对应 `SmartDoorController / Open Clip / Close Clip`，音源使用 3D SFX 通道。
+- 人物动作 Foley：优先放到该关卡 `StorySFX_*` 的具体 Cue；精确脚落地以后可改成 Animation Event 调用同一 Cue。
+- 低信任弹窗：`Popup.Spawn / Popup.Dismiss / Popup.WaveEscalate / Popup.Success` 已自动接入；全清空后再播放 `Unit.PowerOff`。
+- 猫咪、小男孩呼吸/翻身、床单声音按已确认需求不创建、不播放。
+
+### 11.5 对白语音
+
+- 对白不放入 Story SFX。每句语音仍放在 `Assets/Data/MinLoop/Dialogues/` 对应 `HearthDialogueSequence > Lines > Voice Clip`。
+- `Duration Mode` 保持 `Voice Clip When Assigned`：有语音时按 `AudioClip.length` 显示字幕，无语音时使用该句 `Hold Seconds`。
+- 修改台词先改项目根目录正式稿，再运行 Dialogue Sync；只有 Speaker 与 Text 未变化的旧语音会自动保留。
+
+场景空槽创建/修复：`Tools > Hearth > Audio > Apply Story SFX Placeholder Setup`。
+
+完整验证：`Tools > Hearth > Audio > Validate Story SFX Placeholder Setup`。当前验收值应为 `45 slots / 0 clips`，直到你开始选择正式音效。

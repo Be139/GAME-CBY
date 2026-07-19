@@ -284,7 +284,7 @@
 - `BeginOpening()`：把正式米娅放到 `Person Controller (4)` 锚点，锁定移动和视角并播放开场。
 - `TryPlayOptionalConversation(...)`：播放任一大堂可选对白；播放时只锁移动，保留鼠标视角。
 - `TryPlayExitCommentary(...)`：NPC 对话完成并离开 Trigger 后播放 Mia 感想；播放时不锁移动和视角。
-- `AcquireAssignmentFromTerminal()`：在同步终端按 Space 后领取任务，并开放电梯按钮。
+- `AcquireAssignmentFromTerminal()`：在同步终端按 Space 后领取任务。成功领取后终端本轮永久不可再次打开；终端关闭后的任务说明对白期间允许移动和转头，但 E 交互保持关闭，电梯会等说明全部结束后才开放。
 - `BeginElevatorRide()`：渐黑进入 `Person Controller (5)` 电梯锚点，播放对白，再抵达 17 楼。
 - `ResetLobbyFlowForPreview()`：清空本轮状态，供 Play Mode 反复测试。
 - 事件接口：`onOpeningCompleted`、`onAssignmentLoaded`、`onElevatorEntered`、`onFloor17Arrived`。
@@ -301,7 +301,9 @@
 
 - 终端交互脚本：`HearthLobbyTaskTerminalInteractable`，复用 `HearthTvTerminalController` 的蓝色 E 提示、0.5 秒镜头平移、开机闪烁和 Space 主操作。
 - 任务终端启用 `Hide Canvas When Closed`：关闭时整个 World Space Canvas 不渲染；E 打开时才启用。`TaskTerminalScreenAnchor` 控制 Canvas 与实体屏幕的相对位置、朝向和大小，Lobby Apply 不覆盖终端 Camera。
-- 电梯交互脚本：`HearthLobbyElevatorInteractable`，实现 `IInteractionAvailability`；只有 `AssignmentLoaded = true` 时才显示 E。
+- 一次性规则：成功按 Space 后 `AssignmentLoaded = true`，`CanOpenAssignmentTerminal` 永久返回 `false`，终端不再显示 E。若玩家在尚未确认任务时误按 Esc，仍允许重新打开，避免本轮流程软锁。
+- 任务说明对白期间：米娅 Movement/Look 保持开启，`PlayerInteraction` 暂时关闭；因此可以在大厅走动和观察，但不能提前触发电梯或其他 E 交互。
+- 电梯交互脚本：`HearthLobbyElevatorInteractable`，实现 `IInteractionAvailability`；只有 `AssignmentLoaded = true`、任务说明播放完毕且流程不忙时才显示 E。
 - 一楼终端 Prefab：`Assets/Prefabs/UI/HearthHud/Terminals/Terminal_Lobby_Assignment.prefab`。
 - 调整 `Person Controller (4)/(5)` 后，运行时会直接读取其位置与摄像机朝向；不需要重新执行绑定菜单。
 - 修改正式 17 楼到达点时，先在 Edit Mode 把正式玩家摆到目标位置，再执行 `Tools > Hearth > Lobby > Capture Current Player Pose As 17F Arrival`。
@@ -358,3 +360,71 @@
 - A/B：`OpenDispositionChoice()`、`MoveChoice(int)`、`SubmitChoice()`；正式输入为 `↑/↓ + Space`。
 - 共用信任结算：`MinLoopFlowController.BeginExternalDispositionChoice("17F03")`、`SubmitDisposition(choice)`、`CompleteExternalDisposition()`。
 - 17F03 的 `onHouseholdCompleted` 仍可接任务、存档或成就；正式住户进度同时写入 `HearthHouseholdProgressState`，重复写入会去重。
+
+## 任务终端与全游戏音频接口（2026-07-19）
+
+### 一楼任务终端维护
+
+- 编辑定位：运行 `Tools > Hearth > Lobby > Show And Align Task Terminal Canvas For Editing`，Hierarchy 会选中 `1F (1)/TvUnitSet5/MonitorCanvas`。
+- 可以直接调整 `MonitorCanvas` 的 Position、Rotation、Scale；调整满意后运行 `Capture Task Terminal Canvas Placement` 保存到 `TaskTerminalScreenAnchor`。
+- 正式运行时终端关闭状态会禁用 Canvas，只有 E 打开时显示；终端 Camera 的 Transform 和 FOV 不被上述两个菜单修改。
+- 电流/沙沙声接口：`MIN_LOOP_ROOT/Audio/StorySFX_Lobby/HearthSfxCuePlayer` 的 `AssignmentTerminal.Hum / Primary Clip`。
+
+### 全局音效与语音
+
+- 六组 Story SFX 共 45 个槽：Global、Lobby、17F01、17F02、17F03、17F04。
+- 人类脚步：`Player/Person Controller/First Person Audio/HearthFootstepAudioProfile`。
+- 机器人脚步：`Player/Robot Controller/Robot First Person Audio/HearthFootstepAudioProfile`。
+- 每台终端仍可在自己的 `HearthTvTerminalController` 中替换开关机、翻页、移动焦点、提交和视角切换声音。
+- 每句对白语音继续绑定到 `HearthDialogueSequence / Lines / Voice Clip`，显示时长跟随该 Clip；无 Clip 才使用 Hold Seconds。
+- 完整清单和 Inspector 入口见 `HEARTH_音频资源需求与素材来源清单.md / 第 11 节`。
+
+### 本次未改变的剧情逻辑
+
+- Lily 消息仍在 Mia 的 `Okay.` 完成后关闭。
+- 本次场景/Assets 整理没有更改关卡顺序、人物位置、相机位置、触发区或 A/B 结算。
+
+## 一楼任务终端一次性状态与正式稿校准（2026-07-19）
+
+- `HearthLobbyFlowController.CanOpenAssignmentTerminal` 现在同时检查 `AssignmentLoaded = false`。成功领取任务并关闭终端后，本轮不再出现终端 E 提示，也不能重新打开。
+- `AssignmentLoadedRoutine()` 在终端关闭后以“可移动 + 可转头 + 不可交互”状态播放任务说明。说明期间 `busy = true`，所以电梯仍保持锁定；最后一句结束后恢复普通交互并开放电梯。
+- 正式稿新增 `Current playable-flow authority`，并同步校准 Lily 留言生命周期、大厅可选对白、任务终端、电梯、17F01/02 门口终端、17F03 房内处置和 17F04 固定终端入户等已经落地的流程。
+
+## 全局终端提示、住户简介与 Time Card 接口（2026-07-19）
+
+### 通用终端门控
+
+- `HearthTvTerminalController.SetPrimaryActionInputEnabled(bool)`：只锁定 Space 主操作，Tab 浏览仍可使用。
+- `SetCloseInputEnabled(bool)`：单独锁定 Esc，供一楼任务终端前 5 秒使用。
+- `SetRuntimePrompt(string)` / `ClearRuntimePrompt()`：显示或清除终端上方安全区提示；锁定提示统一使用 ASCII `PLEASE WAIT`。
+- `OnOpened` / `OnClosed`：供简介、音效和外部剧情订阅，不需要轮询终端状态。
+- `SetChoiceInputEnabled(bool)` 仍负责整组选择输入；与 Primary Action 门控用途不同，不要混用。
+
+### 一楼任务终端
+
+- `HearthLobbyFlowController.BeginAssignmentBriefingFromTerminal()`：终端开机完成后开始 Field Unit 简报并启动 5 秒门槛。
+- `ConfirmAssignmentTerminalClose()`：5 秒后接受 Space，关闭页面但不停止简报。
+- `Assignment Terminal Minimum View Seconds`：Inspector 可调最短阅读时间，默认 `5`。
+- `CanOpenAssignmentTerminal`：成功领取后永久返回 false；`CanUseElevator` 还会等待整段简报完成。
+- 终端 Camera、`TaskTerminalScreenAnchor` 和 `MonitorCanvas` 为用户维护数据，Binder 只验证差异，不自动覆盖。
+
+### 三户终端简介
+
+- `HearthTerminalOpeningBriefing.BeginBriefing()`：打开当前终端后播放本户简介并锁主操作。
+- `CancelBriefing()`：Esc 提前退出时停止本次简介；下一次打开会从头开始。
+- `ResetBriefing()`：预览或重开测试时清除“本轮已完成”状态。
+- 三户默认资产：`17F01_ApartmentGreeting`、`17F02_TerminalIntro`、`17F03_TerminalEntry`。
+- 自动绑定菜单：`Tools > Hearth > Terminals > Apply Household Opening Briefings`。
+
+### 统一机器人 HUD 布局
+
+- 配置资产：`Assets/Data/HearthHud/Companion/Hearth_CompanionHudLayout.asset`。
+- `HearthCompanionHudLayoutController.ApplySharedLayout()`：立即把共享缩放、文字缩放和偏移应用到右上决策区与左下数据流。
+- 资产保存后编辑模式实时预览；剧情脚本只更新内容，不改布局参数。
+
+### 字幕与结局时间卡
+
+- `MinLoopSubtitleLine.Presentation Kind`：`Dialogue` 或 `TimeCard`。
+- 正式稿使用 `**TIME CARD:** "..."`，`HearthFinalDialogueSync` 会自动同步为 TimeCard 并清空说话人栏。
+- 共享配置入口：`Hearth_SubtitleStyle.asset / Time Card`；独立控制宽度、位置、字号和淡入淡出。
+- `HearthPhotoFrameInteractable.SetExitHint(...)`：绑定相框对白完成后的 `SPACE  RETURN` 提示；Esc 保留为隐藏的安全退出。

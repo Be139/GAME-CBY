@@ -172,7 +172,7 @@ casual_Female_K (9) -> REF_Wife_17F02_ExitOutside
   - `casual_Female_G@Sitting_Idle` 播放 `SittingIdle`。
   - `casual_Male_G@Sitting` 播放 `Sitting`。
 - 17F02 从旧的静态 Pose / 简单脚本走位，升级为“剧情流程控制 + 可替换动画 Clip + 锚点走位”。
-- `SITTING TALKING ON CASUAL_FEMALE_K` 的实际导入文件按用户确认使用 `Assets/Sitting_Talking.fbx`。
+- `SITTING TALKING ON CASUAL_FEMALE_K` 的实际导入文件按用户确认使用 `Assets/Animations/Hearth/17F02/Clips/Sitting_Talking.fbx`。
 
 ### 17F02 新动作流程
 
@@ -230,10 +230,10 @@ casual_Female_K (9) -> REF_Wife_17F02_ExitOutside
 
 ### 17F02 新动作流程修正
 
-1. 黑屏恢复、陪伴单元被唤醒后，`casual_Female_K@Sitting_Disbelief` 循环播放 `SittingDisbelief`，Clip 使用 `Assets/casual_Female_K@Sitting_Disbelief.fbx / mixamo.com`。
-2. 玩家完成 E 安慰交互后，卧室女主播放一次 `SittingTalking`，Clip 使用 `Assets/Sitting_Talking.fbx / mixamo.com`。`Bedroom Talking Max Seconds` 默认 `10`，设为 `0` 或负数时等待完整动作/字幕。
+1. 黑屏恢复、陪伴单元被唤醒后，`casual_Female_K@Sitting_Disbelief` 循环播放 `SittingDisbelief`，Clip 使用 `Assets/Animations/Hearth/17F02/Clips/casual_Female_K@Sitting_Disbelief.fbx / mixamo.com`。
+2. 玩家完成 E 安慰交互后，卧室女主播放一次 `SittingTalking`，Clip 使用 `Assets/Animations/Hearth/17F02/Clips/Sitting_Talking.fbx / mixamo.com`。`Bedroom Talking Max Seconds` 默认 `10`，设为 `0` 或负数时等待完整动作/字幕。
 3. 男主喊吃饭、女主回应后，女主播放 `SitToStand` 一次。
-4. 离开卧室时不再使用 `Female_Start_Walking` 或旧 `locom_f_basicWalk_30f`，走路循环改为 `Assets/casual_Female_K@Walking.fbx / Walking`。
+4. 离开卧室时不再使用 `Female_Start_Walking` 或旧 `locom_f_basicWalk_30f`，走路循环改为 `Assets/Animations/Hearth/17F02/Clips/casual_Female_K@Walking.fbx / Walking`。
 5. 女主仍沿 `REF_Wife_17F02_BeforeDoor_*` 同步出的锚点移动到 `REF_Wife_17F02_DoorPause`。
 6. 到门口后播放 `OpenDoorOutwards`，并按现有延迟调用 `Door_2_Brown (4)` 开门。
 7. 开门结束后不再额外推算复杂门后路径，直接校正/移动到 `REF_Wife_17F02_ExitOutside`。
@@ -620,3 +620,66 @@ casual_Female_K (9) -> REF_Wife_17F02_ExitOutside
 - 提交后平滑返回米娅房内视角，再播放对应父母与 Field Unit 评价。B 且结算后信任小于 0 时，追加主管复核警告。
 - 分支结束后渐黑到 `Anchor_Mia_17F03_DoorReturn`，恢复普通人类控制；不自动打开任何门口终端。
 - 第三户信任结算、历史事件和完成登记都只允许一次。
+
+## 2026-07-19 任务终端显示、低信任遮罩、音频接口与项目整理
+
+- 本条主要是制作系统维护，不改写正式剧情台词或关卡顺序。
+- 一楼任务终端在 Edit Mode 保持可见，便于调整 `MonitorCanvas`；Play Mode 未按 E 时完全隐藏，按 E 后才显示并开机。
+- 当前 `MonitorCanvas` 与 `TaskTerminalScreenAnchor` 仍有小幅位置/旋转差异；没有修改用户手调的终端 Camera，也没有自动覆盖 Canvas。后续由用户选择“对齐到 Anchor”或“把当前 Canvas 捕获为新 Anchor”。
+- Lily 留言关闭条件确认不变：Mia 说完 `Okay.` 后调用 `DismissVoiceMessage()`，不会延迟到终端或机器人阶段。
+- 17F04 低信任弹窗增加半透明黑色全屏遮罩，默认 Alpha `0.62`；弹窗出现、关闭、波次升级和清空均新增独立音效接口。
+- 全游戏剧情音效槽扩展为 45 个，并补齐一楼大厅、电梯、任务终端、17F01、17F04 弹窗与环境保留槽；本次不导入或擅自选择最终 AudioClip。
+- SampleScene 根层级已按 UI、玩家、系统、正式场景、环境、松散演员、待审对象分区。仅调整顺序，不改 Transform 或父级。
+- `Assets` 根目录散落的动作、角色、脚本和 UI 图片已按功能移动并保留 GUID；第三方资源包和场景家具不移动、不删除。
+- `little_boy_B`、`GameObject`、`Plane`、旧 `1F` 只移入 Review 分区，等待后续实机确认，没有删除。
+
+## 2026-07-19 一楼任务终端一次性领取与正式稿流程校准
+
+### 一楼任务终端
+
+- 玩家在任务终端按 Space 成功领取任务后，终端关闭并在本轮永久失效；再次看向它不会出现 E，也不能重新打开。
+- 为避免误按 Esc 直接造成整局软锁，只有“成功领取”才消费终端；未确认前取消仍可重新进入。
+- 终端关闭后的任务说明对白期间，米娅可以移动和转动视角，但所有 E 交互暂时关闭。
+- 电梯不会因为 `AssignmentLoaded` 已经写入就提前开放；它还会等待任务说明全部结束、Lobby Flow 离开 Busy 状态后才显示 E。
+
+### 正式剧本文档
+
+- 根目录正式稿已校准 Lily 留言：播放时展开，之后缩成右上角已读卡片，保持到 Mia 说完 `Okay.`，随后关闭；终端、检查摄像机和机器人回放视角均不显示。
+- 正式稿已补充大厅三组可选对白的“进入区域锁移动、保留视角、离区后播放 Mia 感想”规则。
+- 正式稿已补充一楼任务终端的 E/Space、一次性消费、对白期间可移动以及电梯延迟解锁规则。
+- 正式稿已把 17F01/17F02 改为当前门口终端回放与处置流程，把 17F03 房内检查/处置和 17F04 固定终端画面内完成问候后再渐黑入户写为当前版本。
+- 本次只校准流程说明和演出描述，不擅自改写正式英文对白原句，也不改变隐藏的 `HEARTH:SEQUENCES` 映射。
+
+## 2026-07-19 全局 HUD、终端引导与结局时间提示
+
+### 一楼大厅与任务终端
+
+- 大厅开场 `FIELD COMPANION UNIT / ACTIVATED` 卡片下移，避免与米娅左上常驻身份 HUD 重叠。
+- 一楼任务终端开机完成、任务页面真正可见后立即开始 Field Unit 简报。
+- 前 5 秒显示 `PLEASE WAIT`，Space 和 Esc 都不能关闭；5 秒后显示 `SPACE  CLOSE TERMINAL`。
+- 关闭终端后简报继续，米娅可移动和转头，但其他 E 交互与电梯继续锁定；最后一句结束才全部开放。
+- 正式稿补充路线指引：`Route loaded. Proceed to the elevator and call it when you're ready. Destination: Floor Seventeen.`
+- 成功领取后任务终端本轮不可再次打开；用户已调终端 Camera、ScreenAnchor 与 Canvas 不由绑定工具覆盖。
+
+### 住户终端与处置提示
+
+- 17F01、17F02、17F03 在每轮第一次完整打开终端时播放住户/任务简介。
+- 简介期间允许 Tab 浏览资料，但回放、入户或提交操作锁定；提前 Esc 会取消本次简介，重新打开从头播放。
+- 简介完整结束后本轮不再重复，并自动开放主操作。
+- A/B 页面统一增加明确键位提示：17F01/02 使用左右键，17F03/04 使用上下键，Space 确认；等待时显示 `PLEASE WAIT`。
+- 17F02 对 Claire 的长按文案固定为 `HOLD E  OFFER REASSURANCE TO CLAIRE`，不再显示方框或无意义符号。
+
+### 字幕、留言与结局时间
+
+- 大厅 Lily 卡片、第四关终端记录与正式稿统一为 `4:42 PM`。
+- 第四关进入终端后先由 Field Unit 说明这是大厅收到的完整留言；第一次确认后按钮灰显为 `PLEASE WAIT`，重复 Space 不跳过留言。
+- 相框对白完成后明确显示 `SPACE  RETURN`；Esc 仅作为隐藏的安全退出键。
+- 第四关关闭路线依次显示 `MORNING - KITCHEN`、`DAYTIME - HOME`、`NIGHT - LILY'S ROOM`。
+- 保留路线依次显示 `THE NEXT MORNING - KITCHEN`、`AFTERNOON - SCHOOL OPEN HOUSE`、`THREE YEARS LATER - FRONT HALL`。
+- 时间提示使用独立 Time Card 表现，不占说话人栏；普通对白与黑幕对白继续保持最多两行。
+
+### 制作维护口径
+
+- 四关普通字幕继续共用 `Hearth_SubtitleStyle.asset`；结局黑幕和 Time Card 使用同一资产中的独立布局区。
+- 三户机器人 HUD 的右上决策区和左下数据流改为共用 `Hearth_CompanionHudLayout.asset`，统一缩放、字号与位置。
+- 本次内容已经写入正式稿并同步到 Dialogue Asset；未来修改文字仍以根目录正式稿为唯一来源。

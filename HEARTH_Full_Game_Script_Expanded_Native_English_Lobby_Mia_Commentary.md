@@ -23,6 +23,16 @@
   One choice per household (Scenes 1.6 / 2.6 / 3.5). Cumulative result: **+3, +1, −1, or −3**.
   Only the sign matters at the finale — positive → high-trust shutdown (4.6a); negative → forced shutdown (4.6b).
 
+**Current playable-flow authority**
+- This document is the canonical dialogue source and now also follows the current Unity implementation. If an older scene description conflicts with the flow below, this section and the latest `[SCENE]` block take priority.
+- Lily's voice message is expanded only while it plays. It then collapses to a compact read state, remains through Mia's three-line follow-up, and disappears immediately after Mia finishes "Okay." It never appears in terminal, inspection-camera, or companion-playback views.
+- The three lobby conversations are optional and may be visited in any order. Entering a conversation zone locks movement but preserves look control; movement returns when the NPC exchange ends, and Mia's private comment plays only after she leaves that zone.
+- The lobby assignment terminal is opened with E. Its route briefing starts as soon as the task page is fully visible. Space and Escape remain locked for the first five seconds; after that, Space closes the terminal and consumes it for the rest of the run. The briefing continues in the lobby: Mia may walk and look, but all E interactions remain disabled and the elevator stays locked until the final briefing line ends.
+- 17F-01 and 17F-02 are reviewed from their corridor doorway terminals. Playback returns to the same terminal for the recommendation, one-time A/B disposition, response, and next-household instruction; Mia does not enter either apartment in the current playable build.
+- 17F-03 uses `ENTER UNIT`: Mia enters the apartment, hears the parents, inspects the physical unit, reviews its recordings, then returns to the room and makes the disposition through the physical unit's fixed inspection camera.
+- The first complete opening of each 17F-01, 17F-02, and 17F-03 doorway terminal plays its household briefing. Tab browsing remains available, while replay or entry confirmation stays locked until that briefing ends. Leaving early cancels it; reopening restarts it.
+- Mia's home begins at its corridor terminal. The greeting remains on that fixed terminal view until it finishes, then the screen fades to the living room. The cat guides attention toward the photo display, but it does not lock the photo interaction. The daughter-room dialogue allows movement and look until the final A/B choice appears.
+
 ---
 
 # LEVEL 1
@@ -48,8 +58,11 @@ Positions: Three fixed NPC groups —
       Unit is docked beside the pod.
   (3) An elderly woman seated on a sofa, holding a cup of water.
       A Care Unit sits angled beside her, not facing her directly.
-Trigger: Each group's dialogue plays automatically when Mia walks
-      near. Afterward they hold their idle poses.
+Trigger: Each group's dialogue plays once when Mia enters its
+      marked zone. Movement locks while that exchange plays, but
+      Mia may look around. Movement returns at the final NPC line;
+      her private comment plays only after she leaves the zone.
+      These three groups are optional and do not gate the route.
 Far side: An assignment terminal near the elevators.
 ```
 
@@ -91,7 +104,7 @@ ASSIGNED PARTNER: MIA
 ```
 INCOMING VOICE MESSAGE
 FROM: LILY
-TIME: 5:48 PM
+TIME: 4:42 PM
 
 TRANSCRIPT:
 "Mom, are you getting home late tonight?
@@ -103,7 +116,7 @@ We can talk when you get home. I'll wait for you.
 <!-- HEARTH:SEQUENCES Lobby_LilyVoiceMessage -->
 **Lily:** (hopeful, slightly hesitant, recorded) "Mom, are you getting home late tonight? I wanted to tell you something. We can talk when you get home. I'll wait for you... Don't forget, okay?"
 
-*(The message is marked as read, then remains pinned in a smaller form at the top-right of Mia's HUD while the three-line exchange continues.)*
+*(The message is marked as read, collapses into a compact read card at the top-right of Mia's HUD, and remains there while the three-line exchange continues.)*
 
 <!-- HEARTH:SEQUENCES Lobby_OpeningCloseout -->
 **Mia:** (concerned, quiet) "Did she say what it was about?"
@@ -195,8 +208,14 @@ We can talk when you get home. I'll wait for you.
 
 ```
 [SCENE]
-Trigger: Mia interacts with the assignment terminal. No badge is
-      required. The terminal immediately loads tonight's route.
+Trigger: Mia looks at the assignment terminal and presses E. Her
+      view moves smoothly to its fixed camera. No badge is required.
+      The route briefing begins when the task page is fully visible.
+      Space and Escape remain disabled for five seconds. Space then
+      closes the terminal, which cannot be reopened during this run.
+Control: After the terminal closes, the briefing continues. Mia may
+      move and look around the lobby. E interactions remain disabled,
+      and the elevator does not unlock until the final briefing line.
 ```
 
 ```
@@ -223,7 +242,10 @@ residence. Handle off-shift.
 <!-- HEARTH:SEQUENCES Lobby_AssignmentLoaded -->
 **Field Unit:** (pleasant, explanatory) "The benefit is fewer short gaps in care. Parents can continue what they're doing, and child users are less likely to be left waiting without a response."
 
-*(Mia turns toward the elevators. The Lily message has already closed.)*
+<!-- HEARTH:SEQUENCES Lobby_AssignmentLoaded -->
+**Field Unit:** (calm, instructional) "Route loaded. Proceed to the elevator and call it when you're ready. Destination: Floor Seventeen."
+
+*(The briefing ends. Interaction returns and the elevator call button unlocks. The Lily message has already closed.)*
 
 ---
 
@@ -234,6 +256,8 @@ residence. Handle off-shift.
 Location: Elevator interior, ascending 1 → 17.
 View: Mia, first person. Floor numbers climb on the panel.
 Trigger: Dialogue plays over the ride; ends on arrival.
+Access: The elevator call button becomes available only after the
+      assignment terminal's route-loaded briefing has finished.
 ```
 
 <!-- HEARTH:SEQUENCES Lobby_ElevatorRide -->
@@ -301,15 +325,17 @@ Trigger: Dialogue plays over the ride; ends on arrival.
 
 ---
 
-### Scene 1.3 — Household One: Apartment
+### Scene 1.3 — Household One: Doorway Terminal
 
 ```
 [SCENE]
-Location: 17F-01 interior. Lights on, tidy. The family is out of
-      frame — back rooms. The Home Unit stands near the wall.
-View: Mia, first person.
-Trigger: Mia enters directly. No badge, no exterior terminal.
-      She walks to the in-home terminal by the unit.
+Location: Corridor outside 17F-01.
+View: Mia, first person, at the doorway inspection terminal.
+Trigger: Mia looks at the terminal and presses E. Her view moves to
+      its fixed camera and the terminal boots. She reviews the
+      household summary, moves focus to the playback action, and
+      confirms it to enter the Home Unit's recorded point of view.
+      Mia does not enter the apartment in the current playable build.
 ```
 
 <!-- HEARTH:SEQUENCES 17F01_ApartmentGreeting -->
@@ -506,8 +532,11 @@ EVENT: archived
 
 ```
 [SCENE]
-View: Mia, first person — back at the in-home terminal.
-Trigger: Playback ends; the sign-off screen loads.
+View: Mia, first person — back at the 17F-01 doorway terminal.
+Trigger: Playback ends; the sign-off screen loads with input locked.
+      The Field Unit gives its recommendation first. Input then
+      unlocks for one A/B submission. The terminal closes only after
+      the response and next-household instruction finish.
 ```
 
 <!-- HEARTH:SEQUENCES 17F01_TerminalSignoffIntro -->
@@ -582,15 +611,16 @@ B. Recommend a two-week observation period
 
 ---
 
-### Scene 2.0 — Household Two: The Terminal
+### Scene 2.0 — Household Two: Doorway Terminal
 
 ```
 [SCENE]
-Location: 17F-02 interior. Lights on. The couple is out of frame.
-      The Home Unit is docked in the corner — screen dark,
-      indicator off (it was force-shut earlier this evening).
-View: Mia, first person.
-Trigger: Mia enters and walks to the in-home terminal.
+Location: Corridor outside 17F-02. The force-shut Home Unit is seen
+      only inside the recorded playback.
+View: Mia, first person, at the doorway inspection terminal.
+Trigger: Mia opens the terminal, reviews the household file, and
+      confirms the playback action. She does not enter the apartment
+      in the current playable build.
 ```
 
 <!-- HEARTH:SEQUENCES 17F02_TerminalIntro -->
@@ -1038,9 +1068,11 @@ ACCESSED BY: Inspector Mia — authorization granted
 
 ```
 [SCENE]
-The black holds a beat. Then the review interface fades back
-in — Mia has been watching the playback from the household's
-check terminal. The disposition screen loads.
+The black holds a beat. Then the review interface fades back in at
+the 17F-02 doorway terminal. The disposition screen loads with input
+locked until the Field Unit finishes its recommendation. A/B accepts
+one submission only; response and routing dialogue finish before the
+terminal closes.
 ```
 
 <!-- HEARTH:SEQUENCES 17F02_TerminalSignoffIntro -->
@@ -1546,8 +1578,11 @@ automatically.
 [SCENE]
 Location: Mia's front door, end of the corridor.
 View: Mia, first person.
-Trigger: She touches the door terminal. It surfaces the
-      pending item.
+Trigger: Mia looks at the home terminal and presses E. Her view moves
+      smoothly to its fixed camera. Space opens the pending item.
+      The full exchange below remains on that terminal view. Once it
+      finishes, the terminal image fades to black and Mia is placed
+      in the living room before the image returns.
 ```
 
 ```
@@ -1557,6 +1592,9 @@ Logged 4:42 PM — audio only
 ```
 
 *(She taps it. Audio plays.)*
+
+<!-- HEARTH:SEQUENCES 17F04_HomeGreeting_High,17F04_HomeGreeting_Low -->
+**Field Unit:** (calm, instructional) "Inspector, this is the full message your daughter left at 4:42 PM—the notification you received in the lobby. Please listen before entering."
 
 <!-- HEARTH:SEQUENCES 17F04_HomeGreeting_High,17F04_HomeGreeting_Low -->
 **Lily:** (hopeful, tentative, recorded) "Mom? Are you coming tomorrow? Ms. Parker said it'd be better if a real person came. Not just a system check-in."
@@ -1574,7 +1612,7 @@ Logged 4:42 PM — audio only
 <!-- HEARTH:SEQUENCES 17F04_HomeGreeting_High,17F04_HomeGreeting_Low -->
 **Mia:** (weary, quiet) "I know."
 
-*(She taps CONFIRM. The door opens.)*
+*(She confirms. The terminal view fades to black; the scene returns inside the living room. There is no intermediate flash back to Mia's corridor camera.)*
 
 ---
 
@@ -1585,11 +1623,14 @@ Logged 4:42 PM — audio only
 Location: Mia's living room. Low light. No one comes to meet
       her — except the cat.
 View: Mia, first person.
-Cat: simple loop — circles her feet, walks a few steps, stops,
-      looks back; repeats until she follows. It settles at the
-      leg of the shelf on the west wall and curls up.
-On the shelf: two photo frames.
-Trigger: Mia picks up the first frame.
+Cat: follows its authored route from the living-room start to the
+      sofa, then lies down. It guides Mia's attention but does not
+      gate or interrupt player movement.
+Photo display: the TV4 frame is available as soon as the living room
+      appears. Looking at it and pressing E moves to its fixed camera.
+Trigger: The photo dialogue waits for any unfinished home greeting,
+      then plays without overlapping it. Space or Esc returns after
+      the photo sequence completes.
 ```
 
 <!-- HEARTH:SEQUENCES 17F04_ChristmasPhoto -->
@@ -1945,6 +1986,9 @@ Screen: full black. No music. Sounds and voices only,
 *[SFX: morning. A kitchen. A spatula against a pan.]*
 
 <!-- HEARTH:SEQUENCES 17F04_Epilogue_High_Shutdown,17F04_Epilogue_Low_Shutdown -->
+**TIME CARD:** "MORNING - KITCHEN"
+
+<!-- HEARTH:SEQUENCES 17F04_Epilogue_High_Shutdown,17F04_Epilogue_Low_Shutdown -->
 **Lily:** (playful, bossy) "Mom, don't cook the eggs so long this time."
 
 <!-- HEARTH:SEQUENCES 17F04_Epilogue_High_Shutdown,17F04_Epilogue_Low_Shutdown -->
@@ -1960,6 +2004,9 @@ Screen: full black. No music. Sounds and voices only,
 **Lily:** (amused, forgiving) "It's okay. I'll eat them."
 
 *[SFX: daytime. Keys landing on a table.]*
+
+<!-- HEARTH:SEQUENCES 17F04_Epilogue_High_Shutdown,17F04_Epilogue_Low_Shutdown -->
+**TIME CARD:** "DAYTIME - HOME"
 
 <!-- HEARTH:SEQUENCES 17F04_Epilogue_High_Shutdown,17F04_Epilogue_Low_Shutdown -->
 **Mia:** (casual, calling out) "I'm home! Lily?"
@@ -1980,6 +2027,9 @@ Screen: full black. No music. Sounds and voices only,
 **Lily:** (hesitant, opening up) "Just... okay. Come here, Mom. I'll tell you."
 
 *[SFX: night. A child's room. Thunder, far away.]*
+
+<!-- HEARTH:SEQUENCES 17F04_Epilogue_High_Shutdown,17F04_Epilogue_Low_Shutdown -->
+**TIME CARD:** "NIGHT - LILY'S ROOM"
 
 <!-- HEARTH:SEQUENCES 17F04_Epilogue_High_Shutdown,17F04_Epilogue_Low_Shutdown -->
 **Lily:** (small, frightened) "Mom?"
@@ -2083,6 +2133,9 @@ Screen: full black. No music. Sounds and voices only.
 *[SFX: next morning. A kitchen.]*
 
 <!-- HEARTH:SEQUENCES 17F04_Epilogue_High_Retain,17F04_Epilogue_Low_Retain -->
+**TIME CARD:** "THE NEXT MORNING - KITCHEN"
+
+<!-- HEARTH:SEQUENCES 17F04_Epilogue_High_Retain,17F04_Epilogue_Low_Retain -->
 **Mia's Home Unit:** (bright, caring) "Lily, your mom is leaving a little later today. Eat something first. I'll sit with you."
 
 <!-- HEARTH:SEQUENCES 17F04_Epilogue_High_Retain,17F04_Epilogue_Low_Retain -->
@@ -2106,6 +2159,9 @@ Screen: full black. No music. Sounds and voices only.
 **Mia:** (businesslike, muffled) "Right, I'll be in by nine-thirty. Yeah, the open house. I'll have the unit record it. Fine. That works."
 
 *[SFX: afternoon. A school gymnasium hum, distant.]*
+
+<!-- HEARTH:SEQUENCES 17F04_Epilogue_High_Retain,17F04_Epilogue_Low_Retain -->
+**TIME CARD:** "AFTERNOON - SCHOOL OPEN HOUSE"
 
 <!-- HEARTH:SEQUENCES 17F04_Epilogue_High_Retain,17F04_Epilogue_Low_Retain -->
 **Mia's Home Unit:** (gentle, reassuring) "Lily, your mom couldn't make it today. I watched for her. You did really well."
@@ -2134,6 +2190,9 @@ Screen: full black. No music. Sounds and voices only.
 **Lily:** (hurt, emotionally flat) "Oh."
 
 *[SFX: three years later. A front hall. Lily's voice is older. Cooler.]*
+
+<!-- HEARTH:SEQUENCES 17F04_Epilogue_High_Retain,17F04_Epilogue_Low_Retain -->
+**TIME CARD:** "THREE YEARS LATER - FRONT HALL"
 
 <!-- HEARTH:SEQUENCES 17F04_Epilogue_High_Retain,17F04_Epilogue_Low_Retain -->
 **Lily:** (even, restrained) "I'm moving into the dorms."

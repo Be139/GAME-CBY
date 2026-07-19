@@ -89,6 +89,25 @@ Inspector 里重点看：
 
 长期显示的 UI 也分两部分：
 
+### 推荐的统一调节入口
+
+共享布局资产：
+
+`Assets/Data/HearthHud/Companion/Hearth_CompanionHudLayout.asset`
+
+这是目前右上决策区和左下数据流的正式统一入口：
+
+- `Global Region Scale`：同时放大或缩小右上、左下两块区域以及其中的线框图形。
+- `Global Text Scale`：同时调整两块区域全部 TMP 文字的字号。
+- `Shared Horizontal Inset`：同时让两块区域向屏幕内部收拢或向外展开。
+- `Shared Vertical Offset`：同时让两块区域向下或向上移动。
+- `Decision Offset`：只微调右上决策区。
+- `Data Stream Offset`：只微调左下数据流。
+
+保存该资产后，场景中的 `HearthCompanionHudRoot / HearthCompanionHudLayoutController` 会在编辑模式实时预览。下一次 Play 直接生效，不需要重跑 Builder。17F01、17F02、17F03 的所有机器人 HUD 页面共用同一份布局。
+
+如果只是想统一放大两块 UI，优先调 `Global Region Scale` 与 `Global Text Scale`，不要分别拖动两个区域，否则以后很难保持两边一致。
+
 ### 位置和大小
 
 在 `HearthCompanionHudRoot` 里调：
@@ -144,6 +163,12 @@ Inspector 里重点看：
 ## 字幕位置、大小和时长怎么调
 
 字幕不是机器人 HUD 里的 `CompanionScene_*.asset` 控制，而是由最小循环字幕播放器控制。
+
+当前正式统一入口是：
+
+`Assets/Data/MinLoop/UI/Hearth_SubtitleStyle.asset`
+
+优先修改该资产中的 `Standard Dialogue`。它会同时影响四个关卡的普通对白；`Centered Epilogue` 只影响第四关结局黑幕；`Time Card` 只影响结局时间提示。下面列出的 `MinLoopSubtitlePlayer` 字段主要用于检查引用或兼容旧场景，不应再作为四关分别调节的首选入口。
 
 在 Hierarchy 里找：
 
@@ -204,8 +229,9 @@ Inspector 里重点看这些字段：
 
 会跟着第 2 户、第 3 户一起变：
 
-- `HearthCompanionHudRoot` 下各 UI 物体的 `RectTransform`
-- `TMP Text` 的字号、对齐方式、颜色
+- `Hearth_CompanionHudLayout.asset` 中的共享缩放、文字缩放和位置参数
+- `HearthCompanionHudRoot` 下未被共享布局控制的通用 UI 物体 `RectTransform`
+- 通用 Prefab 中 TMP Text 的对齐方式和颜色
 - `MinLoopSubtitlePlayer` 的字幕位置、字号、最大宽度
 - 通用 prefab `Assets/Prefabs/UI/HearthHud/Companion/HearthCompanionHudRoot.prefab`
 
@@ -218,7 +244,7 @@ Inspector 里重点看这些字段：
 
 ## 场景里调和永久默认值的区别
 
-你现在可以直接在场景里的 `HearthCompanionHudRoot` 上调位置和大小。这样最直观。
+你仍可直接在场景里的 `HearthCompanionHudRoot` 上调未被共享布局控制的对象。右上决策区和左下数据流则优先修改 `Hearth_CompanionHudLayout.asset`。
 
 但要注意：
 
@@ -228,7 +254,7 @@ Inspector 里重点看这些字段：
 
 场景里的 `HearthCompanionHudRoot` 会被重新生成，手动拖过的位置可能会被覆盖。
 
-更稳定的做法是：
+对右上/左下两块区域，稳定做法是直接保存共享 Layout Profile。对其他 UI，稳定做法是：
 
 1. 先在场景里手动调到满意。
 2. 记下关键对象的 `RectTransform` 数值。
@@ -288,4 +314,3 @@ Inspector 里重点看这些字段：
 - 检查它们是否使用同一个 `HearthCompanionHudRoot`。
 - 检查有没有单独复制出新的机器人 HUD 根节点。
 - 检查是否重新运行过 Builder，但没有把第 1 户调好的数值写回默认生成器。
-

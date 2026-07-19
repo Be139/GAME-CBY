@@ -63,7 +63,7 @@
 - 17F01-03：`Assets/Data/MinLoop/Dialogues/17F01_*.asset`、`17F02_*.asset`、`17F03_*.asset`
 - 17F04：`Assets/Data/MinLoop/Dialogues/17F04/*.asset`
 
-当前共有 34 个 Dialogue Sequence、215 个逐句语音槽位；目前尚未拖入真实语音。
+当前正式同步范围为 59 个 Dialogue Sequence、422 个映射条目；正式稿覆盖验证为 351 个唯一对白段。部分对白会同时映射到高/低信任等多个 Sequence，因此“映射条目”会多于正式稿唯一段落数。目前尚未拖入真实语音。
 
 选中任一 `HearthDialogueSequence` 后，可在专用 Inspector 中：
 
@@ -85,6 +85,7 @@
 
 - `Standard Dialogue`：统一控制 17F01、17F02、17F03、17F04 普通对白；修改一次，四户一起生效。
 - `Centered Epilogue`：只控制 17F04 最终纯黑画面中的居中结局文字，不会把普通对白挪到屏幕中央。
+- `Time Card`：只控制结局中的时间提示，例如 `MORNING - KITCHEN`、`THREE YEARS LATER - FRONT HALL`；它不占用说话人栏，并带独立淡入淡出时间。
 - `Width Fraction`：字幕最大宽度；默认约为屏幕宽度的三分之二，过长内容会自动居中换行。
 - `Speaker Center Y / Body Center Y`：说话人名称和正文的垂直位置。
 - `Speaker Height / Body Height`：两个文字区域的高度。
@@ -94,6 +95,23 @@
 只调整这些位置、大小或换行参数时，直接保存共享样式资产即可，不需要运行菜单。新增字幕播放器、引用丢失或重建场景后，运行 `Tools / Hearth / Dialogue / Apply Shared Subtitle Presentation`；随后可运行同目录下的验证菜单检查四户是否仍共用一套样式。
 
 注意：共享样式只负责“怎么显示”。每句台词、说话人、句数、等待时间与语音仍在对应的 `HearthDialogueSequence` 资产中修改。
+
+### 住户终端开场介绍与选择提示
+
+- 组件：三台 17F 住户终端根上的 `HearthTerminalOpeningBriefing`。
+- 17F01 / 17F02 / 17F03 分别绑定 `17F01_ApartmentGreeting`、`17F02_TerminalIntro`、`17F03_TerminalEntry`。
+- 介绍播放期间仍可用 Tab 浏览页面，但回放或入户主操作会锁定，终端上方显示 `PLEASE WAIT`。
+- 介绍结束后自动开放主操作；17F01/02 显示 `LEFT / RIGHT  SELECT     SPACE  CONFIRM`，17F03/04 显示 `UP / DOWN  SELECT     SPACE  CONFIRM`。
+- 这些文字由 `HearthTvTerminalController / Runtime Prompt Text` 统一显示。只改字号、颜色或位置时，修改终端内 `KeyboardNavigationRoot/RuntimePromptText`；不需要重跑对白同步。
+- 如果重建了住户终端或丢失绑定，运行 `Tools / Hearth / Terminals / Apply Household Opening Briefings`。
+
+### 一楼任务终端等待提示
+
+- E 打开并完成开机后，任务简报立即开始。
+- 前 5 秒显示 `PLEASE WAIT`，Space 与 Esc 都不生效。
+- 5 秒后显示 `SPACE  CLOSE TERMINAL`；关闭页面后简报继续，米娅可移动和转头，但其他 E 交互与电梯仍锁定。
+- 最后一行结束后才恢复交互并开放电梯；本轮任务终端不再允许第二次打开。
+- 5 秒时长在 `MIN_LOOP_ROOT/LobbyOpening/HearthLobbyFlowController / Assignment Terminal Minimum View Seconds` 调整。
 
 ## 5. 单按 E 与长按 E
 

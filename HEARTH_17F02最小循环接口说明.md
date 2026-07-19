@@ -477,20 +477,20 @@ REF_Wife_17F02_BeforeDoor_01
 
 ```text
 casual_Female_K@Sitting_Disbelief
-- SittingDisbelief -> Assets/casual_Female_K@Sitting_Disbelief.fbx / mixamo.com
-- SittingTalking -> Assets/Sitting_Talking.fbx / mixamo.com
-- SitToStand -> Assets/X_Bot@Sit_To_Stand.fbx / Sit_To_Stand
-- WalkLoop -> Assets/casual_Female_K@Walking.fbx / Walking
-- OpenDoorOutwards -> Assets/Open_Door_Outwards.fbx / mixamo.com
+- SittingDisbelief -> Assets/Animations/Hearth/17F02/Clips/casual_Female_K@Sitting_Disbelief.fbx / mixamo.com
+- SittingTalking -> Assets/Animations/Hearth/17F02/Clips/Sitting_Talking.fbx / mixamo.com
+- SitToStand -> Assets/Animations/Hearth/17F02/Clips/X_Bot@Sit_To_Stand.fbx / Sit_To_Stand
+- WalkLoop -> Assets/Animations/Hearth/17F02/Clips/casual_Female_K@Walking.fbx / Walking
+- OpenDoorOutwards -> Assets/Animations/Hearth/17F02/Clips/Open_Door_Outwards.fbx / mixamo.com
 
 casual_Female_K
-- Sitting -> Assets/Sitting.fbx / mixamo.com
+- Sitting -> Assets/Animations/Hearth/17F02/Clips/Sitting.fbx / mixamo.com
 
 casual_Male_K
-- SittingIdle -> Assets/Sitting_Idle.fbx / mixamo.com
+- SittingIdle -> Assets/Animations/Hearth/17F02/Clips/Sitting_Idle.fbx / mixamo.com
 
 casual_Male_K (1)
-- ButtonPushing -> Assets/Button_Pushing.fbx / mixamo.com
+- ButtonPushing -> Assets/Animations/Hearth/17F02/Clips/Button_Pushing.fbx / mixamo.com
 ```
 
 女主离开卧室的新执行顺序：
@@ -498,7 +498,7 @@ casual_Male_K (1)
 1. 黑屏恢复后，女主循环 `SittingDisbelief`。
 2. 玩家完成 E 安慰后，女主播放一次 `SittingTalking`。`Bedroom Talking Max Seconds` 默认 `10`，设为 `0` 或负数时等待完整动作/字幕。
 3. 男主喊吃饭、女主回应后，女主播放 `SitToStand`。
-4. 循环 `WalkLoop`，使用 `Assets/casual_Female_K@Walking.fbx / Walking`，同时按参考点路线移动到门口。
+4. 循环 `WalkLoop`，使用 `Assets/Animations/Hearth/17F02/Clips/casual_Female_K@Walking.fbx / Walking`，同时按参考点路线移动到门口。
 5. 到 `Wife Door Pause Anchor` 后停止走路，播放 `OpenDoorOutwards`。
 6. `OpenDoorOutwards` 开始约 `1s` 后调用 `Door_2_Brown (4)` 开门。
 7. 开门动作结束后关闭 root motion，再直接移动/校正到 `Wife Exit Outside Anchor`。

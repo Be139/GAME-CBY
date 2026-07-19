@@ -9,7 +9,10 @@ Person Controller (4) 大堂出生
      -> 三组 NPC 对白可选、任意顺序（只锁移动，保留视角）
   -> TvUnitSet5 同步终端按 E
   -> 0.5 秒镜头平移 + 开机
-  -> Space 领取 17F 巡查任务
+  -> Field Unit 立即开始任务简报
+  -> 前 5 秒 PLEASE WAIT
+  -> Space 关闭终端（简报在大厅继续）
+  -> 简报结束后开放其他 E 交互与电梯
   -> 电梯按钮 Mesh2643 按 E
   -> 渐黑到 Person Controller (5)
   -> 电梯对白
@@ -66,6 +69,19 @@ Person Controller (4) 大堂出生
 - 开机闪烁：`HearthTerminalBootSequence` 的时长、颜色、扫描线和闪烁参数。
 - UI 文字与几何：打开 Prefab Mode 修改 Canvas 子对象；修改 Prefab 后场景实例会跟随。
 - 领取任务使用 `HearthTvTerminalController / Custom Primary Action`，不要改成前三户的 Replay 操作。
+- 游戏关闭状态：`Hide Canvas When Closed = true`，因此 World Space Canvas 完全隐藏；编辑模式由 `Show Canvas In Edit Mode` 决定是否显示。
+- 临时显示并贴合实体屏幕：`Tools > Hearth > Lobby > Show And Align Task Terminal Canvas For Editing`。
+- 直接手调 `MonitorCanvas` 后保存位置：`Capture Task Terminal Canvas Placement`。该操作只写入 `TaskTerminalScreenAnchor`，不会修改终端 Camera 的 Transform 或 FOV。
+- 当前验证会报告 Canvas 与 Anchor 的位置、旋转差异，但不会自动覆盖你的手调结果。
+
+### 任务终端输入时序
+
+- 开机完成且任务页真正显示后，Field Unit 简报立即开始。
+- 前 `5` 秒 Space 与 Esc 无效，提示为 `PLEASE WAIT`。
+- 5 秒后提示变为 `SPACE  CLOSE TERMINAL`。按下后只关闭页面，简报仍继续播放。
+- 页面关闭后米娅可以移动和转头，但所有 E 交互仍关闭，电梯也不会提前解锁。
+- 简报最后一句 `Route loaded... Destination: Floor Seventeen.` 播放结束后才恢复交互并开放电梯。
+- 成功领取后，本轮终端永久失效；再次看向它不显示 E。
 
 ## 五、如何修改对白与接入语音
 
@@ -99,6 +115,8 @@ Apply 菜单可以安全重跑，但日常调整 NPC、触发范围、Person Con
 - 三组对白任意顺序触发；播放时不能移动但可以转头；每组一轮只播一次。
 - 不听三组对白也能使用同步终端。
 - 终端按 E 后镜头平滑进入，没有人类 HUD 或实体 TV 黑块挡住页面。
-- Space 领取任务后电梯按钮才显示 E。
+- 前 5 秒显示 `PLEASE WAIT`，Space/Esc 不能提前关闭。
+- 5 秒后 Space 可关闭终端；简报继续时米娅可移动、不可使用其他 E。
+- 简报最后一句结束后电梯按钮才显示 E，任务终端不再显示 E。
 - 电梯对白结束后到达当前保存的 17F 落点，移动和视角恢复。
 - 全程只有一个有效 Camera 和一个 AudioListener，Console 没有新增脚本 Error。

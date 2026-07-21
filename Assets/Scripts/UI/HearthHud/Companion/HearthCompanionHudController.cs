@@ -50,6 +50,7 @@ public class HearthCompanionHudController : MonoBehaviour
 
     private HearthCompanionHudSceneData currentScene;
     private bool explicitVisibility = true;
+    private bool missingHoldPromptWarningLogged;
 
     public HearthCompanionHudSceneData CurrentScene { get { return currentScene; } }
     public string CurrentSceneId { get { return currentScene != null ? currentScene.SceneId : string.Empty; } }
@@ -242,18 +243,49 @@ public class HearthCompanionHudController : MonoBehaviour
 
     public void SetHoldPromptVisible(bool visible)
     {
-        if (holdPrompt != null)
+        ResolveReferences();
+        if (holdPrompt == null)
         {
-            holdPrompt.SetVisible(visible);
-            if (!visible)
+            if (visible && !missingHoldPromptWarningLogged)
             {
-                holdPrompt.ResetHold();
+                Debug.LogWarning("[HearthCompanionHudController] HoldPrompt is not bound. Reapply the companion HUD binding tool.", this);
+                missingHoldPromptWarningLogged = true;
             }
+
+            return;
+        }
+
+        missingHoldPromptWarningLogged = false;
+        if (visible)
+        {
+            if (currentScene == null || !currentScene.ShowHoldPrompt)
+            {
+                holdPrompt.SetVisible(false);
+                return;
+            }
+
+            if (!holdPrompt.IsVisible)
+            {
+                holdPrompt.Apply(currentScene);
+            }
+            else
+            {
+                holdPrompt.SetVisible(true);
+            }
+
+            return;
+        }
+
+        if (holdPrompt.IsVisible)
+        {
+            holdPrompt.SetVisible(false);
+            holdPrompt.ResetHold();
         }
     }
 
     public void ShowCurrentHoldPrompt()
     {
+        ResolveReferences();
         if (holdPrompt == null || currentScene == null || !currentScene.ShowHoldPrompt)
         {
             SetHoldPromptVisible(false);
@@ -424,6 +456,11 @@ public class HearthCompanionHudController : MonoBehaviour
         if (audioSource == null)
         {
             audioSource = GetComponent<AudioSource>();
+        }
+
+        if (holdPrompt == null)
+        {
+            holdPrompt = GetComponentInChildren<HearthCompanionHoldPrompt>(true);
         }
 
         if (autoFindViewSwitchController && viewSwitchController == null)

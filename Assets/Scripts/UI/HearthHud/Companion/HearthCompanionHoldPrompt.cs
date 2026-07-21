@@ -30,6 +30,19 @@ public class HearthCompanionHoldPrompt : MonoBehaviour, IPointerDownHandler, IPo
     private float progress;
 
     public UnityEvent OnHoldCompleted { get { return onHoldCompleted; } }
+    public bool IsVisible
+    {
+        get
+        {
+            return gameObject.activeInHierarchy &&
+                   (canvasGroup == null || canvasGroup.alpha > 0.01f);
+        }
+    }
+
+    private void Awake()
+    {
+        ResolveReferences();
+    }
 
     public void Configure(
         HearthCompanionHudController newController,
@@ -110,6 +123,13 @@ public class HearthCompanionHoldPrompt : MonoBehaviour, IPointerDownHandler, IPo
 
     public void SetVisible(bool visible)
     {
+        ResolveReferences();
+
+        if (visible && !gameObject.activeSelf)
+        {
+            gameObject.SetActive(true);
+        }
+
         if (canvasGroup != null)
         {
             canvasGroup.alpha = visible ? 1f : 0f;
@@ -117,7 +137,10 @@ public class HearthCompanionHoldPrompt : MonoBehaviour, IPointerDownHandler, IPo
             canvasGroup.blocksRaycasts = visible && allowPointerHold;
         }
 
-        gameObject.SetActive(visible);
+        if (!visible && gameObject.activeSelf)
+        {
+            gameObject.SetActive(false);
+        }
     }
 
     public void ResetHold()
@@ -182,6 +205,19 @@ public class HearthCompanionHoldPrompt : MonoBehaviour, IPointerDownHandler, IPo
         if (progressText != null)
         {
             progressText.text = completed ? "COMPLETE" : "HOLD TO ACT  " + Mathf.RoundToInt(clamped * 100f).ToString("00") + "%";
+        }
+    }
+
+    private void ResolveReferences()
+    {
+        if (canvasGroup == null)
+        {
+            canvasGroup = GetComponent<CanvasGroup>();
+        }
+
+        if (controller == null)
+        {
+            controller = GetComponentInParent<HearthCompanionHudController>(true);
         }
     }
 }

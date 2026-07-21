@@ -4,7 +4,7 @@ using UnityEngine;
 public class HearthCompanionHudPreviewInput : MonoBehaviour
 {
     [Header("Preview")]
-    [SerializeField] private bool previewInputEnabled = true;
+    [SerializeField] private bool previewInputEnabled;
     [SerializeField] private HearthCompanionHudController controller;
 
     [Header("Keys")]

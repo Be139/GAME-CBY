@@ -477,3 +477,13 @@
 - 新增第二张照片后，只需放入固定路径并运行 17F04 Apply；不要手动复制第二套相框或另建终端。
 - 新增语音后，把 Clip 拖到对应 Dialogue Asset 的独立行；无需改状态机。正文变更仍先改无标签正式稿，再同步并重新检查变化行的语音引用。
 - Play Mode 当前已通过启动冒烟测试；已知旧问题仅为 ROOM2 书桌与 ROOM3 电视柜的负缩放 BoxCollider，不属于本轮流程接口。
+
+## 三户共享长按提示维护入口
+
+- 正式提示对象：`HearthCompanionHudRoot/InteractionLayer/HoldPrompt`。
+- 固定阶段显示：调用 `HearthCompanionHudController.ShowCurrentHoldPrompt()`；适用于剧情已经允许操作、无需持续瞄准目标的阶段。
+- 准星条件显示：每帧把目标判定结果传给 `HearthCompanionHudController.SetHoldPromptVisible(canInteract)`；适用于 17F01 小男孩和 17F03 母亲/女儿。
+- 提示文案、时长和是否显示继续由 `HearthCompanionHudSceneData` 的当前页面数据控制。
+- 17F01 目标条件继续由 `HearthCompanionReplayInteractable.CanInteract(actor, camera)` 提供；17F03 继续由当前剧情目标和中心射线共同判定。
+- 引用丢失或重建 HUD 后运行 `Tools > Hearth > HUD > Repair Companion Hold Interactions`，再运行同目录下的 Validate。
+- 正式 Prefab 必须保持 `HearthCompanionHudPreviewInput.previewInputEnabled = false`，避免预览输入改变当前剧情页。

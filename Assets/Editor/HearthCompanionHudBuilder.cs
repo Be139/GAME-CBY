@@ -219,7 +219,7 @@ public static class HearthCompanionHudBuilder
             sharedTexts.ToArray());
 
         HearthCompanionHudPreviewInput preview = root.GetComponent<HearthCompanionHudPreviewInput>();
-        preview.SetPreviewInputEnabled(true);
+        preview.SetPreviewInputEnabled(false);
         HearthRuntimeInterfaceBinder.EnsurePromptForHudRoot(root, true);
 
         return root;

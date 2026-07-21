@@ -722,3 +722,12 @@ casual_Female_K (9) -> REF_Wife_17F02_ExitOutside
 - Unity 已同步 `70` 个 Dialogue Asset、`394` 个映射条目；正式稿共有 `330` 个稳定字幕段。
 - Coverage 与真实 TMP 两行布局验证均通过。
 - 大厅、17F03、17F04 场景 Binder 已应用并通过 Camera/AudioListener/锚点验证；17F01/17F02 玩法未重建。
+
+## 2026-07-21 三户长按交互恢复
+
+- 本次只修 UI 绑定和显示生命周期，不改变 17F01、17F02、17F03 的剧情顺序。
+- 17F01：仍然只有准星命中小男孩交互胶囊、距离与阶段同时满足时显示长按 E。
+- 17F02：仍然在 Claire 的对白结束并等待约 1.5 秒后，显示 `HOLD E  OFFER REASSURANCE TO CLAIRE`。
+- 17F03：仍按剧情顺序先面对女儿、再面对母亲；准星命中当前目标时显示对应长按 E。
+- 正式剧情关闭机器人 HUD 页面浏览输入；后续提示内容由对应 `HearthCompanionHudSceneData` 维护。
+- 单按 E 的终端、门、相框与实体机器人交互不受本次修改影响。

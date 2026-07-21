@@ -20,6 +20,15 @@ public class HearthPhotoFrameInteractable : MonoBehaviour, IInteractable, IInter
     [SerializeField] private PlayerInteraction playerInteraction;
     [SerializeField] private Rigidbody playerRigidbody;
 
+    [Header("Photo Pages")]
+    [SerializeField] private Renderer photoRenderer;
+    [SerializeField] private Texture firstPhotoTexture;
+    [SerializeField] private Texture secondPhotoTexture;
+    [SerializeField] private KeyCode previousPageKey = KeyCode.LeftArrow;
+    [SerializeField] private KeyCode nextPageKey = KeyCode.RightArrow;
+    [SerializeField] private string navigationHintLabel = "LEFT / RIGHT  SWITCH PHOTO";
+    [SerializeField] private string browseAndExitHintLabel = "LEFT / RIGHT  SWITCH PHOTO     SPACE  RETURN";
+
     [Header("Exit")]
     [SerializeField] private KeyCode confirmExitKey = KeyCode.Space;
     [SerializeField] private KeyCode cancelExitKey = KeyCode.Escape;
@@ -37,6 +46,9 @@ public class HearthPhotoFrameInteractable : MonoBehaviour, IInteractable, IInter
     private bool photoCameraWasEnabled;
     private bool playerAudioWasEnabled;
     private bool photoAudioWasEnabled;
+    private bool pageNavigationEnabled;
+    private int currentPageIndex;
+    private MaterialPropertyBlock photoPropertyBlock;
 
     public bool IsOpen
     {
@@ -46,6 +58,16 @@ public class HearthPhotoFrameInteractable : MonoBehaviour, IInteractable, IInter
     public bool IsTransitioning
     {
         get { return transitioning; }
+    }
+
+    public bool HasSecondPhoto
+    {
+        get { return secondPhotoTexture != null; }
+    }
+
+    public int CurrentPageIndex
+    {
+        get { return currentPageIndex; }
     }
 
     public bool IsInteractionAvailable
@@ -60,12 +82,32 @@ public class HearthPhotoFrameInteractable : MonoBehaviour, IInteractable, IInter
         {
             SetCameraState(photoCamera, false, false);
         }
-        SetExitHintVisible(false);
+        SetHint(string.Empty, false);
     }
 
     private void Update()
     {
-        if (!viewOpen || transitioning || !dialogueComplete)
+        if (!viewOpen || transitioning)
+        {
+            return;
+        }
+
+        if (pageNavigationEnabled && HasSecondPhoto)
+        {
+            if (Input.GetKeyDown(previousPageKey))
+            {
+                TrySelectPage(currentPageIndex - 1);
+                return;
+            }
+
+            if (Input.GetKeyDown(nextPageKey))
+            {
+                TrySelectPage(currentPageIndex + 1);
+                return;
+            }
+        }
+
+        if (!dialogueComplete)
         {
             return;
         }
@@ -111,8 +153,41 @@ public class HearthPhotoFrameInteractable : MonoBehaviour, IInteractable, IInter
 
     public void NotifyDialogueComplete()
     {
+        pageNavigationEnabled = HasSecondPhoto;
         dialogueComplete = true;
-        SetExitHintVisible(true);
+        SetHint(pageNavigationEnabled ? browseAndExitHintLabel : exitHintLabel, true);
+    }
+
+    public void NotifyPageReadyForNavigation()
+    {
+        dialogueComplete = false;
+        pageNavigationEnabled = HasSecondPhoto;
+        SetHint(pageNavigationEnabled ? navigationHintLabel : exitHintLabel, true);
+    }
+
+    public void SetPageNavigationEnabled(bool value)
+    {
+        pageNavigationEnabled = value && HasSecondPhoto;
+        if (viewOpen)
+        {
+            if (dialogueComplete)
+            {
+                SetHint(pageNavigationEnabled ? browseAndExitHintLabel : exitHintLabel, true);
+            }
+            else
+            {
+                SetHint(pageNavigationEnabled ? navigationHintLabel : string.Empty, pageNavigationEnabled);
+            }
+        }
+    }
+
+    public void ConfigurePhotoPages(Renderer targetRenderer, Texture firstTexture, Texture secondTexture)
+    {
+        photoRenderer = targetRenderer;
+        firstPhotoTexture = firstTexture;
+        secondPhotoTexture = secondTexture;
+        currentPageIndex = 0;
+        ApplyCurrentPhoto();
     }
 
     public void Configure(
@@ -139,7 +214,7 @@ public class HearthPhotoFrameInteractable : MonoBehaviour, IInteractable, IInter
     {
         exitHintGroup = group;
         exitHintText = text;
-        SetExitHintVisible(false);
+        SetHint(string.Empty, false);
     }
 
     private IEnumerator OpenViewRoutine()
@@ -153,7 +228,10 @@ public class HearthPhotoFrameInteractable : MonoBehaviour, IInteractable, IInter
 
         transitioning = true;
         dialogueComplete = false;
-        SetExitHintVisible(false);
+        pageNavigationEnabled = false;
+        currentPageIndex = 0;
+        ApplyCurrentPhoto();
+        SetHint(string.Empty, false);
         CaptureStates();
         SetControlsEnabled(false);
 
@@ -196,7 +274,8 @@ public class HearthPhotoFrameInteractable : MonoBehaviour, IInteractable, IInter
 
         viewOpen = false;
         dialogueComplete = false;
-        SetExitHintVisible(false);
+        pageNavigationEnabled = false;
+        SetHint(string.Empty, false);
         transitioning = false;
         RestoreControls();
         finaleController.CompletePhotoInspection();
@@ -287,11 +366,61 @@ public class HearthPhotoFrameInteractable : MonoBehaviour, IInteractable, IInter
         }
     }
 
-    private void SetExitHintVisible(bool visible)
+    private void TrySelectPage(int requestedIndex)
+    {
+        int pageCount = HasSecondPhoto ? 2 : 1;
+        int nextIndex = Mathf.Clamp(requestedIndex, 0, pageCount - 1);
+        if (nextIndex == currentPageIndex || finaleController == null)
+        {
+            return;
+        }
+
+        currentPageIndex = nextIndex;
+        ApplyCurrentPhoto();
+
+        if (dialogueComplete)
+        {
+            pageNavigationEnabled = HasSecondPhoto;
+            SetHint(pageNavigationEnabled ? browseAndExitHintLabel : exitHintLabel, true);
+            return;
+        }
+
+        pageNavigationEnabled = false;
+        SetHint(string.Empty, false);
+        finaleController.RequestPhotoPage(currentPageIndex);
+    }
+
+    private void ApplyCurrentPhoto()
+    {
+        if (photoRenderer == null)
+        {
+            return;
+        }
+
+        Texture texture = currentPageIndex == 1 && secondPhotoTexture != null
+            ? secondPhotoTexture
+            : firstPhotoTexture;
+        if (texture == null)
+        {
+            return;
+        }
+
+        if (photoPropertyBlock == null)
+        {
+            photoPropertyBlock = new MaterialPropertyBlock();
+        }
+
+        photoRenderer.GetPropertyBlock(photoPropertyBlock);
+        photoPropertyBlock.SetTexture("_BaseMap", texture);
+        photoPropertyBlock.SetTexture("_MainTex", texture);
+        photoRenderer.SetPropertyBlock(photoPropertyBlock);
+    }
+
+    private void SetHint(string label, bool visible)
     {
         if (exitHintText != null)
         {
-            exitHintText.text = exitHintLabel;
+            exitHintText.text = label;
         }
 
         if (exitHintGroup == null)

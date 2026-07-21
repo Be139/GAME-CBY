@@ -11,24 +11,12 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bf2d7532251303545ab78ab68b00d5cf, type: 3}
   m_Name: 17F04_HomeGreeting_Low
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier:
   sequenceId: 17F04_HomeGreeting_Low
-  notes: '17F04 terminal-side guardian-confirmation exchange (negative trust variant).
-    Source: HEARTH_Full_Game_Script_Expanded_Native_English_Lobby_Mia_Commentary.md,
-    stable marker 17F04_HomeGreeting_Low. Text is synchronized by Tools/Hearth/Dialogue/Sync
-    All Dialogue From Final Script.'
+  notes: Low-trust greeting after entering Mia's home.
   lines:
   - presentationKind: 0
     startDelay: 0.15
-    speaker: Field Unit
-    text: "Inspector, this is the full message your daughter left at 4:42 PM\u2014the
-      notification you received in the lobby. Please listen before entering."
-    holdSeconds: 9.451886
-    voiceClip: {fileID: 0}
-    durationMode: 0
-    voiceTailSeconds: 0.12
-  - presentationKind: 0
-    startDelay: 0.18
     speaker: Lily
     text: Mom? Are you coming tomorrow? Ms. Parker said it'd be better if a real
       person came. Not just a system check-in.
@@ -39,19 +27,18 @@ MonoBehaviour:
   - presentationKind: 0
     startDelay: 0.18
     speaker: Mia's Home Unit
-    text: Mom will receive your progress report, and she'll make sure you have everything
-      you need. Let's finish tonight's run-through first, okay?
-    holdSeconds: 9.074528
+    text: Mom will receive your progress report and make sure you have everything
+      you need. Let's finish tonight's practice first, okay?
+    holdSeconds: 8.697169
     voiceClip: {fileID: 0}
     durationMode: 0
     voiceTailSeconds: 0.12
   - presentationKind: 0
     startDelay: 0.18
     speaker: Field Unit
-    text: The reply was filed under 'attendance confirmation, bedtime routine, concurrent.'
-      Standard handling. You were at 17F-01 when it was issued. Please complete the
-      confirmation.
-    holdSeconds: 10.206603
+    text: Please acknowledge that you've reviewed the pending response. Then return
+      home and address it directly.
+    holdSeconds: 6.810377
     voiceClip: {fileID: 0}
     durationMode: 0
     voiceTailSeconds: 0.12

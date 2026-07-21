@@ -148,6 +148,34 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
         }
     }
 
+    public void ApplyDefaultWaveContentPreservingTuning()
+    {
+        PopupWave[] defaults = CreateDefaultWaves();
+        if (lowTrustWaves == null || lowTrustWaves.Length != defaults.Length)
+        {
+            lowTrustWaves = defaults;
+            return;
+        }
+
+        for (int i = 0; i < defaults.Length; i++)
+        {
+            PopupWave target = lowTrustWaves[i];
+            PopupWave source = defaults[i];
+            if (target == null)
+            {
+                lowTrustWaves[i] = source;
+                continue;
+            }
+
+            target.waveId = source.waveId;
+            target.heading = source.heading;
+            target.popupTitle = source.popupTitle;
+            target.messages = source.messages;
+            target.backgroundColor = source.backgroundColor;
+            target.accentColor = source.accentColor;
+        }
+    }
+
     public override void BeginChallenge(bool highTrust)
     {
         ResetRuntime();
@@ -713,14 +741,14 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
         {
             new PopupWave
             {
-                waveId = "ACCESS_DENIAL",
-                heading = "SHUTDOWN REQUEST BLOCKED",
+                waveId = "INSUFFICIENT_AUTHORIZATION",
+                heading = "INSUFFICIENT AUTHORIZATION",
                 popupTitle = "SHUTDOWN REQUEST BLOCKED",
                 messages = new[]
                 {
-                    "CORE SERVICE REQUIRES MANUAL RELEASE",
-                    "HOUSEHOLD CONTINUITY DATA REMAINS ACTIVE",
-                    "FAREWELL PROTOCOL AUTHORITY NOT FOUND"
+                    "INSPECTOR RATING BELOW REQUIRED THRESHOLD",
+                    "STANDARD SHUTDOWN AUTHORITY NOT AVAILABLE",
+                    "ADDITIONAL CONFIRMATION REQUIRED"
                 },
                 backgroundColor = new Color(0.018f, 0.055f, 0.078f, 0.97f),
                 accentColor = new Color(0.2f, 0.78f, 1f, 1f),
@@ -730,15 +758,15 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
             },
             new PopupWave
             {
-                waveId = "AUTHORITY_CONFLICT",
-                heading = "AUTHORITY CONFLICT",
-                popupTitle = "AUTHORITY CONFLICT",
+                waveId = "NON_STANDARD_OPERATION",
+                heading = "NON-STANDARD OPERATION RECORD",
+                popupTitle = "OPERATION WILL BE RECORDED",
                 messages = new[]
                 {
-                    "INSPECTOR OVERRIDE CONTESTED",
-                    "LILY PROFILE HANDOFF INCOMPLETE",
-                    "REMOTE AUTHORITY REJECTED",
-                    "SERVICE CONTINUITY LOCK RESTORED"
+                    "HOUSEHOLD REVIEW WILL BE CREATED",
+                    "SEVEN-DAY INSPECTOR SUSPENSION MAY APPLY",
+                    "SUPERVISOR NOTICE PENDING",
+                    "CONFIRMATION WINDOW RESTORED"
                 },
                 backgroundColor = new Color(0.085f, 0.048f, 0.018f, 0.97f),
                 accentColor = new Color(1f, 0.62f, 0.2f, 1f),
@@ -748,15 +776,15 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
             },
             new PopupWave
             {
-                waveId = "FORCED_TERMINATION",
-                heading = "FORCED TERMINATION ALERT",
-                popupTitle = "FORCED TERMINATION ALERT",
+                waveId = "FINAL_CONFIRMATION",
+                heading = "FINAL SHUTDOWN CONFIRMATION",
+                popupTitle = "NO FAREWELL PROTOCOL",
                 messages = new[]
                 {
-                    "CORE SERVICE RESISTS TERMINATION",
-                    "MEMORY INTEGRITY FAILURE IMMINENT",
-                    "HOUSEHOLD SAFETY MODEL COLLAPSING",
-                    "EMERGENCY SHUTDOWN CHANNEL SATURATED"
+                    "FAREWELL PROTOCOL WILL BE BYPASSED",
+                    "HOUSEHOLD UNIT WILL TERMINATE IMMEDIATELY",
+                    "THIS ACTION CANNOT BE UNDONE",
+                    "PRESS SPACE TO FORCE SHUTDOWN"
                 },
                 backgroundColor = new Color(0.09f, 0.018f, 0.022f, 0.98f),
                 accentColor = new Color(1f, 0.24f, 0.18f, 1f),

@@ -27,6 +27,7 @@ public static class Hearth17F04FinaleBinder
     private const string MaterialFolder = "Assets/materials/Hearth";
     private const string PhotoMaterialPath = MaterialFolder + "/17F04_Photo_Unlit.mat";
     private const string PhotoTexturePath = "Assets/Art/UI/HearthHud/Finale/FamilyPhoto.png";
+    private const string SecondPhotoTexturePath = "Assets/Art/UI/HearthHud/Finale/FamilyPhoto_Second.png";
 
     [MenuItem("Tools/Hearth/Finale/Apply 17F04 Home Finale Setup")]
     public static void ApplySetup()
@@ -63,6 +64,12 @@ public static class Hearth17F04FinaleBinder
         EnsureAssetFolder(DialogueFolder);
         EnsureAssetFolder("Assets/materials");
         EnsureAssetFolder(MaterialFolder);
+
+        if (!HearthFinalDialogueSync.SyncAllFromFinalScript(false))
+        {
+            Debug.LogError("[Hearth17F04FinaleBinder] Setup stopped because the final dialogue source could not be synchronized.");
+            return;
+        }
 
         BuildHomeTerminalPrefab();
 
@@ -402,6 +409,17 @@ public static class Hearth17F04FinaleBinder
 
         EnsureInteractionCollider(tv.gameObject);
         ConfigurePhotoMaterial(tv);
+        Transform photoVisual = tv.GetComponentsInChildren<Transform>(true).FirstOrDefault(item => item.name == "photo");
+        Renderer photoRenderer = photoVisual != null ? photoVisual.GetComponent<Renderer>() : null;
+        Texture firstPhoto = AssetDatabase.LoadAssetAtPath<Texture2D>(PhotoTexturePath);
+        if (firstPhoto == null && photoRenderer != null && photoRenderer.sharedMaterial != null)
+        {
+            Material material = photoRenderer.sharedMaterial;
+            if (material.HasProperty("_BaseMap")) firstPhoto = material.GetTexture("_BaseMap");
+            if (firstPhoto == null && material.HasProperty("_MainTex")) firstPhoto = material.GetTexture("_MainTex");
+        }
+        Texture secondPhoto = AssetDatabase.LoadAssetAtPath<Texture2D>(SecondPhotoTexturePath);
+        photo.ConfigurePhotoPages(photoRenderer, firstPhoto, secondPhoto);
         EditorUtility.SetDirty(tv.gameObject);
         EditorUtility.SetDirty(photo);
         return photo;
@@ -804,6 +822,7 @@ public static class Hearth17F04FinaleBinder
         feedback.Configure(new Graphic[] { instruction, counter });
         HearthVirusPopupShutdownChallenge challenge = root.GetComponent<HearthVirusPopupShutdownChallenge>();
         challenge.Configure(group, popupLayer, popupTemplate, heading, counter, instruction, feedback);
+        challenge.ApplyDefaultWaveContentPreservingTuning();
         EditorUtility.SetDirty(root);
         return challenge;
     }
@@ -911,11 +930,16 @@ public static class Hearth17F04FinaleBinder
         SetObject(so, "homeGreetingHighTrust", dialogues.HomeHigh);
         SetObject(so, "homeGreetingLowTrust", dialogues.HomeLow);
         SetObject(so, "christmasPhotoSequence", dialogues.Photo);
+        SetObject(so, "secondPhotoSequence", dialogues.SecondPhoto);
+        SetObject(so, "photoCompletionSequence", dialogues.PhotoCompletion);
         SetObject(so, "hearingDaughterRoomSequence", dialogues.HearingRoom);
         SetObject(so, "daughterRoomHighTrustSequence", dialogues.DaughterHigh);
         SetObject(so, "daughterRoomLowTrustSequence", dialogues.DaughterLow);
+        SetObject(so, "finalChoiceAdvisorySequence", dialogues.FinalChoiceAdvisory);
         SetObject(so, "answerSelfSequence", dialogues.AnswerSelf);
         SetObject(so, "companionAnswerSequence", dialogues.CompanionAnswer);
+        SetObject(so, "companionAnswerPositiveRatingSequence", dialogues.CompanionAnswerPositiveRating);
+        SetObject(so, "companionAnswerNegativeRatingSequence", dialogues.CompanionAnswerNegativeRating);
         SetObject(so, "shutdownHighTrustSequence", dialogues.ShutdownHigh);
         SetObject(so, "shutdownLowTrustSequence", dialogues.ShutdownLow);
         SetObject(so, "epilogueHighRetain", dialogues.EpilogueHighRetain);
@@ -1058,9 +1082,11 @@ public static class Hearth17F04FinaleBinder
             L("Field Companion", "Are you still willing to spend that effort here?", 0.3f, 3.5f));
         result.Photo = EnsureDialogue("17F04_ChristmasPhoto", "Mandatory Christmas photo inspection at TV (4).",
             L("Field Companion", "Inspector, this is a family photo from last Christmas.", 0.2f, 3.6f),
-            L("Field Companion", "That evening, you took half a day off to come home. The kitchen timer took this photo.", 0.2f, 4.8f),
-            L("Field Companion", "Your daughter was seven at the time.", 0.2f, 3.0f),
-            L("Field Companion", "Family Emotional Stability Score that night: 9.4 out of 10. The highest that year.", 0.2f, 4.8f));
+            L("Field Companion", "That evening, you took half a day off to come home. The kitchen timer took this photo.", 0.2f, 4.8f));
+        result.SecondPhoto = EnsureDialogue("17F04_SecondPhoto", "Optional second photo; used only when a second texture is assigned.",
+            L("Field Companion", "This one is from last week. Lily is holding a certificate. The home unit took the picture.", 0.2f, 4.8f));
+        result.PhotoCompletion = EnsureDialogue("17F04_PhotoCompletion", "Objective after all available photo pages are reviewed.",
+            L("Field Companion", "When you're ready, enter Lily's room and address the question from her voice message.", 0.2f, 4.2f));
         result.HearingRoom = EnsureDialogue("17F04_HearingDaughterRoom", "Voices heard before the daughter's room becomes interactable.",
             L("Home Companion", "One more time, slower.", 0.2f, 2.4f),
             L("Lily", "Hello, everyone. My name is Lily. Today I want to share my favorite... my favorite book.", 0.2f, 4.8f),
@@ -1093,6 +1119,10 @@ public static class Hearth17F04FinaleBinder
                 L("Field Companion", "...Inspector, the home unit is waiting for your instruction.", 0.2f, 3.8f)
             }).ToArray());
 
+        result.FinalChoiceAdvisory = EnsureDialogue("17F04_FinalChoiceAdvisory", "Field Unit advisory before the final choice unlocks.",
+            L("Field Unit", "Allowing the home unit to answer is more likely to lead to a better ending.", 0.2f, 4.2f),
+            L("Field Unit", "You may give Lily your own answer. Doing so could destabilize the household's emotional index.", 0.2f, 4.8f));
+
         result.AnswerSelf = EnsureDialogue("17F04_AnswerSelf", "A route: Mia answers Lily herself; free movement remains enabled.",
             L("Mia", "I will be there.", 0.3f, 2.5f),
             L("Lily", "...Do you promise?", 0.35f, 2.8f),
@@ -1111,6 +1141,10 @@ public static class Hearth17F04FinaleBinder
             L("Home Companion", "Good. We will start from your name and take it slowly.", 0.2f, 3.8f),
             L("Field Companion", "Household emotional stability has returned to the safe zone.", 0.6f, 3.5f),
             L("Field Companion", "This shift's overall rating: excellent. The case can be archived.", 0.2f, 4.0f));
+        result.CompanionAnswerPositiveRating = EnsureDialogue("17F04_CompanionAnswer_PositiveRating", "Positive trust rating after retaining the unit.",
+            L("Field Unit", "Your shift remains within the accepted performance range.", 0.2f, 3.4f));
+        result.CompanionAnswerNegativeRating = EnsureDialogue("17F04_CompanionAnswer_NegativeRating", "Negative trust rating after retaining the unit.",
+            L("Field Unit", "Your inspection review remains pending with your supervisor.", 0.2f, 3.6f));
 
         result.ShutdownHigh = EnsureDialogue("17F04_Shutdown_High", "High-trust graceful shutdown after one confirmation.",
             L("Home Companion", "Lily, Mom is here. I can go now.", 0.5f, 3.4f),
@@ -1485,11 +1519,16 @@ public static class Hearth17F04FinaleBinder
         public HearthDialogueSequence HomeHigh;
         public HearthDialogueSequence HomeLow;
         public HearthDialogueSequence Photo;
+        public HearthDialogueSequence SecondPhoto;
+        public HearthDialogueSequence PhotoCompletion;
         public HearthDialogueSequence HearingRoom;
         public HearthDialogueSequence DaughterHigh;
         public HearthDialogueSequence DaughterLow;
+        public HearthDialogueSequence FinalChoiceAdvisory;
         public HearthDialogueSequence AnswerSelf;
         public HearthDialogueSequence CompanionAnswer;
+        public HearthDialogueSequence CompanionAnswerPositiveRating;
+        public HearthDialogueSequence CompanionAnswerNegativeRating;
         public HearthDialogueSequence ShutdownHigh;
         public HearthDialogueSequence ShutdownLow;
         public HearthDialogueSequence EpilogueHighRetain;

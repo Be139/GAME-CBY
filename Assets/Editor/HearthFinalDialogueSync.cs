@@ -11,7 +11,7 @@ using UnityEngine;
 
 public static class HearthFinalDialogueSync
 {
-    private const string FinalScriptFileName = "HEARTH_Full_Game_Script_Expanded_Native_English_Lobby_Mia_Commentary.md";
+    private const string FinalScriptFileName = "HEARTH_Full_Game_Script_No_Audio_Tags_Native_English.md";
     private const string SupplementalFolder = "Assets/Data/MinLoop/Dialogues/FinalScriptSupplemental";
     private const string SubtitleStylePath = "Assets/Data/MinLoop/UI/Hearth_SubtitleStyle.asset";
     private const string MarkerPrefix = "<!-- HEARTH:SEQUENCES ";
@@ -740,7 +740,8 @@ public static class HearthFinalDialogueSync
             M(lobby + "Lobby_AssignmentLoaded.asset", "1.1", R(30, 33), "Plays after the assignment is loaded and unlocks the elevator."),
             M(lobby + "Lobby_ElevatorRide.asset", "1.2", R(0, 14), "Elevator briefing before arrival on floor 17."),
 
-            M(extra + "17F01_ApartmentGreeting.asset", "1.3", R(0, 2), "Final-script 17F01 apartment and terminal introduction."),
+            M(extra + "17F01_CorridorArrival.asset", "1.2", I(15), "Floor-17 arrival direction toward the first household."),
+            M(extra + "17F01_TerminalIntro.asset", "1.3", R(0, 2), "17F01 corridor-terminal household introduction."),
             M(root + "17F01_BedroomPrelude.asset", "1.4", R(0, 3), "17F01 bedroom playback before the soothe interaction."),
             M(root + "17F01_BedsideSoothing.asset", "1.4", R(4, 11), "17F01 soothe interaction and event archive."),
             M(root + "17F01_LivingRoomObservation.asset", "1.5", R(0, 13), "17F01 morning parent observation."),
@@ -761,6 +762,7 @@ public static class HearthFinalDialogueSync
             M(extra + "17F02_TerminalSignoff_A.asset", "2.6", I(5, 6, 13, 14), "17F02 option A sign-off and 17F03 alert."),
             M(extra + "17F02_TerminalSignoff_B.asset", "2.6", R(7, 14), "17F02 option B sign-off and 17F03 alert."),
 
+            M(extra + "17F03_CorridorTerminal.asset", "3.0", R(0, 2), "17F03 corridor-terminal alert and emergency-entry briefing."),
             M(extra + "17F03_TerminalEntry.asset", "3.1", I(0), "17F03 enter-unit instruction."),
             M(root + "17F03_HumanEntryParents.asset", "3.2", R(0, 6), "17F03 parent explanation after Mia enters the unit."),
             M(extra + "17F03_InspectionRecallPrompt.asset", "3.2", I(7), "Field Unit instruction shown at the physical-unit inspection camera."),
@@ -771,20 +773,29 @@ public static class HearthFinalDialogueSync
             M(root + "17F03_NightShutdownLeadIn.asset", "3.4", R(7, 9), "17F03 failed standard response and Ava's interruption."),
             M(root + "17F03_NightShutdown.asset", "3.4", I(10), "17F03 deep-sleep system line."),
             M(root + "17F03_NightShutdownAction.asset", "3.4", I(10), "Compatibility copy of the 17F03 deep-sleep system line."),
-            M(root + "17F03_PostReplayExplanation.asset", "3.5", R(0, 2), "17F03 post-replay technical explanation and Laura's question."),
+            M(extra + "17F03_PostReplayQuestion.asset", "3.5", R(0, 1), "Laura and Mia speak immediately after the recorded replay."),
+            M(root + "17F03_PostReplayExplanation.asset", "3.5", R(2, 5), "17F03 technical explanation before the disposition panel reopens."),
             M(extra + "17F03_PostReplay_A.asset", "3.5", R(3, 7), "17F03 option A result."),
             M(extra + "17F03_PostReplay_B.asset", "3.5", I(8, 10, 11, 12, 13, 14, 15), "17F03 option B result excluding the conditional warning."),
+            M(extra + "17F03_CorridorEvaluation_A.asset", "3.5", I(16), "17F03 corridor evaluation after option A."),
+            M(extra + "17F03_CorridorEvaluation_B.asset", "3.5", I(17), "17F03 corridor evaluation after option B."),
+            M(extra + "17F03_PositiveTrustShiftResult.asset", "3.5", I(18), "17F03 positive cumulative-rating result in the corridor."),
             M(extra + "17F03_NegativeTrustSupervisorWarning.asset", "3.5", I(9), "17F03 option B warning used only when resulting trust is negative."),
             M(extra + "17F03_AllInspectionsComplete.asset", "3.5", I(16), "17F03 common completion cue after either disposition."),
 
             M(finale + "17F04_HomeGreeting_High.asset", "4.1", R(0, 3), "17F04 terminal-side guardian-confirmation exchange (positive trust variant)."),
             M(finale + "17F04_HomeGreeting_Low.asset", "4.1", R(0, 3), "17F04 terminal-side guardian-confirmation exchange (negative trust variant)."),
-            M(finale + "17F04_ChristmasPhoto.asset", "4.2", R(0, 3), "17F04 photo-frame narration."),
+            M(finale + "17F04_ChristmasPhoto.asset", "4.2", R(0, 1), "17F04 first photo narration."),
+            M(finale + "17F04_SecondPhoto.asset", "4.2", R(2, 4), "Optional 17F04 second photo narration."),
+            M(finale + "17F04_PhotoCompletion.asset", "4.2", I(5), "Objective shown after all available photo pages are reviewed."),
             M(finale + "17F04_HearingDaughterRoom.asset", "4.3", R(0, 8), "17F04 dialogue heard outside Lily's door."),
             M(finale + "17F04_DaughterRoom_High.asset", "4.4", R(0, 9), "17F04 daughter-room conversation (positive trust variant)."),
             M(finale + "17F04_DaughterRoom_Low.asset", "4.4", R(0, 9), "17F04 daughter-room conversation (negative trust variant)."),
+            M(finale + "17F04_FinalChoiceAdvisory.asset", "4.5", R(0, 1), "Field Unit advisory before the final A/B choice unlocks."),
             M(finale + "17F04_AnswerSelf.asset", "4.5", R(0, 10), "17F04 path A: Mia answers Lily herself."),
             M(finale + "17F04_CompanionAnswer.asset", "4.7", R(18, 25), "17F04 path B: the home unit answers and the Field Unit closes the shift."),
+            M(finale + "17F04_CompanionAnswer_PositiveRating.asset", "4.7", I(26), "Positive cumulative-rating line after retaining the unit."),
+            M(finale + "17F04_CompanionAnswer_NegativeRating.asset", "4.7", I(27), "Negative cumulative-rating line after retaining the unit."),
             M(finale + "17F04_Shutdown_High.asset", "4.6", R(0, 12), "17F04 positive-trust shutdown and proper goodbye."),
             M(finale + "17F04_Shutdown_Low.asset", "4.6", I(0, 1, 2, 13, 14, 15, 16), "17F04 negative-trust forced shutdown."),
             M(finale + "17F04_Epilogue_High_Shutdown.asset", "4.7", R(0, 17), "17F04 path A black-screen epilogue (positive trust compatibility variant)."),

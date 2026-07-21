@@ -11,26 +11,35 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bf2d7532251303545ab78ab68b00d5cf, type: 3}
   m_Name: 17F01_TerminalSignoffIntro
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier:
   sequenceId: 17F01_TerminalSignoffIntro
-  notes: '17F01 sign-off recommendation. Source: HEARTH_Full_Game_Script_Expanded_Native_English_Lobby_Mia_Commentary.md,
+  notes: '17F01 sign-off recommendation. Source: HEARTH_Full_Game_Script_No_Audio_Tags_Native_English.md,
     stable marker 17F01_TerminalSignoffIntro. Text is synchronized by Tools/Hearth/Dialogue/Sync
     All Dialogue From Final Script.'
   lines:
   - presentationKind: 0
     startDelay: 0.15
     speaker: Field Unit
-    text: Household stability has remained in the safe range all year. Last night's
-      response met every standard.
-    holdSeconds: 7.1877356
+    text: Congratulations, Inspector. You've completed your first point-of-view review.
+      Now select a disposition.
+    holdSeconds: 5.678302
     voiceClip: {fileID: 0}
     durationMode: 0
     voiceTailSeconds: 0.12
   - presentationKind: 0
     startDelay: 0.18
     speaker: Field Unit
-    text: Over the past twelve months, this unit has made forty-seven comparable
-      decisions, all within specification.
+    text: The nightmare response was handled well. The unit calmed Noah successfully,
+      and Daniel and Emily requested the upgrade themselves.
+    holdSeconds: 8.319811
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - presentationKind: 0
+    startDelay: 0.18
+    speaker: Field Unit
+    text: Both dispositions come from the inspection manual. I recommend approving
+      the Night Companion Pro upgrade.
     holdSeconds: 6.810377
     voiceClip: {fileID: 0}
     durationMode: 0
@@ -38,9 +47,8 @@ MonoBehaviour:
   - presentationKind: 0
     startDelay: 0.18
     speaker: Field Unit
-    text: 'Parent satisfaction is five out of five, and the household is listed as
-      a model night-care case. Recommendation: approve the upgrade.'
-    holdSeconds: 9.074528
+    text: That approach has been validated across a larger number of households.
+    holdSeconds: 5.3009434
     voiceClip: {fileID: 0}
     durationMode: 0
     voiceTailSeconds: 0.12

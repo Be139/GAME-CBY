@@ -24,7 +24,7 @@ public static class HearthLobbyOpeningBinder
     private const string GrandmotherZonePath = "1F (1)/casual_Male_G@Sitting (1)/Sitting_Idle (2)/space2";
     private const string DialogueFolder = "Assets/Data/MinLoop/Dialogues/Lobby";
     private const string TerminalPrefabPath = "Assets/Prefabs/UI/HearthHud/Terminals/Terminal_Lobby_Assignment.prefab";
-    private const string FinalScriptFileName = "HEARTH_Full_Game_Script_Expanded_Native_English_Lobby_Mia_Commentary.md";
+    private const string FinalScriptFileName = "HEARTH_Full_Game_Script_No_Audio_Tags_Native_English.md";
 
     [MenuItem("Tools/Hearth/Lobby/Apply Ground Floor Opening Setup")]
     public static void ApplySetup()
@@ -68,6 +68,8 @@ public static class HearthLobbyOpeningBinder
             Debug.LogError("[HearthLobbyOpeningBinder] Lobby setup stopped because the final dialogue source could not be synchronized.");
             return;
         }
+        dialogues.Floor17Arrival = AssetDatabase.LoadAssetAtPath<HearthDialogueSequence>(
+            "Assets/Data/MinLoop/Dialogues/FinalScriptSupplemental/17F01_CorridorArrival.asset");
         BuildAssignmentTerminalPrefab();
 
         Transform root = EnsureHierarchy(RootPath);
@@ -802,6 +804,7 @@ public static class HearthLobbyOpeningBinder
         SetObject(so, "openingCloseoutDialogue", dialogues.OpeningCloseout);
         SetObject(so, "assignmentLoadedDialogue", dialogues.AssignmentLoaded);
         SetObject(so, "elevatorDialogue", dialogues.Elevator);
+        SetObject(so, "floor17ArrivalDialogue", dialogues.Floor17Arrival);
         SetFloat(so, "startupFadeSeconds", 0.35f);
         SetFloat(so, "transitionFadeOutSeconds", 0.5f);
         SetFloat(so, "transitionFadeInSeconds", 0.5f);
@@ -944,6 +947,8 @@ public static class HearthLobbyOpeningBinder
                 L("Field Unit", "Seven cases company-wide this month."),
                 L("Field Unit", "I'll guide you at each apartment. Have a good shift, Inspector.")
             });
+        library.Floor17Arrival = AssetDatabase.LoadAssetAtPath<HearthDialogueSequence>(
+            "Assets/Data/MinLoop/Dialogues/FinalScriptSupplemental/17F01_CorridorArrival.asset");
         return library;
     }
 
@@ -1329,6 +1334,7 @@ public static class HearthLobbyOpeningBinder
         public HearthDialogueSequence GrandmotherExit;
         public HearthDialogueSequence AssignmentLoaded;
         public HearthDialogueSequence Elevator;
+        public HearthDialogueSequence Floor17Arrival;
     }
 
     private struct LobbyUiReferences

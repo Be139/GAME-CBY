@@ -11,9 +11,9 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bf2d7532251303545ab78ab68b00d5cf, type: 3}
   m_Name: Lobby_Group02_YoungMan
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier:
   sequenceId: Lobby_Group02_YoungMan
-  notes: 'Optional young-man and work-unit conversation. Source: HEARTH_Full_Game_Script_Expanded_Native_English_Lobby_Mia_Commentary.md,
+  notes: 'Optional young-man and work-unit conversation. Source: HEARTH_Full_Game_Script_No_Audio_Tags_Native_English.md,
     stable marker Lobby_Group02_YoungMan. Text is synchronized by Tools/Hearth/Dialogue/Sync
     All Dialogue From Final Script.'
   lines:
@@ -53,17 +53,51 @@ MonoBehaviour:
   - presentationKind: 0
     startDelay: 0.18
     speaker: Work Unit
-    text: You got it. Also, you've been sitting since three. How about two minutes
-      on your feet?
-    holdSeconds: 7.1877356
+    text: Before I go back to the document, do you still want help with that message
+      to your mom?
+    holdSeconds: 7.9424524
     voiceClip: {fileID: 0}
     durationMode: 0
     voiceTailSeconds: 0.12
   - presentationKind: 0
     startDelay: 0.18
     speaker: Young Man
-    text: In a minute.
-    holdSeconds: 2.2820754
+    text: Yeah. Tell her work ran late. I don't want it to sound like I'm blowing
+      her off again.
+    holdSeconds: 7.9424524
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - presentationKind: 0
+    startDelay: 0.18
+    speaker: Work Unit
+    text: 'How about: ''Hey, Mom. Work ran late, so don''t wait for me at dinner.
+      I''ll come by tomorrow and bring something good.'''
+    holdSeconds: 9.451886
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - presentationKind: 0
+    startDelay: 0.18
+    speaker: Young Man
+    text: That's good. Send it.
+    holdSeconds: 2.6594338
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - presentationKind: 0
+    startDelay: 0.18
+    speaker: Work Unit
+    text: Sent. She says, 'Okay, sweetheart. Don't work too late. I'll see you tomorrow.'
+    holdSeconds: 6.0556602
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - presentationKind: 0
+    startDelay: 0.18
+    speaker: Young Man
+    text: Perfect. Thanks. That's one less thing to worry about.
+    holdSeconds: 4.5462265
     voiceClip: {fileID: 0}
     durationMode: 0
     voiceTailSeconds: 0.12

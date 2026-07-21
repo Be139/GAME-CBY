@@ -55,6 +55,7 @@ public class HearthLobbyFlowController : MonoBehaviour
     [SerializeField] private HearthDialogueSequence openingCloseoutDialogue;
     [SerializeField] private HearthDialogueSequence assignmentLoadedDialogue;
     [SerializeField] private HearthDialogueSequence elevatorDialogue;
+    [SerializeField] private HearthDialogueSequence floor17ArrivalDialogue;
 
     [Header("Sound Effects")]
     [SerializeField] private HearthSfxCuePlayer sfxCuePlayer;
@@ -147,7 +148,7 @@ public class HearthLobbyFlowController : MonoBehaviour
         }
 
         TeleportHuman(lobbyStartAnchor, lobbyStartCameraAnchor);
-        SetHumanControl(false, false, false, true);
+        SetHumanControl(false, true, false, true);
     }
 
     private void Start()
@@ -380,7 +381,7 @@ public class HearthLobbyFlowController : MonoBehaviour
         currentStage = HearthLobbyFlowStage.Opening;
         assignmentLoaded = false;
         StartSfxLoop("Lobby.RoomTone");
-        SetHumanControl(false, false, false, true);
+        SetHumanControl(false, true, false, true);
         TeleportHuman(lobbyStartAnchor, lobbyStartCameraAnchor);
 
         if (resetOptionalConversationsOnStart && optionalConversationZones != null)
@@ -611,6 +612,9 @@ public class HearthLobbyFlowController : MonoBehaviour
         {
             yield return screenFader.FadeIn(transitionFadeInSeconds);
         }
+
+        SetHumanControl(false, true, false, true);
+        yield return PlayDialogue(floor17ArrivalDialogue);
 
         busy = false;
         currentStage = HearthLobbyFlowStage.ArrivedFloor17;

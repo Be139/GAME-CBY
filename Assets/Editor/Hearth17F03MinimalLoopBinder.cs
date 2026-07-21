@@ -325,10 +325,15 @@ public static class Hearth17F03MinimalLoopBinder
             Debug.LogError("[Hearth17F03MinimalLoopBinder] Setup stopped because the final dialogue source could not be synchronized.");
             return;
         }
+        dialogues.TerminalEntry = LoadSupplementalDialogue("17F03_TerminalEntry");
         dialogues.InspectionRecallPrompt = AssetDatabase.LoadAssetAtPath<HearthDialogueSequence>(
             "Assets/Data/MinLoop/Dialogues/FinalScriptSupplemental/17F03_InspectionRecallPrompt.asset");
+        dialogues.PostReplayQuestion = LoadSupplementalDialogue("17F03_PostReplayQuestion");
         dialogues.PostReplayOptionA = LoadSupplementalDialogue("17F03_PostReplay_A");
         dialogues.PostReplayOptionB = LoadSupplementalDialogue("17F03_PostReplay_B");
+        dialogues.CorridorEvaluationA = LoadSupplementalDialogue("17F03_CorridorEvaluation_A");
+        dialogues.CorridorEvaluationB = LoadSupplementalDialogue("17F03_CorridorEvaluation_B");
+        dialogues.PostReplayPositiveTrustResult = LoadSupplementalDialogue("17F03_PositiveTrustShiftResult");
         dialogues.PostReplayNegativeTrustWarning = LoadSupplementalDialogue("17F03_NegativeTrustSupervisorWarning");
         dialogues.PostReplayCompletion = LoadSupplementalDialogue("17F03_AllInspectionsComplete");
         HearthCompanionHudController companionHud = FindSceneComponent<HearthCompanionHudController>();
@@ -1344,6 +1349,7 @@ public static class Hearth17F03MinimalLoopBinder
         SetObject(so, "daughterGazeInteractable", daughterInteractable);
         SetObject(so, "motherGazeInteractable", motherInteractable);
         SetObject(so, "daughterDoor", door);
+        SetObject(so, "terminalEntrySequence", dialogues.TerminalEntry);
         SetObject(so, "humanParentSequence", dialogues.HumanParents);
         SetObject(so, "inspectionRecallPromptSequence", dialogues.InspectionRecallPrompt);
         SetObject(so, "middayConflictSequence", dialogues.MiddayConflict);
@@ -1352,9 +1358,13 @@ public static class Hearth17F03MinimalLoopBinder
         SetObject(so, "nightDaughterSequence", dialogues.NightDaughter);
         SetObject(so, "nightShutdownLeadInSequence", dialogues.NightShutdownLeadIn);
         SetObject(so, "nightShutdownSequence", dialogues.NightShutdown);
+        SetObject(so, "postReplayQuestionSequence", dialogues.PostReplayQuestion);
         SetObject(so, "postReplayExplanationSequence", dialogues.PostReplay);
         SetObject(so, "postReplayOptionASequence", dialogues.PostReplayOptionA);
         SetObject(so, "postReplayOptionBSequence", dialogues.PostReplayOptionB);
+        SetObject(so, "corridorEvaluationASequence", dialogues.CorridorEvaluationA);
+        SetObject(so, "corridorEvaluationBSequence", dialogues.CorridorEvaluationB);
+        SetObject(so, "postReplayPositiveTrustResultSequence", dialogues.PostReplayPositiveTrustResult);
         SetObject(so, "postReplayNegativeTrustWarningSequence", dialogues.PostReplayNegativeTrustWarning);
         SetObject(so, "postReplayCompletionSequence", dialogues.PostReplayCompletion);
         SetObject(so, "blackoutCanvasGroup", blackout.Group);
@@ -1934,6 +1944,7 @@ public static class Hearth17F03MinimalLoopBinder
 
     private sealed class DialogueLibrary
     {
+        public HearthDialogueSequence TerminalEntry;
         public HearthDialogueSequence HumanParents;
         public HearthDialogueSequence InspectionRecallPrompt;
         public HearthDialogueSequence MiddayConflict;
@@ -1942,9 +1953,13 @@ public static class Hearth17F03MinimalLoopBinder
         public HearthDialogueSequence NightDaughter;
         public HearthDialogueSequence NightShutdownLeadIn;
         public HearthDialogueSequence NightShutdown;
+        public HearthDialogueSequence PostReplayQuestion;
         public HearthDialogueSequence PostReplay;
         public HearthDialogueSequence PostReplayOptionA;
         public HearthDialogueSequence PostReplayOptionB;
+        public HearthDialogueSequence CorridorEvaluationA;
+        public HearthDialogueSequence CorridorEvaluationB;
+        public HearthDialogueSequence PostReplayPositiveTrustResult;
         public HearthDialogueSequence PostReplayNegativeTrustWarning;
         public HearthDialogueSequence PostReplayCompletion;
     }

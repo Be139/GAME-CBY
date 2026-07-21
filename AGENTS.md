@@ -105,8 +105,10 @@ v10 连接验证方法：
 
 ## 最终对白稿同步规则
 
-- 当前正式对白唯一来源是项目根目录 `HEARTH_Full_Game_Script_Expanded_Native_English_Lobby_Mia_Commentary.md`。
-- 除非用户明确提供并指定新的替代定稿，后续修改剧情、字幕、语音或关卡流程前，必须先读取这份文件，不得以旧下载稿、旧 Dialogue Asset 或聊天记忆覆盖它。
+- 当前正式游戏对白唯一来源是项目根目录 `HEARTH_Full_Game_Script_No_Audio_Tags_Native_English.md`。
+- `HEARTH_Full_Game_Script_ElevenLabs_v3_Native_English.md` 只作为后续 AI 配音的情绪与表演参考，不直接同步为游戏字幕文本。
+- 当前游戏不包含宣传片/序章。除非用户之后明确要求重新接入，不得在启动流程、正式对白或同步映射中恢复 `Prologue_HEARTHCommercial`。
+- 除非用户明确提供并指定新的替代定稿，后续修改剧情、字幕、语音或关卡流程前，必须先读取正式游戏对白文件，不得以旧下载稿、旧 Dialogue Asset 或聊天记忆覆盖它。
 - 正式稿变更后，优先运行 Unity 菜单 `Tools > Hearth > Dialogue > Sync All Dialogue From Final Script`，再运行 `Validate Final Script Coverage`；不要逐个手工复制全文到资产。
 - 同步会保留“说话人与文本均未变化”的已有 `AudioClip`；文本发生变化的行需要重新检查并绑定语音。
 - 所有正式对白继续使用 `HearthDialogueSequence`。语音存在时字幕显示时长必须跟随 `AudioClip.length`，无语音时才使用可编辑的回退时长。

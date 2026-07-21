@@ -11,20 +11,19 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bf2d7532251303545ab78ab68b00d5cf, type: 3}
   m_Name: Lobby_AssignmentLoaded
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier:
   sequenceId: Lobby_AssignmentLoaded
   notes: 'Plays after the assignment is loaded and unlocks the elevator. Source:
-    HEARTH_Full_Game_Script_Expanded_Native_English_Lobby_Mia_Commentary.md, stable
-    marker Lobby_AssignmentLoaded. Text is synchronized by Tools/Hearth/Dialogue/Sync
-    All Dialogue From Final Script.'
+    HEARTH_Full_Game_Script_No_Audio_Tags_Native_English.md, stable marker Lobby_AssignmentLoaded.
+    Text is synchronized by Tools/Hearth/Dialogue/Sync All Dialogue From Final Script.'
   lines:
   - presentationKind: 0
     startDelay: 0.15
     speaker: Field Unit
-    text: Inspector, companion-request volume is currently high across Building A's
-      public level. The children's area, work pods, and park-side assistance points
-      are all connected to the synchronized network.
-    holdSeconds: 11.338679
+    text: Inspector, companion-request volume is high across Building A's public
+      level. The children's area, work pods, and park-side assistance points are
+      all connected to the synchronized network.
+    holdSeconds: 10.96132
     voiceClip: {fileID: 0}
     durationMode: 0
     voiceTailSeconds: 0.12
@@ -39,28 +38,18 @@ MonoBehaviour:
   - presentationKind: 0
     startDelay: 0.18
     speaker: Field Unit
-    text: Public companion deployment in this community is one unit for every four
-      residents, above the residential average. Building A is one of the company's
-      priority demonstration sites.
-    holdSeconds: 11.338679
-    voiceClip: {fileID: 0}
-    durationMode: 0
-    voiceTailSeconds: 0.12
-  - presentationKind: 0
-    startDelay: 0.18
-    speaker: Field Unit
-    text: The benefit is fewer short gaps in care. Parents can continue what they're
-      doing, and child users are less likely to be left waiting without a response.
-    holdSeconds: 11.338679
-    voiceClip: {fileID: 0}
-    durationMode: 0
-    voiceTailSeconds: 0.12
-  - presentationKind: 0
-    startDelay: 0.18
-    speaker: Field Unit
-    text: 'Route loaded. Proceed to the elevator and call it when you''re ready.
-      Destination: Floor Seventeen.'
+    text: This community averages one public companion unit for every four residents,
+      above the residential norm.
     holdSeconds: 6.810377
+    voiceClip: {fileID: 0}
+    durationMode: 0
+    voiceTailSeconds: 0.12
+  - presentationKind: 0
+    startDelay: 0.18
+    speaker: Field Unit
+    text: That reduces gaps in care and helps residents handle emotional support,
+      daily companionship, and childhood learning more quickly.
+    holdSeconds: 7.9424524
     voiceClip: {fileID: 0}
     durationMode: 0
     voiceTailSeconds: 0.12

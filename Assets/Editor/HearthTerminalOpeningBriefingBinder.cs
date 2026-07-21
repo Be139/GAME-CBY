@@ -28,9 +28,9 @@ public static class HearthTerminalOpeningBriefingBinder
 
         Dictionary<string, string> dialogueByResident = new Dictionary<string, string>
         {
-            { "17F01", DialogueRoot + "17F01_ApartmentGreeting.asset" },
+            { "17F01", DialogueRoot + "17F01_TerminalIntro.asset" },
             { "17F02", DialogueRoot + "17F02_TerminalIntro.asset" },
-            { "17F03", DialogueRoot + "17F03_TerminalEntry.asset" }
+            { "17F03", DialogueRoot + "17F03_CorridorTerminal.asset" }
         };
 
         int configured = 0;

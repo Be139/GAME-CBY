@@ -51,6 +51,7 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
     private PanelMode panelMode;
     private int choiceIndex;
     private bool choiceSubmitted;
+    private bool choiceInputEnabled;
 
     public event Action RecallRequested;
     public event Action CloseRequested;
@@ -58,6 +59,7 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
 
     public bool IsOpen { get; private set; }
     public bool RecallQueued { get { return recallQueued; } }
+    public bool ChoiceInputEnabled { get { return choiceInputEnabled; } }
 
     private void Awake()
     {
@@ -80,7 +82,7 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
 
         if (panelMode == PanelMode.DispositionChoice)
         {
-            if (choiceSubmitted)
+            if (choiceSubmitted || !choiceInputEnabled)
             {
                 return;
             }
@@ -161,20 +163,32 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
 
     public void OpenDispositionChoice()
     {
+        OpenDispositionChoice(true);
+    }
+
+    public void OpenDispositionChoice(bool inputEnabled)
+    {
         panelMode = PanelMode.DispositionChoice;
         choiceIndex = 0;
         choiceSubmitted = false;
+        choiceInputEnabled = inputEnabled;
         IsOpen = true;
 
         if (titleText != null) titleText.text = "17F-03  DISPOSITION";
-        if (statusText != null) statusText.text = "LOCAL RESTART AUTHORIZATION";
-        if (detailText != null) detailText.text = "Choose the household disposition. Use UP / DOWN and press SPACE to confirm.";
         if (choiceAText != null) choiceAText.text = "A  RESTART THE UNIT NOW";
         if (choiceBText != null) choiceBText.text = "B  HOLD REPAIR - 7 DAY HUMAN OBSERVATION";
         if (recommendedText != null) recommendedText.text = "RECOMMENDED";
 
         SetCanvasVisible(true);
         RefreshModeVisuals();
+        RefreshChoiceInstruction();
+        RefreshChoiceVisuals();
+    }
+
+    public void SetChoiceInputEnabled(bool value)
+    {
+        choiceInputEnabled = value && !choiceSubmitted;
+        RefreshChoiceInstruction();
         RefreshChoiceVisuals();
     }
 
@@ -184,6 +198,7 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
         recallSubmitted = false;
         recallQueued = false;
         choiceSubmitted = false;
+        choiceInputEnabled = false;
         SetCanvasVisible(false);
     }
 
@@ -251,7 +266,7 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
 
     public void MoveChoice(int direction)
     {
-        if (!IsOpen || panelMode != PanelMode.DispositionChoice || choiceSubmitted)
+        if (!IsOpen || panelMode != PanelMode.DispositionChoice || choiceSubmitted || !choiceInputEnabled)
         {
             return;
         }
@@ -262,12 +277,14 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
 
     public void SubmitChoice()
     {
-        if (!IsOpen || panelMode != PanelMode.DispositionChoice || choiceSubmitted)
+        if (!IsOpen || panelMode != PanelMode.DispositionChoice || choiceSubmitted || !choiceInputEnabled)
         {
             return;
         }
 
         choiceSubmitted = true;
+        choiceInputEnabled = false;
+        RefreshChoiceInstruction();
         RefreshChoiceVisuals();
         if (ChoiceSubmitted != null)
         {
@@ -320,15 +337,43 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
 
     private void RefreshChoiceVisuals()
     {
-        Color selected = new Color(0.12f, 0.46f, 0.31f, choiceSubmitted ? 0.22f : 0.62f);
-        Color idle = new Color(0.03f, 0.10f, 0.14f, choiceSubmitted ? 0.12f : 0.42f);
+        float selectedAlpha = choiceSubmitted ? 0.22f : choiceInputEnabled ? 0.62f : 0.32f;
+        float idleAlpha = choiceSubmitted ? 0.12f : choiceInputEnabled ? 0.42f : 0.22f;
+        Color selected = new Color(0.12f, 0.46f, 0.31f, selectedAlpha);
+        Color idle = new Color(0.03f, 0.10f, 0.14f, idleAlpha);
         if (choiceABackground != null) choiceABackground.color = choiceIndex == 0 ? selected : idle;
         if (choiceBBackground != null) choiceBBackground.color = choiceIndex == 1 ? selected : idle;
 
-        float alpha = choiceSubmitted ? 0.42f : 1f;
+        float alpha = choiceSubmitted ? 0.42f : choiceInputEnabled ? 1f : 0.58f;
         SetTextAlpha(choiceAText, alpha);
         SetTextAlpha(choiceBText, alpha);
-        SetTextAlpha(recommendedText, choiceSubmitted ? 0.35f : 1f);
+        SetTextAlpha(recommendedText, choiceSubmitted ? 0.35f : choiceInputEnabled ? 1f : 0.58f);
+    }
+
+    private void RefreshChoiceInstruction()
+    {
+        if (panelMode != PanelMode.DispositionChoice)
+        {
+            return;
+        }
+
+        if (choiceSubmitted)
+        {
+            if (statusText != null) statusText.text = "STATUS: DISPOSITION SUBMITTED";
+            if (detailText != null) detailText.text = "PLEASE WAIT";
+            return;
+        }
+
+        if (choiceInputEnabled)
+        {
+            if (statusText != null) statusText.text = "STATUS: INPUT ENABLED";
+            if (detailText != null) detailText.text = "UP / DOWN  SELECT     SPACE  CONFIRM";
+        }
+        else
+        {
+            if (statusText != null) statusText.text = "STATUS: INPUT LOCKED - FIELD REVIEW IN PROGRESS";
+            if (detailText != null) detailText.text = "PLEASE WAIT";
+        }
     }
 
     private static void SetTextAlpha(TMP_Text text, float alpha)

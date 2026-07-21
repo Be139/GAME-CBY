@@ -227,7 +227,7 @@
 
 ## 全局对白、语音与音量接口（2026-07-16）
 
-- 正式对白数据统一使用 `HearthDialogueSequence`；当前最终稿 `343` 个字幕段映射到 `Assets/Data/MinLoop/Dialogues/` 下 `59` 个资产，共 `407` 个资产行槽位。
+- 正式对白数据统一使用 `HearthDialogueSequence`；当前最终稿 `330` 个稳定字幕段同步到 `Assets/Data/MinLoop/Dialogues/` 下 `70` 个对白资产。
 - 每句可自由增删和排序，字段为 `Speaker / Text / Start Delay / Hold Seconds / Voice Clip / Duration Mode / Voice Tail Seconds`。
 - 推荐 `Duration Mode = VoiceClipWhenAssigned`：有录音时自动跟随真实录音长度，无录音时继续使用手动 Hold，不需要在流程控制器硬编码秒数。
 - 每个拆分段都保留独立 `Voice Clip`。后续录好每句声音后，直接拖到对应行，不需要改脚本或关卡状态机。
@@ -312,12 +312,12 @@
 
 ### 唯一文本来源
 
-- 项目根目录 `HEARTH_Full_Game_Script_Expanded_Native_English_Lobby_Mia_Commentary.md` 是当前正式对白唯一来源。
+- 项目根目录 `HEARTH_Full_Game_Script_No_Audio_Tags_Native_English.md` 是当前正式游戏对白唯一来源；`HEARTH_Full_Game_Script_ElevenLabs_v3_Native_English.md` 只用于未来 ElevenLabs 配音时查询情绪提示。
 - 同步菜单：`Tools > Hearth > Dialogue > Sync All Dialogue From Final Script`。
 - 自然拆分菜单：`Tools > Hearth > Dialogue > Normalize Final Script To Two-Line Segments`。
 - 覆盖检查：`Tools > Hearth > Dialogue > Validate Final Script Coverage`。
 - 布局检查：`Tools > Hearth > Dialogue > Validate Two-Line Subtitle Layout`。
-- 当前检查覆盖正式稿中的 `343` 个字幕段；同步范围包含一楼开场和四户流程，并验证普通/黑幕字幕均不超过两行。
+- 当前检查覆盖正式稿中的 `330` 个字幕段；同步范围包含一楼开场和四户流程，并验证普通/黑幕字幕均不超过两行。
 - 最终稿使用 `<!-- HEARTH:SEQUENCES ... -->` 隐藏稳定标记绑定资产；不要删除这些标记，否则同步工具会报告覆盖缺口。
 
 ### 每句对白的可调字段
@@ -413,7 +413,7 @@
 - `HearthTerminalOpeningBriefing.BeginBriefing()`：打开当前终端后播放本户简介并锁主操作。
 - `CancelBriefing()`：Esc 提前退出时停止本次简介；下一次打开会从头开始。
 - `ResetBriefing()`：预览或重开测试时清除“本轮已完成”状态。
-- 三户默认资产：`17F01_ApartmentGreeting`、`17F02_TerminalIntro`、`17F03_TerminalEntry`。
+- 三户默认资产：`17F01_TerminalIntro`、`17F02_TerminalIntro`、`17F03_CorridorTerminal`。
 - 自动绑定菜单：`Tools > Hearth > Terminals > Apply Household Opening Briefings`。
 
 ### 统一机器人 HUD 布局
@@ -428,3 +428,52 @@
 - 正式稿使用 `**TIME CARD:** "..."`，`HearthFinalDialogueSync` 会自动同步为 TimeCard 并清空说话人栏。
 - 共享配置入口：`Hearth_SubtitleStyle.asset / Time Card`；独立控制宽度、位置、字号和淡入淡出。
 - `HearthPhotoFrameInteractable.SetExitHint(...)`：绑定相框对白完成后的 `SPACE  RETURN` 提示；Esc 保留为隐藏的安全退出。
+
+## 2026-07-21 新定稿与新增流程接口
+
+### 正式稿和配音稿
+
+- 游戏字幕同步源：`HEARTH_Full_Game_Script_No_Audio_Tags_Native_English.md`。
+- ElevenLabs 表演参考：`HEARTH_Full_Game_Script_ElevenLabs_v3_Native_English.md`；不能直接替代无标签字幕稿。
+- 当前同步基线：`330` 个字幕段、`70` 个 Dialogue Asset、`394` 个映射条目；Coverage 与 Two-Line 验证均通过。
+- 当前游戏从一楼大厅开始，不调用宣传片或 `Prologue_HUDPromo`。
+
+### 大厅和 17 楼抵达
+
+- `HearthLobbyFlowController / Floor17 Arrival Dialogue` 绑定 `17F01_CorridorArrival.asset`。
+- 开场期间调用控制锁时使用“移动 false、视角 true、交互 false”；`Okay.` 完成后恢复。
+- 三个 `HearthLobbyConversationZone` 使用 `playOnce = true`，不参与任务终端解锁条件。
+- 任务终端当前 Canvas 的手调结果已通过 `Capture Task Terminal Canvas Placement` 保存到 `TaskTerminalScreenAnchor`。
+
+### 17F01 / 17F02
+
+- 玩法、回放状态机和人物走位保持原实现。
+- 开场简介资产改为 `17F01_TerminalIntro`、`17F02_TerminalIntro`；处置推荐与签退仍由 `MinLoopFlowController.BeginDispositionBriefing/SubmitDisposition` 门控。
+- 以后只换对白时运行 Dialogue Sync，不运行 17F01/17F02 场景重建工具。
+
+### 17F03 新序列槽
+
+- `Terminal Entry Sequence = 17F03_TerminalEntry`
+- `Post Replay Question Sequence = 17F03_PostReplayQuestion`
+- `Post Replay Explanation Sequence = 17F03_PostReplayExplanation`
+- `Corridor Evaluation A/B Sequence = 17F03_CorridorEvaluation_A/B`
+- `Post Replay Positive Trust Result Sequence = 17F03_PositiveTrustShiftResult`
+- 负信任与完成通知继续使用 `17F03_NegativeTrustSupervisorWarning`、`17F03_AllInspectionsComplete`。
+- 回放返回房内时只播放 `Post Replay Question Sequence`；玩家再次按 E 进入固定检查视角后，调用 `Hearth17F03InspectionPanel.OpenDispositionChoice(false)`，播放 `Post Replay Explanation Sequence`，最后调用 `SetChoiceInputEnabled(true)`。
+- 这些槽都由 `Apply 17F03 Minimal Loop Setup` 自动绑定；公开运行入口保持 `BeginHumanEntry/OpenUnitInspection/BeginRecordedReplay/CancelFlow`。
+
+### 17F04 两张照片与最终选择
+
+- `HearthPhotoFrameInteractable.ConfigurePhotoPages(renderer, first, second)`：配置同一电子屏的两张图片。
+- `Hearth17F04FinaleController.RequestPhotoPage(index)`：首次显示第二页时播放 `17F04_SecondPhoto`；两页完成后播放 `17F04_PhotoCompletion`。
+- 两页说明完成后仍允许左右浏览；提示合并为 `LEFT / RIGHT  SWITCH PHOTO     SPACE  RETURN`。重复翻页不会重播说明。
+- 第二张图片固定预留路径 `Assets/Art/UI/HearthHud/Finale/FamilyPhoto_Second.png`。缺失时 `HasSecondPhoto = false`，左右翻页与第二页对白都不会开放。
+- `Final Choice Advisory Sequence = 17F04_FinalChoiceAdvisory`：播放完成后才打开最终选择。
+- 让陪伴单元代答后按信任正负分别播放 `17F04_CompanionAnswer_PositiveRating/NegativeRating`。
+- `HearthVirusPopupShutdownChallenge.ApplyDefaultWaveContentPreservingTuning()` 仅刷新三波默认文案/颜色；保留三阶段弹窗玩法和 Inspector 中的速度、数量、遮罩、音效参数。
+
+### 验收与后续素材
+
+- 新增第二张照片后，只需放入固定路径并运行 17F04 Apply；不要手动复制第二套相框或另建终端。
+- 新增语音后，把 Clip 拖到对应 Dialogue Asset 的独立行；无需改状态机。正文变更仍先改无标签正式稿，再同步并重新检查变化行的语音引用。
+- Play Mode 当前已通过启动冒烟测试；已知旧问题仅为 ROOM2 书桌与 ROOM3 电视柜的负缩放 BoxCollider，不属于本轮流程接口。

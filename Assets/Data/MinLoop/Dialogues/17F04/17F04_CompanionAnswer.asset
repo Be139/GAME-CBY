@@ -11,12 +11,9 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bf2d7532251303545ab78ab68b00d5cf, type: 3}
   m_Name: 17F04_CompanionAnswer
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier:
   sequenceId: 17F04_CompanionAnswer
-  notes: '17F04 path B: the home unit answers and the Field Unit closes the shift.
-    Source: HEARTH_Full_Game_Script_Expanded_Native_English_Lobby_Mia_Commentary.md,
-    stable marker 17F04_CompanionAnswer. Text is synchronized by Tools/Hearth/Dialogue/Sync
-    All Dialogue From Final Script.'
+  notes: 'B route: the Companion Unit answers Lily.'
   lines:
   - presentationKind: 0
     startDelay: 0.15
@@ -71,18 +68,9 @@ MonoBehaviour:
   - presentationKind: 0
     startDelay: 0.18
     speaker: Field Unit
-    text: Inspector, all reviews and the guardian confirmation are complete. Household
-      stability is back in the safe range. Tonight's shift is in the top performance
-      band. You are cleared to log off.
-    holdSeconds: 12
-    voiceClip: {fileID: 0}
-    durationMode: 0
-    voiceTailSeconds: 0.12
-  - presentationKind: 0
-    startDelay: 0.18
-    speaker: Field Unit
-    text: You did well tonight.
-    holdSeconds: 2.6594338
+    text: Inspector, all reviews and the guardian response are complete. You are
+      cleared to log off.
+    holdSeconds: 6.810377
     voiceClip: {fileID: 0}
     durationMode: 0
     voiceTailSeconds: 0.12

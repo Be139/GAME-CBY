@@ -11,11 +11,9 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bf2d7532251303545ab78ab68b00d5cf, type: 3}
   m_Name: 17F04_Shutdown_Low
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier:
   sequenceId: 17F04_Shutdown_Low
-  notes: '17F04 negative-trust forced shutdown. Source: HEARTH_Full_Game_Script_Expanded_Native_English_Lobby_Mia_Commentary.md,
-    stable marker 17F04_Shutdown_Low. Text is synchronized by Tools/Hearth/Dialogue/Sync
-    All Dialogue From Final Script.'
+  notes: Low-trust forced shutdown after clearing the virus popup challenge.
   lines:
   - presentationKind: 0
     startDelay: 0.15
@@ -43,9 +41,9 @@ MonoBehaviour:
     voiceTailSeconds: 0.12
   - presentationKind: 0
     startDelay: 0.18
-    speaker: Lily
-    text: Mom?
-    holdSeconds: 2.2
+    speaker: Mia's Home Unit
+    text: Mia... are you sure you want to shut me down?
+    holdSeconds: 4.923585
     voiceClip: {fileID: 0}
     durationMode: 0
     voiceTailSeconds: 0.12

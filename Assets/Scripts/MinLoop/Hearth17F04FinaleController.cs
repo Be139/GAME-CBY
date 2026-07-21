@@ -75,11 +75,16 @@ public class Hearth17F04FinaleController : MonoBehaviour
     [SerializeField] private HearthDialogueSequence homeGreetingHighTrust;
     [SerializeField] private HearthDialogueSequence homeGreetingLowTrust;
     [SerializeField] private HearthDialogueSequence christmasPhotoSequence;
+    [SerializeField] private HearthDialogueSequence secondPhotoSequence;
+    [SerializeField] private HearthDialogueSequence photoCompletionSequence;
     [SerializeField] private HearthDialogueSequence hearingDaughterRoomSequence;
     [SerializeField] private HearthDialogueSequence daughterRoomHighTrustSequence;
     [SerializeField] private HearthDialogueSequence daughterRoomLowTrustSequence;
+    [SerializeField] private HearthDialogueSequence finalChoiceAdvisorySequence;
     [SerializeField] private HearthDialogueSequence answerSelfSequence;
     [SerializeField] private HearthDialogueSequence companionAnswerSequence;
+    [SerializeField] private HearthDialogueSequence companionAnswerPositiveRatingSequence;
+    [SerializeField] private HearthDialogueSequence companionAnswerNegativeRatingSequence;
     [SerializeField] private HearthDialogueSequence shutdownHighTrustSequence;
     [SerializeField] private HearthDialogueSequence shutdownLowTrustSequence;
     [SerializeField] private HearthDialogueSequence epilogueHighRetain;
@@ -107,6 +112,7 @@ public class Hearth17F04FinaleController : MonoBehaviour
     private bool photoUnlocked;
     private bool homeGreetingComplete;
     private bool daughterRoomUnlocked;
+    private bool secondPhotoReviewed;
     private bool choiceSubmitted;
     private bool selectedAnswerSelf;
     private bool currentHighTrust;
@@ -230,7 +236,21 @@ public class Hearth17F04FinaleController : MonoBehaviour
         photoUnlocked = false;
         currentStage = FinaleStage.Photo;
         PlayStorySfx(photoMemoryCueId);
-        photoDialogueRoutine = StartCoroutine(PhotoSequenceAfterGreetingRoutine());
+        secondPhotoReviewed = false;
+        photoDialogueRoutine = StartCoroutine(PhotoSequenceAfterGreetingRoutine(0));
+    }
+
+    public void RequestPhotoPage(int pageIndex)
+    {
+        if (currentStage != FinaleStage.Photo || photoDialogueRoutine != null || photoFrame == null)
+        {
+            return;
+        }
+
+        if (pageIndex == 1 && photoFrame.HasSecondPhoto && !secondPhotoReviewed)
+        {
+            photoDialogueRoutine = StartCoroutine(PhotoSequenceAfterGreetingRoutine(1));
+        }
     }
 
     public void CompletePhotoInspection()
@@ -355,6 +375,7 @@ public class Hearth17F04FinaleController : MonoBehaviour
         daughterRoomUnlocked = false;
         choiceSubmitted = false;
         selectedAnswerSelf = false;
+        secondPhotoReviewed = false;
         SetHomeUnitAvailable(false);
         SetBlackoutAlpha(0f);
         SetHumanControls(true, true, true);
@@ -398,17 +419,34 @@ public class Hearth17F04FinaleController : MonoBehaviour
         homeGreetingRoutine = null;
     }
 
-    private IEnumerator PhotoSequenceAfterGreetingRoutine()
+    private IEnumerator PhotoSequenceAfterGreetingRoutine(int pageIndex)
     {
         while (!homeGreetingComplete)
         {
             yield return null;
         }
 
-        yield return PlaySceneSequence(christmasPhotoSequence);
+        if (pageIndex == 1)
+        {
+            yield return PlaySceneSequence(secondPhotoSequence);
+            secondPhotoReviewed = true;
+        }
+        else
+        {
+            yield return PlaySceneSequence(christmasPhotoSequence);
+        }
+
         if (photoFrame != null)
         {
-            photoFrame.NotifyDialogueComplete();
+            if (photoFrame.HasSecondPhoto && !secondPhotoReviewed)
+            {
+                photoFrame.NotifyPageReadyForNavigation();
+            }
+            else
+            {
+                yield return PlaySceneSequence(photoCompletionSequence);
+                photoFrame.NotifyDialogueComplete();
+            }
         }
 
         photoDialogueRoutine = null;
@@ -432,6 +470,7 @@ public class Hearth17F04FinaleController : MonoBehaviour
         currentStage = FinaleStage.Dialogue;
         SetHumanControls(true, true, true);
         yield return PlaySceneSequence(currentHighTrust ? daughterRoomHighTrustSequence : daughterRoomLowTrustSequence);
+        yield return PlaySceneSequence(finalChoiceAdvisorySequence);
 
         currentStage = FinaleStage.FinalChoice;
         SetHumanControls(false, false, false);
@@ -465,6 +504,9 @@ public class Hearth17F04FinaleController : MonoBehaviour
         currentStage = FinaleStage.Dialogue;
         SetHumanControls(true, true, true);
         yield return PlaySceneSequence(companionAnswerSequence);
+        yield return PlaySceneSequence(currentHighTrust
+            ? companionAnswerPositiveRatingSequence
+            : companionAnswerNegativeRatingSequence);
         flowRoutine = null;
         CompleteFinale();
     }

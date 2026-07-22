@@ -153,6 +153,56 @@ public class ViewSwitchController : MonoBehaviour
         get { return currentMode; }
     }
 
+    public static ViewSwitchController FindPreferredController()
+    {
+        ViewSwitchController[] controllers = Object.FindObjectsOfType<ViewSwitchController>(true);
+        ViewSwitchController best = null;
+        int bestScore = int.MinValue;
+
+        for (int i = 0; i < controllers.Length; i++)
+        {
+            ViewSwitchController candidate = controllers[i];
+            if (candidate == null || !candidate.gameObject.scene.IsValid() || !candidate.gameObject.scene.isLoaded)
+            {
+                continue;
+            }
+
+            int score = 0;
+            if (candidate.enabled)
+            {
+                score += 1000;
+            }
+
+            if (candidate.gameObject.activeInHierarchy)
+            {
+                score += 200;
+            }
+
+            string path = GetHierarchyPath(candidate.transform);
+            if (path.Contains("MIN_LOOP_ROOT/FlowManagers"))
+            {
+                score += 2000;
+            }
+            else if (path.Contains("MIN_LOOP_ROOT"))
+            {
+                score += 1000;
+            }
+
+            if (candidate.gameObject.name == "ViewSwitchController")
+            {
+                score += 100;
+            }
+
+            if (score > bestScore)
+            {
+                best = candidate;
+                bestScore = score;
+            }
+        }
+
+        return best;
+    }
+
     private void Awake()
     {
         ResolveMissingReferences();
@@ -282,6 +332,24 @@ public class ViewSwitchController : MonoBehaviour
     {
         SetMainCameraTag(human.viewCamera, humanActive);
         SetMainCameraTag(companion.viewCamera, !humanActive);
+    }
+
+    private static string GetHierarchyPath(Transform target)
+    {
+        if (target == null)
+        {
+            return string.Empty;
+        }
+
+        string path = target.name;
+        Transform parent = target.parent;
+        while (parent != null)
+        {
+            path = parent.name + "/" + path;
+            parent = parent.parent;
+        }
+
+        return path;
     }
 
     private static void SetMainCameraTag(Camera camera, bool isMain)

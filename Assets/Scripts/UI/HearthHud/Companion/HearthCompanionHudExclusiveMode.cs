@@ -55,9 +55,12 @@ public class HearthCompanionHudExclusiveMode : MonoBehaviour
 
     private void ResolveReferences()
     {
-        if (autoFindViewSwitchController && viewSwitchController == null)
+        if (autoFindViewSwitchController &&
+            (viewSwitchController == null ||
+             !viewSwitchController.enabled ||
+             !viewSwitchController.gameObject.activeInHierarchy))
         {
-            viewSwitchController = FindObjectOfType<ViewSwitchController>();
+            viewSwitchController = ViewSwitchController.FindPreferredController();
         }
 
         if (ownCanvasGroup == null)

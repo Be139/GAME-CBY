@@ -27,20 +27,43 @@ public static class HearthCompanionHoldInteractionRepair
         BindObject(hud, "holdPrompt", prompt);
         BindObject(prompt, "controller", hud);
 
+        ViewSwitchController viewSwitchController = ViewSwitchController.FindPreferredController();
+        if (viewSwitchController == null)
+        {
+            Debug.LogError("[HearthCompanionHoldInteractionRepair] The formal ViewSwitchController was not found.");
+            return;
+        }
+
+        BindObject(hud, "viewSwitchController", viewSwitchController);
+        HearthCompanionHudFlowBinder flowBinder = hud.GetComponent<HearthCompanionHudFlowBinder>();
+        HearthCompanionHudExclusiveMode exclusiveMode = hud.GetComponent<HearthCompanionHudExclusiveMode>();
+        if (flowBinder != null)
+        {
+            BindObject(flowBinder, "viewSwitchController", viewSwitchController);
+        }
+
+        if (exclusiveMode != null)
+        {
+            BindObject(exclusiveMode, "viewSwitchController", viewSwitchController);
+        }
+
         foreach (HearthCompanion17F01ReplayController controller in FindSceneObjects<HearthCompanion17F01ReplayController>())
         {
             BindObject(controller, "companionHud", hud);
+            BindObject(controller, "viewSwitchController", viewSwitchController);
         }
 
         foreach (HearthCompanion17F02ReplayController controller in FindSceneObjects<HearthCompanion17F02ReplayController>())
         {
             BindObject(controller, "companionHud", hud);
+            BindObject(controller, "viewSwitchController", viewSwitchController);
             SetBool(controller, "waitForBedroomAcknowledgement", true);
         }
 
         foreach (HearthCompanion17F03ReplayController controller in FindSceneObjects<HearthCompanion17F03ReplayController>())
         {
             BindObject(controller, "companionHud", hud);
+            BindObject(controller, "viewSwitchController", viewSwitchController);
         }
 
         HearthCompanionHudPreviewInput preview = hud.GetComponent<HearthCompanionHudPreviewInput>();
@@ -55,7 +78,7 @@ public static class HearthCompanionHoldInteractionRepair
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
         EditorSceneManager.SaveOpenScenes();
         AssetDatabase.SaveAssets();
-        Debug.Log("[HearthCompanionHoldInteractionRepair] Rebound the shared HoldPrompt to 17F01/02/03 and disabled formal-build preview input.");
+        Debug.Log("[HearthCompanionHoldInteractionRepair] Rebound the shared HoldPrompt and the formal ViewSwitchController to 17F01/02/03.");
         ValidateOpenScene();
     }
 
@@ -74,9 +97,32 @@ public static class HearthCompanionHoldInteractionRepair
             warnings++;
         }
 
+        ViewSwitchController viewSwitchController = ViewSwitchController.FindPreferredController();
+        if (viewSwitchController == null)
+        {
+            Debug.LogWarning("[HearthCompanionHoldInteractionRepair] The formal ViewSwitchController is missing.");
+            warnings++;
+        }
+        else if (!viewSwitchController.enabled ||
+                 !GetHierarchyPath(viewSwitchController.transform).Contains("MIN_LOOP_ROOT/FlowManagers"))
+        {
+            Debug.LogWarning("[HearthCompanionHoldInteractionRepair] The selected ViewSwitchController is not the enabled formal controller below MIN_LOOP_ROOT/FlowManagers.", viewSwitchController);
+            warnings++;
+        }
+
+        warnings += ValidateObjectReference(hud, "viewSwitchController", viewSwitchController, "Companion HUD");
+        if (hud != null)
+        {
+            warnings += ValidateObjectReference(hud.GetComponent<HearthCompanionHudFlowBinder>(), "viewSwitchController", viewSwitchController, "Companion HUD flow binder");
+            warnings += ValidateObjectReference(hud.GetComponent<HearthCompanionHudExclusiveMode>(), "viewSwitchController", viewSwitchController, "Companion HUD exclusive mode");
+        }
+
         warnings += ValidateHudReferences(FindSceneObjects<HearthCompanion17F01ReplayController>(), hud, "17F01");
         warnings += ValidateHudReferences(FindSceneObjects<HearthCompanion17F02ReplayController>(), hud, "17F02");
         warnings += ValidateHudReferences(FindSceneObjects<HearthCompanion17F03ReplayController>(), hud, "17F03");
+        warnings += ValidateViewReferences(FindSceneObjects<HearthCompanion17F01ReplayController>(), viewSwitchController, "17F01");
+        warnings += ValidateViewReferences(FindSceneObjects<HearthCompanion17F02ReplayController>(), viewSwitchController, "17F02");
+        warnings += ValidateViewReferences(FindSceneObjects<HearthCompanion17F03ReplayController>(), viewSwitchController, "17F03");
 
         HearthCompanionHudPreviewInput preview = hud != null
             ? hud.GetComponent<HearthCompanionHudPreviewInput>()
@@ -89,7 +135,7 @@ public static class HearthCompanionHoldInteractionRepair
 
         if (warnings == 0)
         {
-            Debug.Log("[HearthCompanionHoldInteractionRepair] Validation passed: the three replay controllers share one valid HoldPrompt binding.");
+            Debug.Log("[HearthCompanionHoldInteractionRepair] Validation passed: the three replay controllers share one HoldPrompt and the formal ViewSwitchController.");
         }
         else
         {
@@ -115,6 +161,42 @@ public static class HearthCompanionHoldInteractionRepair
         return warnings;
     }
 
+    private static int ValidateViewReferences<T>(T[] controllers, ViewSwitchController expectedView, string label)
+        where T : MonoBehaviour
+    {
+        int warnings = 0;
+        for (int i = 0; i < controllers.Length; i++)
+        {
+            warnings += ValidateObjectReference(
+                controllers[i],
+                "viewSwitchController",
+                expectedView,
+                label + " replay controller");
+        }
+
+        return warnings;
+    }
+
+    private static int ValidateObjectReference(Object target, string propertyName, Object expected, string label)
+    {
+        if (target == null)
+        {
+            return 0;
+        }
+
+        SerializedObject serialized = new SerializedObject(target);
+        SerializedProperty property = serialized.FindProperty(propertyName);
+        if (property != null && property.objectReferenceValue == expected)
+        {
+            return 0;
+        }
+
+        Debug.LogWarning(
+            "[HearthCompanionHoldInteractionRepair] " + label + " is not bound to the formal ViewSwitchController.",
+            target);
+        return 1;
+    }
+
     private static T FindSceneObject<T>() where T : Component
     {
         T[] objects = FindSceneObjects<T>();
@@ -134,6 +216,24 @@ public static class HearthCompanionHoldInteractionRepair
         }
 
         return sceneObjects.ToArray();
+    }
+
+    private static string GetHierarchyPath(Transform target)
+    {
+        if (target == null)
+        {
+            return string.Empty;
+        }
+
+        string path = target.name;
+        Transform parent = target.parent;
+        while (parent != null)
+        {
+            path = parent.name + "/" + path;
+            parent = parent.parent;
+        }
+
+        return path;
     }
 
     private static void BindObject(Object target, string propertyName, Object value)

@@ -487,3 +487,5 @@
 - 17F01 目标条件继续由 `HearthCompanionReplayInteractable.CanInteract(actor, camera)` 提供；17F03 继续由当前剧情目标和中心射线共同判定。
 - 引用丢失或重建 HUD 后运行 `Tools > Hearth > HUD > Repair Companion Hold Interactions`，再运行同目录下的 Validate。
 - 正式 Prefab 必须保持 `HearthCompanionHudPreviewInput.previewInputEnabled = false`，避免预览输入改变当前剧情页。
+- 机器人 HUD、`HearthCompanionHudFlowBinder`、`HearthCompanionHudExclusiveMode` 与三户 Replay Controller 必须统一引用 `MIN_LOOP_ROOT/FlowManagers/ViewSwitchController`。若绑定到 1F 参考物体上的停用控制器，长按逻辑仍可能执行，但整个蓝色提示层会被错误隐藏。
+- 运行时可通过 `ViewSwitchController.FindPreferredController()` 取得正式控制器；Editor Repair 菜单会同步修复全部上述引用。

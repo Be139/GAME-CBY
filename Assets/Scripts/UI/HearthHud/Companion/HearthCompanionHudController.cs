@@ -463,9 +463,12 @@ public class HearthCompanionHudController : MonoBehaviour
             holdPrompt = GetComponentInChildren<HearthCompanionHoldPrompt>(true);
         }
 
-        if (autoFindViewSwitchController && viewSwitchController == null)
+        if (autoFindViewSwitchController &&
+            (viewSwitchController == null ||
+             !viewSwitchController.enabled ||
+             !viewSwitchController.gameObject.activeInHierarchy))
         {
-            viewSwitchController = FindObjectOfType<ViewSwitchController>();
+            viewSwitchController = ViewSwitchController.FindPreferredController();
         }
 
         if (holdPrompt != null)

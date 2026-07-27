@@ -34,6 +34,10 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
     [SerializeField] private Color highTrustDimColor = new Color(0.005f, 0.012f, 0.016f, 0.38f);
     [SerializeField] private Color lowTrustDimColor = new Color(0.003f, 0.006f, 0.01f, 0.62f);
 
+    [Header("Second UI High Trust Confirmation")]
+    [SerializeField] private bool useSecondUiHighTrustConfirmation = true;
+    [SerializeField] private HearthFirstPersonHudController highTrustHudController;
+
     [Header("Sound Effects")]
     [SerializeField] private HearthSfxCuePlayer sfxCuePlayer;
     [SerializeField] private string popupSpawnCueId = "Popup.Spawn";
@@ -64,6 +68,7 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
     private bool advancingWave;
     private bool completing;
     private bool highTrustMode;
+    private bool usingSecondUiHighTrustConfirmation;
     private System.Random random;
 
     private sealed class PopupState
@@ -77,6 +82,7 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
     private void Awake()
     {
         EnsureWaveDefaults();
+        ResolveHighTrustHud();
         SetVisible(false);
         if (popupTemplate != null)
         {
@@ -84,9 +90,19 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
         }
     }
 
+    private void OnDestroy()
+    {
+        UnsubscribeHighTrustHud();
+    }
+
     private void Update()
     {
         if (!IsRunning || completing)
+        {
+            return;
+        }
+
+        if (usingSecondUiHighTrustConfirmation)
         {
             return;
         }
@@ -180,9 +196,23 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
     {
         ResetRuntime();
         EnsureWaveDefaults();
+        ResolveHighTrustHud();
         highTrustMode = highTrust;
         random = new System.Random(randomSeed);
         IsRunning = true;
+
+        if (highTrust &&
+            useSecondUiHighTrustConfirmation &&
+            highTrustHudController != null)
+        {
+            usingSecondUiHighTrustConfirmation = true;
+            SetVisible(false);
+            SubscribeHighTrustHud();
+            ConfigureHighTrustTakeoverPage();
+            highTrustHudController.ShowShutdownConfirmation(true);
+            return;
+        }
+
         ApplyBackgroundDim(highTrust);
         SetVisible(true);
 
@@ -226,6 +256,15 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
             return;
         }
 
+        if (usingSecondUiHighTrustConfirmation)
+        {
+            if (highTrustHudController != null)
+            {
+                highTrustHudController.HandleSubmit();
+            }
+            return;
+        }
+
         if (pressFeedback != null)
         {
             pressFeedback.PlayFeedback();
@@ -257,9 +296,32 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
             return;
         }
 
+        if (usingSecondUiHighTrustConfirmation)
+        {
+            if (highTrustHudController != null)
+            {
+                highTrustHudController.HandleCancel();
+            }
+            else
+            {
+                HandleHighTrustHudCancelled();
+            }
+            return;
+        }
+
         ResetRuntime();
         SetVisible(false);
         cancelled.Invoke();
+    }
+
+    public void ConfigureSecondUiHighTrustConfirmation(
+        HearthFirstPersonHudController hudController,
+        bool enabled)
+    {
+        UnsubscribeHighTrustHud();
+        highTrustHudController = hudController;
+        useSecondUiHighTrustConfirmation = enabled;
+        ResolveHighTrustHud();
     }
 
     private void BeginWave(int index)
@@ -652,6 +714,8 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
 
     private void ResetRuntime()
     {
+        UnsubscribeHighTrustHud();
+        usingSecondUiHighTrustConfirmation = false;
         if (waveRoutine != null)
         {
             StopCoroutine(waveRoutine);
@@ -677,6 +741,88 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
         advancingWave = false;
         completing = false;
         IsRunning = false;
+    }
+
+    private void ResolveHighTrustHud()
+    {
+        if (highTrustHudController == null)
+        {
+            highTrustHudController = FindObjectOfType<HearthFirstPersonHudController>(true);
+        }
+    }
+
+    private void ConfigureHighTrustTakeoverPage()
+    {
+        if (highTrustHudController == null)
+        {
+            return;
+        }
+
+        HearthFirstPersonHudPage[] pages =
+            highTrustHudController.GetComponentsInChildren<HearthFirstPersonHudPage>(true);
+        for (int i = 0; i < pages.Length; i++)
+        {
+            HearthFirstPersonHudPage page = pages[i];
+            if (page != null &&
+                page.PageId == HearthFirstPersonHudPageId.Slide10ShutdownConfirm)
+            {
+                page.Configure(page.PageId, true, false);
+                return;
+            }
+        }
+    }
+
+    private void SubscribeHighTrustHud()
+    {
+        if (highTrustHudController == null)
+        {
+            return;
+        }
+
+        highTrustHudController.OnGracefulShutdownConfirmed.RemoveListener(HandleHighTrustHudCompleted);
+        highTrustHudController.OnShutdownCancelled.RemoveListener(HandleHighTrustHudCancelled);
+        highTrustHudController.OnGracefulShutdownConfirmed.AddListener(HandleHighTrustHudCompleted);
+        highTrustHudController.OnShutdownCancelled.AddListener(HandleHighTrustHudCancelled);
+    }
+
+    private void UnsubscribeHighTrustHud()
+    {
+        if (highTrustHudController == null)
+        {
+            return;
+        }
+
+        highTrustHudController.OnGracefulShutdownConfirmed.RemoveListener(HandleHighTrustHudCompleted);
+        highTrustHudController.OnShutdownCancelled.RemoveListener(HandleHighTrustHudCancelled);
+    }
+
+    private void HandleHighTrustHudCompleted()
+    {
+        if (!IsRunning || !usingSecondUiHighTrustConfirmation)
+        {
+            return;
+        }
+
+        UnsubscribeHighTrustHud();
+        usingSecondUiHighTrustConfirmation = false;
+        IsRunning = false;
+        SetVisible(false);
+        PlayCue(challengeCompleteCueId);
+        completed.Invoke();
+    }
+
+    private void HandleHighTrustHudCancelled()
+    {
+        if (!IsRunning || !usingSecondUiHighTrustConfirmation)
+        {
+            return;
+        }
+
+        UnsubscribeHighTrustHud();
+        usingSecondUiHighTrustConfirmation = false;
+        IsRunning = false;
+        SetVisible(false);
+        cancelled.Invoke();
     }
 
     private void SetVisible(bool visible)

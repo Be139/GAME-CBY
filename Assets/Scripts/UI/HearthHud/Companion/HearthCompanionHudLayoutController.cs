@@ -97,6 +97,13 @@ public class HearthCompanionHudLayoutController : MonoBehaviour
         }
     }
 
+    public void RecaptureBaselines()
+    {
+        baselinesCaptured = false;
+        CaptureBaselinesIfNeeded();
+        ApplySharedLayout();
+    }
+
     private void CaptureBaselinesIfNeeded()
     {
         if (baselinesCaptured)

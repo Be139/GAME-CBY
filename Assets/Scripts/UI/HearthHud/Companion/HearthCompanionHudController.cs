@@ -51,6 +51,7 @@ public class HearthCompanionHudController : MonoBehaviour
     private HearthCompanionHudSceneData currentScene;
     private bool explicitVisibility = true;
     private bool missingHoldPromptWarningLogged;
+    private HearthCompanionTriggerCardView subscribedTriggerCardView;
 
     public HearthCompanionHudSceneData CurrentScene { get { return currentScene; } }
     public string CurrentSceneId { get { return currentScene != null ? currentScene.SceneId : string.Empty; } }
@@ -61,7 +62,13 @@ public class HearthCompanionHudController : MonoBehaviour
     private void Awake()
     {
         ResolveReferences();
+        BindTriggerCardVisibility();
         BuildSceneMap();
+    }
+
+    private void OnDestroy()
+    {
+        UnbindTriggerCardVisibility();
     }
 
     private void Start()
@@ -94,6 +101,8 @@ public class HearthCompanionHudController : MonoBehaviour
         TMP_Text newCenterMessageText,
         AudioSource newAudioSource)
     {
+        UnbindTriggerCardVisibility();
+
         scenes = newScenes;
         rootCanvasGroup = newRootCanvasGroup;
         statusPanelView = newStatusPanelView;
@@ -113,6 +122,7 @@ public class HearthCompanionHudController : MonoBehaviour
             holdPrompt.SetController(this);
         }
 
+        BindTriggerCardVisibility();
         BuildSceneMap();
     }
 
@@ -380,7 +390,8 @@ public class HearthCompanionHudController : MonoBehaviour
 
         if (statusPanelView != null)
         {
-            statusPanelView.Clear();
+            statusPanelView.Apply(scene);
+            SetStatusPanelVisible(HasStatusContent(scene));
         }
 
         if (decisionPanelView != null)
@@ -395,6 +406,7 @@ public class HearthCompanionHudController : MonoBehaviour
 
         if (triggerCardView != null)
         {
+            BindTriggerCardVisibility();
             triggerCardView.Apply(scene);
         }
 
@@ -463,18 +475,103 @@ public class HearthCompanionHudController : MonoBehaviour
             holdPrompt = GetComponentInChildren<HearthCompanionHoldPrompt>(true);
         }
 
-        if (autoFindViewSwitchController &&
-            (viewSwitchController == null ||
-             !viewSwitchController.enabled ||
-             !viewSwitchController.gameObject.activeInHierarchy))
+        if (statusPanelView == null)
         {
-            viewSwitchController = ViewSwitchController.FindPreferredController();
+            statusPanelView = GetComponentInChildren<HearthCompanionStatusPanelView>(true);
+        }
+
+        if (triggerCardView == null)
+        {
+            triggerCardView = GetComponentInChildren<HearthCompanionTriggerCardView>(true);
+        }
+
+        if (autoFindViewSwitchController)
+        {
+            ViewSwitchController preferredViewSwitch =
+                ViewSwitchController.FindPreferredController(gameObject.scene);
+            if (preferredViewSwitch != null &&
+                viewSwitchController != preferredViewSwitch)
+            {
+                viewSwitchController = preferredViewSwitch;
+            }
         }
 
         if (holdPrompt != null)
         {
             holdPrompt.SetController(this);
         }
+    }
+
+    private void BindTriggerCardVisibility()
+    {
+        if (subscribedTriggerCardView == triggerCardView)
+        {
+            return;
+        }
+
+        UnbindTriggerCardVisibility();
+        subscribedTriggerCardView = triggerCardView;
+        if (subscribedTriggerCardView != null)
+        {
+            subscribedTriggerCardView.VisibilityChanged += HandleTriggerCardVisibilityChanged;
+            HandleTriggerCardVisibilityChanged(subscribedTriggerCardView.IsVisible);
+        }
+    }
+
+    private void UnbindTriggerCardVisibility()
+    {
+        if (subscribedTriggerCardView != null)
+        {
+            subscribedTriggerCardView.VisibilityChanged -= HandleTriggerCardVisibilityChanged;
+            subscribedTriggerCardView = null;
+        }
+    }
+
+    private void HandleTriggerCardVisibilityChanged(bool triggerVisible)
+    {
+        SetStatusPanelVisible(!triggerVisible && HasStatusContent(currentScene));
+    }
+
+    private void SetStatusPanelVisible(bool visible)
+    {
+        if (statusPanelView != null &&
+            statusPanelView.gameObject.activeSelf != visible)
+        {
+            statusPanelView.gameObject.SetActive(visible);
+        }
+    }
+
+    private static bool HasStatusContent(HearthCompanionHudSceneData scene)
+    {
+        if (scene == null)
+        {
+            return false;
+        }
+
+        if (!string.IsNullOrWhiteSpace(scene.StatusTitle) ||
+            !string.IsNullOrWhiteSpace(scene.StatusFooter))
+        {
+            return true;
+        }
+
+        HearthCompanionMetricLine[] lines = scene.StatusLines;
+        if (lines == null)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < lines.Length; i++)
+        {
+            HearthCompanionMetricLine line = lines[i];
+            if (line != null &&
+                (!string.IsNullOrWhiteSpace(line.label) ||
+                 !string.IsNullOrWhiteSpace(line.value)))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void BuildSceneMap()

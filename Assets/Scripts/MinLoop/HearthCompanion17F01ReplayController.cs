@@ -680,9 +680,11 @@ public class HearthCompanion17F01ReplayController : MonoBehaviour
             flowController = FindObjectOfType<MinLoopFlowController>();
         }
 
-        if (viewSwitchController == null)
+        ViewSwitchController preferredViewSwitch =
+            ViewSwitchController.FindPreferredController(gameObject.scene);
+        if (preferredViewSwitch != null && viewSwitchController != preferredViewSwitch)
         {
-            viewSwitchController = FindObjectOfType<ViewSwitchController>();
+            viewSwitchController = preferredViewSwitch;
         }
 
         if (companionHud == null)

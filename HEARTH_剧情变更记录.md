@@ -731,3 +731,128 @@ casual_Female_K (9) -> REF_Wife_17F02_ExitOutside
 - 17F03：仍按剧情顺序先面对女儿、再面对母亲；准星命中当前目标时显示对应长按 E。
 - 正式剧情关闭机器人 HUD 页面浏览输入；后续提示内容由对应 `HearthCompanionHudSceneData` 维护。
 - 单按 E 的终端、门、相框与实体机器人交互不受本次修改影响。
+
+## 2026-07-25 HEARTH UI V2 与终端视图规则
+
+- 新增独立 V2 人类 HUD、陪伴单元 HUD、17F01/02/03 门口终端、17F04 自宅终端和一楼任务终端。
+- Legacy UI 全部保留；Unity 菜单可在当前场景一键切换 Legacy/V2，本次最终场景保存为 V2。
+- 人类视角只显示人类第一人称 HUD；陪伴单元视角只显示陪伴单元第一人称 HUD。
+- 进入任意终端固定视角后，全部第一人称 UI 必须隐藏，包括人类身份、任务、地点、Tab 菜单、按键教学、大厅叙事卡和陪伴单元全屏框。
+- 终端自身的页面、开机动画、终端内部对白和键盘提示继续显示。
+- 关闭终端后，恢复进入前使用的真实玩家相机、交互器和每个 HUD 原有显隐状态，不能错误跳到旧机器人相机。
+- V2 Tab 菜单和最终 A/B 继续保持可操作；高亮范围跟随目标文字/按钮，不因 Prefab 切换丢失。
+- 陪伴单元右上决策区和左下数据流使用 V2 坐标作为共享布局基准，Play 后不再回跳到旧版越界坐标。
+- 本轮只更新 UI 视觉、显示边界和切换维护方式，不改变四户剧情顺序、信任结算或长按 E 条件。
+
+## 2026-07-27 第二套 UI 接入三条真实流程
+
+- 本条只记录 UI 显示端和真实流程的接线，不改正式英文对白，不改 17F03/17F04 剧情顺序、
+  信任判断、处置结果或相机触发条件。
+- 17F03 Entity Inspection 不再只是 Companion Prefab 中的静态示意元素：
+  真实 `Hearth17F03InspectionCanvas` 原地采用第二套深蓝黑、冷白、灰蓝视觉和 1920×1080
+  信息层级；Recall、回放后 A/B、Space/Esc 和检查固定相机仍使用原控制器。
+- 进入 17F03 检查时隐藏 Human 身份、任务、地点、叙事卡和字幕视觉；已经开始的正式对白、
+  语音、计时与完成事件不停止。检查面板作为 Modal 独占画面，退出后按当时真实状态恢复
+  Human HUD；如果面板中途被停用，也必须释放 Modal。
+- 17F04 Photo Archive 的 Human `Slide07/08` 接入真实相框流程：实体照片 Renderer 仍是照片
+  数据源，固定 Photo Camera 的实时画面显示在 V2 档案视口；只有第二张正式贴图存在时才开放
+  第二页和左右切换；当前只有一张贴图时页码显示 `01 / 01`。
+- Photo Archive 和高信任 Shutdown Confirm 都隐藏 Human 常驻身份/任务；照片页把静态
+  Field Unit 占位通道让给正式字幕，不与真实对白叠成两层。
+- 相框对白未结束时 V2 档案页显示 `PLEASE WAIT`，不允许 Space 提前退出；可翻页和可退出状态
+  分别显示对应按键，不再同时叠加旧 ExitHint。
+- 17F04 高信任关机使用 Human V2 `Slide10ShutdownConfirm`，Space 确认、Esc 取消；
+  `Hearth17F04FinaleController` 继续接收 Challenge 完成/取消事件并推进或退回 ApproachUnit。
+- 低信任关机仍使用已确认的三波动态病毒弹窗玩法，本轮不以 Human Slide11–13 替代。
+
+## 2026-07-27 第二套 UI 最终显示互斥与大厅终端节奏
+
+### 一楼任务终端与正式简报
+
+- 本条覆盖 2026-07-19 “任务终端开机后立即在终端内播放简报”的旧表现。
+- 玩家确认领取任务后，任务终端先独占画面至少 5 秒；这段时间右上动作保留但锁定，
+  底栏显示 `PLEASE WAIT`，Space 和 Esc 都不能提前关闭。
+- 5 秒后提示改为 `SPACE CLOSE TERMINAL`。此时 Space 只关闭终端，
+  不在终端画面内播放或跳过正式路线简报。
+- 只有终端已经真实关闭并恢复 Human 视角后，`assignmentLoadedDialogue`
+  才开始播放。这样终端 UI、世界字幕和大厅叙事卡不会成为三层叠加。
+- 路线简报期间米娅可以移动和转动视角，但所有 E 交互和电梯继续锁定；
+  最后一句自然播放完成后，才恢复交互并开放电梯。
+- 本次没有修改正式英文对白原句、语音时长规则或一次性领取条件。
+
+### 全局 UI 互斥
+
+- 第二套 UI 运行时按状态只保留一个主接管层：
+  `Takeover > Modal > Terminal > 普通 Human HUD`。
+- 进入任意终端时，只允许显式标记为 `Terminal` Context 的终端所属对白继续显示；
+  Human/Field Unit 等世界字幕和大厅 HUD 卡片必须隐藏。Human Modal
+  （Tab、照片档案、实体检查、最终选择等）或 Shutdown/结局 Takeover
+  会抑制全部字幕视觉与大厅 HUD，不再与主界面重叠。
+- 字幕抑制只隐藏视觉；已经开始的对白、语音、计时和剧情完成事件继续运行，
+  不会被停止、重播或因为切 UI 而改稿。退出接管界面后，显示按当时的真实播放状态恢复。
+- 17F03 实体检查以自身为 Modal Owner 申请互斥，关闭或停用时必须释放；
+  Recall、回放、A/B 处置和检查相机仍由原 Replay Controller 控制。
+
+### Tab 门控与教程优先级
+
+- Human Tab 菜单只允许在普通、可交互的 Human Gameplay 中打开。
+  正式对白、控制锁、终端、Modal 或 Takeover 期间按 Tab 不会穿出第二层菜单；
+  已经打开的菜单仍可用原 Tab/Esc 关闭。
+- 按键教程的显示优先级固定为：
+  安全/关机 Takeover → 全屏终端 → 选择或 Hold E → Tab 菜单 →
+  动态 E 交互 → 初始 10 秒教程 → 无提示。
+- 初始教程只显示 `WASD MOVE / MOUSE LOOK / E INTERACT / TAB MENU`。
+  它只累计 10 秒有效 Human Gameplay 时间；正式对白、动态 E、终端、Modal、
+  Takeover、控制锁、暂停或非 Human 视角期间暂停计时并隐藏，返回普通玩法后继续，
+  最后用 0.35 秒淡出。
+- 正式对白继续自动推进；任何对白状态都不显示错误的 `SPACE CONTINUE`，
+  教程与操作提示不得借用字幕播放器。
+
+## 2026-07-27 第二套 UI 最终排布、文字容量与分辨率收口
+
+- 本条只记录 UI 显示与验证增量。正式游戏对白唯一来源
+  `HEARTH_Full_Game_Script_No_Audio_Tags_Native_English.md` 本次未修改；
+  17F01/17F02 终端内处置对白只新增显式 `Terminal` 播放语境，不改任何原句、顺序、
+  音频时长、选择结果或信任结算。
+- 一楼任务终端是独立 Lobby/Assignment 终端，不属于 17F01。
+  它不再被页码兜底推断成 `17F01`，但原 Custom 动作和节奏保持：
+  前 5 秒 `PLEASE WAIT`，随后 `SPACE CLOSE TERMINAL`，关闭后才播放世界简报。
+- 17F04 自宅终端继续位于 `17F/ROOM4/TV (3)`。当 V2 Home Terminal Prefab
+  存在时，重跑 `Apply 17F04 Home Finale Setup` 必须继续使用
+  `Terminal_17F04_Home_V2.prefab`，不能把整套场景中的第七个 V2 槽位降级为 Legacy。
+  Apply 后 Human、Companion、Lobby、17F01–17F04 必须仍保持 `7/7 V2`。
+- 17F04 Home Terminal 的相机与控制关系必须在 Apply 后完整保留：
+  统一 `ViewSwitchController`、共享 `HearthPlayerControlLock`、`TV (3)` hardware root、
+  TV 自有 World Camera 与 Canvas `worldCamera`。这些修复只保证 UI/相机拓扑，
+  不改变 Space 进入自宅、渐黑、相机切换或正式剧情顺序。
+- 终端共享 Footer 的 1920×1080 坐标确定为
+  `X=96 / Y=920 / W=1728 / H=64`，并使用高于页面层的 Canvas 排序；
+  目的是让按键说明完整留在实体电视内，不被下边框裁切，也不再增加第二个全屏外框。
+- Human Modal、Terminal、Shutdown/Low Trust Takeover 会通过 Coordinator
+  外部抑制 Human Persistent HUD；身份、任务和地点不应穿透全屏界面。
+  Coordinator 停用时必须恢复 Human、字幕与 Lobby Overlay 的外部显示状态。
+- Final Choice 只保留 `FocusLayer/FinalChoiceInputHint` 这一套真实动态提示。
+  它根据当前水平/垂直选择和输入开放状态更新；不再叠加静态
+  `V2_FinalChoiceHint`。
+- Companion V2 的 `PersistentInfoLayer/V2_StatusPanel` 已补建并绑定到
+  `HearthCompanionHudController.statusPanelView`。Title、最多五行 Rows、Footer
+  与 Accent 仍由不同 `HearthCompanionHudSceneData` 动态提供，不能烘焙成固定图片或文字。
+- Companion 临时 Trigger Card 的信息层级高于常驻 Status Panel：
+  Card 开始淡入时隐藏 Status Panel，淡入、停留和淡出期间只显示临时 Card；
+  淡出完成后按当前 SceneData 是否有 Status 内容自动恢复常驻面板。
+  TriggerCardView 被停用时必须立即清除可见状态；空 TimedCues 或缺失 CanvasGroup
+  也按安全隐藏处理，避免切视角后 Status Panel 一直无法恢复。
+  Status Panel 只有在 SceneData 确有非空标题、Footer 或状态行时才显示，不生成空卡。
+  该规则只消除重复内容，不改变 Timed Cue 延迟/时长、三户剧情触发或 Companion 输入。
+- Final Choice、Shutdown Confirm 与 Low Trust Warning 页面在 V2 安全刷新时
+  必须清除旧 `Border_*` Image 的可见性和 Raycast，不能让 Legacy/Scene Override
+  遗留细框穿过新面板。真实按钮、焦点提示、V2 规则线和原 Space/Esc/选择逻辑保持不变。
+- 大厅 Overlay 与任务终端全部 TMP、17F04 照片退出提示、Human/Companion 动态 E
+  交互提示都采用固定字号与 `Overflow`，不再使用 Auto Size、Ellipsis 或 Truncate。
+  动态 E 的 Repair 还会禁止换行；对应 Lobby、17F04、Runtime Interface Validator
+  必须覆盖固定字号与 Overflow 安全条件。
+- 初始教程中的 `WASD/MOUSE/E/TAB` 键位与 `MOVE/LOOK/INTERACT/MENU`
+  动作文字全部禁止换行；`INTERACT` 不得在 1920×1080 或缩放分辨率下拆成两行。
+- 已真实把 Game View 切换到 `1280×720` 和 `2560×1440` 检查共享锚点与缩放，
+  两个分辨率均未出现代表性 HUD/终端漂移，并保存对应基线截图。
+  该结果不等于 11 类界面在两个分辨率下都已保存完整逐界面截图矩阵。

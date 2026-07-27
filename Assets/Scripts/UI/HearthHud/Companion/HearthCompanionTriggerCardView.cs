@@ -17,6 +17,11 @@ public class HearthCompanionTriggerCardView : MonoBehaviour
     [SerializeField] private bool useUnscaledTime = true;
 
     private Coroutine routine;
+    private bool isVisible;
+
+    public event System.Action<bool> VisibilityChanged;
+
+    public bool IsVisible { get { return isVisible; } }
 
     public void Configure(CanvasGroup newCanvasGroup, TMP_Text newTitleText, TMP_Text newBodyText, Image newAccentImage)
     {
@@ -24,6 +29,11 @@ public class HearthCompanionTriggerCardView : MonoBehaviour
         titleText = newTitleText;
         bodyText = newBodyText;
         accentImage = newAccentImage;
+        HideImmediate();
+    }
+
+    private void OnDisable()
+    {
         HideImmediate();
     }
 
@@ -53,31 +63,33 @@ public class HearthCompanionTriggerCardView : MonoBehaviour
 
     public void ShowCueSequence(HearthCompanionTimedCue[] cues, Color accentColor)
     {
-        if (routine != null)
+        if (canvasGroup == null || cues == null || cues.Length == 0)
         {
-            StopCoroutine(routine);
+            HideImmediate();
+            return;
         }
+
+        StopActiveRoutine();
 
         routine = StartCoroutine(CueSequenceRoutine(cues, accentColor));
     }
 
     public void ShowCard(string title, string body, Color accentColor, float delay, float seconds)
     {
-        if (routine != null)
+        if (canvasGroup == null)
         {
-            StopCoroutine(routine);
+            HideImmediate();
+            return;
         }
+
+        StopActiveRoutine();
 
         routine = StartCoroutine(CardRoutine(title, body, accentColor, delay, seconds));
     }
 
     public void HideImmediate()
     {
-        if (routine != null)
-        {
-            StopCoroutine(routine);
-            routine = null;
-        }
+        StopActiveRoutine();
 
         if (canvasGroup != null)
         {
@@ -85,6 +97,8 @@ public class HearthCompanionTriggerCardView : MonoBehaviour
             canvasGroup.interactable = false;
             canvasGroup.blocksRaycasts = false;
         }
+
+        SetVisibleState(false);
     }
 
     private IEnumerator CardRoutine(string title, string body, Color accentColor, float delay, float seconds)
@@ -117,6 +131,7 @@ public class HearthCompanionTriggerCardView : MonoBehaviour
             yield return Wait(delay);
         }
 
+        SetVisibleState(true);
         yield return Fade(1f);
 
         if (seconds > 0f)
@@ -125,6 +140,7 @@ public class HearthCompanionTriggerCardView : MonoBehaviour
         }
 
         yield return Fade(0f);
+        SetVisibleState(false);
         routine = null;
     }
 
@@ -166,6 +182,7 @@ public class HearthCompanionTriggerCardView : MonoBehaviour
                 accentImage.color = accentColor;
             }
 
+            SetVisibleState(true);
             yield return Fade(1f);
 
             if (cue.visibleSeconds > 0f)
@@ -174,9 +191,40 @@ public class HearthCompanionTriggerCardView : MonoBehaviour
             }
 
             yield return Fade(0f);
+            SetVisibleState(false);
         }
 
         routine = null;
+    }
+
+    private void StopActiveRoutine()
+    {
+        if (routine != null)
+        {
+            StopCoroutine(routine);
+            routine = null;
+        }
+
+        if (canvasGroup != null)
+        {
+            canvasGroup.alpha = 0f;
+        }
+
+        SetVisibleState(false);
+    }
+
+    private void SetVisibleState(bool visible)
+    {
+        if (isVisible == visible)
+        {
+            return;
+        }
+
+        isVisible = visible;
+        if (VisibilityChanged != null)
+        {
+            VisibilityChanged.Invoke(visible);
+        }
     }
 
     private IEnumerator Fade(float targetAlpha)

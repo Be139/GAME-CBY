@@ -120,7 +120,10 @@ public static class HearthLocationDetectionSceneBinder
     private static void BindProbe(HearthLocationProbe probe)
     {
         SerializedObject serialized = new SerializedObject(probe);
-        SetObject(serialized, "viewSwitchController", Object.FindObjectOfType<ViewSwitchController>(true));
+        SetObject(
+            serialized,
+            "viewSwitchController",
+            ViewSwitchController.FindPreferredController(probe.gameObject.scene));
         SetObject(serialized, "humanProbeRoot", FindControllerTransform("Person Controller", "Player_Mia_Controller", "Mia_Controller", "Mia"));
         SetObject(serialized, "companionProbeRoot", FindControllerTransform("Robot Controller", "Robot_Controller", "Companion_Controller", "Companion", "Robot"));
         SetObject(serialized, "hudView", Object.FindObjectOfType<HearthLocationHudView>(true));

@@ -189,7 +189,8 @@ public static class HearthRuntimeInterfaceBinder
         label.alignment = TextAlignmentOptions.Center;
         label.color = new Color(0.79f, 0.94f, 1f, 0.98f);
         label.enableWordWrapping = false;
-        label.overflowMode = TextOverflowModes.Ellipsis;
+        label.enableAutoSizing = false;
+        label.overflowMode = TextOverflowModes.Overflow;
         label.raycastTarget = false;
         if (TMP_Settings.defaultFontAsset != null)
         {
@@ -629,6 +630,21 @@ public static class HearthRuntimeInterfaceBinder
             Debug.LogWarning(
                 "[HearthRuntimeInterfaceBinder] " + controllerPath + " is bound to the wrong HUD prompt: " + promptPath,
                 interaction);
+            return 1;
+        }
+
+        if (interaction.uiInteractionText.enableAutoSizing ||
+            interaction.uiInteractionText.overflowMode != TextOverflowModes.Overflow)
+        {
+            Debug.LogWarning(
+                "[HearthRuntimeInterfaceBinder] " +
+                controllerPath +
+                " interaction prompt must use its fixed font size with Overflow (autoSize=" +
+                interaction.uiInteractionText.enableAutoSizing +
+                ", overflow=" +
+                interaction.uiInteractionText.overflowMode +
+                ").",
+                interaction.uiInteractionText);
             return 1;
         }
 

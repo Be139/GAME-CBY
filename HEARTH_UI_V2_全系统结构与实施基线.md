@@ -1,0 +1,281 @@
+# HEARTH UI V2 全系统结构与实施基线
+
+> 更新日期：2026-07-27
+> 适用场景：`Assets/Scenes/SampleScene.unity`
+> 设计参考空间：1920 × 1080
+
+## 1. 本文用途
+
+第二套 UI 是完整系统重构，不是在旧 UI 上继续叠加图片。本文是后续制作、代码接入、视觉替换和验收的共同入口；如果聊天记录、旧截图或旧 Builder 规则与本文冲突，应先按下面的真值顺序重新核对。
+
+## 2. 真值优先级
+
+1. 用户最新要求、`HEARTH_剧情变更记录.md` 和当前可运行状态机。
+2. 根目录正式对白 `HEARTH_Full_Game_Script_No_Audio_Tags_Native_English.md`。
+3. `UI参考资料/HEARTH_UI_Fullscreen_Mockups/` 的 11 张 1920 × 1080 图：布局、比例、信息层级。
+4. `UI参考资料/HEARTH-Night-Rounds-Master.pptx`：终端色调。
+5. `UI参考资料/HEARTH-HUD改(3).pptx`：Human HUD、终局和模态视觉。
+6. 旧 40 页 PPT：仅补充历史用途。
+7. `Assets/UI/HEARTH/GeneratedParts/` 和调试截图：不是设计真值。
+
+禁止把白底、定位细框、角落示意框、烘焙文字和重复全屏框带入成品。终端只保留场景中实体电视的外框。
+
+## 3. 总体依赖关系
+
+```mermaid
+flowchart TD
+    A["正式对白 Markdown"] --> B["Dialogue 同步工具"]
+    B --> C["HearthDialogueSequence"]
+    C --> D["剧情/关卡控制器"]
+    D --> E["MinLoopSubtitlePlayer"]
+    D --> F["HearthTvTerminalController"]
+    D --> G["Human / Companion HUD Controller"]
+
+    H["HearthUiThemeProfile"] --> I["V2 VisualRoot / Presenter"]
+    J["HearthUiLayoutProfile"] --> I
+    K["HearthUiStateCoordinator"] --> I
+    F --> L["HearthTerminalViewState"]
+    L --> I
+    D --> M["HearthActionHintState"]
+    M --> I
+
+    N["键盘输入"] --> D
+    D --> O["剧情推进、相机、控制锁"]
+```
+
+边界规则：
+
+- 输入、剧情执行、相机与控制锁继续由现有控制器拥有。
+- Presenter 只显示状态，不直接读取按键，不自行推进剧情。
+- 正式对白仍走 `Markdown → 同步工具 → HearthDialogueSequence → MinLoopSubtitlePlayer`。
+- 2026-07-27 的终端 Context、布局和文字容量收口没有修改正式对白 Markdown。
+- 教程和操作提示不得借用字幕播放器。
+- V2 Prefab 保留功能 Wrapper、场景引用和剧情绑定；视觉都放在可替换的 `VisualRoot`/`V2_` 子树。
+
+## 4. 全局层级与互斥
+
+从高到低：
+
+1. `Takeover`：安全、关机、低信任接管。
+2. `Modal`：最终选择、确认框、照片档案等模态页。
+3. `Terminal`：大厅、门口、自宅全屏终端。
+4. `Dialogue`：正式人物或 Field Unit 字幕。
+5. `Interaction`：动态 E、Hold E、选择提示。
+6. `Persistent`：身份、任务、地点等常驻 HUD。
+
+解析规则：
+
+| 当前状态 | Persistent | Dialogue | Interaction | Terminal | Modal | Takeover |
+|---|---:|---:|---:|---:|---:|---:|
+| 正常 Human Gameplay | 开 | 按需 | 无对白时开 | 关 | 关 | 关 |
+| 正式对白 | 开 | 开 | 关 | 关 | 关 | 关 |
+| 任意终端 | 关 | 仅终端所属对白 | 关 | 开 | 关 | 关 |
+| Human Tab / 普通模态 | 关 | 关 | 关 | 关 | 开 | 关 |
+| Shutdown / Low Trust | 关 | 关 | 关 | 关 | 关 | 开 |
+
+初始教程不是常驻 HUD：被对白、Tab/模态、终端、非 Human 视角或控制锁压制时，立即隐藏并暂停计时；恢复有效 Gameplay 后继续累计剩余时间。
+
+Companion 内部信息也遵守“临时高于常驻”：Trigger Card 从开始淡入到淡出完成期间，
+常驻 Status Panel 隐藏；Card 完成后仅在当前 SceneData 有非空 Status 内容时恢复。
+TriggerCardView 的 OnDisable、空 TimedCues 与缺失 CanvasGroup 都必须收敛到安全隐藏，
+不能在切换视角或停用对象后遗留“临时卡仍可见”的状态；空 SceneData 不显示状态卡。
+
+## 5. 1920 × 1080 共用坐标
+
+坐标均为左上原点，正式值记录在：
+
+`Assets/UI/HEARTH/V2/Profiles/Hearth_UiV2Layout_1920x1080.asset`
+
+| 区域 | X | Y | W | H |
+|---|---:|---:|---:|---:|
+| 全局安全区 | 48 | 40 | 1824 | 1000 |
+| 终端安全区 | 96 | 64 | 1728 | 968 |
+| Human 身份 | 64 | 48 | 432 | 96 |
+| 当前任务 | 1408 | 48 | 448 | 104 |
+| 地点 | 64 | 944 | 360 | 80 |
+| 字幕说话人 | 480 | 748 | 960 | 32 |
+| 字幕正文基准区 | 320 | 792 | 1280 | 96 |
+| 初始教程 | 1136 | 928 | 720 | 96 |
+| 动态交互提示 | 660 | 688 | 600 | 64 |
+| 终端标题与导航 | 120 | 72 | 1680 | 140 |
+| 终端主动作 | 1480 | 148 | 320 | 56 |
+| 终端内容区 | 120 | 232 | 1680 | 528 |
+| 终端消息通道 | 320 | 790 | 1280 | 120 |
+| 终端底栏 | 96 | 920 | 1728 | 64 |
+
+所有 Canvas 使用 `Scale With Screen Size` 和 1920 × 1080 参考分辨率。
+2026-07-27 已在真实 Game View 对 1280 × 720、2560 × 1440 完成代表性缩放验证，
+共享锚点与终端 Footer 未漂移；11 类界面的完整双分辨率截图矩阵仍可继续补齐。
+
+## 6. 11 类界面职责
+
+| 参考图 | 剧情用途 | 主要运行入口 |
+|---|---|---|
+| Base Human HUD | Human 身份、任务、地点、对白安全区、短时教程 | `HearthFirstPersonHudController` |
+| Base Companion HUD | 机器人检查、状态与 Hold E | `HearthCompanionHudController` |
+| Base Doorway Terminal | 17F01/02/03 门口资料、回放/入户动作 | `HearthTvTerminalController` |
+| 01 Lobby Task Terminal | 领取当晚任务；前 5 秒等待 | `HearthLobbyFlowController` |
+| 02 Human Tab Menu | Tonight、History、Settings | `HearthFirstPersonHudController` |
+| 03 Entity Robot Inspection | 实体机器人诊断与处置 | `HearthCompanion17F03ReplayController` → 场景内 `Hearth17F03InspectionPanel`（V2 Theme） |
+| 04 Home Terminal | Lily 留言和 `ENTER HOME`；Finale Apply 保持 V2 Wrapper | 17F04 Terminal Controller |
+| 05 Photo Archive | 电子照片与翻页接口 | `HearthPhotoFrameInteractable` 的真实 Photo Camera → Human `Slide07/08` 实时视口 |
+| 06 Final Choice | 最终 A/B 决定 | Human HUD Final Choice |
+| 07 Shutdown Confirm | 高信任关机确认 | `HearthVirusPopupShutdownChallenge` → Human `Slide10` |
+| 08 Low Trust Challenge | 低信任无限弹窗接管 | `HearthVirusPopupShutdownChallenge` 动态三波弹窗 |
+
+17F01/02 顶栏动作固定为 `REVIEW ARCHIVED EVENT`；17F03 为 `ENTER UNIT`；17F04 为 `ENTER HOME`。动作在所有相关页面都可见，剧情锁定时显示 `PLEASE WAIT`，不能移到最后一页或直接消失。
+
+大厅 Assignment Terminal 是非住户终端，住户 ID必须为空，不得被兜底识别为 17F01。
+Final Choice 只保留 `FocusLayer/FinalChoiceInputHint` 这一套由真实输入状态驱动的提示；
+Companion 的 `PersistentInfoLayer/V2_StatusPanel` 由 SceneData 动态写入并绑定到正式 Controller。
+`HearthCompanionTriggerCardView.VisibilityChanged` 是 Trigger Card 与 Status Panel
+互斥的唯一显示信号；挂载和 Inspector 关系不变。
+
+17F04 Finale Apply 的结构不变量：
+
+- `Terminal_17F04_Home_V2.prefab` 存在时，`TV (3)` 必须使用该 V2 Wrapper，
+  不允许回退到 Legacy Home Terminal。
+- Home Terminal 必须绑定唯一 `ViewSwitchController`、共享 `HearthPlayerControlLock`、
+  `TV (3)` hardware root、TV 自有 World Camera 和相同的 Canvas `worldCamera`。
+- Apply 后 V2 Marker 必须有效，Open Scene UI Validator 必须继续得到
+  Human、Companion、Lobby、17F01–17F04 共 `7/7 V2`。
+
+三条特殊流程不允许由 Presenter 自行推进剧情：
+
+- 17F03 检查面板继续把 Recall、关闭和 A/B 结果交给 Replay Controller。
+- Photo Archive 的左右键、贴图页和退出门控继续由相框交互器处理；Human HUD Input 在查看期间停用，
+  防止其“任意键关闭故事页”抢占流程。
+- 高信任 Slide10 只回传 Challenge 的完成/取消事件；17F04 Finale Controller 仍是剧情状态机所有者。
+
+## 7. 输入归属
+
+### Human
+
+- `Tab`：打开/关闭 Human 菜单。
+- `E`：只由当前世界交互器处理。
+- 初始教程只显示 `WASD / MOUSE / E / TAB`，不显示 `SPACE CONTINUE`。
+
+### 终端
+
+- `Tab`：浏览页面。
+- `Left / Right`：移动焦点。
+- `Space`：只执行当前可执行动作。
+- `Esc`：退出。
+
+大厅终端保持原流程：
+
+- 页面出现后的前 5 秒：`PLEASE WAIT`。
+- 5 秒后：`SPACE CLOSE TERMINAL`。
+- Space 不再承担“接受任务后继续对白”的错误视觉语义。
+
+## 8. 视觉与素材规则
+
+主题资产：
+
+`Assets/UI/HEARTH/V2/Profiles/Hearth_UiV2Theme.asset`
+
+基础色：
+
+- 深蓝黑：`#0B1018`、`#09101C`
+- 灰蓝：`#5F7895`
+- 冷白：`#D7E6F6`
+- 信息蓝：`#78AADC`
+- 琥珀、绿色、红色仅用于警告、成功、危险等语义。
+
+制作边界：
+
+- 动态底板使用 Unity `Image`、2px 规则线和 TMP。
+- AI/Image2 只制作透明、固定用途、无文字的装饰。
+- 普通键帽约 64 × 40；Space 约 96 × 40。
+- 动态框体不得使用包含内部线条的整张大图。
+- 任何新 PNG 必须先记录目标像素、透明区、文字安全区和 9-slice 边界。
+- TMP 关闭自动缩字；正式正文使用 `Overflow`，不使用 `Ellipsis` 或 `Truncate`。
+- Final Choice、Shutdown Confirm、Low Trust Warning 的 V2 Style 必须禁用页面内
+  所有旧 `Border_*` Image（透明、disabled、无 Raycast），只保留真实按钮、焦点和 V2 规则线。
+
+## 9. 字幕容量
+
+- 标准说话人：22px。
+- 标准正文：28px。
+- 结局正文：30px。
+- 人物对白使用较宽区域；Field Unit/终端消息可以较窄。
+- 框体按真实文字首选高度向上扩展。
+- 最长 201 字符与全部超长正式对白必须完整显示，不拆句、不改稿。
+- 正式对白自动推进，任何对白状态都不显示错误的 `SPACE CONTINUE`。
+
+字幕视觉 Prefab：
+
+`Assets/Prefabs/UI/HearthSubtitle/V2/HearthSubtitleVisualCanvas_V2.prefab`
+
+字幕样式资产：
+
+`Assets/Data/MinLoop/UI/Hearth_SubtitleStyle.asset`
+
+## 10. 安全制作流程
+
+每个 UI 动手前必须明确：
+
+1. 剧情用途。
+2. 触发、锁定与退出条件。
+3. 所属层级。
+4. 1920 坐标和安全区。
+5. 最长真实文字容量。
+6. 当前输入状态。
+7. 素材透明区与拉伸方式。
+8. 数据绑定来源。
+9. 目标截图和最小运行测试。
+
+日常视觉刷新只使用：
+
+`Tools > Hearth > UI V2 > Refresh Existing V2 Prefab Visuals`
+
+安全 Refresh 会保留既有
+`HearthHudRoot_V2/PersistentHudLayer/V2_InitialTutorialRoot`。
+只有首次缺少 Theme/Layout/Coordinator/教程根，或 System Validator 报缺失时才执行：
+
+`Tools > Hearth > UI V2 > System > Install Profiles And Human Tutorial`
+
+最后执行：
+
+- `Tools > Hearth > UI V2 > Validate Open Scene UI`
+- `Tools > Hearth > UI V2 > Subtitles > Validate Open Scene`
+- `Tools > Hearth > UI V2 > System > Validate Profiles And Human Tutorial`
+- `Tools > Hearth > Validation > Validate Runtime Topology`
+
+禁止把 `Rebuild All V2 UI Assets` 或 `Use V2 UI In Open Scene` 当作现场视觉微调按钮；前者会覆盖现场视觉树，后者会替换场景 UI 根。
+
+若因剧情或引用维护必须重跑 `Apply 17F04 Home Finale Setup`，随后必须运行
+17F04 Finale Validator 与 `Validate Open Scene UI`；不能把 Binder Apply 当成允许
+单独替换 Home Terminal 版本的入口。
+
+## 11. 当前基准截图
+
+目录：
+
+`Assets/Screenshots/HEARTH_UI_V2_2026-07-26/`
+
+当前正式检查重点：
+
+- `HEARTH_UI_V2_Human_Tutorial_Final-1.png`
+- `HEARTH_UI_V2_Human_Tab_Menu_Final.png`
+- `HEARTH_UI_V2_Terminal_17F01_Final.png`
+- `HEARTH_UI_V2_17F03_EntityInspection_ActualFlow_Final.png`
+- `HEARTH_UI_V2_17F04_PhotoArchive_ActualFlow_Final.png`
+- `HEARTH_UI_V2_17F04_ShutdownHighTrust_ActualFlow_Final.png`
+
+截图必须来自原生 1920 × 1080 Game View，不以 Scene View 或缩放后的编辑器截图代替。
+
+## 12. 完成标准
+
+- 11 类界面都有明确职责和可用页面。
+- 无双重大框、白底、烘焙文字和装饰线穿字。
+- 无固定错误教程；教程随上下文变化。
+- 无正式对白改写。
+- 最长对白固定字号且完整。
+- 顶栏动作、Tab、方向键、Space、Esc 和控制恢复全部可用。
+- Lobby 与 17F01–17F04 全流程可跑通。
+- 17F04 Finale Apply 后 Home Terminal 仍为有效 V2，七个正式 UI 槽位保持 `7/7 V2`。
+- Companion 临时 Trigger Card 与常驻 Status Panel 不重复显示；Card 淡出后状态面板按数据恢复。
+- Final Choice、Shutdown Confirm、Low Trust Warning 无启用的 Legacy `Border_*` 遗留细框。
+- Unity Console 无本轮新增错误。
+- Legacy 保留，直到 V2 全流程最终验收完成。

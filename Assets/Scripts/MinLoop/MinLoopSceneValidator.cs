@@ -109,9 +109,11 @@ public class MinLoopSceneValidator : MonoBehaviour
             terminalPresenter = FindSceneObject<MinLoopTerminalPresenter>();
         }
 
-        if (viewSwitchController == null)
+        ViewSwitchController preferredViewSwitch =
+            ViewSwitchController.FindPreferredController(gameObject.scene);
+        if (preferredViewSwitch != null && viewSwitchController != preferredViewSwitch)
         {
-            viewSwitchController = FindSceneObject<ViewSwitchController>();
+            viewSwitchController = preferredViewSwitch;
         }
 
         if (stageObjectActivators == null || stageObjectActivators.Length == 0)

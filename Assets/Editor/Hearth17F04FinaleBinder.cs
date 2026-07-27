@@ -23,6 +23,7 @@ public static class Hearth17F04FinaleBinder
     private const string DaughterReferencePath = "Player/Person Controller (2)";
     private const string HomeUnitPath = "GameObject/ROBOT (1)";
     private const string HomeTerminalPrefabPath = "Assets/Prefabs/UI/HearthHud/Terminals/Terminal_17F04_Home.prefab";
+    private const string HomeTerminalV2PrefabPath = "Assets/Prefabs/UI/HearthHud/V2/Terminals/Terminal_17F04_Home_V2.prefab";
     private const string DialogueFolder = "Assets/Data/MinLoop/Dialogues/17F04";
     private const string MaterialFolder = "Assets/materials/Hearth";
     private const string PhotoMaterialPath = MaterialFolder + "/17F04_Photo_Unlit.mat";
@@ -158,6 +159,17 @@ public static class Hearth17F04FinaleBinder
         }
         else if (homeTerminal != null)
         {
+            if (AssetDatabase.LoadAssetAtPath<GameObject>(HomeTerminalV2PrefabPath) != null)
+            {
+                HearthUiThemeMarker marker = homeTerminal.GetComponent<HearthUiThemeMarker>();
+                if (marker == null ||
+                    marker.Version != HearthUiThemeVersion.V2 ||
+                    marker.BuildLabel != "HEARTH UI V2")
+                {
+                    errors.Add("TV (3)'s 17F04 terminal is not using the available V2 visual wrapper.");
+                }
+            }
+
             SerializedObject terminalSo = new SerializedObject(homeTerminal);
             SerializedProperty deferredClose = terminalSo.FindProperty("deferCustomActionCloseUntilExternalFade");
             if (deferredClose == null || !deferredClose.boolValue)
@@ -180,6 +192,22 @@ public static class Hearth17F04FinaleBinder
         if (UnityEngine.Object.FindObjectOfType<HearthSequentialShutdownChallenge>(true) != null)
         {
             errors.Add("17F04 still contains the retired sequential shutdown challenge.");
+        }
+
+        Transform photoHintTransform = FindTransform(FinaleRootPath + "/UI/PhotoExitHintCanvas/HintPanel/HintText");
+        TMP_Text photoHintText = photoHintTransform != null ? photoHintTransform.GetComponent<TMP_Text>() : null;
+        if (photoHintText == null)
+        {
+            errors.Add("17F04 photo exit hint text is missing.");
+        }
+        else if (photoHintText.enableAutoSizing || photoHintText.overflowMode != TextOverflowModes.Overflow)
+        {
+            errors.Add(
+                "17F04 photo exit hint must use its fixed font size with Overflow (autoSize=" +
+                photoHintText.enableAutoSizing +
+                ", overflow=" +
+                photoHintText.overflowMode +
+                ").");
         }
 
         Hearth17F04FinaleController finaleController = UnityEngine.Object.FindObjectOfType<Hearth17F04FinaleController>(true);
@@ -328,7 +356,11 @@ public static class Hearth17F04FinaleBinder
 
     private static HearthTvTerminalController ConfigureHomeTerminal(Transform tv, Hearth17F04FinaleController controller, Transform human)
     {
-        if (!HearthTvTerminalPrefabBuilder.StandardizeTvTerminal(tv, HomeTerminalPrefabPath))
+        string terminalPrefabPath =
+            AssetDatabase.LoadAssetAtPath<GameObject>(HomeTerminalV2PrefabPath) != null
+                ? HomeTerminalV2PrefabPath
+                : HomeTerminalPrefabPath;
+        if (!HearthTvTerminalPrefabBuilder.StandardizeTvTerminal(tv, terminalPrefabPath))
         {
             return null;
         }
@@ -336,13 +368,35 @@ public static class Hearth17F04FinaleBinder
         HearthTvTerminalController terminal = tv.GetComponentInChildren<HearthTvTerminalController>(true);
         PlayerInteraction interaction = human.GetComponent<PlayerInteraction>();
         Camera humanCamera = interaction != null ? interaction.mainCamera : human.GetComponentInChildren<Camera>(true);
+        ViewSwitchController viewSwitch = UnityEngine.Object.FindObjectOfType<ViewSwitchController>(true);
+        HearthPlayerControlLock playerControlLock = UnityEngine.Object.FindObjectOfType<HearthPlayerControlLock>(true);
         terminal.SetPrimaryAction(HearthTerminalPrimaryAction.Custom);
         terminal.SetSubmitPrimaryActionFromCurrentPage(true);
         terminal.SetDeferCustomActionCloseUntilExternalFade(true);
         terminal.SetReplayResidentId("17F04");
         terminal.SetPlayerCamera(humanCamera);
         terminal.SetPlayerInteraction(interaction);
+        terminal.SetTerminalHardwareRoot(tv);
+        terminal.SetViewSwitchController(viewSwitch);
+        terminal.SetWorldCamera(terminal.TerminalCamera);
         terminal.SetSwitchCameraWhileOpen(terminal.TerminalCamera != null);
+
+        SerializedObject terminalSo = new SerializedObject(terminal);
+        SetObject(terminalSo, "playerControlLock", playerControlLock);
+        terminalSo.ApplyModifiedPropertiesWithoutUndo();
+
+        Canvas terminalCanvas = terminal.GetComponent<Canvas>();
+        if (terminalCanvas == null)
+        {
+            terminalCanvas = terminal.GetComponentInParent<Canvas>();
+        }
+
+        if (terminalCanvas != null)
+        {
+            terminalCanvas.worldCamera = terminal.TerminalCamera;
+            EditorUtility.SetDirty(terminalCanvas);
+        }
+
         EditorUtility.SetDirty(terminal);
         return terminal;
     }
@@ -451,6 +505,7 @@ public static class Hearth17F04FinaleBinder
                 : null;
             if (existingGroup != null && existingText != null)
             {
+                SanitizeExistingText(existingText);
                 return new PhotoExitHint { Group = existingGroup, Text = existingText };
             }
         }
@@ -501,6 +556,22 @@ public static class Hearth17F04FinaleBinder
             TextAlignmentOptions.Center);
         text.fontStyle = FontStyles.Bold;
         return new PhotoExitHint { Group = group, Text = text };
+    }
+
+    private static void SanitizeExistingText(TMP_Text text)
+    {
+        if (text == null)
+        {
+            return;
+        }
+
+        bool changed = text.enableAutoSizing || text.overflowMode != TextOverflowModes.Overflow;
+        text.enableAutoSizing = false;
+        text.overflowMode = TextOverflowModes.Overflow;
+        if (changed)
+        {
+            EditorUtility.SetDirty(text);
+        }
     }
 
     private static Hearth17F04HomeUnitInteractable ConfigureHomeUnit(Transform unit, Hearth17F04FinaleController controller)
@@ -1411,7 +1482,9 @@ public static class Hearth17F04FinaleBinder
         text.color = color;
         text.alignment = alignment;
         text.enableWordWrapping = true;
-        text.overflowMode = TextOverflowModes.Truncate;
+        text.enableAutoSizing = false;
+        text.maxVisibleLines = int.MaxValue;
+        text.overflowMode = TextOverflowModes.Overflow;
         text.raycastTarget = false;
         return text;
     }
@@ -1424,12 +1497,12 @@ public static class Hearth17F04FinaleBinder
         }
 
         text.enableWordWrapping = true;
-        text.enableAutoSizing = true;
+        text.enableAutoSizing = false;
         text.fontSize = maximumSize;
         text.fontSizeMax = maximumSize;
-        text.fontSizeMin = Mathf.Min(minimumSize, maximumSize);
-        text.maxVisibleLines = Mathf.Max(1, maximumLines);
-        text.overflowMode = TextOverflowModes.Truncate;
+        text.fontSizeMin = maximumSize;
+        text.maxVisibleLines = int.MaxValue;
+        text.overflowMode = TextOverflowModes.Overflow;
     }
 
     private static void AddBorder(Transform parent, Rect rect, Color color, float thickness)

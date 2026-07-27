@@ -17,7 +17,8 @@ public class HearthTerminalCameraTransition : MonoBehaviour
     [SerializeField] private Camera transitionCamera;
     [SerializeField] private bool createTransitionCameraIfMissing = true;
     [SerializeField] private bool copyCameraSettings = true;
-    [SerializeField] private bool copyAudioListenerIfMissing;
+    [Tooltip("Ensures the temporary transition camera owns an AudioListener while the source listener is disabled.")]
+    [SerializeField] private bool copyAudioListenerIfMissing = true;
 
     public bool IsTransitioning { get; private set; }
 
@@ -215,24 +216,25 @@ public class HearthTerminalCameraTransition : MonoBehaviour
 
     private Camera EnsureTransitionCamera(Camera sourceCamera)
     {
-        if (transitionCamera != null)
-        {
-            return transitionCamera;
-        }
-
-        if (!createTransitionCameraIfMissing)
+        if (transitionCamera == null && !createTransitionCameraIfMissing)
         {
             return null;
         }
 
-        GameObject cameraObject = new GameObject("Terminal Transition Camera");
-        cameraObject.transform.SetParent(transform, false);
-        transitionCamera = cameraObject.AddComponent<Camera>();
-        transitionCamera.enabled = false;
-
-        if (copyAudioListenerIfMissing && sourceCamera != null && sourceCamera.GetComponent<AudioListener>() != null)
+        if (transitionCamera == null)
         {
-            AudioListener listener = cameraObject.AddComponent<AudioListener>();
+            GameObject cameraObject = new GameObject("Terminal Transition Camera");
+            cameraObject.transform.SetParent(transform, false);
+            transitionCamera = cameraObject.AddComponent<Camera>();
+            transitionCamera.enabled = false;
+        }
+
+        bool sourceHasAudioListener =
+            sourceCamera != null && sourceCamera.GetComponent<AudioListener>() != null;
+        if ((copyAudioListenerIfMissing || sourceHasAudioListener) &&
+            transitionCamera.GetComponent<AudioListener>() == null)
+        {
+            AudioListener listener = transitionCamera.gameObject.AddComponent<AudioListener>();
             listener.enabled = false;
         }
 

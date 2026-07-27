@@ -4,6 +4,7 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public class HearthLobbyHudOverlay : MonoBehaviour
 {
+    [SerializeField] private CanvasGroup externalPresentationGroup;
     [SerializeField] private CanvasGroup activationGroup;
     [SerializeField] private CanvasGroup expandedMessageGroup;
     [SerializeField] private CanvasGroup pinnedMessageGroup;
@@ -13,6 +14,7 @@ public class HearthLobbyHudOverlay : MonoBehaviour
 
     private void Awake()
     {
+        ResolveExternalPresentationGroup();
         HideAllImmediate();
     }
 
@@ -84,6 +86,32 @@ public class HearthLobbyHudOverlay : MonoBehaviour
             assignmentStatusText.text = loaded
                 ? "ASSIGNMENT LOADED  /  FLOOR 17"
                 : "ASSIGNMENT NOT LOADED";
+        }
+    }
+
+    public void SetExternalPresentationSuppressed(bool suppressed)
+    {
+        ResolveExternalPresentationGroup();
+        if (externalPresentationGroup == null)
+        {
+            return;
+        }
+
+        externalPresentationGroup.alpha = suppressed ? 0f : 1f;
+        externalPresentationGroup.interactable = false;
+        externalPresentationGroup.blocksRaycasts = false;
+    }
+
+    private void ResolveExternalPresentationGroup()
+    {
+        if (externalPresentationGroup == null)
+        {
+            externalPresentationGroup = GetComponent<CanvasGroup>();
+        }
+
+        if (externalPresentationGroup == null)
+        {
+            externalPresentationGroup = gameObject.AddComponent<CanvasGroup>();
         }
     }
 

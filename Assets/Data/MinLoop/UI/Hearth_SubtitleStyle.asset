@@ -12,28 +12,74 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 873963af275521347b0698fc52731236, type: 3}
   m_Name: Hearth_SubtitleStyle
   m_EditorClassIdentifier: 
-  textColor: {r: 1, g: 1, b: 1, a: 1}
+  textColor: {r: 0.84313726, g: 0.9019608, b: 0.9647059, a: 1}
   standardDialogue:
     widthFraction: 0.66
     speakerCenterY: 0.31
     speakerHeightFraction: 0.06
-    bodyCenterY: 0.22
-    bodyHeightFraction: 0.16
+    bodyCenterY: 0.223
+    bodyHeightFraction: 0.09
     speakerFontSize: 22
-    speakerMinimumFontSize: 16
+    speakerMinimumFontSize: 22
     bodyFontSize: 28
-    bodyMinimumFontSize: 18
-    bodyMaximumLines: 2
+    bodyMinimumFontSize: 28
+    bodyMaximumLines: 8
     lineSpacing: 0
+    speakerHeightPixels: 34
+    minimumBodyHeightPixels: 96
+    maximumBodyHeightPixels: 360
   centeredEpilogue:
     widthFraction: 0.66
     speakerCenterY: 0.59
     speakerHeightFraction: 0.06
     bodyCenterY: 0.46
     bodyHeightFraction: 0.3
-    speakerFontSize: 23
-    speakerMinimumFontSize: 16
+    speakerFontSize: 22
+    speakerMinimumFontSize: 22
     bodyFontSize: 30
-    bodyMinimumFontSize: 20
-    bodyMaximumLines: 2
+    bodyMinimumFontSize: 30
+    bodyMaximumLines: 10
     lineSpacing: 0
+    speakerHeightPixels: 34
+    minimumBodyHeightPixels: 92
+    maximumBodyHeightPixels: 440
+  timeCard:
+    widthFraction: 0.72
+    speakerCenterY: 0.56
+    speakerHeightFraction: 0.04
+    bodyCenterY: 0.5
+    bodyHeightFraction: 0.18
+    speakerFontSize: 1
+    speakerMinimumFontSize: 1
+    bodyFontSize: 34
+    bodyMinimumFontSize: 34
+    bodyMaximumLines: 8
+    lineSpacing: 0
+    speakerHeightPixels: 28
+    minimumBodyHeightPixels: 72
+    maximumBodyHeightPixels: 360
+  human:
+    widthMultiplier: 1
+    horizontalPaddingPixels: 28
+    verticalPaddingPixels: 16
+    speakerGapPixels: 8
+    backgroundColor: {r: 0.035, g: 0.055, b: 0.08, a: 0.62}
+    accentColor: {r: 0.47058824, g: 0.6666667, b: 0.8627451, a: 1}
+    speakerColor: {r: 0.84313726, g: 0.9019608, b: 0.9647059, a: 1}
+  fieldUnit:
+    widthMultiplier: 0.84
+    horizontalPaddingPixels: 28
+    verticalPaddingPixels: 16
+    speakerGapPixels: 8
+    backgroundColor: {r: 0.035, g: 0.055, b: 0.08, a: 0.76}
+    accentColor: {r: 0.4, g: 0.82, b: 0.9, a: 1}
+    speakerColor: {r: 0.4, g: 0.82, b: 0.9, a: 1}
+  terminal:
+    widthMultiplier: 0.76
+    horizontalPaddingPixels: 28
+    verticalPaddingPixels: 16
+    speakerGapPixels: 8
+    backgroundColor: {r: 0.035, g: 0.063, b: 0.11, a: 0.86}
+    accentColor: {r: 0.8784314, g: 0.5921569, b: 0.24705882, a: 1}
+    speakerColor: {r: 0.95686275, g: 0.7176471, b: 0.4, a: 1}
+  timeCardFadeSeconds: 0.35

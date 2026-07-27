@@ -459,10 +459,16 @@ public static class HearthTvTerminalPrefabBuilder
             Camera playerCamera = FindBestPlayerCamera(playerInteraction, terminalCamera);
             controller.SetPlayerInteraction(playerInteraction);
             controller.SetPlayerCamera(playerCamera);
-            controller.SetTerminalCamera(terminalCamera != null ? terminalCamera : canvas.worldCamera);
+            controller.SetTerminalCamera(terminalCamera);
+            controller.SetTerminalHardwareRoot(tvTransform);
+            if (terminalCamera != null)
+            {
+                controller.SetWorldCamera(terminalCamera);
+            }
             controller.SetSwitchCameraWhileOpen(terminalCamera != null);
             controller.SetMinLoopFlowController(UnityEngine.Object.FindObjectOfType<MinLoopFlowController>());
-            controller.SetViewSwitchController(UnityEngine.Object.FindObjectOfType<ViewSwitchController>());
+            controller.SetViewSwitchController(
+                ViewSwitchController.FindPreferredController(tvTransform.gameObject.scene));
             controller.RefreshPageListFromChildren();
 
             if (terminalCamera != null)
@@ -522,17 +528,6 @@ public static class HearthTvTerminalPrefabBuilder
         if (childCameras.Length > 0)
         {
             return childCameras[0];
-        }
-
-        Transform parent = tvTransform.parent;
-        if (parent != null)
-        {
-            Camera[] siblingCameras = parent.GetComponentsInChildren<Camera>(true);
-            namedCamera = FindNamedTerminalCamera(siblingCameras);
-            if (namedCamera != null)
-            {
-                return namedCamera;
-            }
         }
 
         return null;

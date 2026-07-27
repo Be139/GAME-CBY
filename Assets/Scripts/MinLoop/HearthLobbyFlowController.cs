@@ -512,11 +512,6 @@ public class HearthLobbyFlowController : MonoBehaviour
             onAssignmentLoaded.Invoke();
         }
 
-        if (subtitlePlayer != null && assignmentLoadedDialogue != null && assignmentLoadedDialogue.HasLines)
-        {
-            subtitlePlayer.PlaySequence(assignmentLoadedDialogue);
-        }
-
         float elapsed = 0f;
         while (!assignmentTerminalCloseRequested)
         {
@@ -542,6 +537,13 @@ public class HearthLobbyFlowController : MonoBehaviour
         // The route briefing continues in-world. Mia can move and look, while
         // all interaction remains locked until the final instruction ends.
         SetHumanControl(true, true, false, true);
+        if (subtitlePlayer != null &&
+            assignmentLoadedDialogue != null &&
+            assignmentLoadedDialogue.HasLines)
+        {
+            subtitlePlayer.PlaySequence(assignmentLoadedDialogue);
+        }
+
         while (subtitlePlayer != null && subtitlePlayer.IsPlaying)
         {
             yield return null;

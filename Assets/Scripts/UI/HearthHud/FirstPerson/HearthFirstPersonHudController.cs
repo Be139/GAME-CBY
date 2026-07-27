@@ -85,6 +85,8 @@ public class HearthFirstPersonHudController : MonoBehaviour
     private int finalChoiceSelectionIndex;
     private Coroutine trustDeltaRoutine;
     private bool listeningToSettings;
+    private bool requestedPersistentVisible = true;
+    private bool externalPersistentPresentationSuppressed;
 
     public HearthFirstPersonHudPageId CurrentPageId
     {
@@ -146,9 +148,21 @@ public class HearthFirstPersonHudController : MonoBehaviour
         get { return routeFinalChoiceInternally; }
     }
 
+    public void SetExternalPersistentPresentationSuppressed(bool suppressed)
+    {
+        if (externalPersistentPresentationSuppressed == suppressed)
+        {
+            return;
+        }
+
+        externalPersistentPresentationSuppressed = suppressed;
+        ApplyPersistentVisibility();
+    }
+
     private void Awake()
     {
         BuildPageMap();
+        ResolveFocusTargets();
         ResolvePlayerControlLock();
         HideAllPages();
         HideFocusRects();
@@ -730,6 +744,13 @@ public class HearthFirstPersonHudController : MonoBehaviour
 
     private void BuildPageMap()
     {
+        HearthFirstPersonHudPage[] discoveredPages =
+            GetComponentsInChildren<HearthFirstPersonHudPage>(true);
+        if (discoveredPages != null && discoveredPages.Length > 0)
+        {
+            pages = discoveredPages;
+        }
+
         pageMap.Clear();
         if (pages == null)
         {
@@ -763,6 +784,15 @@ public class HearthFirstPersonHudController : MonoBehaviour
 
     private void SetPersistentVisible(bool visible)
     {
+        requestedPersistentVisible = visible;
+        ApplyPersistentVisibility();
+    }
+
+    private void ApplyPersistentVisibility()
+    {
+        bool visible =
+            requestedPersistentVisible &&
+            !externalPersistentPresentationSuppressed;
         if (persistentHudRoot != null)
         {
             persistentHudRoot.SetActive(visible);
@@ -800,12 +830,77 @@ public class HearthFirstPersonHudController : MonoBehaviour
 
     private void RefreshMenuFocus()
     {
+        ResolveFocusTargets();
         SetFocusRect(menuFocusRect, menuFocusTargets, menuSelectionIndex, menuFocusPadding);
     }
 
     private void RefreshFinalChoiceFocus()
     {
+        ResolveFocusTargets();
         SetFocusRect(finalChoiceFocusRect, finalChoiceFocusTargets, finalChoiceSelectionIndex, finalChoiceFocusPadding);
+    }
+
+    private void ResolveFocusTargets()
+    {
+        if (menuFocusRect == null)
+        {
+            menuFocusRect = FindRectTransformByName("MenuFocus");
+        }
+
+        if (menuFocusTargets == null ||
+            menuFocusTargets.Length != 3 ||
+            HasMissingTarget(menuFocusTargets))
+        {
+            menuFocusTargets = new[]
+            {
+                FindRectTransformByName("Button_TODAY"),
+                FindRectTransformByName("Button_DISPOSITION_HISTORY"),
+                FindRectTransformByName("Button_SYSTEM_SETTINGS")
+            };
+        }
+
+        if (finalChoiceFocusRect == null)
+        {
+            finalChoiceFocusRect = FindRectTransformByName("FinalChoiceFocus");
+        }
+
+        if (finalChoiceFocusTargets == null ||
+            finalChoiceFocusTargets.Length != 2 ||
+            HasMissingTarget(finalChoiceFocusTargets))
+        {
+            finalChoiceFocusTargets = new[]
+            {
+                FindRectTransformByName("FinalChoiceTarget_A"),
+                FindRectTransformByName("FinalChoiceTarget_B")
+            };
+        }
+    }
+
+    private static bool HasMissingTarget(RectTransform[] targets)
+    {
+        for (int i = 0; i < targets.Length; i++)
+        {
+            if (targets[i] == null)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private RectTransform FindRectTransformByName(string objectName)
+    {
+        RectTransform[] rects = GetComponentsInChildren<RectTransform>(true);
+        for (int i = 0; i < rects.Length; i++)
+        {
+            if (rects[i] != null && rects[i].name == objectName)
+            {
+                return rects[i];
+            }
+        }
+
+        return null;
     }
 
     private void SetFocusRect(RectTransform focusRect, RectTransform[] targets, int index, Vector2 padding)
@@ -920,7 +1015,7 @@ public class HearthFirstPersonHudController : MonoBehaviour
         ResolvePlayerControlLock();
         if (playerControlLock != null)
         {
-            playerControlLock.SetControlsLocked(locked);
+            playerControlLock.SetControlsLocked(this, locked);
         }
     }
 

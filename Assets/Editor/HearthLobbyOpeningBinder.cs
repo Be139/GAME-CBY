@@ -25,6 +25,16 @@ public static class HearthLobbyOpeningBinder
     private const string DialogueFolder = "Assets/Data/MinLoop/Dialogues/Lobby";
     private const string TerminalPrefabPath = "Assets/Prefabs/UI/HearthHud/Terminals/Terminal_Lobby_Assignment.prefab";
     private const string FinalScriptFileName = "HEARTH_Full_Game_Script_No_Audio_Tags_Native_English.md";
+    private static readonly string[] LobbyOverlayTextPaths =
+    {
+        "ActivationPanel/ActivationTitle",
+        "ActivationPanel/ActivationId",
+        "ExpandedLilyMessage/MessageHeader",
+        "ExpandedLilyMessage/MessageMeta",
+        "ExpandedLilyMessage/MessageTranscript",
+        "PinnedLilyMessage/PinnedMessage",
+        "PinnedLilyMessage/AssignmentStatus"
+    };
 
     [MenuItem("Tools/Hearth/Lobby/Apply Ground Floor Opening Setup")]
     public static void ApplySetup()
@@ -269,6 +279,16 @@ public static class HearthLobbyOpeningBinder
             {
                 issues.Add("The lobby assignment terminal has no HearthTvTerminalController.");
             }
+            else
+            {
+                if (!string.IsNullOrEmpty(terminal.GetReplayResidentId()))
+                {
+                    issues.Add(
+                        "The lobby assignment terminal must not identify itself as a resident replay terminal.");
+                }
+
+                ValidateUiTextTreeSafety(issues, terminal.transform, "Lobby terminal");
+            }
 
             if (terminalRoot.GetComponent<HearthLobbyTaskTerminalInteractable>() == null)
             {
@@ -309,6 +329,11 @@ public static class HearthLobbyOpeningBinder
         ValidateConversationZone(issues, GirlZonePath);
         ValidateConversationZone(issues, YoungManZonePath);
         ValidateConversationZone(issues, GrandmotherZonePath);
+        HearthLobbyHudOverlay lobbyOverlay = UnityEngine.Object.FindObjectOfType<HearthLobbyHudOverlay>(true);
+        if (lobbyOverlay != null)
+        {
+            ValidateLobbyUiTextSafety(issues, lobbyOverlay.transform);
+        }
 
         HearthLobbyElevatorInteractable elevator = UnityEngine.Object.FindObjectOfType<HearthLobbyElevatorInteractable>(true);
         if (elevator == null || elevator.GetComponent<Collider>() == null)
@@ -503,11 +528,17 @@ public static class HearthLobbyOpeningBinder
         terminal.SetPlayerInteraction(humanInteraction);
         terminal.SetPlayerCamera(humanCamera);
         terminal.SetTerminalCamera(terminalCamera);
+        terminal.SetTerminalHardwareRoot(terminalRoot);
+        if (terminalCamera != null)
+        {
+            terminal.SetWorldCamera(terminalCamera);
+        }
         terminal.SetSwitchCameraWhileOpen(terminalCamera != null);
         terminal.SetHideCanvasWhenClosed(true);
         terminal.SetShowCanvasInEditMode(true);
         terminal.SetChoiceInputEnabled(true);
         EnsureRuntimePromptText(terminal);
+        SanitizeUiTextTree(terminal.transform);
 
         SerializedObject terminalSo = new SerializedObject(terminal);
         SetBool(terminalSo, "closeTerminalWhenReplayStarts", false);
@@ -692,6 +723,7 @@ public static class HearthLobbyOpeningBinder
 
             ReplaceText(existingOverlay.transform, "ExpandedLilyMessage/MessageMeta", "FROM  LILY\nTIME  4:42 PM");
             ReplaceText(existingOverlay.transform, "PinnedLilyMessage/PinnedMessage", "LILY VOICE MESSAGE  /  READ  /  4:42 PM");
+            SanitizeLobbyUiText(existingOverlay.transform);
             EditorUtility.SetDirty(existingOverlay);
             return new LobbyUiReferences { Overlay = existingOverlay, Fader = existingFader };
         }
@@ -1097,9 +1129,121 @@ public static class HearthLobbyOpeningBinder
         text.color = color;
         text.alignment = alignment;
         text.enableWordWrapping = true;
-        text.overflowMode = TextOverflowModes.Truncate;
+        text.enableAutoSizing = false;
+        text.overflowMode = TextOverflowModes.Overflow;
         text.raycastTarget = false;
         return text;
+    }
+
+    private static void SanitizeLobbyUiText(Transform overlayRoot)
+    {
+        if (overlayRoot == null)
+        {
+            return;
+        }
+
+        foreach (string path in LobbyOverlayTextPaths)
+        {
+            Transform target = overlayRoot.Find(path);
+            TMP_Text text = target != null ? target.GetComponent<TMP_Text>() : null;
+            if (text == null)
+            {
+                continue;
+            }
+
+            bool changed = text.enableAutoSizing || text.overflowMode != TextOverflowModes.Overflow;
+            text.enableAutoSizing = false;
+            text.overflowMode = TextOverflowModes.Overflow;
+            if (changed)
+            {
+                EditorUtility.SetDirty(text);
+            }
+        }
+    }
+
+    private static void SanitizeUiTextTree(Transform uiRoot)
+    {
+        if (uiRoot == null)
+        {
+            return;
+        }
+
+        TMP_Text[] texts = uiRoot.GetComponentsInChildren<TMP_Text>(true);
+        for (int i = 0; i < texts.Length; i++)
+        {
+            TMP_Text text = texts[i];
+            if (text == null)
+            {
+                continue;
+            }
+
+            bool changed = text.enableAutoSizing || text.overflowMode != TextOverflowModes.Overflow;
+            text.enableAutoSizing = false;
+            text.overflowMode = TextOverflowModes.Overflow;
+            if (changed)
+            {
+                EditorUtility.SetDirty(text);
+            }
+        }
+    }
+
+    private static void ValidateLobbyUiTextSafety(List<string> issues, Transform overlayRoot)
+    {
+        foreach (string path in LobbyOverlayTextPaths)
+        {
+            Transform target = overlayRoot != null ? overlayRoot.Find(path) : null;
+            TMP_Text text = target != null ? target.GetComponent<TMP_Text>() : null;
+            if (text == null)
+            {
+                issues.Add("Lobby HUD text is missing: " + path + ".");
+                continue;
+            }
+
+            if (text.enableAutoSizing || text.overflowMode != TextOverflowModes.Overflow)
+            {
+                issues.Add(
+                    "Lobby HUD text must use its fixed font size with Overflow: " +
+                    path +
+                    " (autoSize=" +
+                    text.enableAutoSizing +
+                    ", overflow=" +
+                    text.overflowMode +
+                    ").");
+            }
+        }
+    }
+
+    private static void ValidateUiTextTreeSafety(
+        List<string> issues,
+        Transform uiRoot,
+        string context)
+    {
+        if (uiRoot == null)
+        {
+            issues.Add(context + " root is missing.");
+            return;
+        }
+
+        TMP_Text[] texts = uiRoot.GetComponentsInChildren<TMP_Text>(true);
+        for (int i = 0; i < texts.Length; i++)
+        {
+            TMP_Text text = texts[i];
+            if (text == null ||
+                (!text.enableAutoSizing && text.overflowMode == TextOverflowModes.Overflow))
+            {
+                continue;
+            }
+
+            issues.Add(
+                context +
+                " text must use its fixed font size with Overflow: " +
+                text.name +
+                " (autoSize=" +
+                text.enableAutoSizing +
+                ", overflow=" +
+                text.overflowMode +
+                ").");
+        }
     }
 
     private static void EnsureRuntimePromptText(HearthTvTerminalController terminal)

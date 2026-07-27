@@ -24,7 +24,7 @@ public class HearthCompanionHudPreviewInput : MonoBehaviour
 
     private void Update()
     {
-        if (!previewInputEnabled)
+        if (!previewInputEnabled || HearthTvTerminalController.AnyTerminalOpen)
         {
             return;
         }

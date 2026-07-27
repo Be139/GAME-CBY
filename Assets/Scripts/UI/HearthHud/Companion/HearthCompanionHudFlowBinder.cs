@@ -117,11 +117,12 @@ public class HearthCompanionHudFlowBinder : MonoBehaviour
             minLoopFlowController = FindObjectOfType<MinLoopFlowController>();
         }
 
-        if (viewSwitchController == null ||
-            !viewSwitchController.enabled ||
-            !viewSwitchController.gameObject.activeInHierarchy)
+        ViewSwitchController preferredViewSwitch =
+            ViewSwitchController.FindPreferredController(gameObject.scene);
+        if (preferredViewSwitch != null &&
+            viewSwitchController != preferredViewSwitch)
         {
-            viewSwitchController = ViewSwitchController.FindPreferredController();
+            viewSwitchController = preferredViewSwitch;
         }
     }
 

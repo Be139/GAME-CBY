@@ -17,6 +17,9 @@ public enum HearthTerminalPrimaryAction
 [DisallowMultipleComponent]
 public class HearthTvTerminalController : MonoBehaviour
 {
+    private static readonly HashSet<HearthTvTerminalController> OpenTerminals =
+        new HashSet<HearthTvTerminalController>();
+
     [Header("Canvas")]
     [SerializeField] private Canvas canvas;
     [SerializeField] private CanvasScaler canvasScaler;
@@ -40,14 +43,23 @@ public class HearthTvTerminalController : MonoBehaviour
     [SerializeField] private bool switchCameraWhileOpen;
     [SerializeField] private Camera playerCamera;
     [SerializeField] private Camera terminalCamera;
+    [Tooltip("Physical TV or terminal root that owns the fixed terminal camera. Automatically resolved from the hierarchy when left empty.")]
+    [SerializeField] private Transform terminalHardwareRoot;
     [SerializeField] private HearthTerminalCameraTransition cameraTransition;
 
     [Header("Player Lock")]
     [SerializeField] private bool lockGameplayWhileOpen = true;
+    [SerializeField] private HearthPlayerControlLock playerControlLock;
     [SerializeField] private Behaviour[] gameplayBehavioursToDisable;
     [SerializeField] private PlayerInteraction playerInteraction;
     [SerializeField] private Rigidbody playerRigidbody;
     [SerializeField] private bool unlockCursorWhileOpen = true;
+
+    [Header("First Person UI Visibility")]
+    [Tooltip("Hide every screen-space first-person HUD while the fixed terminal camera is active. The previous active state of each HUD is restored when the terminal closes.")]
+    [SerializeField] private bool hideFirstPersonUiWhileOpen = true;
+    [Tooltip("Optional additional first-person UI roots. HearthHudRoot, HearthCompanionHudRoot and HumanCanvas are discovered automatically.")]
+    [SerializeField] private GameObject[] firstPersonUiRootsToHide;
 
     [Header("Scale")]
     [SerializeField] private float zoom = 1f;
@@ -73,7 +85,8 @@ public class HearthTvTerminalController : MonoBehaviour
     [SerializeField] private Color runtimePromptReadyColor = new Color(0.78f, 0.96f, 1f, 0.96f);
     [SerializeField] private Color runtimePromptWaitingColor = new Color(0.46f, 0.52f, 0.56f, 0.84f);
     [SerializeField] private string pageFocusFormat = "PAGE {0}/{1}";
-    [SerializeField] private string replayFocusLabel = "RECALL EVENT | SPACE";
+    [SerializeField] private string replayFocusLabel =
+        "REVIEW ARCHIVED EVENT | SPACE";
     [SerializeField] private string keyboardHintLabel = "TAB NEXT PAGE     LEFT/RIGHT SELECT     SPACE CONFIRM     ESC EXIT";
     [SerializeField] private bool submitPrimaryActionFromCurrentPage;
 
@@ -157,6 +170,15 @@ public class HearthTvTerminalController : MonoBehaviour
     private bool choiceSubmitted;
     private int pageDrivenChoiceLocalIndex;
     private bool customActionHandoffPending;
+    private bool terminalSessionCleanupInProgress;
+    private bool gameplayLockHeld;
+    private readonly List<GameObject> suppressedFirstPersonUiRoots = new List<GameObject>();
+    private readonly List<bool> suppressedFirstPersonUiActiveStates = new List<bool>();
+    private readonly List<bool> suppressedFirstPersonUiRootsDeactivated = new List<bool>();
+    private readonly List<Canvas> suppressedFirstPersonUiCanvases = new List<Canvas>();
+    private readonly List<bool> suppressedFirstPersonUiCanvasStates = new List<bool>();
+    private bool firstPersonUiSuppressed;
+    private readonly HearthTerminalViewState terminalViewState = new HearthTerminalViewState();
 #if UNITY_EDITOR
     [NonSerialized] private bool editorCanvasRefreshQueued;
 #endif
@@ -208,6 +230,13 @@ public class HearthTvTerminalController : MonoBehaviour
         get { return onClosed; }
     }
 
+    public HearthTerminalViewState TerminalViewState
+    {
+        get { return terminalViewState; }
+    }
+
+    public event Action<HearthTerminalViewState> TerminalViewStateChanged;
+
     public bool IsCustomActionHandoffPending
     {
         get { return customActionHandoffPending; }
@@ -216,6 +245,37 @@ public class HearthTvTerminalController : MonoBehaviour
     public bool IsPresentationReady
     {
         get { return terminalPresentationReady; }
+    }
+
+    public static bool AnyTerminalOpen
+    {
+        get
+        {
+            OpenTerminals.RemoveWhere(terminal => terminal == null || !terminal.IsOpen);
+            return OpenTerminals.Count > 0;
+        }
+    }
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetOpenTerminalRegistry()
+    {
+        OpenTerminals.Clear();
+    }
+
+    private static HearthTvTerminalController FindRegisteredOpenTerminal(
+        HearthTvTerminalController excluded,
+        UnityEngine.SceneManagement.Scene scene)
+    {
+        OpenTerminals.RemoveWhere(terminal => terminal == null || !terminal.IsOpen);
+        foreach (HearthTvTerminalController terminal in OpenTerminals)
+        {
+            if (terminal != excluded && terminal.gameObject.scene == scene)
+            {
+                return terminal;
+            }
+        }
+
+        return null;
     }
 
     private void Reset()
@@ -258,6 +318,20 @@ public class HearthTvTerminalController : MonoBehaviour
         {
             ShowPage(startingPage);
         }
+    }
+
+    private void OnDisable()
+    {
+        if (Application.isPlaying && IsOpen && !terminalSessionCleanupInProgress)
+        {
+            CloseTerminalInstant(false);
+            return;
+        }
+
+        OpenTerminals.Remove(this);
+        StopActiveAudioLoop();
+        SetGameplayLocked(false);
+        RestoreFirstPersonUi();
     }
 
     private void OnValidate()
@@ -366,6 +440,25 @@ public class HearthTvTerminalController : MonoBehaviour
             return;
         }
 
+        HearthTvTerminalController otherOpenTerminal = FindOtherOpenTerminal();
+        if (otherOpenTerminal != null)
+        {
+            Debug.LogWarning(
+                "[HearthTvTerminalController] Open request ignored because another terminal is already active: " +
+                GetHierarchyPath(otherOpenTerminal.transform),
+                this);
+            return;
+        }
+
+        if (switchCameraWhileOpen && !ResolveOwnedTerminalCamera())
+        {
+            Debug.LogError(
+                "[HearthTvTerminalController] Terminal camera must belong to this terminal's physical TV hierarchy and must not be a player camera: " +
+                GetHierarchyPath(transform),
+                this);
+            return;
+        }
+
         SetCanvasPresentationVisible(true);
 
         if (pageDrivenSelectionStates && showStartingPageOnStart)
@@ -393,6 +486,7 @@ public class HearthTvTerminalController : MonoBehaviour
     private IEnumerator OpenTerminalRoutine()
     {
         IsOpen = true;
+        OpenTerminals.Add(this);
         customActionHandoffPending = false;
         terminalInputReady = false;
         terminalPresentationReady = false;
@@ -401,6 +495,7 @@ public class HearthTvTerminalController : MonoBehaviour
 
         SetTerminalInputEnabled(false);
         SetGameplayLocked(true);
+        SuppressFirstPersonUi();
         PlayClip(openClip);
 
         if (unlockCursorWhileOpen)
@@ -494,6 +589,9 @@ public class HearthTvTerminalController : MonoBehaviour
 
         SetGameplayLocked(false);
         IsOpen = false;
+        OpenTerminals.Remove(this);
+        RestoreFirstPersonUi();
+        RefreshTerminalViewState();
         RefreshRuntimePrompt();
         RefreshCanvasPresentationVisibility();
 
@@ -584,7 +682,11 @@ public class HearthTvTerminalController : MonoBehaviour
     public void SetTerminalCamera(Camera camera)
     {
         terminalCamera = camera;
-        SetWorldCamera(camera);
+    }
+
+    public void SetTerminalHardwareRoot(Transform hardwareRoot)
+    {
+        terminalHardwareRoot = hardwareRoot;
     }
 
     public void SetPlayerCamera(Camera camera)
@@ -638,11 +740,33 @@ public class HearthTvTerminalController : MonoBehaviour
         }
         else if (action == HearthTerminalPrimaryAction.Custom)
         {
-            replayFocusLabel = "CONFIRM | SPACE";
+            string terminalName = name ?? string.Empty;
+            if (terminalName.IndexOf(
+                    "17F04",
+                    System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+                terminalName.IndexOf(
+                    "HOME",
+                    System.StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                replayFocusLabel = "ENTER HOME | SPACE";
+            }
+            else if (terminalName.IndexOf(
+                         "LOBBY",
+                         System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+                     terminalName.IndexOf(
+                         "ASSIGNMENT",
+                         System.StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                replayFocusLabel = "CLOSE TERMINAL | SPACE";
+            }
+            else
+            {
+                replayFocusLabel = "CONFIRM | SPACE";
+            }
         }
         else
         {
-            replayFocusLabel = "RECALL EVENT | SPACE";
+            replayFocusLabel = "REVIEW ARCHIVED EVENT | SPACE";
         }
     }
 
@@ -651,6 +775,19 @@ public class HearthTvTerminalController : MonoBehaviour
         hideCanvasWhenClosed = value;
         EnsureReferences();
         RefreshCanvasPresentationVisibility();
+    }
+
+    public void SetHideFirstPersonUiWhileOpen(bool value)
+    {
+        hideFirstPersonUiWhileOpen = value;
+        if (!value)
+        {
+            RestoreFirstPersonUi();
+        }
+        else if (IsOpen)
+        {
+            SuppressFirstPersonUi();
+        }
     }
 
     public void SetShowCanvasInEditMode(bool value)
@@ -730,6 +867,11 @@ public class HearthTvTerminalController : MonoBehaviour
 
     public string GetReplayResidentId()
     {
+        if (IsLobbyAssignmentTerminal())
+        {
+            return string.Empty;
+        }
+
         string explicitId = NormalizeReplayResidentId(replayResidentId);
         if (!string.IsNullOrEmpty(explicitId))
         {
@@ -1009,6 +1151,8 @@ public class HearthTvTerminalController : MonoBehaviour
             runtimePromptText = foundPrompt != null ? foundPrompt.GetComponent<TMP_Text>() : null;
         }
 
+        EnsureKeyboardNavigationCanvasSorting();
+
         if (canvasGroup == null)
         {
             canvasGroup = GetComponent<CanvasGroup>();
@@ -1041,6 +1185,27 @@ public class HearthTvTerminalController : MonoBehaviour
         }
 
         ConfigureActiveLoopSource();
+    }
+
+    private void EnsureKeyboardNavigationCanvasSorting()
+    {
+        Transform navigationRoot = transform.Find("KeyboardNavigationRoot");
+        if (navigationRoot == null)
+        {
+            return;
+        }
+
+        Canvas navigationCanvas = navigationRoot.GetComponent<Canvas>();
+        if (navigationCanvas == null)
+        {
+            navigationCanvas = navigationRoot.gameObject.AddComponent<Canvas>();
+        }
+
+        // The page reconstruction uses nested canvases at sorting order 10.
+        // Keep the shared keyboard footer above every page surface, including
+        // scene instances that still carry an old prefab override.
+        navigationCanvas.overrideSorting = true;
+        navigationCanvas.sortingOrder = 20;
     }
 
     private void EnsureEventSystem()
@@ -1306,9 +1471,35 @@ public class HearthTvTerminalController : MonoBehaviour
 
     private void ResolveRuntimePlayerReferences()
     {
-        if (playerInteraction == null || !playerInteraction.gameObject.activeInHierarchy)
+        ViewSwitchController preferredViewSwitch =
+            ViewSwitchController.FindPreferredController(gameObject.scene);
+
+        if (preferredViewSwitch != null)
         {
-            playerInteraction = FindBestPlayerInteraction();
+            viewSwitchController = preferredViewSwitch;
+
+            PlayerInteraction currentInteraction = preferredViewSwitch.CurrentInteraction;
+            Camera currentCamera = preferredViewSwitch.CurrentViewCamera;
+            if (currentInteraction != null &&
+                currentInteraction.gameObject.activeInHierarchy)
+            {
+                playerInteraction = currentInteraction;
+            }
+
+            if (IsUsablePlayerCamera(currentCamera) &&
+                currentCamera.gameObject.activeInHierarchy)
+            {
+                playerCamera = currentCamera;
+                return;
+            }
+        }
+
+        ResolvePlayerControlLock();
+
+        PlayerInteraction resolvedInteraction = FindBestPlayerInteraction();
+        if (resolvedInteraction != null)
+        {
+            playerInteraction = resolvedInteraction;
         }
 
         Camera resolvedCamera = FindBestRuntimePlayerCamera();
@@ -1316,6 +1507,160 @@ public class HearthTvTerminalController : MonoBehaviour
         {
             playerCamera = resolvedCamera;
         }
+    }
+
+    private void ResolvePlayerControlLock()
+    {
+        if (playerControlLock != null &&
+            playerControlLock.gameObject.scene.IsValid() &&
+            playerControlLock.gameObject.scene == gameObject.scene)
+        {
+            return;
+        }
+
+        HearthPlayerControlLock[] locks =
+            UnityEngine.Object.FindObjectsOfType<HearthPlayerControlLock>(true);
+        HearthPlayerControlLock fallback = null;
+        for (int i = 0; i < locks.Length; i++)
+        {
+            HearthPlayerControlLock candidate = locks[i];
+            if (candidate == null ||
+                !candidate.gameObject.scene.IsValid() ||
+                candidate.gameObject.scene != gameObject.scene)
+            {
+                continue;
+            }
+
+            if (fallback == null)
+            {
+                fallback = candidate;
+            }
+
+            if (candidate.enabled && candidate.gameObject.activeInHierarchy)
+            {
+                playerControlLock = candidate;
+                return;
+            }
+        }
+
+        playerControlLock = fallback;
+    }
+
+    private HearthTvTerminalController FindOtherOpenTerminal()
+    {
+        return FindRegisteredOpenTerminal(this, gameObject.scene);
+    }
+
+    private bool ResolveOwnedTerminalCamera()
+    {
+        Transform resolvedHardwareRoot = ResolveTerminalHardwareRoot();
+        if (resolvedHardwareRoot == null)
+        {
+            return false;
+        }
+
+        if (!IsValidOwnedTerminalCamera(terminalCamera, resolvedHardwareRoot))
+        {
+            terminalCamera = FindBestOwnedTerminalCamera(resolvedHardwareRoot);
+        }
+
+        bool resolved =
+            IsValidOwnedTerminalCamera(terminalCamera, resolvedHardwareRoot);
+        if (resolved)
+        {
+            SetWorldCamera(terminalCamera);
+        }
+
+        return resolved;
+    }
+
+    private Transform ResolveTerminalHardwareRoot()
+    {
+        if (terminalHardwareRoot != null &&
+            transform.IsChildOf(terminalHardwareRoot) &&
+            FindBestOwnedTerminalCamera(terminalHardwareRoot) != null)
+        {
+            return terminalHardwareRoot;
+        }
+
+        Transform cursor = transform.parent;
+        Transform fallback = null;
+        for (int depth = 0; cursor != null && depth < 8; depth++)
+        {
+            Camera ownedCamera = FindBestOwnedTerminalCamera(cursor);
+            if (ownedCamera != null && fallback == null)
+            {
+                fallback = cursor;
+            }
+
+            string candidateName = cursor.name;
+            if (ownedCamera != null &&
+                (candidateName.StartsWith("TV", StringComparison.OrdinalIgnoreCase) ||
+                 candidateName.IndexOf("terminal", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                 candidateName.IndexOf("monitor", StringComparison.OrdinalIgnoreCase) >= 0))
+            {
+                terminalHardwareRoot = cursor;
+                return terminalHardwareRoot;
+            }
+
+            cursor = cursor.parent;
+        }
+
+        terminalHardwareRoot = fallback;
+        return terminalHardwareRoot;
+    }
+
+    private Camera FindBestOwnedTerminalCamera(Transform hardwareRoot)
+    {
+        if (hardwareRoot == null)
+        {
+            return null;
+        }
+
+        Camera[] cameras = hardwareRoot.GetComponentsInChildren<Camera>(true);
+        Camera fallback = null;
+        for (int i = 0; i < cameras.Length; i++)
+        {
+            Camera candidate = cameras[i];
+            if (!IsValidOwnedTerminalCamera(candidate, hardwareRoot))
+            {
+                continue;
+            }
+
+            if (fallback == null)
+            {
+                fallback = candidate;
+            }
+
+            string candidateName = candidate.name;
+            if (string.Equals(candidateName, "Camera", StringComparison.OrdinalIgnoreCase) ||
+                candidateName.IndexOf("terminal", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                candidateName.IndexOf("monitor", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return candidate;
+            }
+        }
+
+        return fallback;
+    }
+
+    private bool IsValidOwnedTerminalCamera(Camera candidate, Transform hardwareRoot)
+    {
+        if (candidate == null ||
+            hardwareRoot == null ||
+            !candidate.transform.IsChildOf(hardwareRoot) ||
+            candidate.transform.IsChildOf(transform) ||
+            candidate.name.IndexOf("Transition", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            candidate.GetComponentInParent<FirstPersonMovement>() != null ||
+            candidate.GetComponentInParent<PlayerInteraction>() != null ||
+            candidate == playerCamera)
+        {
+            return false;
+        }
+
+        string candidatePath = GetHierarchyPath(candidate.transform);
+        return candidatePath.IndexOf("First Person Camera", StringComparison.OrdinalIgnoreCase) < 0 &&
+               candidatePath.IndexOf("Robot First Person Camera", StringComparison.OrdinalIgnoreCase) < 0;
     }
 
     private PlayerInteraction FindBestPlayerInteraction()
@@ -1336,7 +1681,11 @@ public class HearthTvTerminalController : MonoBehaviour
                 fallback = interaction;
             }
 
-            if (interaction.enabled && interaction.gameObject.activeInHierarchy && IsUsablePlayerCamera(interaction.mainCamera))
+            if (interaction.enabled &&
+                interaction.InteractionEnabled &&
+                interaction.gameObject.activeInHierarchy &&
+                IsUsablePlayerCamera(interaction.mainCamera) &&
+                (interaction.mainCamera.enabled || GetAudioListenerEnabled(interaction.mainCamera)))
             {
                 return interaction;
             }
@@ -1345,7 +1694,11 @@ public class HearthTvTerminalController : MonoBehaviour
         for (int i = 0; i < interactions.Length; i++)
         {
             PlayerInteraction interaction = interactions[i];
-            if (interaction != null && IsUsablePlayerCamera(interaction.mainCamera))
+            if (interaction != null &&
+                interaction.enabled &&
+                interaction.gameObject.activeInHierarchy &&
+                IsUsablePlayerCamera(interaction.mainCamera) &&
+                (interaction.mainCamera.enabled || GetAudioListenerEnabled(interaction.mainCamera)))
             {
                 return interaction;
             }
@@ -1356,7 +1709,11 @@ public class HearthTvTerminalController : MonoBehaviour
 
     private Camera FindBestRuntimePlayerCamera()
     {
-        if (playerInteraction != null && IsUsablePlayerCamera(playerInteraction.mainCamera))
+        if (playerInteraction != null &&
+            playerInteraction.InteractionEnabled &&
+            playerInteraction.gameObject.activeInHierarchy &&
+            IsUsablePlayerCamera(playerInteraction.mainCamera) &&
+            (playerInteraction.mainCamera.enabled || GetAudioListenerEnabled(playerInteraction.mainCamera)))
         {
             return playerInteraction.mainCamera;
         }
@@ -1385,6 +1742,11 @@ public class HearthTvTerminalController : MonoBehaviour
         if (Camera.main != null && IsUsablePlayerCamera(Camera.main))
         {
             return Camera.main;
+        }
+
+        if (playerInteraction != null && IsUsablePlayerCamera(playerInteraction.mainCamera))
+        {
+            return playerInteraction.mainCamera;
         }
 
         return IsUsablePlayerCamera(playerCamera) ? playerCamera : null;
@@ -1551,8 +1913,34 @@ public class HearthTvTerminalController : MonoBehaviour
 
     private void SetGameplayLocked(bool locked)
     {
+        if (locked == gameplayLockHeld)
+        {
+            return;
+        }
+
+        gameplayLockHeld = locked;
+
+        if (viewSwitchController == null ||
+            !viewSwitchController.gameObject.scene.IsValid() ||
+            viewSwitchController.gameObject.scene != gameObject.scene)
+        {
+            viewSwitchController = ViewSwitchController.FindPreferredController(gameObject.scene);
+        }
+
+        if (viewSwitchController != null)
+        {
+            viewSwitchController.SetManualSwitchBlocked(this, locked);
+        }
+
         if (!lockGameplayWhileOpen)
         {
+            return;
+        }
+
+        ResolvePlayerControlLock();
+        if (playerControlLock != null)
+        {
+            playerControlLock.SetControlsLocked(this, locked);
             return;
         }
 
@@ -1748,6 +2136,8 @@ public class HearthTvTerminalController : MonoBehaviour
 
     private void RefreshKeyboardHint()
     {
+        RefreshTerminalViewState();
+
         if (pageDrivenSelectionStates)
         {
             RefreshPageDrivenKeyboardHint();
@@ -2098,6 +2488,10 @@ public class HearthTvTerminalController : MonoBehaviour
         {
             prompt = runtimePromptOverride;
         }
+        else if (pageDrivenSelectionStates && !primaryActionInputEnabled)
+        {
+            prompt = HearthTerminalViewState.DefaultLockedMessage;
+        }
         else if (pageDrivenSelectionStates &&
                  postReplayChoicesAvailable &&
                  (postReplayChoiceMode || IsCurrentPageChoicePage()))
@@ -2114,6 +2508,12 @@ public class HearthTvTerminalController : MonoBehaviour
                     : "LEFT / RIGHT  SELECT     SPACE  CONFIRM";
             }
         }
+        else if (pageDrivenSelectionStates &&
+                 keyboardFocusIndex == GetPreChoiceSelectionPageCount() - 1 &&
+                 terminalViewState.PrimaryActionVisible)
+        {
+            prompt = "SPACE  " + terminalViewState.PrimaryActionLabel;
+        }
 
         runtimePromptText.text = prompt;
         runtimePromptText.color = string.Equals(prompt, "PLEASE WAIT", System.StringComparison.Ordinal)
@@ -2121,6 +2521,105 @@ public class HearthTvTerminalController : MonoBehaviour
             : runtimePromptReadyColor;
         runtimePromptText.gameObject.SetActive(
             IsOpen && terminalPresentationReady && !string.IsNullOrEmpty(prompt));
+    }
+
+    private void RefreshTerminalViewState()
+    {
+        terminalViewState.SetVisible(IsOpen);
+        terminalViewState.SetTerminalId(GetReplayResidentId());
+
+        int visiblePageCount = pageDrivenSelectionStates
+            ? (postReplayChoicesAvailable
+                ? Mathf.Max(GetPostReplayNavigationPageCount(), GetChoicePageCount())
+                : GetPreChoiceSelectionPageCount())
+            : Mathf.Max(1, GetNormalCyclePageCount());
+        int visiblePageIndex = Mathf.Clamp(currentPageIndex, 0, Mathf.Max(0, visiblePageCount - 1));
+        terminalViewState.SetPage(visiblePageIndex, Mathf.Max(1, visiblePageCount));
+
+        int actionIndex = Mathf.Max(0, GetPreChoiceSelectionPageCount() - 1);
+        HearthTerminalNavigationTab selectedTab =
+            keyboardFocusIndex <= 0
+                ? HearthTerminalNavigationTab.BeforeAcquisition
+                : HearthTerminalNavigationTab.AfterAcquisition;
+        HearthTerminalFocusTarget focusTarget =
+            keyboardFocusIndex == actionIndex
+                ? HearthTerminalFocusTarget.PrimaryAction
+                : keyboardFocusIndex <= 0
+                    ? HearthTerminalFocusTarget.BeforeAcquisitionTab
+                    : HearthTerminalFocusTarget.AfterAcquisitionTab;
+        terminalViewState.SetNavigation(selectedTab, focusTarget);
+
+        HearthTerminalPrimaryActionType actionType = ResolveTerminalViewActionType();
+        terminalViewState.SetPrimaryAction(
+            actionType,
+            !primaryActionInputEnabled,
+            HearthTerminalViewState.DefaultLockedMessage,
+            actionType == HearthTerminalPrimaryActionType.Custom
+                ? ResolveTerminalViewCustomActionLabel()
+                : string.Empty);
+        terminalViewState.SetCanExit(closeInputEnabled);
+
+        if (TerminalViewStateChanged != null)
+        {
+            TerminalViewStateChanged(terminalViewState);
+        }
+    }
+
+    private HearthTerminalPrimaryActionType ResolveTerminalViewActionType()
+    {
+        string residentId = GetReplayResidentId();
+        if (string.Equals(residentId, "17F04", StringComparison.OrdinalIgnoreCase))
+        {
+            return HearthTerminalPrimaryActionType.EnterHome;
+        }
+
+        switch (primaryAction)
+        {
+            case HearthTerminalPrimaryAction.RequestReplay:
+                return HearthTerminalPrimaryActionType.ReviewArchivedEvent;
+            case HearthTerminalPrimaryAction.EnterUnit:
+                return HearthTerminalPrimaryActionType.EnterUnit;
+            case HearthTerminalPrimaryAction.Custom:
+                return HearthTerminalPrimaryActionType.Custom;
+            default:
+                return HearthTerminalPrimaryActionType.None;
+        }
+    }
+
+    private string ResolveTerminalViewCustomActionLabel()
+    {
+        if (IsLobbyAssignmentTerminal())
+        {
+            return "CLOSE TERMINAL";
+        }
+
+        string label = replayFocusLabel ?? string.Empty;
+        const string spaceSuffix = " | SPACE";
+        if (label.EndsWith(spaceSuffix, StringComparison.OrdinalIgnoreCase))
+        {
+            label = label.Substring(0, label.Length - spaceSuffix.Length);
+        }
+
+        return string.IsNullOrWhiteSpace(label)
+            ? "CONFIRM"
+            : label.Trim();
+    }
+
+    private bool IsLobbyAssignmentTerminal()
+    {
+        Transform cursor = transform;
+        while (cursor != null)
+        {
+            if (cursor.name.IndexOf("Lobby", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                cursor.name.IndexOf("Assignment", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return true;
+            }
+
+            cursor = cursor.parent;
+        }
+
+        return false;
     }
 
     private bool IsCurrentPageChoicePage()
@@ -2218,12 +2717,14 @@ public class HearthTvTerminalController : MonoBehaviour
         return Mathf.Max(0f, duration) + 0.15f;
     }
 
-    private void CloseTerminalInstant()
+    private void CloseTerminalInstant(bool invokeClosedEvent = true)
     {
-        if (!IsOpen)
+        if (!IsOpen || terminalSessionCleanupInProgress)
         {
             return;
         }
+
+        terminalSessionCleanupInProgress = true;
 
         if (terminalRoutine != null)
         {
@@ -2267,13 +2768,194 @@ public class HearthTvTerminalController : MonoBehaviour
 
         SetGameplayLocked(false);
         IsOpen = false;
+        OpenTerminals.Remove(this);
+        RestoreFirstPersonUi();
+        RefreshTerminalViewState();
         RefreshRuntimePrompt();
         RefreshCanvasPresentationVisibility();
 
-        if (onClosed != null)
+        if (invokeClosedEvent && onClosed != null)
         {
             onClosed.Invoke();
         }
+
+        terminalSessionCleanupInProgress = false;
+    }
+
+    private void SuppressFirstPersonUi()
+    {
+        if (!hideFirstPersonUiWhileOpen || firstPersonUiSuppressed)
+        {
+            return;
+        }
+
+        suppressedFirstPersonUiRoots.Clear();
+        suppressedFirstPersonUiActiveStates.Clear();
+        suppressedFirstPersonUiRootsDeactivated.Clear();
+        suppressedFirstPersonUiCanvases.Clear();
+        suppressedFirstPersonUiCanvasStates.Clear();
+
+        if (firstPersonUiRootsToHide != null)
+        {
+            for (int i = 0; i < firstPersonUiRootsToHide.Length; i++)
+            {
+                AddFirstPersonUiRoot(firstPersonUiRootsToHide[i]);
+            }
+        }
+
+        HearthFirstPersonHudController[] humanHudControllers =
+            Resources.FindObjectsOfTypeAll<HearthFirstPersonHudController>();
+        for (int i = 0; i < humanHudControllers.Length; i++)
+        {
+            AddFirstPersonUiRoot(humanHudControllers[i] != null
+                ? humanHudControllers[i].gameObject
+                : null);
+        }
+
+        HearthCompanionHudController[] companionHudControllers =
+            Resources.FindObjectsOfTypeAll<HearthCompanionHudController>();
+        for (int i = 0; i < companionHudControllers.Length; i++)
+        {
+            AddFirstPersonUiRoot(companionHudControllers[i] != null
+                ? companionHudControllers[i].gameObject
+                : null);
+        }
+
+        HearthLobbyHudOverlay[] lobbyHudOverlays =
+            Resources.FindObjectsOfTypeAll<HearthLobbyHudOverlay>();
+        for (int i = 0; i < lobbyHudOverlays.Length; i++)
+        {
+            AddFirstPersonUiRoot(lobbyHudOverlays[i] != null
+                ? lobbyHudOverlays[i].gameObject
+                : null);
+        }
+
+        Canvas[] sceneCanvases = Resources.FindObjectsOfTypeAll<Canvas>();
+        for (int i = 0; i < sceneCanvases.Length; i++)
+        {
+            Canvas candidateCanvas = sceneCanvases[i];
+            if (candidateCanvas == null ||
+                !candidateCanvas.gameObject.scene.IsValid() ||
+                candidateCanvas == canvas)
+            {
+                continue;
+            }
+
+            string candidateName = candidateCanvas.gameObject.name;
+            if (string.Equals(candidateName, "HumanCanvas", StringComparison.Ordinal) ||
+                string.Equals(candidateName, "HearthHudRoot", StringComparison.Ordinal) ||
+                string.Equals(candidateName, "HearthCompanionHudRoot", StringComparison.Ordinal) ||
+                string.Equals(candidateName, "LobbyNarrativeCanvas", StringComparison.Ordinal))
+            {
+                AddFirstPersonUiRoot(candidateCanvas.gameObject);
+            }
+        }
+
+        firstPersonUiSuppressed = true;
+        for (int i = 0; i < suppressedFirstPersonUiRoots.Count; i++)
+        {
+            GameObject root = suppressedFirstPersonUiRoots[i];
+            bool disabledCanvas = false;
+            if (root != null)
+            {
+                Canvas[] rootCanvases = root.GetComponentsInChildren<Canvas>(true);
+                for (int canvasIndex = 0; canvasIndex < rootCanvases.Length; canvasIndex++)
+                {
+                    Canvas rootCanvas = rootCanvases[canvasIndex];
+                    if (rootCanvas == null || suppressedFirstPersonUiCanvases.Contains(rootCanvas))
+                    {
+                        continue;
+                    }
+
+                    suppressedFirstPersonUiCanvases.Add(rootCanvas);
+                    suppressedFirstPersonUiCanvasStates.Add(rootCanvas.enabled);
+                    rootCanvas.enabled = false;
+                    disabledCanvas = true;
+                }
+            }
+
+            bool deactivateRoot = !disabledCanvas &&
+                root != null &&
+                suppressedFirstPersonUiActiveStates[i];
+            suppressedFirstPersonUiRootsDeactivated.Add(deactivateRoot);
+            if (deactivateRoot)
+            {
+                root.SetActive(false);
+            }
+        }
+    }
+
+    private void AddFirstPersonUiRoot(GameObject candidate)
+    {
+        if (candidate == null ||
+            !candidate.scene.IsValid() ||
+            candidate == gameObject ||
+            candidate.transform.IsChildOf(transform) ||
+            transform.IsChildOf(candidate.transform) ||
+            suppressedFirstPersonUiRoots.Contains(candidate))
+        {
+            return;
+        }
+
+        for (int i = suppressedFirstPersonUiRoots.Count - 1; i >= 0; i--)
+        {
+            GameObject existing = suppressedFirstPersonUiRoots[i];
+            if (existing == null)
+            {
+                suppressedFirstPersonUiRoots.RemoveAt(i);
+                suppressedFirstPersonUiActiveStates.RemoveAt(i);
+                continue;
+            }
+
+            if (candidate.transform.IsChildOf(existing.transform))
+            {
+                return;
+            }
+
+            if (existing.transform.IsChildOf(candidate.transform))
+            {
+                suppressedFirstPersonUiRoots.RemoveAt(i);
+                suppressedFirstPersonUiActiveStates.RemoveAt(i);
+            }
+        }
+
+        suppressedFirstPersonUiRoots.Add(candidate);
+        suppressedFirstPersonUiActiveStates.Add(candidate.activeSelf);
+    }
+
+    private void RestoreFirstPersonUi()
+    {
+        if (!firstPersonUiSuppressed)
+        {
+            return;
+        }
+
+        for (int i = 0; i < suppressedFirstPersonUiCanvases.Count; i++)
+        {
+            Canvas suppressedCanvas = suppressedFirstPersonUiCanvases[i];
+            if (suppressedCanvas != null)
+            {
+                suppressedCanvas.enabled = suppressedFirstPersonUiCanvasStates[i];
+            }
+        }
+
+        for (int i = 0; i < suppressedFirstPersonUiRoots.Count; i++)
+        {
+            GameObject root = suppressedFirstPersonUiRoots[i];
+            if (root != null &&
+                i < suppressedFirstPersonUiRootsDeactivated.Count &&
+                suppressedFirstPersonUiRootsDeactivated[i])
+            {
+                root.SetActive(suppressedFirstPersonUiActiveStates[i]);
+            }
+        }
+
+        suppressedFirstPersonUiRoots.Clear();
+        suppressedFirstPersonUiActiveStates.Clear();
+        suppressedFirstPersonUiRootsDeactivated.Clear();
+        suppressedFirstPersonUiCanvases.Clear();
+        suppressedFirstPersonUiCanvasStates.Clear();
+        firstPersonUiSuppressed = false;
     }
 
     private void PlayClip(AudioClip clip)

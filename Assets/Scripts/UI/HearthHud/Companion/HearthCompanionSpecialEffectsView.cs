@@ -205,9 +205,9 @@ public class HearthCompanionSpecialEffectsView : MonoBehaviour
         CenterRect(bodyText != null ? bodyText.rectTransform : null);
         CenterRect(statusText != null ? statusText.rectTransform : null);
         CenterRect(pulseImage != null ? pulseImage.rectTransform : null);
-        ConfigureContainedText(titleText, 1, 18f);
-        ConfigureContainedText(bodyText, 5, 14f);
-        ConfigureContainedText(statusText, 2, 11f);
+        ConfigureContainedText(titleText);
+        ConfigureContainedText(bodyText);
+        ConfigureContainedText(statusText);
     }
 
     private void CenterRect(RectTransform rect)
@@ -225,7 +225,7 @@ public class HearthCompanionSpecialEffectsView : MonoBehaviour
         rect.anchoredPosition = position;
     }
 
-    private static void ConfigureContainedText(TMP_Text text, int maximumLines, float minimumSize)
+    private static void ConfigureContainedText(TMP_Text text)
     {
         if (text == null)
         {
@@ -234,11 +234,11 @@ public class HearthCompanionSpecialEffectsView : MonoBehaviour
 
         text.alignment = TextAlignmentOptions.Center;
         text.enableWordWrapping = true;
-        text.enableAutoSizing = true;
-        text.fontSizeMax = text.fontSize;
-        text.fontSizeMin = Mathf.Min(minimumSize, text.fontSize);
-        text.maxVisibleLines = Mathf.Max(1, maximumLines);
-        text.overflowMode = TextOverflowModes.Truncate;
+        text.enableAutoSizing = false;
+        text.maxVisibleCharacters = int.MaxValue;
+        text.maxVisibleWords = int.MaxValue;
+        text.maxVisibleLines = int.MaxValue;
+        text.overflowMode = TextOverflowModes.Overflow;
     }
 
     private void SetOverlayColor(Color color)

@@ -1,5 +1,7 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class ViewSwitchController : MonoBehaviour
@@ -144,6 +146,7 @@ public class ViewSwitchController : MonoBehaviour
     [Header("Runtime State")]
     [SerializeField] private ViewMode currentMode;
 
+    private readonly HashSet<Object> manualSwitchBlockers = new HashSet<Object>();
     private Coroutine switchRoutine;
 
     public bool IsSwitching { get; private set; }
@@ -153,7 +156,67 @@ public class ViewSwitchController : MonoBehaviour
         get { return currentMode; }
     }
 
+    public Camera CurrentViewCamera
+    {
+        get
+        {
+            ResolveMissingReferences();
+            return currentMode == ViewMode.Human ? human.viewCamera : companion.viewCamera;
+        }
+    }
+
+    public PlayerInteraction CurrentInteraction
+    {
+        get
+        {
+            ResolveMissingReferences();
+            return currentMode == ViewMode.Human ? human.interaction : companion.interaction;
+        }
+    }
+
+    public GameObject CurrentViewRoot
+    {
+        get
+        {
+            return currentMode == ViewMode.Human ? human.rootObject : companion.rootObject;
+        }
+    }
+
     public static ViewSwitchController FindPreferredController()
+    {
+        Scene activeScene = SceneManager.GetActiveScene();
+        ViewSwitchController preferred = FindPreferredController(activeScene);
+        return preferred != null ? preferred : FindPreferredControllerInternal(default(Scene), false);
+    }
+
+    public static ViewSwitchController FindPreferredController(Scene scene)
+    {
+        return FindPreferredControllerInternal(scene, scene.IsValid());
+    }
+
+    public bool IsManualSwitchBlocked
+    {
+        get
+        {
+            RemoveDestroyedManualSwitchBlockers();
+            return manualSwitchBlockers.Count > 0 || HearthPlayerControlLock.AnyControlsLocked;
+        }
+    }
+
+    public void SetManualSwitchBlocked(Object owner, bool blocked)
+    {
+        Object effectiveOwner = owner != null ? owner : this;
+        if (blocked)
+        {
+            manualSwitchBlockers.Add(effectiveOwner);
+        }
+        else
+        {
+            manualSwitchBlockers.Remove(effectiveOwner);
+        }
+    }
+
+    private static ViewSwitchController FindPreferredControllerInternal(Scene scene, bool restrictToScene)
     {
         ViewSwitchController[] controllers = Object.FindObjectsOfType<ViewSwitchController>(true);
         ViewSwitchController best = null;
@@ -163,6 +226,11 @@ public class ViewSwitchController : MonoBehaviour
         {
             ViewSwitchController candidate = controllers[i];
             if (candidate == null || !candidate.gameObject.scene.IsValid() || !candidate.gameObject.scene.isLoaded)
+            {
+                continue;
+            }
+
+            if (restrictToScene && candidate.gameObject.scene != scene)
             {
                 continue;
             }
@@ -179,7 +247,14 @@ public class ViewSwitchController : MonoBehaviour
             }
 
             string path = GetHierarchyPath(candidate.transform);
-            if (path.Contains("MIN_LOOP_ROOT/FlowManagers"))
+            if (string.Equals(
+                path,
+                "MIN_LOOP_ROOT/FlowManagers/ViewSwitchController",
+                System.StringComparison.Ordinal))
+            {
+                score += 10000;
+            }
+            else if (path.Contains("MIN_LOOP_ROOT/FlowManagers"))
             {
                 score += 2000;
             }
@@ -205,6 +280,11 @@ public class ViewSwitchController : MonoBehaviour
 
     private void Awake()
     {
+        if (FindPreferredController(gameObject.scene) != this)
+        {
+            return;
+        }
+
         ResolveMissingReferences();
         EnsureFadeOverlay();
         ApplyMode(startingMode, true);
@@ -213,7 +293,7 @@ public class ViewSwitchController : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetKeyDown(switchKey))
+        if (Input.GetKeyDown(switchKey) && !IsManualSwitchBlocked)
         {
             ToggleView();
         }
@@ -250,6 +330,13 @@ public class ViewSwitchController : MonoBehaviour
 
     public void SwitchTo(ViewMode targetMode)
     {
+        ViewSwitchController preferred = FindPreferredController(gameObject.scene);
+        if (preferred != null && preferred != this)
+        {
+            preferred.SwitchTo(targetMode);
+            return;
+        }
+
         if (IsSwitching || targetMode == currentMode)
         {
             return;
@@ -278,7 +365,7 @@ public class ViewSwitchController : MonoBehaviour
         ApplyMode(targetMode, false);
         yield return FadeTo(0f, fadeInDuration);
 
-        SetActiveRigControls(true);
+        SetActiveRigControls(!HearthPlayerControlLock.AnyControlsLocked);
         LockCursorForGameplay();
 
         IsSwitching = false;
@@ -350,6 +437,40 @@ public class ViewSwitchController : MonoBehaviour
         }
 
         return path;
+    }
+
+    private void RemoveDestroyedManualSwitchBlockers()
+    {
+        if (manualSwitchBlockers.Count == 0)
+        {
+            return;
+        }
+
+        List<Object> destroyed = null;
+        foreach (Object owner in manualSwitchBlockers)
+        {
+            if (owner != null)
+            {
+                continue;
+            }
+
+            if (destroyed == null)
+            {
+                destroyed = new List<Object>();
+            }
+
+            destroyed.Add(owner);
+        }
+
+        if (destroyed == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < destroyed.Count; i++)
+        {
+            manualSwitchBlockers.Remove(destroyed[i]);
+        }
     }
 
     private static void SetMainCameraTag(Camera camera, bool isMain)

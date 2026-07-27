@@ -27,6 +27,11 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
     [SerializeField] private TMP_Text choiceBText;
     [SerializeField] private TMP_Text recommendedText;
 
+    [Header("Second UI Visual")]
+    [SerializeField] private bool useSecondUiVisual = true;
+    [SerializeField] private HearthUiThemeProfile secondUiTheme;
+    [SerializeField] private HearthUiStateCoordinator uiStateCoordinator;
+
     [Header("Content")]
     [SerializeField] private string title = "COMPANION UNIT - LOCAL INSPECTION";
     [SerializeField] private string status = "STATUS: DEEP SLEEP / REMOTE LINK UNAVAILABLE";
@@ -63,8 +68,20 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
 
     private void Awake()
     {
+        ApplySecondUiVisual();
         ApplyContent();
         Close();
+    }
+
+    private void OnDisable()
+    {
+        if (!IsOpen)
+        {
+            return;
+        }
+
+        IsOpen = false;
+        SetCoordinatorModalRequest(false);
     }
 
     private void Update()
@@ -149,6 +166,102 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
         RefreshModeVisuals();
     }
 
+    public void ConfigureSecondUiVisual(HearthUiThemeProfile themeProfile, bool enabled)
+    {
+        secondUiTheme = themeProfile;
+        useSecondUiVisual = enabled;
+        ApplySecondUiVisual();
+        ApplyContent();
+        RefreshModeVisuals();
+        RefreshRecallVisual();
+    }
+
+    public void ApplySecondUiVisual()
+    {
+        if (!useSecondUiVisual)
+        {
+            return;
+        }
+
+        Transform panel = transform.Find("InspectionPanel");
+        if (panel == null)
+        {
+            return;
+        }
+
+        title = "ENTITY INSPECTION";
+        status = "COMPANION UNIT 17F-03  ·  PHYSICAL UNIT FEED";
+
+        RectTransform panelRect = panel as RectTransform;
+        ApplyTopLeft(panelRect, new Rect(300f, 96f, 1320f, 840f));
+        Image panelImage = panel.GetComponent<Image>();
+        if (panelImage != null)
+        {
+            panelImage.sprite = null;
+            panelImage.type = Image.Type.Simple;
+            panelImage.color = WithAlpha(ThemePanelBackground, 0.72f);
+            panelImage.raycastTarget = false;
+        }
+        DisableLegacyPanelBorders(panel);
+
+        ConfigureText(titleText, new Rect(0f, 24f, 1320f, 48f), 30f, TextAlignmentOptions.Center, ThemePrimary, FontStyles.Bold);
+        ConfigureText(statusText, new Rect(0f, 78f, 1320f, 40f), 20f, TextAlignmentOptions.Center, ThemeInformation, FontStyles.Bold);
+        ConfigureText(detailText, new Rect(816f, 562f, 430f, 120f), 21f, TextAlignmentOptions.TopLeft, ThemeSecondary, FontStyles.Normal);
+
+        if (recallHighlight != null)
+        {
+            ApplyTopLeft(recallHighlight.rectTransform, new Rect(420f, 700f, 480f, 72f));
+            recallHighlight.sprite = null;
+            recallHighlight.type = Image.Type.Simple;
+            recallHighlight.color = WithAlpha(ThemeInformation, 0.28f);
+            recallHighlight.raycastTarget = false;
+        }
+        ConfigureText(recallActionText, new Rect(0f, 0f, 480f, 72f), 22f, TextAlignmentOptions.Center, ThemePrimary, FontStyles.Bold);
+
+        RectTransform choiceRect = choiceRoot != null ? choiceRoot.GetComponent<RectTransform>() : null;
+        ApplyTopLeft(choiceRect, new Rect(180f, 584f, 960f, 176f));
+        ConfigureChoiceRow(choiceABackground, new Rect(0f, 0f, 960f, 72f));
+        ConfigureChoiceRow(choiceBBackground, new Rect(0f, 92f, 960f, 72f));
+        ConfigureText(choiceAText, new Rect(24f, 0f, 690f, 72f), 23f, TextAlignmentOptions.MidlineLeft, ThemePrimary, FontStyles.Bold);
+        ConfigureText(choiceBText, new Rect(24f, 0f, 910f, 72f), 23f, TextAlignmentOptions.MidlineLeft, ThemePrimary, FontStyles.Bold);
+        ConfigureText(recommendedText, new Rect(728f, 0f, 206f, 72f), 17f, TextAlignmentOptions.Center, ThemeSuccess, FontStyles.Bold);
+
+        EnsureRule(panel, "V2_TopRule", new Rect(0f, 0f, 1320f, 2f), ThemeInformation);
+        EnsureRule(panel, "V2_LeftRule", new Rect(0f, 0f, 2f, 840f), ThemeInformation);
+        EnsureLabel(
+            panel,
+            "V2_PhysicalFeedLabel",
+            "PHYSICAL UNIT FEED",
+            new Rect(42f, 142f, 700f, 34f),
+            19f,
+            ThemePrimary,
+            TextAlignmentOptions.TopLeft);
+        EnsureRule(panel, "V2_PhysicalFeedRule", new Rect(42f, 184f, 700f, 2f), ThemeInformation);
+        EnsureRule(panel, "V2_CrosshairHorizontal", new Rect(330f, 390f, 120f, 2f), WithAlpha(ThemeInformation, 0.72f));
+        EnsureRule(panel, "V2_CrosshairVertical", new Rect(389f, 331f, 2f, 120f), WithAlpha(ThemeInformation, 0.72f));
+        EnsureStatusRow(panel, "V2_PowerState", 142f, "POWER STATE", "DEEP SLEEP");
+        EnsureStatusRow(panel, "V2_MemoryArchive", 226f, "MEMORY ARCHIVE", "AVAILABLE");
+        EnsureStatusRow(panel, "V2_MotorResponse", 310f, "MOTOR RESPONSE", "LOCKED");
+        EnsureStatusRow(panel, "V2_LastEvent", 394f, "LAST EVENT", "22:41");
+        EnsureLabel(
+            panel,
+            "V2_FieldUnitLabel",
+            "FIELD UNIT",
+            new Rect(816f, 500f, 430f, 36f),
+            22f,
+            ThemePrimary,
+            TextAlignmentOptions.TopLeft);
+        EnsureRule(panel, "V2_FieldUnitRule", new Rect(816f, 544f, 430f, 2f), ThemeInformation);
+        EnsureLabel(
+            panel,
+            "V2_InspectionFooter",
+            "LOCAL INSPECTION CHANNEL  ·  VERIFIED",
+            new Rect(760f, 798f, 492f, 30f),
+            17f,
+            ThemeSecondary,
+            TextAlignmentOptions.TopRight);
+    }
+
     public void Open()
     {
         panelMode = PanelMode.Recall;
@@ -156,6 +269,7 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
         recallSubmitted = false;
         recallQueued = false;
         IsOpen = true;
+        SetCoordinatorModalRequest(true);
         SetCanvasVisible(true);
         RefreshModeVisuals();
         RefreshRecallVisual();
@@ -173,6 +287,7 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
         choiceSubmitted = false;
         choiceInputEnabled = inputEnabled;
         IsOpen = true;
+        SetCoordinatorModalRequest(true);
 
         if (titleText != null) titleText.text = "17F-03  DISPOSITION";
         if (choiceAText != null) choiceAText.text = "A  RESTART THE UNIT NOW";
@@ -199,6 +314,7 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
         recallQueued = false;
         choiceSubmitted = false;
         choiceInputEnabled = false;
+        SetCoordinatorModalRequest(false);
         SetCanvasVisible(false);
     }
 
@@ -339,8 +455,8 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
     {
         float selectedAlpha = choiceSubmitted ? 0.22f : choiceInputEnabled ? 0.62f : 0.32f;
         float idleAlpha = choiceSubmitted ? 0.12f : choiceInputEnabled ? 0.42f : 0.22f;
-        Color selected = new Color(0.12f, 0.46f, 0.31f, selectedAlpha);
-        Color idle = new Color(0.03f, 0.10f, 0.14f, idleAlpha);
+        Color selected = WithAlpha(ThemeSuccess, selectedAlpha);
+        Color idle = WithAlpha(ThemePanelBackground, idleAlpha);
         if (choiceABackground != null) choiceABackground.color = choiceIndex == 0 ? selected : idle;
         if (choiceBBackground != null) choiceBBackground.color = choiceIndex == 1 ? selected : idle;
 
@@ -399,5 +515,258 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
         canvasGroup.alpha = visible ? 1f : 0f;
         canvasGroup.interactable = false;
         canvasGroup.blocksRaycasts = false;
+    }
+
+    private Color ThemePanelBackground
+    {
+        get
+        {
+            return secondUiTheme != null
+                ? secondUiTheme.TerminalPanelBackground
+                : new Color32(9, 16, 28, 255);
+        }
+    }
+
+    private Color ThemeSecondary
+    {
+        get
+        {
+            return secondUiTheme != null
+                ? secondUiTheme.Secondary
+                : new Color32(95, 120, 149, 255);
+        }
+    }
+
+    private Color ThemePrimary
+    {
+        get
+        {
+            return secondUiTheme != null
+                ? secondUiTheme.Primary
+                : new Color32(215, 230, 246, 255);
+        }
+    }
+
+    private Color ThemeInformation
+    {
+        get
+        {
+            return secondUiTheme != null
+                ? secondUiTheme.Information
+                : new Color32(120, 170, 220, 255);
+        }
+    }
+
+    private Color ThemeSuccess
+    {
+        get
+        {
+            return secondUiTheme != null
+                ? secondUiTheme.Success
+                : new Color32(87, 184, 138, 255);
+        }
+    }
+
+    private void ConfigureChoiceRow(Image background, Rect rect)
+    {
+        if (background == null)
+        {
+            return;
+        }
+
+        ApplyTopLeft(background.rectTransform, rect);
+        background.sprite = null;
+        background.type = Image.Type.Simple;
+        background.color = WithAlpha(ThemePanelBackground, 0.54f);
+        background.raycastTarget = false;
+    }
+
+    private void ConfigureText(
+        TMP_Text text,
+        Rect rect,
+        float fontSize,
+        TextAlignmentOptions alignment,
+        Color color,
+        FontStyles fontStyle)
+    {
+        if (text == null)
+        {
+            return;
+        }
+
+        ApplyTopLeft(text.rectTransform, rect);
+        if (secondUiTheme != null && secondUiTheme.PrimaryFontAsset != null)
+        {
+            text.font = secondUiTheme.PrimaryFontAsset;
+        }
+        text.enableAutoSizing = false;
+        text.fontSize = fontSize;
+        text.fontSizeMin = fontSize;
+        text.fontSizeMax = fontSize;
+        text.enableWordWrapping = true;
+        text.maxVisibleLines = int.MaxValue;
+        text.overflowMode = TextOverflowModes.Overflow;
+        text.alignment = alignment;
+        text.fontStyle = fontStyle;
+        text.color = color;
+        text.raycastTarget = false;
+    }
+
+    private void EnsureRule(Transform parent, string objectName, Rect rect, Color color)
+    {
+        Transform child = parent.Find(objectName);
+        if (child == null)
+        {
+            GameObject target = new GameObject(
+                objectName,
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image));
+            target.transform.SetParent(parent, false);
+            child = target.transform;
+        }
+
+        Image image = child.GetComponent<Image>();
+        if (image == null)
+        {
+            image = child.gameObject.AddComponent<Image>();
+        }
+
+        ApplyTopLeft(image.rectTransform, rect);
+        image.sprite = null;
+        image.type = Image.Type.Simple;
+        image.color = color;
+        image.raycastTarget = false;
+    }
+
+    private void EnsureLabel(
+        Transform parent,
+        string objectName,
+        string value,
+        Rect rect,
+        float fontSize,
+        Color color,
+        TextAlignmentOptions alignment)
+    {
+        Transform child = parent.Find(objectName);
+        if (child == null)
+        {
+            GameObject target = new GameObject(
+                objectName,
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(TextMeshProUGUI));
+            target.transform.SetParent(parent, false);
+            child = target.transform;
+        }
+
+        TMP_Text text = child.GetComponent<TMP_Text>();
+        if (text == null)
+        {
+            text = child.gameObject.AddComponent<TextMeshProUGUI>();
+        }
+
+        text.text = value;
+        ConfigureText(text, rect, fontSize, alignment, color, FontStyles.Bold);
+    }
+
+    private void EnsureStatusRow(
+        Transform parent,
+        string objectName,
+        float y,
+        string label,
+        string value)
+    {
+        Transform row = parent.Find(objectName);
+        if (row == null)
+        {
+            GameObject target = new GameObject(
+                objectName,
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image));
+            target.transform.SetParent(parent, false);
+            row = target.transform;
+        }
+
+        Image background = row.GetComponent<Image>();
+        if (background == null)
+        {
+            background = row.gameObject.AddComponent<Image>();
+        }
+
+        ApplyTopLeft(background.rectTransform, new Rect(790f, y, 462f, 64f));
+        background.sprite = null;
+        background.type = Image.Type.Simple;
+        background.color = WithAlpha(ThemePanelBackground, 0.68f);
+        background.raycastTarget = false;
+        EnsureRule(row, "Rule", new Rect(0f, 0f, 2f, 64f), ThemeInformation);
+        EnsureLabel(
+            row,
+            "Label",
+            label,
+            new Rect(24f, 18f, 250f, 32f),
+            18f,
+            ThemePrimary,
+            TextAlignmentOptions.MidlineLeft);
+        EnsureLabel(
+            row,
+            "Value",
+            value,
+            new Rect(280f, 18f, 154f, 32f),
+            18f,
+            ThemeSecondary,
+            TextAlignmentOptions.MidlineRight);
+    }
+
+    private void SetCoordinatorModalRequest(bool visible)
+    {
+        if (uiStateCoordinator == null)
+        {
+            uiStateCoordinator =
+                FindObjectOfType<HearthUiStateCoordinator>(true);
+        }
+
+        if (uiStateCoordinator != null)
+        {
+            uiStateCoordinator.SetExternalModalRequest(this, visible);
+        }
+    }
+
+    private static void DisableLegacyPanelBorders(Transform panel)
+    {
+        if (panel == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < panel.childCount; i++)
+        {
+            Transform child = panel.GetChild(i);
+            if (child != null && child.name.StartsWith("Border", StringComparison.Ordinal))
+            {
+                child.gameObject.SetActive(false);
+            }
+        }
+    }
+
+    private static void ApplyTopLeft(RectTransform target, Rect rect)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        target.anchorMin = new Vector2(0f, 1f);
+        target.anchorMax = new Vector2(0f, 1f);
+        target.pivot = new Vector2(0f, 1f);
+        target.anchoredPosition = new Vector2(rect.x, -rect.y);
+        target.sizeDelta = new Vector2(rect.width, rect.height);
+    }
+
+    private static Color WithAlpha(Color color, float alpha)
+    {
+        color.a = alpha;
+        return color;
     }
 }

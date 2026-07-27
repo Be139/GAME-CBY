@@ -522,7 +522,9 @@ public class MinLoopFlowController : MonoBehaviour
 
         if (dialogueSet != null)
         {
-            yield return PlayDialogue(dialogueSet.PreChoiceBriefing);
+            yield return PlayDialogue(
+                dialogueSet.PreChoiceBriefing,
+                HearthSubtitleContext.Terminal);
         }
 
         SetStage(MinLoopStage.DispositionChoice);
@@ -600,8 +602,12 @@ public class MinLoopFlowController : MonoBehaviour
             HearthDialogueSequence result = choice == MinLoopDispositionChoice.SystemRecommendedA
                 ? dialogueSet.OptionAResult
                 : dialogueSet.OptionBResult;
-            yield return PlayDialogue(result);
-            yield return PlayDialogue(dialogueSet.PostChoiceCommon);
+            yield return PlayDialogue(
+                result,
+                HearthSubtitleContext.Terminal);
+            yield return PlayDialogue(
+                dialogueSet.PostChoiceCommon,
+                HearthSubtitleContext.Terminal);
         }
 
         if (tvTerminalController != null && tvTerminalController.IsOpen)
@@ -633,14 +639,16 @@ public class MinLoopFlowController : MonoBehaviour
         }
     }
 
-    private IEnumerator PlayDialogue(HearthDialogueSequence sequence)
+    private IEnumerator PlayDialogue(
+        HearthDialogueSequence sequence,
+        HearthSubtitleContext context)
     {
         if (subtitlePlayer == null || sequence == null || !sequence.HasLines)
         {
             yield break;
         }
 
-        yield return subtitlePlayer.PlaySequenceAsset(sequence);
+        yield return subtitlePlayer.PlaySequenceAsset(sequence, context);
     }
 
     private HearthResidentDispositionDialogueSet FindDispositionDialogueSet(string residentId)
@@ -716,9 +724,11 @@ public class MinLoopFlowController : MonoBehaviour
             tvTerminalController = FindObjectOfType<HearthTvTerminalController>();
         }
 
-        if (viewSwitchController == null)
+        ViewSwitchController preferredViewSwitch =
+            ViewSwitchController.FindPreferredController(gameObject.scene);
+        if (preferredViewSwitch != null && viewSwitchController != preferredViewSwitch)
         {
-            viewSwitchController = FindObjectOfType<ViewSwitchController>();
+            viewSwitchController = preferredViewSwitch;
         }
 
         if (replaySequenceController == null)

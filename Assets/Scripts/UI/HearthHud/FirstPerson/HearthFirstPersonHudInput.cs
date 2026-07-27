@@ -32,6 +32,7 @@ public class HearthFirstPersonHudInput : MonoBehaviour
     [Header("References")]
     [SerializeField] private HearthFirstPersonHudController controller;
     [SerializeField] private HearthSettingsView settingsView;
+    [SerializeField] private HearthUiStateCoordinator stateCoordinator;
 
     [Header("Input")]
     [SerializeField] private bool enableKeyboardInput = true;
@@ -60,7 +61,7 @@ public class HearthFirstPersonHudInput : MonoBehaviour
 
     private void Update()
     {
-        if (!enableKeyboardInput)
+        if (!enableKeyboardInput || HearthTvTerminalController.AnyTerminalOpen)
         {
             return;
         }
@@ -76,6 +77,14 @@ public class HearthFirstPersonHudInput : MonoBehaviour
 
         if (Input.GetKeyDown(menuKey))
         {
+            if ((page == HearthFirstPersonHudPageId.Slide01PersistentHud ||
+                 page == HearthFirstPersonHudPageId.None) &&
+                stateCoordinator != null &&
+                !stateCoordinator.CanOpenHumanMenu)
+            {
+                return;
+            }
+
             HandleMenuKey(page);
             return;
         }
@@ -230,6 +239,12 @@ public class HearthFirstPersonHudInput : MonoBehaviour
         if (settingsView == null && controller != null)
         {
             settingsView = GetComponentInChildren<HearthSettingsView>(true);
+        }
+
+        if (stateCoordinator == null && controller != null)
+        {
+            stateCoordinator =
+                controller.GetComponent<HearthUiStateCoordinator>();
         }
     }
 

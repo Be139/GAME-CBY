@@ -4,13 +4,26 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
+/// <summary>
+/// Formal dialogue and authored time-card presenter.
+/// Tutorial and action-hint UI must use their own presenters so they cannot stop
+/// or replace an active dialogue sequence.
+/// </summary>
 public class MinLoopSubtitlePlayer : MonoBehaviour
 {
     [Header("Shared Presentation")]
     [SerializeField] private HearthSubtitleStyleProfile styleProfile;
     [SerializeField] private HearthSubtitlePresentationMode presentationMode = HearthSubtitlePresentationMode.StandardDialogue;
+    [SerializeField] private HearthSubtitleContext defaultContext = HearthSubtitleContext.Human;
+    [SerializeField] private bool inferContextFromSpeaker = true;
 
-    [Header("UI")]
+    [Header("Explicit Dialogue VisualRoot")]
+    [SerializeField] private GameObject visualRoot;
+    [SerializeField] private RectTransform layoutRoot;
+    [SerializeField] private Image backdropImage;
+    [SerializeField] private Image accentRuleImage;
+
+    [Header("UI (legacy-compatible bindings)")]
     [SerializeField] private GameObject subtitlePanel;
     [SerializeField] private TMP_Text speakerText;
     [SerializeField] private TMP_Text bodyText;
@@ -41,6 +54,12 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
     [SerializeField] private HearthAudioChannelSource dialogueChannelSource;
 
     private Coroutine activeRoutine;
+    private HearthSubtitleContext activeContext;
+    private HearthSubtitlePresentationMode activePresentationMode;
+    private bool adaptiveLayoutDirty;
+    private Vector2 lastLayoutRootSize = new Vector2(-1f, -1f);
+    private bool externalPresentationSuppressed;
+    private float desiredCanvasAlpha;
 
     public bool IsPlaying { get; private set; }
 
@@ -54,10 +73,48 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
         get { return presentationMode; }
     }
 
+    public GameObject VisualRoot
+    {
+        get { return GetVisualRoot(); }
+    }
+
+    public HearthSubtitleContext ActiveContext
+    {
+        get { return activeContext; }
+    }
+
+    public bool ExternalPresentationSuppressed
+    {
+        get { return externalPresentationSuppressed; }
+    }
+
     private void Awake()
     {
+        activeContext = defaultContext;
+        activePresentationMode = presentationMode;
         EnsureReferences();
         HideImmediate();
+    }
+
+    private void LateUpdate()
+    {
+        GameObject root = GetVisualRoot();
+        if (root == null || !root.activeInHierarchy)
+        {
+            return;
+        }
+
+        RectTransform rootRect = GetLayoutRoot();
+        Vector2 rootSize = ResolveRootSize(rootRect);
+        if (rootSize != lastLayoutRootSize)
+        {
+            adaptiveLayoutDirty = true;
+        }
+
+        if (adaptiveLayoutDirty)
+        {
+            ApplyAdaptiveLayout(activePresentationMode, activeContext);
+        }
     }
 
     private void OnValidate()
@@ -74,10 +131,28 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
         return activeRoutine;
     }
 
+    public Coroutine PlaySequence(
+        IList<MinLoopSubtitleLine> lines,
+        HearthSubtitleContext context)
+    {
+        Stop();
+        activeRoutine = StartCoroutine(PlaySequenceRoutine(lines, context));
+        return activeRoutine;
+    }
+
     public Coroutine PlaySequence(HearthDialogueSequence sequence)
     {
         Stop();
         activeRoutine = StartCoroutine(PlaySequenceRoutine(sequence));
+        return activeRoutine;
+    }
+
+    public Coroutine PlaySequence(
+        HearthDialogueSequence sequence,
+        HearthSubtitleContext context)
+    {
+        Stop();
+        activeRoutine = StartCoroutine(PlaySequenceRoutine(sequence, context));
         return activeRoutine;
     }
 
@@ -87,10 +162,30 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
         yield return PlaySequenceRoutine(lines);
     }
 
+    public IEnumerator PlayLines(
+        IList<MinLoopSubtitleLine> lines,
+        HearthSubtitleContext context)
+    {
+        Stop();
+        yield return PlaySequenceRoutine(lines, context);
+    }
+
     public IEnumerator PlaySequenceAsset(HearthDialogueSequence sequence)
     {
         Stop();
         yield return PlaySequenceRoutine(sequence);
+    }
+
+    /// <summary>
+    /// Plays one sequence with an explicit visual context without changing the
+    /// player's configured automatic/fixed context mode.
+    /// </summary>
+    public IEnumerator PlaySequenceAsset(
+        HearthDialogueSequence sequence,
+        HearthSubtitleContext context)
+    {
+        Stop();
+        yield return PlaySequenceRoutine(sequence, context);
     }
 
     public void ShowLine(string speaker, string text)
@@ -98,14 +193,32 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
         ShowLine(speaker, text, presentationMode);
     }
 
+    public void ShowLine(string speaker, string text, HearthSubtitleContext context)
+    {
+        ShowLine(speaker, text, presentationMode, context);
+    }
+
     private void ShowLine(string speaker, string text, HearthSubtitlePresentationMode mode)
     {
+        ShowLine(speaker, text, mode, ResolveContext(speaker));
+    }
+
+    private void ShowLine(
+        string speaker,
+        string text,
+        HearthSubtitlePresentationMode mode,
+        HearthSubtitleContext context)
+    {
         EnsureReferences();
+        activePresentationMode = mode;
+        activeContext = context;
 
         if (speakerText != null)
         {
             speakerText.text = speaker;
-            speakerText.gameObject.SetActive(mode != HearthSubtitlePresentationMode.TimeCard);
+            speakerText.gameObject.SetActive(
+                mode != HearthSubtitlePresentationMode.TimeCard &&
+                !string.IsNullOrWhiteSpace(speaker));
         }
 
         if (bodyText != null)
@@ -113,14 +226,16 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
             bodyText.text = text;
         }
 
-        if (subtitlePanel != null)
+        GameObject root = GetVisualRoot();
+        if (root != null)
         {
-            subtitlePanel.SetActive(true);
+            root.SetActive(true);
         }
 
         if (canvasGroup != null)
         {
-            canvasGroup.alpha = 1f;
+            desiredCanvasAlpha = 1f;
+            ApplyDesiredCanvasAlpha();
         }
 
         ApplyConfiguredStyle(mode);
@@ -130,7 +245,32 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
     {
         styleProfile = profile;
         presentationMode = mode;
+        activePresentationMode = mode;
         ApplyConfiguredStyle();
+    }
+
+    public void SetSubtitleContext(HearthSubtitleContext context)
+    {
+        defaultContext = context;
+        activeContext = context;
+        inferContextFromSpeaker = false;
+        ApplyConfiguredStyle(activePresentationMode);
+    }
+
+    public void UseAutomaticSubtitleContext()
+    {
+        inferContextFromSpeaker = true;
+    }
+
+    public void SetExternalPresentationSuppressed(bool suppressed)
+    {
+        if (externalPresentationSuppressed == suppressed)
+        {
+            return;
+        }
+
+        externalPresentationSuppressed = suppressed;
+        ApplyDesiredCanvasAlpha();
     }
 
     public void Hide()
@@ -155,7 +295,9 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
         IsPlaying = false;
     }
 
-    private IEnumerator PlaySequenceRoutine(IList<MinLoopSubtitleLine> lines)
+    private IEnumerator PlaySequenceRoutine(
+        IList<MinLoopSubtitleLine> lines,
+        HearthSubtitleContext? explicitContext = null)
     {
         IsPlaying = true;
 
@@ -183,7 +325,18 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
             HearthSubtitlePresentationMode linePresentation = line.presentationKind == HearthSubtitleLinePresentationKind.TimeCard
                 ? HearthSubtitlePresentationMode.TimeCard
                 : presentationMode;
-            ShowLine(line.speaker, line.text, linePresentation);
+            if (explicitContext.HasValue)
+            {
+                ShowLine(
+                    line.speaker,
+                    line.text,
+                    linePresentation,
+                    explicitContext.Value);
+            }
+            else
+            {
+                ShowLine(line.speaker, line.text, linePresentation);
+            }
             PlayVoice(line.voiceClip);
 
             float holdSeconds = ResolveLineDuration(line);
@@ -208,11 +361,15 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
         activeRoutine = null;
     }
 
-    private IEnumerator PlaySequenceRoutine(HearthDialogueSequence sequence)
+    private IEnumerator PlaySequenceRoutine(
+        HearthDialogueSequence sequence,
+        HearthSubtitleContext? explicitContext = null)
     {
         if (sequence == null || !sequence.HasLines)
         {
-            yield return PlaySequenceRoutine((IList<MinLoopSubtitleLine>)null);
+            yield return PlaySequenceRoutine(
+                (IList<MinLoopSubtitleLine>)null,
+                explicitContext);
             yield break;
         }
 
@@ -222,7 +379,7 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
             sequenceLines = new List<MinLoopSubtitleLine>(sequence.Lines);
         }
 
-        yield return PlaySequenceRoutine(sequenceLines);
+        yield return PlaySequenceRoutine(sequenceLines, explicitContext);
 
         if (sequence.PostSequenceDelay > 0f)
         {
@@ -283,46 +440,64 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
     {
         if (canvasGroup == null || seconds <= 0f)
         {
-            if (canvasGroup != null) canvasGroup.alpha = to;
+            desiredCanvasAlpha = to;
+            ApplyDesiredCanvasAlpha();
             yield break;
         }
 
-        canvasGroup.alpha = from;
+        desiredCanvasAlpha = from;
+        ApplyDesiredCanvasAlpha();
         float elapsed = 0f;
         while (elapsed < seconds)
         {
             elapsed += useUnscaledTime ? Time.unscaledDeltaTime : Time.deltaTime;
-            canvasGroup.alpha = Mathf.Lerp(from, to, Mathf.Clamp01(elapsed / seconds));
+            desiredCanvasAlpha =
+                Mathf.Lerp(from, to, Mathf.Clamp01(elapsed / seconds));
+            ApplyDesiredCanvasAlpha();
             yield return null;
         }
 
-        canvasGroup.alpha = to;
+        desiredCanvasAlpha = to;
+        ApplyDesiredCanvasAlpha();
     }
 
     private void HideImmediate()
     {
-        if (subtitlePanel != null)
+        GameObject root = GetVisualRoot();
+        if (root != null)
         {
-            subtitlePanel.SetActive(false);
+            root.SetActive(false);
         }
 
         if (canvasGroup != null)
         {
-            canvasGroup.alpha = 0f;
+            desiredCanvasAlpha = 0f;
+            ApplyDesiredCanvasAlpha();
+        }
+    }
+
+    private void ApplyDesiredCanvasAlpha()
+    {
+        if (canvasGroup != null)
+        {
+            canvasGroup.alpha =
+                externalPresentationSuppressed ? 0f : desiredCanvasAlpha;
         }
     }
 
     private void EnsureReferences()
     {
         EnsureDialogueChannelSource();
+        AdoptLegacyVisualBindings();
 
-        if (subtitlePanel != null && speakerText != null && bodyText != null)
+        if (GetVisualRoot() != null && speakerText != null && bodyText != null)
         {
             if (canvasGroup == null)
             {
-                canvasGroup = subtitlePanel.GetComponent<CanvasGroup>();
+                canvasGroup = GetVisualRoot().GetComponent<CanvasGroup>();
             }
 
+            FindOptionalVisualReferences();
             ApplyConfiguredStyle();
             EnsureSubtitleCanvasSorting();
             return;
@@ -335,6 +510,49 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
 
         ApplyConfiguredStyle();
         EnsureSubtitleCanvasSorting();
+    }
+
+    private void AdoptLegacyVisualBindings()
+    {
+        if (visualRoot == null && subtitlePanel != null)
+        {
+            visualRoot = subtitlePanel;
+        }
+        else if (subtitlePanel == null && visualRoot != null)
+        {
+            subtitlePanel = visualRoot;
+        }
+
+        if (layoutRoot == null && GetVisualRoot() != null)
+        {
+            layoutRoot = GetVisualRoot().GetComponent<RectTransform>();
+        }
+    }
+
+    private void FindOptionalVisualReferences()
+    {
+        if (GetVisualRoot() == null)
+        {
+            return;
+        }
+
+        if (backdropImage == null)
+        {
+            Transform backdrop = GetVisualRoot().transform.Find("Backdrop");
+            if (backdrop != null)
+            {
+                backdropImage = backdrop.GetComponent<Image>();
+            }
+        }
+
+        if (accentRuleImage == null)
+        {
+            Transform accent = GetVisualRoot().transform.Find("AccentRule");
+            if (accent != null)
+            {
+                accentRuleImage = accent.GetComponent<Image>();
+            }
+        }
     }
 
     private void EnsureDialogueChannelSource()
@@ -364,55 +582,82 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
             CanvasScaler scaler = canvasObject.GetComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1920f, 1080f);
+            scaler.matchWidthOrHeight = 0.5f;
         }
 
-        if (subtitlePanel == null)
+        if (GetVisualRoot() == null)
         {
-            GameObject panelObject = new GameObject("Min Loop Subtitle Panel", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(CanvasGroup));
+            GameObject panelObject = new GameObject("HearthSubtitleVisualRoot", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(CanvasGroup));
             panelObject.transform.SetParent(canvas.transform, false);
 
             RectTransform panelRect = panelObject.GetComponent<RectTransform>();
-            panelRect.anchorMin = new Vector2(0.08f, 0.04f);
-            panelRect.anchorMax = new Vector2(0.92f, 0.24f);
+            panelRect.anchorMin = Vector2.zero;
+            panelRect.anchorMax = Vector2.one;
             panelRect.offsetMin = Vector2.zero;
             panelRect.offsetMax = Vector2.zero;
 
             Image panelImage = panelObject.GetComponent<Image>();
-            panelImage.color = useCleanCenteredStyle ? Color.clear : new Color(0f, 0f, 0f, 0.72f);
+            panelImage.color = Color.clear;
             panelImage.raycastTarget = false;
 
             canvasGroup = panelObject.GetComponent<CanvasGroup>();
+            visualRoot = panelObject;
             subtitlePanel = panelObject;
+            layoutRoot = panelRect;
+        }
+
+        Transform visualParent = GetVisualRoot().transform;
+        if (backdropImage == null)
+        {
+            backdropImage = CreateImage(visualParent, "Backdrop");
+        }
+
+        if (accentRuleImage == null)
+        {
+            accentRuleImage = CreateImage(visualParent, "AccentRule");
         }
 
         if (speakerText == null)
         {
-            speakerText = CreateText(subtitlePanel.transform, "Speaker", new Vector2(0.04f, 0.64f), new Vector2(0.96f, 0.92f), 26f, FontStyles.Bold);
+            speakerText = CreateText(visualParent, "Speaker", 22f, FontStyles.Bold);
         }
 
         if (bodyText == null)
         {
-            bodyText = CreateText(subtitlePanel.transform, "Line", new Vector2(0.04f, 0.16f), new Vector2(0.96f, 0.64f), 24f, FontStyles.Normal);
+            bodyText = CreateText(visualParent, "Body", 28f, FontStyles.Normal);
         }
     }
 
-    private TMP_Text CreateText(Transform parent, string objectName, Vector2 anchorMin, Vector2 anchorMax, float fontSize, FontStyles style)
+    private Image CreateImage(Transform parent, string objectName)
+    {
+        GameObject imageObject = new GameObject(objectName, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        imageObject.transform.SetParent(parent, false);
+        Image image = imageObject.GetComponent<Image>();
+        image.color = Color.clear;
+        image.raycastTarget = false;
+        return image;
+    }
+
+    private TMP_Text CreateText(Transform parent, string objectName, float fontSize, FontStyles style)
     {
         GameObject textObject = new GameObject(objectName, typeof(RectTransform));
         textObject.transform.SetParent(parent, false);
 
         RectTransform rect = textObject.GetComponent<RectTransform>();
-        rect.anchorMin = anchorMin;
-        rect.anchorMax = anchorMax;
+        rect.anchorMin = new Vector2(0.17f, 0.14f);
+        rect.anchorMax = new Vector2(0.83f, 0.14f);
         rect.offsetMin = Vector2.zero;
         rect.offsetMax = Vector2.zero;
 
         TextMeshProUGUI text = textObject.AddComponent<TextMeshProUGUI>();
-        text.color = Color.white;
+        text.color = new Color(0.84f, 0.9f, 0.96f, 1f);
         text.fontSize = fontSize;
         text.fontStyle = style;
-        text.alignment = useCleanCenteredStyle ? TextAlignmentOptions.Center : TextAlignmentOptions.Left;
+        text.alignment = TextAlignmentOptions.Center;
         text.enableWordWrapping = true;
+        text.enableAutoSizing = false;
+        text.overflowMode = TextOverflowModes.Overflow;
+        text.raycastTarget = false;
         return text;
     }
 
@@ -423,12 +668,13 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
 
     private void ApplyConfiguredStyle(HearthSubtitlePresentationMode mode)
     {
-        if (!useCleanCenteredStyle || subtitlePanel == null)
+        GameObject root = GetVisualRoot();
+        if (!useCleanCenteredStyle || root == null)
         {
             return;
         }
 
-        RectTransform panelRect = subtitlePanel.GetComponent<RectTransform>();
+        RectTransform panelRect = GetLayoutRoot();
         if (panelRect != null)
         {
             panelRect.anchorMin = Vector2.zero;
@@ -437,7 +683,7 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
             panelRect.offsetMax = Vector2.zero;
         }
 
-        Image panelImage = subtitlePanel.GetComponent<Image>();
+        Image panelImage = root.GetComponent<Image>();
         if (panelImage != null)
         {
             panelImage.color = Color.clear;
@@ -455,46 +701,56 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
         HearthSubtitleLayoutSettings sharedLayout = styleProfile != null
             ? styleProfile.GetLayout(mode)
             : null;
-        float width = sharedLayout != null ? sharedLayout.widthFraction : subtitleWidthFraction;
-        float speakerY = sharedLayout != null ? sharedLayout.speakerCenterY : speakerCenterY;
-        float speakerHeight = sharedLayout != null ? sharedLayout.speakerHeightFraction : speakerHeightFraction;
-        float bodyY = sharedLayout != null ? sharedLayout.bodyCenterY : bodyCenterY;
-        float bodyHeight = sharedLayout != null ? sharedLayout.bodyHeightFraction : bodyHeightFraction;
-        float speakerSize = sharedLayout != null ? sharedLayout.speakerFontSize : cleanSpeakerFontSize;
-        float bodySize = sharedLayout != null ? sharedLayout.bodyFontSize : cleanBodyFontSize;
-        float speakerMinSize = sharedLayout != null ? sharedLayout.speakerMinimumFontSize : Mathf.Max(12f, speakerSize * 0.72f);
-        float bodyMinSize = sharedLayout != null ? sharedLayout.bodyMinimumFontSize : Mathf.Max(14f, bodySize * 0.64f);
-        int bodyMaxLines = sharedLayout != null ? sharedLayout.bodyMaximumLines : 5;
+        float speakerSize = styleProfile != null
+            ? styleProfile.GetSpeakerFontSize(mode)
+            : (mode == HearthSubtitlePresentationMode.TimeCard ? 1f : 22f);
+        float bodySize = styleProfile != null
+            ? styleProfile.GetBodyFontSize(mode)
+            : (mode == HearthSubtitlePresentationMode.CenteredEpilogue ? 30f : cleanBodyFontSize);
         float lineSpacing = sharedLayout != null ? sharedLayout.lineSpacing : 0f;
         Color textColor = styleProfile != null ? styleProfile.TextColor : cleanTextColor;
+        HearthSubtitleContextSettings contextStyle = styleProfile != null
+            ? styleProfile.GetContext(activeContext)
+            : null;
+        Color speakerColor = contextStyle != null ? contextStyle.speakerColor : textColor;
 
-        float halfWidth = Mathf.Clamp01(width) * 0.5f;
         ApplyTextStyle(
             speakerText,
-            MakeCenteredAnchor(speakerY, speakerHeight, halfWidth),
             speakerSize,
-            speakerMinSize,
-            1,
             0f,
-            textColor,
+            speakerColor,
             FontStyles.Bold);
         ApplyTextStyle(
             bodyText,
-            MakeCenteredAnchor(bodyY, bodyHeight, halfWidth),
             bodySize,
-            bodyMinSize,
-            bodyMaxLines,
             lineSpacing,
             textColor,
             FontStyles.Normal);
+
+        if (backdropImage != null)
+        {
+            backdropImage.color = mode == HearthSubtitlePresentationMode.TimeCard
+                ? Color.clear
+                : (contextStyle != null ? contextStyle.backgroundColor : new Color(0.035f, 0.055f, 0.08f, 0.62f));
+            backdropImage.raycastTarget = false;
+        }
+
+        if (accentRuleImage != null)
+        {
+            accentRuleImage.color = mode == HearthSubtitlePresentationMode.TimeCard
+                ? Color.clear
+                : (contextStyle != null ? contextStyle.accentColor : new Color(0.47f, 0.67f, 0.86f, 1f));
+            accentRuleImage.raycastTarget = false;
+        }
+
+        activePresentationMode = mode;
+        adaptiveLayoutDirty = true;
+        ApplyAdaptiveLayout(mode, activeContext);
     }
 
     private void ApplyTextStyle(
         TMP_Text text,
-        Rect anchorRect,
         float fontSize,
-        float minimumFontSize,
-        int maximumLines,
         float lineSpacing,
         Color color,
         FontStyles style)
@@ -504,49 +760,208 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
             return;
         }
 
-        RectTransform rect = text.GetComponent<RectTransform>();
-        if (rect != null)
-        {
-            rect.anchorMin = new Vector2(anchorRect.xMin, anchorRect.yMin);
-            rect.anchorMax = new Vector2(anchorRect.xMax, anchorRect.yMax);
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
-        }
-
         text.color = color;
         text.fontSize = fontSize;
         text.fontSizeMax = fontSize;
-        text.fontSizeMin = Mathf.Min(minimumFontSize, fontSize);
-        text.enableAutoSizing = true;
+        text.fontSizeMin = fontSize;
+        text.enableAutoSizing = false;
         text.fontStyle = style;
         text.alignment = TextAlignmentOptions.Center;
         text.enableWordWrapping = true;
-        text.maxVisibleLines = Mathf.Max(1, maximumLines);
+        text.maxVisibleLines = 999;
         text.lineSpacing = lineSpacing;
-        text.overflowMode = TextOverflowModes.Truncate;
+        text.overflowMode = TextOverflowModes.Overflow;
+        text.raycastTarget = false;
     }
 
-    private Rect MakeCenteredAnchor(float centerY, float height, float halfWidth)
+    private void ApplyAdaptiveLayout(
+        HearthSubtitlePresentationMode mode,
+        HearthSubtitleContext context)
     {
-        centerY = Mathf.Clamp01(centerY);
-        height = Mathf.Clamp01(height);
-        halfWidth = Mathf.Clamp01(halfWidth);
-        return Rect.MinMaxRect(
-            0.5f - halfWidth,
-            Mathf.Clamp01(centerY - height * 0.5f),
-            0.5f + halfWidth,
-            Mathf.Clamp01(centerY + height * 0.5f));
+        RectTransform rootRect = GetLayoutRoot();
+        if (rootRect == null || bodyText == null)
+        {
+            adaptiveLayoutDirty = false;
+            return;
+        }
+
+        Vector2 rootSize = ResolveRootSize(rootRect);
+        float rootWidth = Mathf.Max(1f, rootSize.x);
+        float rootHeight = Mathf.Max(1f, rootSize.y);
+        HearthSubtitleLayoutSettings layout = styleProfile != null
+            ? styleProfile.GetLayout(mode)
+            : null;
+        HearthSubtitleContextSettings contextStyle = styleProfile != null
+            ? styleProfile.GetContext(context)
+            : null;
+
+        float widthFraction = layout != null ? layout.widthFraction : subtitleWidthFraction;
+        float widthMultiplier = contextStyle != null ? contextStyle.widthMultiplier : 1f;
+        widthFraction = Mathf.Clamp(widthFraction * widthMultiplier, 0.35f, 0.92f);
+        float xMin = 0.5f - widthFraction * 0.5f;
+        float xMax = 0.5f + widthFraction * 0.5f;
+        float availableTextWidth = Mathf.Max(1f, rootWidth * widthFraction);
+
+        float bodyCenter = layout != null ? layout.bodyCenterY : bodyCenterY;
+        float originalBodyHeight = layout != null ? layout.bodyHeightFraction : bodyHeightFraction;
+        float bodyBottom = Mathf.Clamp(
+            bodyCenter - originalBodyHeight * 0.5f,
+            0.03f,
+            0.86f);
+        float minimumBodyHeight = layout != null
+            ? Mathf.Max(48f, layout.minimumBodyHeightPixels)
+            : Mathf.Max(72f, rootHeight * originalBodyHeight * 0.5f);
+
+        Vector2 preferredBody = bodyText.GetPreferredValues(
+            bodyText.text ?? string.Empty,
+            availableTextWidth,
+            0f);
+        float bodyHeight = Mathf.Max(minimumBodyHeight, preferredBody.y + 4f);
+        SetBottomAnchoredRect(
+            bodyText.rectTransform,
+            xMin,
+            xMax,
+            bodyBottom,
+            bodyHeight,
+            Vector2.zero);
+
+        bool hasSpeaker =
+            mode != HearthSubtitlePresentationMode.TimeCard &&
+            speakerText != null &&
+            speakerText.gameObject.activeSelf;
+        float speakerHeight = layout != null
+            ? Mathf.Max(28f, layout.speakerHeightPixels)
+            : Mathf.Max(30f, rootHeight * speakerHeightFraction);
+        float speakerGap = contextStyle != null ? contextStyle.speakerGapPixels : 8f;
+        float contentHeight = bodyHeight;
+        if (hasSpeaker)
+        {
+            float speakerBottom = bodyBottom + (bodyHeight + speakerGap) / rootHeight;
+            SetBottomAnchoredRect(
+                speakerText.rectTransform,
+                xMin,
+                xMax,
+                speakerBottom,
+                speakerHeight,
+                Vector2.zero);
+            contentHeight += speakerGap + speakerHeight;
+        }
+
+        float horizontalPadding = contextStyle != null ? contextStyle.horizontalPaddingPixels : 28f;
+        float verticalPadding = contextStyle != null ? contextStyle.verticalPaddingPixels : 16f;
+        if (backdropImage != null)
+        {
+            SetBottomAnchoredRect(
+                backdropImage.rectTransform,
+                xMin,
+                xMax,
+                bodyBottom,
+                contentHeight + verticalPadding * 2f,
+                new Vector2(0f, -verticalPadding),
+                horizontalPadding * 2f);
+        }
+
+        if (accentRuleImage != null)
+        {
+            RectTransform accentRect = accentRuleImage.rectTransform;
+            accentRect.anchorMin = new Vector2(xMin, bodyBottom);
+            accentRect.anchorMax = new Vector2(xMin, bodyBottom);
+            accentRect.pivot = new Vector2(0f, 0f);
+            accentRect.anchoredPosition = new Vector2(-horizontalPadding, -verticalPadding);
+            accentRect.sizeDelta = new Vector2(2f, contentHeight + verticalPadding * 2f);
+        }
+
+        lastLayoutRootSize = rootSize;
+        adaptiveLayoutDirty = false;
+    }
+
+    private static void SetBottomAnchoredRect(
+        RectTransform rect,
+        float xMin,
+        float xMax,
+        float bottom,
+        float height,
+        Vector2 anchoredOffset,
+        float extraWidth = 0f)
+    {
+        if (rect == null)
+        {
+            return;
+        }
+
+        rect.anchorMin = new Vector2(xMin, bottom);
+        rect.anchorMax = new Vector2(xMax, bottom);
+        rect.pivot = new Vector2(0.5f, 0f);
+        rect.anchoredPosition = anchoredOffset;
+        rect.sizeDelta = new Vector2(extraWidth, Mathf.Max(1f, height));
+    }
+
+    private GameObject GetVisualRoot()
+    {
+        return visualRoot != null ? visualRoot : subtitlePanel;
+    }
+
+    private RectTransform GetLayoutRoot()
+    {
+        if (layoutRoot == null && GetVisualRoot() != null)
+        {
+            layoutRoot = GetVisualRoot().GetComponent<RectTransform>();
+        }
+
+        return layoutRoot;
+    }
+
+    private static Vector2 ResolveRootSize(RectTransform rootRect)
+    {
+        if (rootRect != null && rootRect.rect.width > 1f && rootRect.rect.height > 1f)
+        {
+            return rootRect.rect.size;
+        }
+
+        return new Vector2(
+            Mathf.Max(1f, Screen.width > 0 ? Screen.width : 1920),
+            Mathf.Max(1f, Screen.height > 0 ? Screen.height : 1080));
+    }
+
+    private HearthSubtitleContext ResolveContext(string speaker)
+    {
+        if (!inferContextFromSpeaker)
+        {
+            return defaultContext;
+        }
+
+        string normalized = (speaker ?? string.Empty).Trim().ToUpperInvariant();
+        if (normalized.Contains("TERMINAL") ||
+            normalized.Contains("ARCHIVE") ||
+            normalized.Contains("DOORWAY") ||
+            normalized.Contains("SYNTH VOICE"))
+        {
+            return HearthSubtitleContext.Terminal;
+        }
+
+        if (normalized.Contains("FIELD UNIT") ||
+            normalized.Contains("COMPANION") ||
+            normalized.EndsWith(" UNIT") ||
+            normalized.Contains(" UNIT ") ||
+            normalized == "MIA" ||
+            normalized.StartsWith("MIA "))
+        {
+            return HearthSubtitleContext.FieldUnit;
+        }
+
+        return defaultContext;
     }
 
     private void EnsureSubtitleCanvasSorting()
     {
-        if (!forceSubtitleCanvasSorting || subtitlePanel == null)
+        GameObject root = GetVisualRoot();
+        if (!forceSubtitleCanvasSorting || root == null)
         {
             return;
         }
 
         Canvas subtitleCanvas = null;
-        Canvas[] parentCanvases = subtitlePanel.GetComponentsInParent<Canvas>(true);
+        Canvas[] parentCanvases = root.GetComponentsInParent<Canvas>(true);
         for (int i = 0; i < parentCanvases.Length; i++)
         {
             if (parentCanvases[i] != null && parentCanvases[i].isRootCanvas)
@@ -571,14 +986,14 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
 
         if (subtitleCanvas == null)
         {
-            subtitleCanvas = subtitlePanel.GetComponent<Canvas>();
+            subtitleCanvas = root.GetComponent<Canvas>();
             if (subtitleCanvas == null)
             {
-                subtitleCanvas = subtitlePanel.AddComponent<Canvas>();
+                subtitleCanvas = root.AddComponent<Canvas>();
             }
         }
 
-        Canvas nestedCanvas = subtitlePanel.GetComponent<Canvas>();
+        Canvas nestedCanvas = root.GetComponent<Canvas>();
         if (nestedCanvas != null && nestedCanvas != subtitleCanvas)
         {
             nestedCanvas.overrideSorting = false;

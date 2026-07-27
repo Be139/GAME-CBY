@@ -4,6 +4,9 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public class HearthPlayerControlLock : MonoBehaviour
 {
+    private static readonly HashSet<HearthPlayerControlLock> ActiveLocks =
+        new HashSet<HearthPlayerControlLock>();
+
     [Header("Auto Bind")]
     [SerializeField] private bool autoFindSceneControllers = true;
 
@@ -22,11 +25,32 @@ public class HearthPlayerControlLock : MonoBehaviour
     [SerializeField] private Rigidbody[] rigidbodiesToClear;
 
     private readonly Dictionary<Behaviour, bool> enabledBeforeLock = new Dictionary<Behaviour, bool>();
+    private readonly HashSet<Object> lockOwners = new HashSet<Object>();
     private bool controlsLocked;
+
+    public static bool AnyControlsLocked
+    {
+        get
+        {
+            RemoveInvalidActiveLocks();
+            return ActiveLocks.Count > 0;
+        }
+    }
 
     public bool ControlsLocked
     {
         get { return controlsLocked; }
+    }
+
+    public int ActiveLockCount
+    {
+        get { return lockOwners.Count; }
+    }
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetStaticState()
+    {
+        ActiveLocks.Clear();
     }
 
     private void Awake()
@@ -46,38 +70,68 @@ public class HearthPlayerControlLock : MonoBehaviour
 
     private void OnDisable()
     {
-        SetControlsLocked(false);
+        ReleaseAllLocks();
+    }
+
+    private void LateUpdate()
+    {
+        ReleaseDestroyedOwners();
     }
 
     public void SetControlsLocked(bool locked)
     {
-        ResolveReferences();
+        SetControlsLocked(this, locked);
+    }
 
-        if (locked == controlsLocked)
+    public void SetControlsLocked(Object owner, bool locked)
+    {
+        Object effectiveOwner = owner != null ? owner : this;
+
+        if (locked)
+        {
+            if (!lockOwners.Add(effectiveOwner))
+            {
+                return;
+            }
+
+            if (lockOwners.Count > 1)
+            {
+                controlsLocked = true;
+                ActiveLocks.Add(this);
+                return;
+            }
+
+            ResolveReferences();
+            controlsLocked = true;
+            ActiveLocks.Add(this);
+            CaptureEnabledStates();
+            SetCoreControlsEnabled(false);
+            ClearRigidbodies();
+            return;
+        }
+
+        if (!lockOwners.Remove(effectiveOwner))
         {
             return;
         }
 
-        controlsLocked = locked;
-
-        if (locked)
+        if (lockOwners.Count > 0)
         {
-            CaptureEnabledStates();
-            SetCoreControlsEnabled(false);
-            ClearRigidbodies();
+            controlsLocked = true;
+            return;
         }
-        else
-        {
-            RestoreEnabledStates();
-            if (disableJumpAlways)
-            {
-                SetJumpComponentsEnabled(false);
-            }
 
-            if (disableCrouchAlways)
-            {
-                SetCrouchComponentsEnabled(false);
-            }
+        controlsLocked = false;
+        ActiveLocks.Remove(this);
+        RestoreEnabledStates();
+        if (disableJumpAlways)
+        {
+            SetJumpComponentsEnabled(false);
+        }
+
+        if (disableCrouchAlways)
+        {
+            SetCrouchComponentsEnabled(false);
         }
     }
 
@@ -89,6 +143,11 @@ public class HearthPlayerControlLock : MonoBehaviour
     public void UnlockControls()
     {
         SetControlsLocked(false);
+    }
+
+    public void ReleaseOwner(Object owner)
+    {
+        SetControlsLocked(owner, false);
     }
 
     public void SetDisableJumpAlways(bool value)
@@ -302,6 +361,114 @@ public class HearthPlayerControlLock : MonoBehaviour
                 body.velocity = Vector3.zero;
                 body.angularVelocity = Vector3.zero;
             }
+        }
+    }
+
+    private void ReleaseDestroyedOwners()
+    {
+        if (lockOwners.Count == 0)
+        {
+            return;
+        }
+
+        List<Object> destroyedOwners = null;
+        foreach (Object owner in lockOwners)
+        {
+            if (owner != null)
+            {
+                continue;
+            }
+
+            if (destroyedOwners == null)
+            {
+                destroyedOwners = new List<Object>();
+            }
+
+            destroyedOwners.Add(owner);
+        }
+
+        if (destroyedOwners == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < destroyedOwners.Count; i++)
+        {
+            lockOwners.Remove(destroyedOwners[i]);
+        }
+
+        if (lockOwners.Count == 0)
+        {
+            controlsLocked = false;
+            ActiveLocks.Remove(this);
+            RestoreEnabledStates();
+            if (disableJumpAlways)
+            {
+                SetJumpComponentsEnabled(false);
+            }
+
+            if (disableCrouchAlways)
+            {
+                SetCrouchComponentsEnabled(false);
+            }
+        }
+    }
+
+    private void ReleaseAllLocks()
+    {
+        lockOwners.Clear();
+        ActiveLocks.Remove(this);
+
+        if (!controlsLocked)
+        {
+            enabledBeforeLock.Clear();
+            return;
+        }
+
+        controlsLocked = false;
+        RestoreEnabledStates();
+        if (disableJumpAlways)
+        {
+            SetJumpComponentsEnabled(false);
+        }
+
+        if (disableCrouchAlways)
+        {
+            SetCrouchComponentsEnabled(false);
+        }
+    }
+
+    private static void RemoveInvalidActiveLocks()
+    {
+        if (ActiveLocks.Count == 0)
+        {
+            return;
+        }
+
+        List<HearthPlayerControlLock> invalid = null;
+        foreach (HearthPlayerControlLock activeLock in ActiveLocks)
+        {
+            if (activeLock != null && activeLock.controlsLocked)
+            {
+                continue;
+            }
+
+            if (invalid == null)
+            {
+                invalid = new List<HearthPlayerControlLock>();
+            }
+
+            invalid.Add(activeLock);
+        }
+
+        if (invalid == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < invalid.Count; i++)
+        {
+            ActiveLocks.Remove(invalid[i]);
         }
     }
 }

@@ -206,6 +206,7 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
 
     private void Awake()
     {
+        ResolveHumanHudCanvasGroup();
         DisableCompetingActorAnimationBehaviours();
         EnsureBlackoutOverlay();
         SetBlackoutAlpha(0f);
@@ -1008,6 +1009,7 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
 
     private void SuppressHumanHud()
     {
+        ResolveHumanHudCanvasGroup();
         if (humanHudCanvasGroup == null || humanHudSuppressed)
         {
             return;
@@ -1033,6 +1035,42 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
         humanHudCanvasGroup.interactable = savedHumanHudInteractable;
         humanHudCanvasGroup.blocksRaycasts = savedHumanHudBlocksRaycasts;
         humanHudSuppressed = false;
+    }
+
+    private void ResolveHumanHudCanvasGroup()
+    {
+        if (humanHudCanvasGroup != null && humanHudCanvasGroup.gameObject.activeInHierarchy)
+        {
+            return;
+        }
+
+        HearthFirstPersonHudController[] hudControllers =
+            FindObjectsOfType<HearthFirstPersonHudController>(true);
+        HearthFirstPersonHudController fallback = null;
+        for (int i = 0; i < hudControllers.Length; i++)
+        {
+            HearthFirstPersonHudController candidate = hudControllers[i];
+            if (candidate == null || candidate.gameObject.scene != gameObject.scene)
+            {
+                continue;
+            }
+
+            if (fallback == null)
+            {
+                fallback = candidate;
+            }
+
+            if (candidate.gameObject.activeInHierarchy)
+            {
+                fallback = candidate;
+                break;
+            }
+        }
+
+        if (fallback != null)
+        {
+            humanHudCanvasGroup = fallback.GetComponent<CanvasGroup>();
+        }
     }
 
     private void SaveHumanPose()

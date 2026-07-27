@@ -205,11 +205,11 @@ public class HearthHudPersistentView : MonoBehaviour
         {
             case HearthHudState.Alert:
                 currentAccent = alertColor;
-                label = "COMPANION UNIT | ALERT";
+                label = "FIELD UNIT · ALERT";
                 break;
             case HearthHudState.Dormant:
                 currentAccent = dormantColor;
-                label = "COMPANION UNIT | DORMANT";
+                label = "FIELD UNIT · DORMANT";
                 break;
             case HearthHudState.WarningOrange:
                 currentAccent = warningColor;
@@ -221,7 +221,7 @@ public class HearthHudPersistentView : MonoBehaviour
                 break;
             default:
                 currentAccent = activeColor;
-                label = "COMPANION UNIT | ACTIVE";
+                label = "FIELD UNIT · ACTIVE";
                 break;
         }
 

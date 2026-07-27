@@ -1133,6 +1133,10 @@ public static class Hearth17F03MinimalLoopBinder
         Hearth17F03InspectionPanel component = root.GetComponent<Hearth17F03InspectionPanel>();
         component.Configure(group, title, status, detail, recall, highlightRoot.GetComponent<Image>());
         component.ConfigureChoiceUi(choiceRoot.gameObject, choiceAImage, choiceBImage, choiceAText, choiceBText, recommended);
+        component.ConfigureSecondUiVisual(
+            AssetDatabase.LoadAssetAtPath<HearthUiThemeProfile>(
+                "Assets/UI/HEARTH/V2/Profiles/Hearth_UiV2Theme.asset"),
+            true);
         group.alpha = 0f;
         group.interactable = false;
         group.blocksRaycasts = false;
@@ -1779,7 +1783,7 @@ public static class Hearth17F03MinimalLoopBinder
         text.alignment = alignment;
         text.color = new Color(0.76f, 0.91f, 1f, 0.96f);
         text.enableWordWrapping = true;
-        text.overflowMode = TextOverflowModes.Truncate;
+        text.overflowMode = TextOverflowModes.Overflow;
         text.raycastTarget = false;
         return text;
     }

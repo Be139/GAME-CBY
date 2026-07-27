@@ -489,3 +489,12 @@
 - 正式 Prefab 必须保持 `HearthCompanionHudPreviewInput.previewInputEnabled = false`，避免预览输入改变当前剧情页。
 - 机器人 HUD、`HearthCompanionHudFlowBinder`、`HearthCompanionHudExclusiveMode` 与三户 Replay Controller 必须统一引用 `MIN_LOOP_ROOT/FlowManagers/ViewSwitchController`。若绑定到 1F 参考物体上的停用控制器，长按逻辑仍可能执行，但整个蓝色提示层会被错误隐藏。
 - 运行时可通过 `ViewSwitchController.FindPreferredController()` 取得正式控制器；Editor Repair 菜单会同步修复全部上述引用。
+
+## HEARTH UI V2 与终端独占显示接口
+
+- 主题生成与切换统一由 `Tools > Hearth > UI V2` 管理；Legacy 和 V2 Prefab 不互相覆盖。
+- 终端默认调用 `HearthTvTerminalController.SetHideFirstPersonUiWhileOpen(true)`。打开时隐藏人类 HUD、陪伴单元 HUD 和大厅叙事 HUD，关闭或取消时恢复进入前状态。
+- 新增固定视角、相框或特殊终端时，应通过 `ViewSwitchController.CurrentViewCamera`、`CurrentInteraction` 和 `CurrentViewRoot` 获取当前真实玩家 Rig，不能从场景中按名字寻找 Camera。
+- 剧情需要临时强制保留某个额外 Screen Space UI 时，可把该对象从终端自动发现命名中移除；需要额外隐藏时，把根对象加入终端的 `First Person Ui Roots To Hide`。
+- 陪伴单元共享布局仍由 `Hearth_CompanionHudLayout.asset` 控制；V2 Prefab 切换后由 `RecaptureBaselines()` 自动登记新版位置。
+- UI 主题切换不改变 Dialogue Asset、信任度、回放阶段或交互条件；剧情脚本引用由生成器自动重映射。

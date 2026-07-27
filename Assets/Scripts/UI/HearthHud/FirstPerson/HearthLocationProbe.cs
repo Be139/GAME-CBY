@@ -144,9 +144,15 @@ public class HearthLocationProbe : MonoBehaviour
 
     private void ResolveReferences()
     {
-        if (viewSwitchController == null)
+        ViewSwitchController preferredViewSwitch =
+            ViewSwitchController.FindPreferredController(gameObject.scene);
+        if (preferredViewSwitch != null &&
+            (viewSwitchController == null ||
+             viewSwitchController != preferredViewSwitch ||
+             !viewSwitchController.enabled ||
+             !viewSwitchController.gameObject.activeInHierarchy))
         {
-            viewSwitchController = FindObjectOfType<ViewSwitchController>();
+            viewSwitchController = preferredViewSwitch;
         }
 
         if (hudController == null)

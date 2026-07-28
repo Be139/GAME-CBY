@@ -55,6 +55,12 @@ public class CityBillboardContentDistributor : MonoBehaviour
         get { return GetNormalizedImageShare(); }
     }
 
+    public Material MediaSurfaceMaterial
+    {
+        get { return mediaSurfaceMaterial; }
+        set { mediaSurfaceMaterial = value; }
+    }
+
     public void FindBillboardRoot()
     {
         GameObject found = GameObject.Find(billboardRootName);
@@ -84,6 +90,44 @@ public class CityBillboardContentDistributor : MonoBehaviour
         MarkDirty();
         Debug.Log("CityBillboardContentDistributor: prepared " + prepared + " billboard screens for image/video content.");
         return prepared;
+    }
+
+    public int ApplySurfaceMaterialToAll()
+    {
+        Material targetMaterial = ResolveMediaSurfaceMaterial();
+        if (targetMaterial == null)
+        {
+            Debug.LogWarning("CityBillboardContentDistributor: no media surface material is available.");
+            return 0;
+        }
+
+        List<CityBillboardPlacementSlot> slots = CollectBillboardSlots();
+        int updated = 0;
+
+        for (int i = 0; i < slots.Count; i++)
+        {
+            Renderer renderer = EnsureSurfaceRenderer(slots[i]);
+            if (renderer == null)
+            {
+                continue;
+            }
+
+            RecordUndo(renderer, "Apply billboard HDR material");
+            renderer.sharedMaterial = targetMaterial;
+
+            CityBillboardContentController controller = EnsureContentController(slots[i]);
+            if (controller != null)
+            {
+                controller.ApplyAssignedContent();
+            }
+
+            MarkObjectDirty(renderer);
+            updated++;
+        }
+
+        MarkDirty();
+        Debug.Log("CityBillboardContentDistributor: applied the HDR media material to " + updated + " billboard screens.");
+        return updated;
     }
 
     public void RedistributeAll()
@@ -274,6 +318,13 @@ public class CityBillboardContentDistributor : MonoBehaviour
             if (mediaSurfaceMaterial == null && existing.sharedMaterial != null)
             {
                 mediaSurfaceMaterial = existing.sharedMaterial;
+            }
+
+            if (mediaSurfaceMaterial != null && existing.sharedMaterial != mediaSurfaceMaterial)
+            {
+                RecordUndo(existing, "Assign billboard media material");
+                existing.sharedMaterial = mediaSurfaceMaterial;
+                MarkObjectDirty(existing);
             }
 
             return existing;

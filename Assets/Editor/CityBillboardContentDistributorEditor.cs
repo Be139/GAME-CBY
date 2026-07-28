@@ -27,6 +27,11 @@ public class CityBillboardContentDistributorEditor : Editor
             distributor.PrepareExistingBillboards();
         }
 
+        if (GUILayout.Button("Apply HDR Material To All Screens"))
+        {
+            distributor.ApplySurfaceMaterialToAll();
+        }
+
         if (GUILayout.Button("Redistribute Images And Animations"))
         {
             distributor.RedistributeAll();

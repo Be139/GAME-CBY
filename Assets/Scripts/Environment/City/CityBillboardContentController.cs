@@ -24,6 +24,10 @@ public class CityBillboardContentController : MonoBehaviour
     [SerializeField] private Texture imageTexture;
     [SerializeField] private VideoClip videoClip;
 
+    [Header("HDR Brightness")]
+    [SerializeField, Min(0f)] private float imageBrightness = 2.2f;
+    [SerializeField, Min(0f)] private float videoBrightness = 2.6f;
+
     [Header("Video Playback")]
     [SerializeField] private bool playOnAwake = true;
     [SerializeField] private bool loopVideo = true;
@@ -51,6 +55,16 @@ public class CityBillboardContentController : MonoBehaviour
     public Renderer TargetRenderer
     {
         get { return targetRenderer; }
+    }
+
+    public float ImageBrightness
+    {
+        get { return imageBrightness; }
+    }
+
+    public float VideoBrightness
+    {
+        get { return videoBrightness; }
     }
 
     private void Awake()
@@ -148,6 +162,13 @@ public class CityBillboardContentController : MonoBehaviour
         ClearRendererContent();
     }
 
+    public void SetBrightness(float newImageBrightness, float newVideoBrightness)
+    {
+        imageBrightness = Mathf.Max(0f, newImageBrightness);
+        videoBrightness = Mathf.Max(0f, newVideoBrightness);
+        ApplyAssignedContent();
+    }
+
     public void Play()
     {
         if (contentKind != BillboardContentKind.Video || videoClip == null)
@@ -213,8 +234,10 @@ public class CityBillboardContentController : MonoBehaviour
         SetTextureIfSupported(block, "_BaseMap", texture);
         SetTextureIfSupported(block, "_MainTex", texture);
         SetTextureIfSupported(block, "_EmissionMap", texture);
-        SetColorIfSupported(block, "_BaseColor", Color.white);
-        SetColorIfSupported(block, "_Color", Color.white);
+        Color hdrColor = CreateHdrColor(imageBrightness);
+        SetColorIfSupported(block, "_BaseColor", hdrColor);
+        SetColorIfSupported(block, "_Color", hdrColor);
+        SetColorIfSupported(block, "_EmissionColor", hdrColor);
         targetRenderer.SetPropertyBlock(block);
     }
 
@@ -248,7 +271,7 @@ public class CityBillboardContentController : MonoBehaviour
         }
 
         ClearRendererContent();
-        PrepareRendererColor();
+        PrepareRendererColor(videoBrightness);
 
         videoPlayer.enabled = true;
         videoPlayer.source = VideoSource.VideoClip;
@@ -292,7 +315,7 @@ public class CityBillboardContentController : MonoBehaviour
         targetRenderer.SetPropertyBlock(null);
     }
 
-    private void PrepareRendererColor()
+    private void PrepareRendererColor(float brightness)
     {
         if (targetRenderer == null)
         {
@@ -301,9 +324,17 @@ public class CityBillboardContentController : MonoBehaviour
 
         MaterialPropertyBlock block = new MaterialPropertyBlock();
         targetRenderer.GetPropertyBlock(block);
-        SetColorIfSupported(block, "_BaseColor", Color.white);
-        SetColorIfSupported(block, "_Color", Color.white);
+        Color hdrColor = CreateHdrColor(brightness);
+        SetColorIfSupported(block, "_BaseColor", hdrColor);
+        SetColorIfSupported(block, "_Color", hdrColor);
+        SetColorIfSupported(block, "_EmissionColor", hdrColor);
         targetRenderer.SetPropertyBlock(block);
+    }
+
+    private static Color CreateHdrColor(float brightness)
+    {
+        float safeBrightness = Mathf.Max(0f, brightness);
+        return new Color(safeBrightness, safeBrightness, safeBrightness, 1f);
     }
 
     private string ResolveVideoTextureProperty()

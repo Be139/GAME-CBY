@@ -65,6 +65,7 @@ public class MinLoopLightingStateController : MonoBehaviour
     [Header("Rules")]
     [SerializeField] private LightingStageRule[] rules;
     [SerializeField] private bool disableUnmatchedRuleLights = true;
+    [SerializeField] private bool allowRulesToOverrideSceneEnvironment = true;
 
     [Header("Restore")]
     [SerializeField] private bool captureSceneAmbientOnAwake = true;
@@ -194,12 +195,12 @@ public class MinLoopLightingStateController : MonoBehaviour
 
         ApplyLightTargets(rule);
 
-        if (rule.applyAmbientColor)
+        if (allowRulesToOverrideSceneEnvironment && rule.applyAmbientColor)
         {
             RenderSettings.ambientLight = rule.ambientColor;
         }
 
-        if (rule.applyFog)
+        if (allowRulesToOverrideSceneEnvironment && rule.applyFog)
         {
             RenderSettings.fog = rule.fogEnabled;
             RenderSettings.fogColor = rule.fogColor;
@@ -214,7 +215,7 @@ public class MinLoopLightingStateController : MonoBehaviour
         Color fogColorStart = RenderSettings.fogColor;
         float fogDensityStart = RenderSettings.fogDensity;
 
-        if (rule.applyFog)
+        if (allowRulesToOverrideSceneEnvironment && rule.applyFog)
         {
             RenderSettings.fog = rule.fogEnabled;
         }
@@ -302,12 +303,12 @@ public class MinLoopLightingStateController : MonoBehaviour
             }
         }
 
-        if (rule.applyAmbientColor)
+        if (allowRulesToOverrideSceneEnvironment && rule.applyAmbientColor)
         {
             RenderSettings.ambientLight = Color.Lerp(ambientStart, rule.ambientColor, t);
         }
 
-        if (rule.applyFog)
+        if (allowRulesToOverrideSceneEnvironment && rule.applyFog)
         {
             RenderSettings.fogColor = Color.Lerp(fogColorStart, rule.fogColor, t);
             RenderSettings.fogDensity = Mathf.Lerp(fogDensityStart, rule.fogDensity, t);

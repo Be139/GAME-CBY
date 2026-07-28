@@ -77,6 +77,30 @@ public static class CityDuskLightingSetupEditor
         EditorSceneManager.MarkSceneDirty(controller.gameObject.scene);
     }
 
+    [MenuItem("Tools/City/Lighting/Apply Brighter Dusk Baseline")]
+    public static void ApplyBrighterDuskBaseline()
+    {
+        CityDuskLightingPresetController controller =
+            Object.FindObjectOfType<CityDuskLightingPresetController>(true);
+        Light duskSun = FindLight("Sun_Dusk");
+        VolumeProfile duskProfile = AssetDatabase.LoadAssetAtPath<VolumeProfile>(DuskProfilePath);
+        Material duskSkybox = AssetDatabase.LoadAssetAtPath<Material>(DuskSkyboxPath);
+
+        if (controller == null || duskSun == null || duskProfile == null || duskSkybox == null)
+        {
+            Debug.LogError(
+                "City dusk setup: fixed dusk preset is incomplete. Build the fixed dusk preset first.");
+            return;
+        }
+
+        ApplyBrighterDuskSettings(controller, duskSun, duskProfile, duskSkybox);
+        controller.ApplyDusk();
+        EditorSceneManager.MarkSceneDirty(controller.gameObject.scene);
+        AssetDatabase.SaveAssets();
+        EditorSceneManager.SaveScene(controller.gameObject.scene);
+        Debug.Log("City dusk setup: brighter dusk baseline applied without changing the sun angle.");
+    }
+
     [MenuItem("Tools/City/Lighting/Build Fixed Dusk Preset")]
     public static void BuildFixedDuskPreset()
     {
@@ -138,7 +162,7 @@ public static class CityDuskLightingSetupEditor
         duskSun.transform.rotation = Quaternion.Euler(12f, 330f, 0f);
         duskSun.color = new Color(1f, 0.58f, 0.38f, 1f);
         duskSun.useColorTemperature = false;
-        duskSun.intensity = 0.75f;
+        duskSun.intensity = 1f;
         duskSun.shadows = LightShadows.Soft;
         duskSun.shadowStrength = 0.8f;
 
@@ -156,6 +180,7 @@ public static class CityDuskLightingSetupEditor
 
         Undo.RecordObject(presetController, "Configure fixed dusk lighting");
         presetController.Configure(originalSun, originalVolume, duskContent, sampleRoot, duskSkybox);
+        ApplyBrighterDuskSettings(presetController, duskSun, duskProfile, duskSkybox);
 
         ApplyBillboardMaterial(distributor, billboardMaterial);
         LockMinLoopEnvironmentOverrides();
@@ -202,13 +227,13 @@ public static class CityDuskLightingSetupEditor
 
         ColorAdjustments colorAdjustments = GetOrAddVolumeOverride<ColorAdjustments>(profile);
         colorAdjustments.active = true;
-        colorAdjustments.postExposure.Override(-0.25f);
+        colorAdjustments.postExposure.Override(0.1f);
         colorAdjustments.contrast.Override(8f);
         colorAdjustments.saturation.Override(-5f);
 
         SplitToning splitToning = GetOrAddVolumeOverride<SplitToning>(profile);
         splitToning.active = true;
-        splitToning.shadows.Override(new Color(0.21f, 0.32f, 0.55f, 1f));
+        splitToning.shadows.Override(new Color(0.28f, 0.38f, 0.56f, 1f));
         splitToning.highlights.Override(new Color(0.92f, 0.6f, 0.34f, 1f));
         splitToning.balance.Override(-15f);
 
@@ -218,12 +243,29 @@ public static class CityDuskLightingSetupEditor
 
     private static T GetOrAddVolumeOverride<T>(VolumeProfile profile) where T : VolumeComponent
     {
+        profile.components.RemoveAll(component => component == null);
+
         T component;
-        if (!profile.TryGet(out component))
+        bool hasPersistentComponent =
+            profile.TryGet(out component) &&
+            component != null &&
+            AssetDatabase.IsSubAsset(component);
+        if (!hasPersistentComponent)
         {
-            component = profile.Add<T>(true);
+            if (component != null)
+            {
+                profile.components.Remove(component);
+            }
+
+            component = ScriptableObject.CreateInstance<T>();
+            component.name = typeof(T).Name;
+            component.hideFlags = HideFlags.HideInInspector | HideFlags.HideInHierarchy;
+            AssetDatabase.AddObjectToAsset(component, profile);
+            profile.components.Add(component);
         }
 
+        EditorUtility.SetDirty(component);
+        EditorUtility.SetDirty(profile);
         return component;
     }
 
@@ -276,7 +318,7 @@ public static class CityDuskLightingSetupEditor
         SetFloatIfSupported(material, "_SunSize", 0.025f);
         SetFloatIfSupported(material, "_SunSizeConvergence", 5f);
         SetFloatIfSupported(material, "_AtmosphereThickness", 0.8f);
-        SetFloatIfSupported(material, "_Exposure", 0.55f);
+        SetFloatIfSupported(material, "_Exposure", 0.72f);
         SetColorIfSupported(material, "_SkyTint", new Color(0.25f, 0.32f, 0.55f, 1f));
         SetColorIfSupported(material, "_GroundColor", new Color(0.12f, 0.08f, 0.12f, 1f));
         EditorUtility.SetDirty(material);
@@ -323,6 +365,43 @@ public static class CityDuskLightingSetupEditor
         texture.Apply(false, false);
         EditorUtility.SetDirty(texture);
         return texture;
+    }
+
+    private static void ApplyBrighterDuskSettings(
+        CityDuskLightingPresetController controller,
+        Light duskSun,
+        VolumeProfile duskProfile,
+        Material duskSkybox)
+    {
+        Undo.RecordObject(controller, "Brighten dusk ambient");
+        SerializedObject serializedController = new SerializedObject(controller);
+        SerializedProperty ambientIntensity = serializedController.FindProperty("ambientIntensity");
+        if (ambientIntensity != null)
+        {
+            ambientIntensity.floatValue = 0.9f;
+        }
+        serializedController.ApplyModifiedProperties();
+
+        Undo.RecordObject(duskSun, "Brighten dusk sun");
+        duskSun.intensity = 1f;
+
+        ColorAdjustments colorAdjustments = GetOrAddVolumeOverride<ColorAdjustments>(duskProfile);
+        colorAdjustments.active = true;
+        colorAdjustments.postExposure.Override(0.1f);
+        colorAdjustments.contrast.Override(8f);
+        colorAdjustments.saturation.Override(-5f);
+
+        SplitToning splitToning = GetOrAddVolumeOverride<SplitToning>(duskProfile);
+        splitToning.active = true;
+        splitToning.shadows.Override(new Color(0.28f, 0.38f, 0.56f, 1f));
+        splitToning.highlights.Override(new Color(0.92f, 0.6f, 0.34f, 1f));
+        splitToning.balance.Override(-15f);
+
+        SetFloatIfSupported(duskSkybox, "_Exposure", 0.72f);
+        EditorUtility.SetDirty(controller);
+        EditorUtility.SetDirty(duskSun);
+        EditorUtility.SetDirty(duskProfile);
+        EditorUtility.SetDirty(duskSkybox);
     }
 
     private static void BuildRoomSample(Transform room, Transform sampleRoot, Texture cookie)

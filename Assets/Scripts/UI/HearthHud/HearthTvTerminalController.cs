@@ -14,6 +14,14 @@ public enum HearthTerminalPrimaryAction
     Custom
 }
 
+public enum HearthTerminalMode
+{
+    Auto,
+    LobbySync,
+    Doorway,
+    Home
+}
+
 [DisallowMultipleComponent]
 public class HearthTvTerminalController : MonoBehaviour
 {
@@ -39,6 +47,10 @@ public class HearthTvTerminalController : MonoBehaviour
     [SerializeField] private bool showStartingPageOnStart = true;
     [SerializeField] private bool refreshPagesFromChildrenOnAwake = true;
 
+    [Header("Terminal Strategy")]
+    [SerializeField] private HearthTerminalMode terminalMode =
+        HearthTerminalMode.Auto;
+
     [Header("Focus Camera")]
     [SerializeField] private bool switchCameraWhileOpen;
     [SerializeField] private Camera playerCamera;
@@ -54,12 +66,6 @@ public class HearthTvTerminalController : MonoBehaviour
     [SerializeField] private PlayerInteraction playerInteraction;
     [SerializeField] private Rigidbody playerRigidbody;
     [SerializeField] private bool unlockCursorWhileOpen = true;
-
-    [Header("First Person UI Visibility")]
-    [Tooltip("Hide every screen-space first-person HUD while the fixed terminal camera is active. The previous active state of each HUD is restored when the terminal closes.")]
-    [SerializeField] private bool hideFirstPersonUiWhileOpen = true;
-    [Tooltip("Optional additional first-person UI roots. HearthHudRoot, HearthCompanionHudRoot and HumanCanvas are discovered automatically.")]
-    [SerializeField] private GameObject[] firstPersonUiRootsToHide;
 
     [Header("Scale")]
     [SerializeField] private float zoom = 1f;
@@ -172,12 +178,8 @@ public class HearthTvTerminalController : MonoBehaviour
     private bool customActionHandoffPending;
     private bool terminalSessionCleanupInProgress;
     private bool gameplayLockHeld;
-    private readonly List<GameObject> suppressedFirstPersonUiRoots = new List<GameObject>();
-    private readonly List<bool> suppressedFirstPersonUiActiveStates = new List<bool>();
-    private readonly List<bool> suppressedFirstPersonUiRootsDeactivated = new List<bool>();
-    private readonly List<Canvas> suppressedFirstPersonUiCanvases = new List<Canvas>();
-    private readonly List<bool> suppressedFirstPersonUiCanvasStates = new List<bool>();
-    private bool firstPersonUiSuppressed;
+    private int compactFocusIndex;
+    private bool postReplayAnalysisMode;
     private readonly HearthTerminalViewState terminalViewState = new HearthTerminalViewState();
 #if UNITY_EDITOR
     [NonSerialized] private bool editorCanvasRefreshQueued;
@@ -247,6 +249,36 @@ public class HearthTvTerminalController : MonoBehaviour
         get { return terminalPresentationReady; }
     }
 
+    public HearthTerminalMode TerminalMode
+    {
+        get { return ResolveTerminalMode(); }
+    }
+
+    public bool PreservesHumanHud
+    {
+        get { return ResolveTerminalMode() == HearthTerminalMode.LobbySync; }
+    }
+
+    public bool IsPostReplayAnalysisMode
+    {
+        get { return postReplayAnalysisMode; }
+    }
+
+    public static HearthTvTerminalController ActiveTerminal
+    {
+        get
+        {
+            OpenTerminals.RemoveWhere(
+                terminal => terminal == null || !terminal.IsOpen);
+            foreach (HearthTvTerminalController terminal in OpenTerminals)
+            {
+                return terminal;
+            }
+
+            return null;
+        }
+    }
+
     public static bool AnyTerminalOpen
     {
         get
@@ -287,6 +319,7 @@ public class HearthTvTerminalController : MonoBehaviour
     private void Awake()
     {
         EnsureReferences();
+        ApplyTerminalModeDefaults();
 
         if (refreshPagesFromChildrenOnAwake || pages == null || pages.Length == 0)
         {
@@ -331,7 +364,6 @@ public class HearthTvTerminalController : MonoBehaviour
         OpenTerminals.Remove(this);
         StopActiveAudioLoop();
         SetGameplayLocked(false);
-        RestoreFirstPersonUi();
     }
 
     private void OnValidate()
@@ -343,6 +375,7 @@ public class HearthTvTerminalController : MonoBehaviour
         postReplayChoicePageCount = Mathf.Max(0, postReplayChoicePageCount);
         audioVolume = Mathf.Clamp01(audioVolume);
         activeLoopVolume = Mathf.Clamp01(activeLoopVolume);
+        ApplyTerminalModeDefaults();
         ApplyZoom();
         QueueEditorCanvasRefresh();
     }
@@ -354,7 +387,10 @@ public class HearthTvTerminalController : MonoBehaviour
             return;
         }
 
-        if (closeInputEnabled && Input.GetKeyDown(closeKey))
+        HearthTerminalMode resolvedMode = ResolveTerminalMode();
+        if (closeInputEnabled &&
+            !postReplayAnalysisMode &&
+            Input.GetKeyDown(closeKey))
         {
             CloseTerminal();
             return;
@@ -362,6 +398,59 @@ public class HearthTvTerminalController : MonoBehaviour
 
         if (!keyboardNavigationEnabled)
         {
+            return;
+        }
+
+        if (postReplayAnalysisMode)
+        {
+            return;
+        }
+
+        if (resolvedMode == HearthTerminalMode.LobbySync)
+        {
+            if (Input.GetKeyDown(submitKey))
+            {
+                if (primaryAction == HearthTerminalPrimaryAction.Custom)
+                {
+                    RequestCustomPrimaryAction();
+                }
+                else
+                {
+                    CloseTerminal();
+                }
+            }
+
+            return;
+        }
+
+        if (resolvedMode == HearthTerminalMode.Doorway ||
+            resolvedMode == HearthTerminalMode.Home)
+        {
+            if (resolvedMode == HearthTerminalMode.Home)
+            {
+                compactFocusIndex = 2;
+                if (Input.GetKeyDown(submitKey))
+                {
+                    SubmitCompactFocus();
+                }
+                return;
+            }
+
+            if (Input.GetKeyDown(previousSelectionKey))
+            {
+                MoveCompactFocus(-1);
+            }
+
+            if (Input.GetKeyDown(nextSelectionKey))
+            {
+                MoveCompactFocus(1);
+            }
+
+            if (Input.GetKeyDown(submitKey))
+            {
+                SubmitCompactFocus();
+            }
+
             return;
         }
 
@@ -460,6 +549,8 @@ public class HearthTvTerminalController : MonoBehaviour
         }
 
         SetCanvasPresentationVisible(true);
+        compactFocusIndex = 0;
+        postReplayAnalysisMode = false;
 
         if (pageDrivenSelectionStates && showStartingPageOnStart)
         {
@@ -495,7 +586,6 @@ public class HearthTvTerminalController : MonoBehaviour
 
         SetTerminalInputEnabled(false);
         SetGameplayLocked(true);
-        SuppressFirstPersonUi();
         PlayClip(openClip);
 
         if (unlockCursorWhileOpen)
@@ -590,7 +680,6 @@ public class HearthTvTerminalController : MonoBehaviour
         SetGameplayLocked(false);
         IsOpen = false;
         OpenTerminals.Remove(this);
-        RestoreFirstPersonUi();
         RefreshTerminalViewState();
         RefreshRuntimePrompt();
         RefreshCanvasPresentationVisibility();
@@ -711,6 +800,13 @@ public class HearthTvTerminalController : MonoBehaviour
         postReplayChoicePageCount = Mathf.Max(0, choicePageCount);
     }
 
+    public void SetTerminalMode(HearthTerminalMode mode)
+    {
+        terminalMode = mode;
+        ApplyTerminalModeDefaults();
+        RefreshKeyboardHint();
+    }
+
     public void SetSwitchCameraWhileOpen(bool shouldSwitch)
     {
         switchCameraWhileOpen = shouldSwitch;
@@ -779,15 +875,10 @@ public class HearthTvTerminalController : MonoBehaviour
 
     public void SetHideFirstPersonUiWhileOpen(bool value)
     {
-        hideFirstPersonUiWhileOpen = value;
-        if (!value)
-        {
-            RestoreFirstPersonUi();
-        }
-        else if (IsOpen)
-        {
-            SuppressFirstPersonUi();
-        }
+        // Kept for existing scene/prefab bindings. V2 visibility is resolved by
+        // HearthUiStateCoordinator; the terminal no longer snapshots or
+        // restores HUD GameObjects on its own.
+        // Intentionally no local HUD mutation.
     }
 
     public void SetShowCanvasInEditMode(bool value)
@@ -1040,30 +1131,47 @@ public class HearthTvTerminalController : MonoBehaviour
 
     public void ShowPostReplayChoicePage()
     {
+        OpenPostReplayAnalysis();
+    }
+
+    public void OpenPostReplayAnalysis()
+    {
+        postReplayAnalysisMode = true;
+        postReplayChoicesAvailable = false;
+        postReplayChoiceMode = false;
+        choiceSubmitted = false;
+        closeInputEnabled = false;
+        primaryActionInputEnabled = false;
         if (!IsOpen)
         {
             OpenTerminal();
+            postReplayAnalysisMode = true;
         }
-
-        choiceSubmitted = false;
-        int finalPageIndex = GetPostReplayChoicePageIndex();
-        if (finalPageIndex >= 0 && pages != null && finalPageIndex < pages.Length)
-        {
-            if (pageDrivenSelectionStates)
-            {
-                postReplayChoicesAvailable = true;
-                postReplayChoiceMode = true;
-                choiceSubmitted = false;
-                keyboardFocusIndex = finalPageIndex;
-                pageDrivenChoiceLocalIndex = 0;
-            }
-
-            ShowPage(pages[finalPageIndex]);
-        }
-
+        SetRuntimePrompt("ANALYSIS COMPLETE / PLEASE WAIT");
+        RefreshKeyboardHint();
         if (onPostReplayChoiceShown != null)
         {
             onPostReplayChoiceShown.Invoke();
+        }
+    }
+
+    public void ShowDispositionRecorded()
+    {
+        postReplayAnalysisMode = true;
+        closeInputEnabled = false;
+        primaryActionInputEnabled = false;
+        SetRuntimePrompt("DISPOSITION RECORDED");
+    }
+
+    public void CompletePostReplayAnalysis(bool closeTerminal)
+    {
+        postReplayAnalysisMode = false;
+        closeInputEnabled = true;
+        primaryActionInputEnabled = true;
+        ClearRuntimePrompt();
+        if (closeTerminal && IsOpen)
+        {
+            CloseTerminal();
         }
     }
 
@@ -2028,6 +2136,126 @@ public class HearthTvTerminalController : MonoBehaviour
         }
     }
 
+    private HearthTerminalMode ResolveTerminalMode()
+    {
+        if (terminalMode != HearthTerminalMode.Auto)
+        {
+            return terminalMode;
+        }
+
+        Transform cursor = transform;
+        while (cursor != null)
+        {
+            string objectName = cursor.name ?? string.Empty;
+            if (objectName.IndexOf(
+                    "Lobby",
+                    StringComparison.OrdinalIgnoreCase) >= 0 ||
+                objectName.IndexOf(
+                    "Assignment",
+                    StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return HearthTerminalMode.LobbySync;
+            }
+
+            if (objectName.IndexOf(
+                    "17F04",
+                    StringComparison.OrdinalIgnoreCase) >= 0 ||
+                objectName.IndexOf(
+                    "Home",
+                    StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return HearthTerminalMode.Home;
+            }
+
+            cursor = cursor.parent;
+        }
+
+        return HearthTerminalMode.Doorway;
+    }
+
+    private void ApplyTerminalModeDefaults()
+    {
+        HearthTerminalMode resolvedMode = ResolveTerminalMode();
+        if (resolvedMode == HearthTerminalMode.LobbySync)
+        {
+            keyboardHintLabel = "SPACE CLOSE TERMINAL";
+            return;
+        }
+
+        keyboardHintLabel =
+            "LEFT/RIGHT SELECT     SPACE CONFIRM     ESC EXIT";
+    }
+
+    private void MoveCompactFocus(int direction)
+    {
+        compactFocusIndex = Wrap(compactFocusIndex + direction, 3);
+        keyboardFocusIndex = compactFocusIndex;
+        PlayClip(focusMoveClip);
+
+        if (compactFocusIndex <= 1 &&
+            pages != null &&
+            pages.Length > compactFocusIndex &&
+            pages[compactFocusIndex] != null)
+        {
+            ShowPage(pages[compactFocusIndex]);
+            return;
+        }
+
+        RefreshKeyboardHint();
+    }
+
+    private void SubmitCompactFocus()
+    {
+        if (compactFocusIndex != 2 || !primaryActionInputEnabled)
+        {
+            return;
+        }
+
+        if (submitFeedback != null)
+        {
+            submitFeedback.PlayFeedback();
+        }
+
+        PlayClip(submitClip);
+        RequestRobotReplay();
+    }
+
+    private void RefreshCompactKeyboardHint()
+    {
+        RefreshTerminalViewState();
+
+        if (keyboardHintText != null)
+        {
+            keyboardHintText.text = ResolveTerminalMode() ==
+                HearthTerminalMode.LobbySync
+                ? "SPACE CLOSE TERMINAL"
+                : "LEFT/RIGHT SELECT     SPACE CONFIRM     ESC EXIT";
+        }
+
+        if (keyboardFocusText != null)
+        {
+            if (ResolveTerminalMode() == HearthTerminalMode.LobbySync)
+            {
+                keyboardFocusText.text = string.Empty;
+            }
+            else if (compactFocusIndex == 0)
+            {
+                keyboardFocusText.text = "BEFORE ACQUISITION";
+            }
+            else if (compactFocusIndex == 1)
+            {
+                keyboardFocusText.text = "AFTER ACQUISITION";
+            }
+            else
+            {
+                keyboardFocusText.text = replayFocusLabel;
+            }
+        }
+
+        RefreshSelectionHighlighter();
+        RefreshRuntimePrompt();
+    }
+
     private void CycleNormalPage(int direction)
     {
         if (pageDrivenSelectionStates)
@@ -2121,6 +2349,25 @@ public class HearthTvTerminalController : MonoBehaviour
 
     private void SyncKeyboardFocusToCurrentPage()
     {
+        HearthTerminalMode resolvedMode = ResolveTerminalMode();
+        if (resolvedMode == HearthTerminalMode.LobbySync)
+        {
+            compactFocusIndex = 0;
+            keyboardFocusIndex = 0;
+            return;
+        }
+
+        if (resolvedMode == HearthTerminalMode.Doorway ||
+            resolvedMode == HearthTerminalMode.Home)
+        {
+            if (currentPageIndex == 0 || currentPageIndex == 1)
+            {
+                compactFocusIndex = currentPageIndex;
+                keyboardFocusIndex = compactFocusIndex;
+            }
+            return;
+        }
+
         if (pageDrivenSelectionStates)
         {
             SyncPageDrivenFocusToCurrentPage();
@@ -2136,6 +2383,15 @@ public class HearthTvTerminalController : MonoBehaviour
 
     private void RefreshKeyboardHint()
     {
+        HearthTerminalMode resolvedMode = ResolveTerminalMode();
+        if (resolvedMode == HearthTerminalMode.LobbySync ||
+            resolvedMode == HearthTerminalMode.Doorway ||
+            resolvedMode == HearthTerminalMode.Home)
+        {
+            RefreshCompactKeyboardHint();
+            return;
+        }
+
         RefreshTerminalViewState();
 
         if (pageDrivenSelectionStates)
@@ -2488,6 +2744,20 @@ public class HearthTvTerminalController : MonoBehaviour
         {
             prompt = runtimePromptOverride;
         }
+        else if (ResolveTerminalMode() == HearthTerminalMode.LobbySync)
+        {
+            prompt = primaryActionInputEnabled
+                ? "SPACE  CLOSE TERMINAL"
+                : HearthTerminalViewState.DefaultLockedMessage;
+        }
+        else if ((ResolveTerminalMode() == HearthTerminalMode.Doorway ||
+                  ResolveTerminalMode() == HearthTerminalMode.Home) &&
+                 compactFocusIndex == 2)
+        {
+            prompt = primaryActionInputEnabled
+                ? "SPACE  " + terminalViewState.PrimaryActionLabel
+                : HearthTerminalViewState.DefaultLockedMessage;
+        }
         else if (pageDrivenSelectionStates && !primaryActionInputEnabled)
         {
             prompt = HearthTerminalViewState.DefaultLockedMessage;
@@ -2528,6 +2798,61 @@ public class HearthTvTerminalController : MonoBehaviour
         terminalViewState.SetVisible(IsOpen);
         terminalViewState.SetTerminalId(GetReplayResidentId());
 
+        HearthTerminalMode resolvedMode = ResolveTerminalMode();
+        if (resolvedMode == HearthTerminalMode.LobbySync)
+        {
+            terminalViewState.SetPage(0, 1);
+            terminalViewState.SetNavigation(
+                HearthTerminalNavigationTab.BeforeAcquisition,
+                HearthTerminalFocusTarget.PrimaryAction);
+            terminalViewState.SetPrimaryAction(
+                HearthTerminalPrimaryActionType.Custom,
+                !primaryActionInputEnabled,
+                HearthTerminalViewState.DefaultLockedMessage,
+                "CLOSE TERMINAL");
+            terminalViewState.SetCanExit(closeInputEnabled);
+            NotifyTerminalViewStateChanged();
+            return;
+        }
+
+        if (resolvedMode == HearthTerminalMode.Doorway ||
+            resolvedMode == HearthTerminalMode.Home)
+        {
+            if (resolvedMode == HearthTerminalMode.Home)
+            {
+                compactFocusIndex = 2;
+            }
+
+            int compactPageIndex = Mathf.Clamp(currentPageIndex, 0, 1);
+            terminalViewState.SetPage(compactPageIndex, 2);
+            HearthTerminalNavigationTab compactSelectedTab =
+                compactPageIndex <= 0
+                ? HearthTerminalNavigationTab.BeforeAcquisition
+                : HearthTerminalNavigationTab.AfterAcquisition;
+            HearthTerminalFocusTarget compactFocusTarget =
+                compactFocusIndex == 2
+                ? HearthTerminalFocusTarget.PrimaryAction
+                : compactFocusIndex == 0
+                    ? HearthTerminalFocusTarget.BeforeAcquisitionTab
+                    : HearthTerminalFocusTarget.AfterAcquisitionTab;
+            terminalViewState.SetNavigation(
+                compactSelectedTab,
+                compactFocusTarget);
+            HearthTerminalPrimaryActionType compactAction =
+                ResolveTerminalViewActionType();
+            terminalViewState.SetPrimaryAction(
+                compactAction,
+                !primaryActionInputEnabled,
+                HearthTerminalViewState.DefaultLockedMessage,
+                compactAction == HearthTerminalPrimaryActionType.Custom
+                    ? ResolveTerminalViewCustomActionLabel()
+                    : string.Empty);
+            terminalViewState.SetCanExit(
+                closeInputEnabled && !postReplayAnalysisMode);
+            NotifyTerminalViewStateChanged();
+            return;
+        }
+
         int visiblePageCount = pageDrivenSelectionStates
             ? (postReplayChoicesAvailable
                 ? Mathf.Max(GetPostReplayNavigationPageCount(), GetChoicePageCount())
@@ -2559,6 +2884,11 @@ public class HearthTvTerminalController : MonoBehaviour
                 : string.Empty);
         terminalViewState.SetCanExit(closeInputEnabled);
 
+        NotifyTerminalViewStateChanged();
+    }
+
+    private void NotifyTerminalViewStateChanged()
+    {
         if (TerminalViewStateChanged != null)
         {
             TerminalViewStateChanged(terminalViewState);
@@ -2769,7 +3099,6 @@ public class HearthTvTerminalController : MonoBehaviour
         SetGameplayLocked(false);
         IsOpen = false;
         OpenTerminals.Remove(this);
-        RestoreFirstPersonUi();
         RefreshTerminalViewState();
         RefreshRuntimePrompt();
         RefreshCanvasPresentationVisibility();
@@ -2780,182 +3109,6 @@ public class HearthTvTerminalController : MonoBehaviour
         }
 
         terminalSessionCleanupInProgress = false;
-    }
-
-    private void SuppressFirstPersonUi()
-    {
-        if (!hideFirstPersonUiWhileOpen || firstPersonUiSuppressed)
-        {
-            return;
-        }
-
-        suppressedFirstPersonUiRoots.Clear();
-        suppressedFirstPersonUiActiveStates.Clear();
-        suppressedFirstPersonUiRootsDeactivated.Clear();
-        suppressedFirstPersonUiCanvases.Clear();
-        suppressedFirstPersonUiCanvasStates.Clear();
-
-        if (firstPersonUiRootsToHide != null)
-        {
-            for (int i = 0; i < firstPersonUiRootsToHide.Length; i++)
-            {
-                AddFirstPersonUiRoot(firstPersonUiRootsToHide[i]);
-            }
-        }
-
-        HearthFirstPersonHudController[] humanHudControllers =
-            Resources.FindObjectsOfTypeAll<HearthFirstPersonHudController>();
-        for (int i = 0; i < humanHudControllers.Length; i++)
-        {
-            AddFirstPersonUiRoot(humanHudControllers[i] != null
-                ? humanHudControllers[i].gameObject
-                : null);
-        }
-
-        HearthCompanionHudController[] companionHudControllers =
-            Resources.FindObjectsOfTypeAll<HearthCompanionHudController>();
-        for (int i = 0; i < companionHudControllers.Length; i++)
-        {
-            AddFirstPersonUiRoot(companionHudControllers[i] != null
-                ? companionHudControllers[i].gameObject
-                : null);
-        }
-
-        HearthLobbyHudOverlay[] lobbyHudOverlays =
-            Resources.FindObjectsOfTypeAll<HearthLobbyHudOverlay>();
-        for (int i = 0; i < lobbyHudOverlays.Length; i++)
-        {
-            AddFirstPersonUiRoot(lobbyHudOverlays[i] != null
-                ? lobbyHudOverlays[i].gameObject
-                : null);
-        }
-
-        Canvas[] sceneCanvases = Resources.FindObjectsOfTypeAll<Canvas>();
-        for (int i = 0; i < sceneCanvases.Length; i++)
-        {
-            Canvas candidateCanvas = sceneCanvases[i];
-            if (candidateCanvas == null ||
-                !candidateCanvas.gameObject.scene.IsValid() ||
-                candidateCanvas == canvas)
-            {
-                continue;
-            }
-
-            string candidateName = candidateCanvas.gameObject.name;
-            if (string.Equals(candidateName, "HumanCanvas", StringComparison.Ordinal) ||
-                string.Equals(candidateName, "HearthHudRoot", StringComparison.Ordinal) ||
-                string.Equals(candidateName, "HearthCompanionHudRoot", StringComparison.Ordinal) ||
-                string.Equals(candidateName, "LobbyNarrativeCanvas", StringComparison.Ordinal))
-            {
-                AddFirstPersonUiRoot(candidateCanvas.gameObject);
-            }
-        }
-
-        firstPersonUiSuppressed = true;
-        for (int i = 0; i < suppressedFirstPersonUiRoots.Count; i++)
-        {
-            GameObject root = suppressedFirstPersonUiRoots[i];
-            bool disabledCanvas = false;
-            if (root != null)
-            {
-                Canvas[] rootCanvases = root.GetComponentsInChildren<Canvas>(true);
-                for (int canvasIndex = 0; canvasIndex < rootCanvases.Length; canvasIndex++)
-                {
-                    Canvas rootCanvas = rootCanvases[canvasIndex];
-                    if (rootCanvas == null || suppressedFirstPersonUiCanvases.Contains(rootCanvas))
-                    {
-                        continue;
-                    }
-
-                    suppressedFirstPersonUiCanvases.Add(rootCanvas);
-                    suppressedFirstPersonUiCanvasStates.Add(rootCanvas.enabled);
-                    rootCanvas.enabled = false;
-                    disabledCanvas = true;
-                }
-            }
-
-            bool deactivateRoot = !disabledCanvas &&
-                root != null &&
-                suppressedFirstPersonUiActiveStates[i];
-            suppressedFirstPersonUiRootsDeactivated.Add(deactivateRoot);
-            if (deactivateRoot)
-            {
-                root.SetActive(false);
-            }
-        }
-    }
-
-    private void AddFirstPersonUiRoot(GameObject candidate)
-    {
-        if (candidate == null ||
-            !candidate.scene.IsValid() ||
-            candidate == gameObject ||
-            candidate.transform.IsChildOf(transform) ||
-            transform.IsChildOf(candidate.transform) ||
-            suppressedFirstPersonUiRoots.Contains(candidate))
-        {
-            return;
-        }
-
-        for (int i = suppressedFirstPersonUiRoots.Count - 1; i >= 0; i--)
-        {
-            GameObject existing = suppressedFirstPersonUiRoots[i];
-            if (existing == null)
-            {
-                suppressedFirstPersonUiRoots.RemoveAt(i);
-                suppressedFirstPersonUiActiveStates.RemoveAt(i);
-                continue;
-            }
-
-            if (candidate.transform.IsChildOf(existing.transform))
-            {
-                return;
-            }
-
-            if (existing.transform.IsChildOf(candidate.transform))
-            {
-                suppressedFirstPersonUiRoots.RemoveAt(i);
-                suppressedFirstPersonUiActiveStates.RemoveAt(i);
-            }
-        }
-
-        suppressedFirstPersonUiRoots.Add(candidate);
-        suppressedFirstPersonUiActiveStates.Add(candidate.activeSelf);
-    }
-
-    private void RestoreFirstPersonUi()
-    {
-        if (!firstPersonUiSuppressed)
-        {
-            return;
-        }
-
-        for (int i = 0; i < suppressedFirstPersonUiCanvases.Count; i++)
-        {
-            Canvas suppressedCanvas = suppressedFirstPersonUiCanvases[i];
-            if (suppressedCanvas != null)
-            {
-                suppressedCanvas.enabled = suppressedFirstPersonUiCanvasStates[i];
-            }
-        }
-
-        for (int i = 0; i < suppressedFirstPersonUiRoots.Count; i++)
-        {
-            GameObject root = suppressedFirstPersonUiRoots[i];
-            if (root != null &&
-                i < suppressedFirstPersonUiRootsDeactivated.Count &&
-                suppressedFirstPersonUiRootsDeactivated[i])
-            {
-                root.SetActive(suppressedFirstPersonUiActiveStates[i]);
-            }
-        }
-
-        suppressedFirstPersonUiRoots.Clear();
-        suppressedFirstPersonUiActiveStates.Clear();
-        suppressedFirstPersonUiRootsDeactivated.Clear();
-        suppressedFirstPersonUiCanvases.Clear();
-        suppressedFirstPersonUiCanvasStates.Clear();
-        firstPersonUiSuppressed = false;
     }
 
     private void PlayClip(AudioClip clip)

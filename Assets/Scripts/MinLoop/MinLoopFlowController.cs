@@ -14,6 +14,7 @@ public class MinLoopFlowController : MonoBehaviour
     [SerializeField] private TrustStateController trustStateController;
     [SerializeField] private HearthHouseholdProgressState householdProgress;
     [SerializeField] private MinLoopSubtitlePlayer subtitlePlayer;
+    [SerializeField] private HearthFirstPersonHudController humanHud;
     [SerializeField] private bool autoFindMissingReferences = true;
     [SerializeField] private bool useCompanion17F01ReplayController = true;
     [SerializeField] private bool useResidentSpecificReplayControllers = true;
@@ -129,6 +130,15 @@ public class MinLoopFlowController : MonoBehaviour
             tvTerminalController.SetChoiceInputEnabled(true);
             tvTerminalController.SetPrimaryActionInputEnabled(true);
             tvTerminalController.ClearRuntimePrompt();
+            if (tvTerminalController.IsPostReplayAnalysisMode)
+            {
+                tvTerminalController.CompletePostReplayAnalysis(false);
+            }
+        }
+
+        if (humanHud != null)
+        {
+            humanHud.CancelDispositionDecision();
         }
     }
 
@@ -508,31 +518,38 @@ public class MinLoopFlowController : MonoBehaviour
             tvTerminalController.SetCloseTerminalWhenChoiceSubmitted(false);
             tvTerminalController.SetChoiceInputEnabled(false);
             tvTerminalController.SetPrimaryActionInputEnabled(false);
-            tvTerminalController.SetRuntimePrompt("PLEASE WAIT");
-            tvTerminalController.ShowPostReplayChoicePage();
+            tvTerminalController.OpenPostReplayAnalysis();
             while (tvTerminalController.IsOpen && !tvTerminalController.IsPresentationReady)
             {
                 yield return null;
             }
         }
-        else if (terminalPresenter != null)
-        {
-            terminalPresenter.ShowDispositionChoices(ChooseDispositionA, ChooseDispositionB);
-        }
-
         if (dialogueSet != null)
         {
             yield return PlayDialogue(
                 dialogueSet.PreChoiceBriefing,
-                HearthSubtitleContext.Terminal);
+                HearthSubtitleContext.FieldUnit);
         }
 
         SetStage(MinLoopStage.DispositionChoice);
         if (tvTerminalController != null)
         {
-            tvTerminalController.SetChoiceInputEnabled(true);
-            tvTerminalController.SetPrimaryActionInputEnabled(true);
-            tvTerminalController.ClearRuntimePrompt();
+            tvTerminalController.SetChoiceInputEnabled(false);
+            tvTerminalController.SetPrimaryActionInputEnabled(false);
+            tvTerminalController.SetRuntimePrompt(
+                "ANALYSIS COMPLETE / SELECT DISPOSITION");
+        }
+
+        if (humanHud != null)
+        {
+            humanHud.ShowDispositionDecision(
+                choice => SubmitDisposition(choice));
+        }
+        else if (terminalPresenter != null)
+        {
+            terminalPresenter.ShowDispositionChoices(
+                ChooseDispositionA,
+                ChooseDispositionB);
         }
 
         activeFlowRoutine = null;
@@ -552,7 +569,7 @@ public class MinLoopFlowController : MonoBehaviour
         {
             tvTerminalController.SetChoiceInputEnabled(false);
             tvTerminalController.SetPrimaryActionInputEnabled(false);
-            tvTerminalController.SetRuntimePrompt("PLEASE WAIT");
+            tvTerminalController.ShowDispositionRecorded();
         }
         PlayFeedback(dispositionSubmitFeedback);
 
@@ -604,15 +621,15 @@ public class MinLoopFlowController : MonoBehaviour
                 : dialogueSet.OptionBResult;
             yield return PlayDialogue(
                 result,
-                HearthSubtitleContext.Terminal);
+                HearthSubtitleContext.FieldUnit);
             yield return PlayDialogue(
                 dialogueSet.PostChoiceCommon,
-                HearthSubtitleContext.Terminal);
+                HearthSubtitleContext.FieldUnit);
         }
 
         if (tvTerminalController != null && tvTerminalController.IsOpen)
         {
-            tvTerminalController.CloseTerminal();
+            tvTerminalController.CompletePostReplayAnalysis(true);
             while (tvTerminalController.IsOpen)
             {
                 yield return null;
@@ -768,6 +785,12 @@ public class MinLoopFlowController : MonoBehaviour
         if (subtitlePlayer == null)
         {
             subtitlePlayer = FindObjectOfType<MinLoopSubtitlePlayer>(true);
+        }
+
+        if (humanHud == null)
+        {
+            humanHud =
+                FindObjectOfType<HearthFirstPersonHudController>(true);
         }
     }
 

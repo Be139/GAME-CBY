@@ -33,6 +33,7 @@ public class HearthFirstPersonHudInput : MonoBehaviour
     [SerializeField] private HearthFirstPersonHudController controller;
     [SerializeField] private HearthSettingsView settingsView;
     [SerializeField] private HearthUiStateCoordinator stateCoordinator;
+    [SerializeField] private ViewSwitchController viewSwitchController;
 
     [Header("Input")]
     [SerializeField] private bool enableKeyboardInput = true;
@@ -61,7 +62,7 @@ public class HearthFirstPersonHudInput : MonoBehaviour
 
     private void Update()
     {
-        if (!enableKeyboardInput || HearthTvTerminalController.AnyTerminalOpen)
+        if (!enableKeyboardInput)
         {
             return;
         }
@@ -72,11 +73,34 @@ public class HearthFirstPersonHudInput : MonoBehaviour
             return;
         }
 
+        bool dispositionDecision =
+            controller.IsDispositionDecisionActive;
+        if (HearthTvTerminalController.AnyTerminalOpen &&
+            !dispositionDecision)
+        {
+            return;
+        }
+
         HearthFirstPersonHudPageId page = controller.CurrentPageId;
         RefreshFinalChoiceHint(page);
 
         if (Input.GetKeyDown(menuKey))
         {
+            if (IsCompanionView())
+            {
+                if (IsSettingsPage(page))
+                {
+                    controller.HideOverlay();
+                }
+                else if (page == HearthFirstPersonHudPageId.Slide01PersistentHud ||
+                         page == HearthFirstPersonHudPageId.None)
+                {
+                    // Companion mode has a single Tab destination: System.
+                    controller.OpenSettings();
+                }
+                return;
+            }
+
             if ((page == HearthFirstPersonHudPageId.Slide01PersistentHud ||
                  page == HearthFirstPersonHudPageId.None) &&
                 stateCoordinator != null &&
@@ -91,13 +115,17 @@ public class HearthFirstPersonHudInput : MonoBehaviour
 
         if (Input.GetKeyDown(cancelKey))
         {
-            controller.HandleCancel();
+            if (!dispositionDecision)
+            {
+                controller.HandleCancel();
+            }
             return;
         }
 
         bool isFinalChoice = IsFinalChoicePage(page);
         bool submitPressed = Input.GetKeyDown(submitKey) ||
                              (Input.GetKeyDown(KeyCode.Return) &&
+                              !dispositionDecision &&
                               (!isFinalChoice || finalChoiceInputProfile.allowReturnSubmit));
         if (submitPressed)
         {
@@ -105,13 +133,19 @@ public class HearthFirstPersonHudInput : MonoBehaviour
             return;
         }
 
-        if (finalChoiceInputProfile.allowDirectLetterKeys && Input.GetKeyDown(chooseAKey) && isFinalChoice)
+        if (!dispositionDecision &&
+            finalChoiceInputProfile.allowDirectLetterKeys &&
+            Input.GetKeyDown(chooseAKey) &&
+            isFinalChoice)
         {
             controller.ChooseFinalA();
             return;
         }
 
-        if (finalChoiceInputProfile.allowDirectLetterKeys && Input.GetKeyDown(chooseBKey) && isFinalChoice)
+        if (!dispositionDecision &&
+            finalChoiceInputProfile.allowDirectLetterKeys &&
+            Input.GetKeyDown(chooseBKey) &&
+            isFinalChoice)
         {
             controller.ChooseFinalB();
             return;
@@ -190,6 +224,14 @@ public class HearthFirstPersonHudInput : MonoBehaviour
 
     private void HandleVertical(HearthFirstPersonHudPageId page, int direction)
     {
+        if (controller != null &&
+            controller.IsDispositionDecisionActive &&
+            IsFinalChoicePage(page))
+        {
+            controller.MoveFinalChoiceFocus(direction);
+            return;
+        }
+
         if (IsFinalChoicePage(page) &&
             finalChoiceInputProfile.navigationAxis == HearthFinalChoiceNavigationAxis.Vertical)
         {
@@ -211,6 +253,12 @@ public class HearthFirstPersonHudInput : MonoBehaviour
 
     private void HandleHorizontal(HearthFirstPersonHudPageId page, int direction)
     {
+        if (controller != null &&
+            controller.IsDispositionDecisionActive)
+        {
+            return;
+        }
+
         if (IsFinalChoicePage(page) &&
             finalChoiceInputProfile.navigationAxis == HearthFinalChoiceNavigationAxis.Horizontal)
         {
@@ -246,6 +294,19 @@ public class HearthFirstPersonHudInput : MonoBehaviour
             stateCoordinator =
                 controller.GetComponent<HearthUiStateCoordinator>();
         }
+
+        if (viewSwitchController == null)
+        {
+            viewSwitchController =
+                ViewSwitchController.FindPreferredController(gameObject.scene);
+        }
+    }
+
+    private bool IsCompanionView()
+    {
+        return viewSwitchController != null &&
+            viewSwitchController.CurrentMode ==
+                ViewSwitchController.ViewMode.Companion;
     }
 
     private void RefreshFinalChoiceHint(HearthFirstPersonHudPageId page)
@@ -256,7 +317,11 @@ public class HearthFirstPersonHudInput : MonoBehaviour
         }
 
         bool visible = enableKeyboardInput && IsFinalChoicePage(page);
-        finalChoiceHintText.text = finalChoiceInputProfile.navigationAxis == HearthFinalChoiceNavigationAxis.Vertical
+        bool dispositionDecision =
+            controller != null &&
+            controller.IsDispositionDecisionActive;
+        finalChoiceHintText.text = dispositionDecision ||
+            finalChoiceInputProfile.navigationAxis == HearthFinalChoiceNavigationAxis.Vertical
             ? "UP / DOWN  SELECT     SPACE  CONFIRM"
             : "LEFT / RIGHT  SELECT     SPACE  CONFIRM";
         finalChoiceHintText.gameObject.SetActive(visible);

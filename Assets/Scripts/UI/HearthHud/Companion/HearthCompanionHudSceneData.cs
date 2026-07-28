@@ -14,6 +14,8 @@ public class HearthCompanionHudSceneData : ScriptableObject
 
     [Header("Mode")]
     [SerializeField] private string modeLabel = "COMPANION UNIT - FIRST PERSON - MONITORING MODE";
+    [SerializeField] private string currentTask =
+        "REVIEW RECORDED HOUSEHOLD EVENT";
     [SerializeField] private Color accentColor = new Color(0.48f, 0.86f, 1f, 1f);
 
     [Header("Left Status Panel")]
@@ -26,6 +28,8 @@ public class HearthCompanionHudSceneData : ScriptableObject
     [SerializeField] private string decisionTitle = "Initiate Soothing Sequence";
     [TextArea(2, 5)]
     [SerializeField] private string decisionBody;
+    [Min(0f)]
+    [SerializeField] private float decisionDisplaySeconds = 4f;
 
     [Header("Data Stream")]
     [TextArea(1, 2)]
@@ -45,6 +49,8 @@ public class HearthCompanionHudSceneData : ScriptableObject
     [TextArea(4, 12)]
     [SerializeField] private string projectionBody;
     [SerializeField] private string centerMessage;
+    [Min(0f)]
+    [SerializeField] private float centerMessageSeconds = 2.5f;
 
     [Header("Timed Cards")]
     [SerializeField] private HearthCompanionTimedCue[] timedCues;
@@ -69,6 +75,7 @@ public class HearthCompanionHudSceneData : ScriptableObject
     public HearthCompanionHudTemplate Template { get { return template; } }
     public HearthCompanionSpecialEffect SpecialEffect { get { return specialEffect; } }
     public string ModeLabel { get { return modeLabel; } }
+    public string CurrentTask { get { return currentTask; } }
     public Color AccentColor { get { return accentColor; } }
     public string StatusTitle { get { return statusTitle; } }
     public HearthCompanionMetricLine[] StatusLines { get { return statusLines; } }
@@ -76,6 +83,7 @@ public class HearthCompanionHudSceneData : ScriptableObject
     public string DecisionKicker { get { return decisionKicker; } }
     public string DecisionTitle { get { return decisionTitle; } }
     public string DecisionBody { get { return decisionBody; } }
+    public float DecisionDisplaySeconds { get { return decisionDisplaySeconds; } }
     public string DataStreamTitle { get { return dataStreamTitle; } }
     public string[] DataStreamLines { get { return dataStreamLines; } }
     public bool ShowHoldPrompt { get { return showHoldPrompt; } }
@@ -87,6 +95,7 @@ public class HearthCompanionHudSceneData : ScriptableObject
     public string ProjectionTitle { get { return projectionTitle; } }
     public string ProjectionBody { get { return projectionBody; } }
     public string CenterMessage { get { return centerMessage; } }
+    public float CenterMessageSeconds { get { return centerMessageSeconds; } }
     public HearthCompanionTimedCue[] TimedCues { get { return timedCues; } }
     public bool ShowTriggerCard { get { return showTriggerCard; } }
     public string TriggerCardTitle { get { return triggerCardTitle; } }

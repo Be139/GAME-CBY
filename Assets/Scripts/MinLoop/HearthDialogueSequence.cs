@@ -9,6 +9,11 @@ public class HearthDialogueSequence : ScriptableObject
     [TextArea(2, 4)]
     [SerializeField] private string notes;
 
+    [Header("Dialogue Runtime")]
+    [SerializeField] private DialogueChannel dialogueChannel = DialogueChannel.Formal;
+    [SerializeField] private SpeakerSide defaultSpeakerSide = SpeakerSide.Auto;
+    [SerializeField] private AdvancePolicy advancePolicy = AdvancePolicy.ManualSpace;
+
     [SerializeField] private List<MinLoopSubtitleLine> lines = new List<MinLoopSubtitleLine>();
 
     [Min(0f)]
@@ -27,6 +32,21 @@ public class HearthDialogueSequence : ScriptableObject
     public IReadOnlyList<MinLoopSubtitleLine> Lines
     {
         get { return lines; }
+    }
+
+    public DialogueChannel DialogueChannel
+    {
+        get { return dialogueChannel; }
+    }
+
+    public SpeakerSide DefaultSpeakerSide
+    {
+        get { return defaultSpeakerSide; }
+    }
+
+    public AdvancePolicy AdvancePolicy
+    {
+        get { return advancePolicy; }
     }
 
     public float PostSequenceDelay

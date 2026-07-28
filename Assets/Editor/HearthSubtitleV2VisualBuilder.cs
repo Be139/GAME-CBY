@@ -14,6 +14,10 @@ public static class HearthSubtitleV2VisualBuilder
 
     private const string CanvasName = "HearthSubtitleVisualCanvas_V2";
     private const string VisualRootName = "VisualRoot";
+    private const string DialogueFrameSpritePath =
+        "Assets/UI/HEARTH/GeneratedParts/Common/HUD_Common_DialogueFrame.png";
+    private const string SpeakerTabSpritePath =
+        "Assets/UI/HEARTH/GeneratedParts/Common/HUD_Common_SpeakerTabFrame_9Slice.png";
 
     [MenuItem("Tools/Hearth/UI V2/Subtitles/Apply Production Profile Defaults")]
     public static void ApplyProductionProfileDefaults()
@@ -155,8 +159,25 @@ public static class HearthSubtitleV2VisualBuilder
             group.blocksRaycasts = false;
             group.ignoreParentGroups = false;
 
-            CreateImage(visualObject.transform, "Backdrop", Color.clear);
+            Image backdrop = CreateImage(
+                visualObject.transform,
+                "Backdrop",
+                new Color(0.035f, 0.063f, 0.11f, 0.9f));
+            backdrop.sprite =
+                AssetDatabase.LoadAssetAtPath<Sprite>(DialogueFrameSpritePath);
+            backdrop.type = Image.Type.Simple;
+            backdrop.preserveAspect = false;
+
             CreateImage(visualObject.transform, "AccentRule", Color.clear);
+            Image speakerTab = CreateImage(
+                visualObject.transform,
+                "SpeakerTab",
+                new Color(0.37f, 0.47f, 0.58f, 0.95f));
+            speakerTab.sprite =
+                AssetDatabase.LoadAssetAtPath<Sprite>(SpeakerTabSpritePath);
+            speakerTab.type = Image.Type.Sliced;
+            speakerTab.pixelsPerUnitMultiplier = 1f;
+
             CreateText(visualObject.transform, "Speaker", 22f, FontStyles.Bold);
             CreateText(visualObject.transform, "Body", 28f, FontStyles.Normal);
 
@@ -235,6 +256,7 @@ public static class HearthSubtitleV2VisualBuilder
             TMP_Text body = visual.Find("Body")?.GetComponent<TMP_Text>();
             Image backdrop = visual.Find("Backdrop")?.GetComponent<Image>();
             Image accent = visual.Find("AccentRule")?.GetComponent<Image>();
+            Image speakerTab = visual.Find("SpeakerTab")?.GetComponent<Image>();
             CanvasGroup canvasGroup = visual.GetComponent<CanvasGroup>();
 
             playerSo.Update();
@@ -242,6 +264,7 @@ public static class HearthSubtitleV2VisualBuilder
             SetObject(playerSo, "layoutRoot", visual.GetComponent<RectTransform>());
             SetObject(playerSo, "backdropImage", backdrop);
             SetObject(playerSo, "accentRuleImage", accent);
+            SetObject(playerSo, "speakerTabImage", speakerTab);
             SetObject(playerSo, "subtitlePanel", visual.gameObject);
             SetObject(playerSo, "speakerText", speaker);
             SetObject(playerSo, "bodyText", body);
@@ -282,6 +305,7 @@ public static class HearthSubtitleV2VisualBuilder
         TMP_Text speaker = GetObject<TMP_Text>(so, "speakerText");
         TMP_Text body = GetObject<TMP_Text>(so, "bodyText");
         CanvasGroup group = GetObject<CanvasGroup>(so, "canvasGroup");
+        Image speakerTab = GetObject<Image>(so, "speakerTabImage");
         bool fallback = GetBool(so, "createFallbackUI", true);
 
         string label = player.name;
@@ -289,6 +313,7 @@ public static class HearthSubtitleV2VisualBuilder
         if (speaker == null) issues.Add(label + " has no speaker TMP binding.");
         if (body == null) issues.Add(label + " has no body TMP binding.");
         if (group == null) issues.Add(label + " has no CanvasGroup binding.");
+        if (speakerTab == null) issues.Add(label + " has no speaker-tab Image binding.");
         if (fallback) issues.Add(label + " still permits runtime fallback UI creation.");
 
         if (speaker != null)

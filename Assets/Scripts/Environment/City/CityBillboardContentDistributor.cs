@@ -9,6 +9,25 @@ using UnityEditor.SceneManagement;
 
 public class CityBillboardContentDistributor : MonoBehaviour
 {
+    private enum AspectClass
+    {
+        Portrait,
+        Square,
+        Landscape
+    }
+
+    private struct BillboardTarget
+    {
+        public CityBillboardPlacementSlot Slot;
+        public CityBillboardContentController Controller;
+
+        public BillboardTarget(CityBillboardPlacementSlot slot, CityBillboardContentController controller)
+        {
+            Slot = slot;
+            Controller = controller;
+        }
+    }
+
     [Header("Billboard Scope")]
     [SerializeField] private Transform billboardRoot;
     [SerializeField] private string billboardRootName = "CityBillboards_BUILDING";
@@ -135,22 +154,22 @@ public class CityBillboardContentDistributor : MonoBehaviour
         List<Texture> images = GetValidImages();
         List<VideoClip> animations = GetValidAnimations();
         List<CityBillboardPlacementSlot> slots = CollectBillboardSlots();
-        List<CityBillboardContentController> controllers = new List<CityBillboardContentController>();
+        List<BillboardTarget> targets = new List<BillboardTarget>();
 
         for (int i = 0; i < slots.Count; i++)
         {
             CityBillboardContentController controller = EnsureContentController(slots[i]);
             if (controller != null)
             {
-                controllers.Add(controller);
+                targets.Add(new BillboardTarget(slots[i], controller));
             }
         }
 
-        lastBillboardCount = controllers.Count;
+        lastBillboardCount = targets.Count;
         lastImageCount = 0;
         lastAnimationCount = 0;
 
-        if (controllers.Count == 0)
+        if (targets.Count == 0)
         {
             Debug.LogWarning("CityBillboardContentDistributor: no billboard screens were found under the selected root.");
             MarkDirty();
@@ -165,10 +184,11 @@ public class CityBillboardContentDistributor : MonoBehaviour
         }
 
         System.Random random = new System.Random(randomSeed);
-        Shuffle(controllers, random);
+        Shuffle(targets, random);
+        Dictionary<Texture, int> imageUseCounts = new Dictionary<Texture, int>();
 
-        int imageTarget = CalculateImageTarget(controllers.Count, images.Count > 0, animations.Count > 0);
-        for (int i = 0; i < controllers.Count; i++)
+        int imageTarget = CalculateImageTarget(targets.Count, images.Count > 0, animations.Count > 0);
+        for (int i = 0; i < targets.Count; i++)
         {
             bool useImage;
             if (useExactWholeSetRatio)
@@ -180,12 +200,15 @@ public class CityBillboardContentDistributor : MonoBehaviour
                 useImage = ChooseImageRandomly(random, images.Count > 0, animations.Count > 0);
             }
 
-            CityBillboardContentController controller = controllers[i];
+            BillboardTarget target = targets[i];
+            CityBillboardContentController controller = target.Controller;
             RecordUndo(controller, "Redistribute billboard media");
 
             if (useImage)
             {
-                controller.SetImage(images[random.Next(0, images.Count)]);
+                Texture image = SelectBestImageForBillboard(target.Slot, images, imageUseCounts, random);
+                controller.SetImage(image);
+                imageUseCounts[image] = GetImageUseCount(imageUseCounts, image) + 1;
                 lastImageCount++;
             }
             else
@@ -204,6 +227,32 @@ public class CityBillboardContentDistributor : MonoBehaviour
 
         MarkDirty();
         Debug.Log("CityBillboardContentDistributor: redistributed " + lastBillboardCount + " billboards. Images: " + lastImageCount + ", looping animations: " + lastAnimationCount + ".");
+    }
+
+    public void SetImageContents(Texture[] textures, bool redistributeImmediately)
+    {
+        List<Texture> validTextures = new List<Texture>();
+        HashSet<Texture> seenTextures = new HashSet<Texture>();
+
+        if (textures != null)
+        {
+            for (int i = 0; i < textures.Length; i++)
+            {
+                Texture texture = textures[i];
+                if (texture != null && seenTextures.Add(texture))
+                {
+                    validTextures.Add(texture);
+                }
+            }
+        }
+
+        imageContents = validTextures.ToArray();
+        MarkDirty();
+
+        if (redistributeImmediately)
+        {
+            RedistributeAll();
+        }
     }
 
     public void SetWeights(float newImageWeight, float newAnimationWeight, bool redistributeImmediately)
@@ -496,6 +545,111 @@ public class CityBillboardContentDistributor : MonoBehaviour
         }
 
         return result;
+    }
+
+    private static Texture SelectBestImageForBillboard(
+        CityBillboardPlacementSlot slot,
+        List<Texture> images,
+        Dictionary<Texture, int> imageUseCounts,
+        System.Random random)
+    {
+        float billboardAspect = GetBillboardAspect(slot);
+        AspectClass targetClass = GetAspectClass(billboardAspect);
+        List<Texture> matchingClass = new List<Texture>();
+
+        for (int i = 0; i < images.Count; i++)
+        {
+            Texture image = images[i];
+            if (GetAspectClass(GetTextureAspect(image)) == targetClass)
+            {
+                matchingClass.Add(image);
+            }
+        }
+
+        List<Texture> candidates = matchingClass.Count > 0 ? matchingClass : images;
+        float bestError = float.MaxValue;
+        List<Texture> closestImages = new List<Texture>();
+
+        for (int i = 0; i < candidates.Count; i++)
+        {
+            Texture image = candidates[i];
+            float imageAspect = GetTextureAspect(image);
+            float error = Mathf.Abs(Mathf.Log(Mathf.Max(0.0001f, billboardAspect / imageAspect)));
+
+            if (error < bestError - 0.0001f)
+            {
+                bestError = error;
+                closestImages.Clear();
+                closestImages.Add(image);
+            }
+            else if (Mathf.Abs(error - bestError) <= 0.0001f)
+            {
+                closestImages.Add(image);
+            }
+        }
+
+        int lowestUseCount = int.MaxValue;
+        List<Texture> leastUsedImages = new List<Texture>();
+        for (int i = 0; i < closestImages.Count; i++)
+        {
+            Texture image = closestImages[i];
+            int useCount = GetImageUseCount(imageUseCounts, image);
+
+            if (useCount < lowestUseCount)
+            {
+                lowestUseCount = useCount;
+                leastUsedImages.Clear();
+                leastUsedImages.Add(image);
+            }
+            else if (useCount == lowestUseCount)
+            {
+                leastUsedImages.Add(image);
+            }
+        }
+
+        return leastUsedImages[random.Next(0, leastUsedImages.Count)];
+    }
+
+    private static float GetBillboardAspect(CityBillboardPlacementSlot slot)
+    {
+        if (slot == null)
+        {
+            return 1f;
+        }
+
+        Vector2 size = slot.BillboardSize;
+        return Mathf.Max(0.0001f, size.x) / Mathf.Max(0.0001f, size.y);
+    }
+
+    private static float GetTextureAspect(Texture texture)
+    {
+        if (texture == null)
+        {
+            return 1f;
+        }
+
+        return Mathf.Max(1, texture.width) / (float)Mathf.Max(1, texture.height);
+    }
+
+    private static AspectClass GetAspectClass(float aspect)
+    {
+        if (aspect < 0.85f)
+        {
+            return AspectClass.Portrait;
+        }
+
+        if (aspect > 1.2f)
+        {
+            return AspectClass.Landscape;
+        }
+
+        return AspectClass.Square;
+    }
+
+    private static int GetImageUseCount(Dictionary<Texture, int> imageUseCounts, Texture image)
+    {
+        int useCount;
+        return imageUseCounts.TryGetValue(image, out useCount) ? useCount : 0;
     }
 
     private static void Shuffle<T>(IList<T> list, System.Random random)

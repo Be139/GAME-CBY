@@ -12,6 +12,22 @@ public enum HearthUiLayer
     Takeover
 }
 
+public enum HearthUiRuntimeState
+{
+    Exploration,
+    FormalDialogue,
+    AuxiliaryCommunication,
+    HumanMenu,
+    CompanionMenu,
+    SyncTerminal,
+    HouseholdTerminal,
+    ForcedReplay,
+    DecisionModal,
+    PhotoArchive,
+    Shutdown,
+    LowTrustTakeover
+}
+
 [Serializable]
 public struct HearthUiVisibilityState : IEquatable<HearthUiVisibilityState>
 {
@@ -147,6 +163,7 @@ public sealed class HearthUiStateCoordinator : MonoBehaviour
     [SerializeField] private bool applyResolvedStateToCanvasGroups;
     [SerializeField] private HearthFirstPersonHudController humanHud;
     [SerializeField] private ViewSwitchController viewSwitchController;
+    [SerializeField] private HearthPlayerControlLock playerControlLock;
     [SerializeField] private MinLoopSubtitlePlayer[] subtitlePlayers =
         new MinLoopSubtitlePlayer[0];
     [SerializeField] private HearthShutdownChallenge[] takeoverChallenges =
@@ -169,6 +186,8 @@ public sealed class HearthUiStateCoordinator : MonoBehaviour
         HearthUiVisibilityState.Gameplay;
 
     private HearthUiVisibilityState resolvedState;
+    private HearthUiRuntimeState resolvedRuntimeState =
+        HearthUiRuntimeState.Exploration;
     private bool hasAppliedState;
     private readonly HashSet<int> externalModalOwnerIds =
         new HashSet<int>();
@@ -177,6 +196,10 @@ public sealed class HearthUiStateCoordinator : MonoBehaviour
 
     public HearthUiVisibilityState RequestedState { get { return requestedState; } }
     public HearthUiVisibilityState ResolvedState { get { return resolvedState; } }
+    public HearthUiRuntimeState ResolvedRuntimeState
+    {
+        get { return resolvedRuntimeState; }
+    }
     public bool HasResolvedState { get { return hasAppliedState; } }
     public bool AutomaticallyResolveRuntimeState
     {
@@ -420,6 +443,12 @@ public sealed class HearthUiStateCoordinator : MonoBehaviour
                 ViewSwitchController.FindPreferredController(gameObject.scene);
         }
 
+        if (playerControlLock == null)
+        {
+            playerControlLock =
+                UnityEngine.Object.FindObjectOfType<HearthPlayerControlLock>();
+        }
+
         if (subtitlePlayers == null || subtitlePlayers.Length == 0)
         {
             subtitlePlayers =
@@ -447,11 +476,17 @@ public sealed class HearthUiStateCoordinator : MonoBehaviour
              viewSwitchController.CurrentMode ==
                 ViewSwitchController.ViewMode.Human);
         bool terminal = HearthTvTerminalController.AnyTerminalOpen;
-        bool dialogue = terminal
-            ? IsAnyTerminalSubtitlePlaying()
-            : IsAnySubtitlePlaying();
-        bool controlsLocked =
-            Time.timeScale <= 0f || HearthPlayerControlLock.AnyControlsLocked;
+        HearthTvTerminalController activeTerminal =
+            HearthTvTerminalController.ActiveTerminal;
+        bool preserveHumanHudDuringTerminal =
+            activeTerminal != null &&
+            (activeTerminal.PreservesHumanHud ||
+             activeTerminal.IsPostReplayAnalysisMode);
+        bool dialogue = IsAnySubtitlePlaying();
+        bool interactionLocked =
+            Time.timeScale <= 0f ||
+            (playerControlLock != null &&
+             playerControlLock.IsLocked(HearthPlayerControlMask.Interaction));
 
         HearthFirstPersonHudPageId pageId = humanHud != null
             ? humanHud.CurrentPageId
@@ -464,14 +499,14 @@ public sealed class HearthUiStateCoordinator : MonoBehaviour
             (IsModalPage(pageId) || externalModalOwnerIds.Count > 0);
         bool interaction =
             humanView &&
-            !controlsLocked &&
+            !interactionLocked &&
             !dialogue &&
             !terminal &&
             !modal &&
             !takeover;
 
         return new HearthUiVisibilityState(
-            humanView,
+            humanView && (!terminal || preserveHumanHudDuringTerminal),
             dialogue,
             interaction,
             terminal,
@@ -482,6 +517,9 @@ public sealed class HearthUiStateCoordinator : MonoBehaviour
     private void RefreshResolvedState()
     {
         HearthUiVisibilityState nextResolvedState = Resolve(requestedState);
+        resolvedRuntimeState = ResolveRuntimeState(
+            requestedState,
+            humanHud != null ? humanHud.CurrentPageId : HearthFirstPersonHudPageId.None);
 
         if (applyResolvedStateToCanvasGroups)
         {
@@ -508,13 +546,19 @@ public sealed class HearthUiStateCoordinator : MonoBehaviour
 
         if (requested.Modal)
         {
-            return new HearthUiVisibilityState(false, false, false, false, true, false);
+            return new HearthUiVisibilityState(
+                requested.Terminal && requested.Persistent,
+                false,
+                false,
+                requested.Terminal,
+                true,
+                false);
         }
 
         if (requested.Terminal)
         {
             return new HearthUiVisibilityState(
-                false,
+                requested.Persistent,
                 requested.Dialogue,
                 false,
                 true,
@@ -529,6 +573,74 @@ public sealed class HearthUiStateCoordinator : MonoBehaviour
             false,
             false,
             false);
+    }
+
+    private HearthUiRuntimeState ResolveRuntimeState(
+        HearthUiVisibilityState state,
+        HearthFirstPersonHudPageId pageId)
+    {
+        if (state.Takeover)
+        {
+            return IsAnyTakeoverChallengeRunning()
+                ? HearthUiRuntimeState.LowTrustTakeover
+                : HearthUiRuntimeState.Shutdown;
+        }
+
+        if (state.Modal)
+        {
+            return pageId == HearthFirstPersonHudPageId.Slide07Photo2023
+                ? HearthUiRuntimeState.PhotoArchive
+                : HearthUiRuntimeState.DecisionModal;
+        }
+
+        if (state.Terminal)
+        {
+            return state.Persistent
+                ? HearthUiRuntimeState.SyncTerminal
+                : HearthUiRuntimeState.HouseholdTerminal;
+        }
+
+        DialogueChannel? dialogueChannel = GetActiveDialogueChannel();
+        if (dialogueChannel.HasValue)
+        {
+            return dialogueChannel.Value == DialogueChannel.Formal
+                ? HearthUiRuntimeState.FormalDialogue
+                : HearthUiRuntimeState.AuxiliaryCommunication;
+        }
+
+        if (pageId != HearthFirstPersonHudPageId.None &&
+            pageId != HearthFirstPersonHudPageId.Slide01PersistentHud)
+        {
+            return HearthUiRuntimeState.HumanMenu;
+        }
+
+        if (viewSwitchController != null &&
+            viewSwitchController.CurrentMode ==
+                ViewSwitchController.ViewMode.Companion)
+        {
+            return HearthUiRuntimeState.CompanionMenu;
+        }
+
+        return HearthUiRuntimeState.Exploration;
+    }
+
+    private DialogueChannel? GetActiveDialogueChannel()
+    {
+        if (subtitlePlayers == null)
+        {
+            return null;
+        }
+
+        for (int i = 0; i < subtitlePlayers.Length; i++)
+        {
+            MinLoopSubtitlePlayer player = subtitlePlayers[i];
+            if (player != null && player.IsPlaying)
+            {
+                return player.ActiveChannel;
+            }
+        }
+
+        return null;
     }
 
     private bool IsAnySubtitlePlaying()
@@ -647,19 +759,8 @@ public sealed class HearthUiStateCoordinator : MonoBehaviour
                 MinLoopSubtitlePlayer player = subtitlePlayers[i];
                 if (player != null)
                 {
-                    bool allowTerminalDialogue =
-                        state.Terminal &&
-                        player.IsPlaying &&
-                        player.ActiveContext == HearthSubtitleContext.Terminal;
-                    bool allowWorldDialogue =
-                        state.Dialogue &&
-                        !state.Terminal &&
-                        !state.Modal &&
-                        !state.Takeover;
                     bool suppressDialogue =
-                        player.IsPlaying &&
-                        !allowTerminalDialogue &&
-                        !allowWorldDialogue;
+                        player.IsPlaying && !state.Dialogue;
                     player.SetExternalPresentationSuppressed(
                         suppressDialogue);
                 }

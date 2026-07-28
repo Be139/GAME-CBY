@@ -1,6 +1,18 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+[System.Flags]
+public enum HearthPlayerControlMask
+{
+    None = 0,
+    Movement = 1 << 0,
+    Look = 1 << 1,
+    Interaction = 1 << 2,
+    Menu = 1 << 3,
+    Extra = 1 << 4,
+    All = Movement | Look | Interaction | Menu | Extra
+}
+
 [DisallowMultipleComponent]
 public class HearthPlayerControlLock : MonoBehaviour
 {
@@ -16,6 +28,7 @@ public class HearthPlayerControlLock : MonoBehaviour
     [SerializeField] private Crouch[] crouchComponents;
     [SerializeField] private Jump[] jumpComponents;
     [SerializeField] private PlayerInteraction[] interactionComponents;
+    [SerializeField] private Behaviour[] menuComponents;
     [SerializeField] private Behaviour[] extraBehavioursToDisable;
 
     [Header("Lock Behaviour")]
@@ -25,8 +38,10 @@ public class HearthPlayerControlLock : MonoBehaviour
     [SerializeField] private Rigidbody[] rigidbodiesToClear;
 
     private readonly Dictionary<Behaviour, bool> enabledBeforeLock = new Dictionary<Behaviour, bool>();
-    private readonly HashSet<Object> lockOwners = new HashSet<Object>();
+    private readonly Dictionary<Object, HearthPlayerControlMask> ownerLocks =
+        new Dictionary<Object, HearthPlayerControlMask>();
     private bool controlsLocked;
+    private HearthPlayerControlMask activeMask;
 
     public static bool AnyControlsLocked
     {
@@ -44,7 +59,12 @@ public class HearthPlayerControlLock : MonoBehaviour
 
     public int ActiveLockCount
     {
-        get { return lockOwners.Count; }
+        get { return ownerLocks.Count; }
+    }
+
+    public HearthPlayerControlMask ActiveMask
+    {
+        get { return activeMask; }
     }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -85,54 +105,69 @@ public class HearthPlayerControlLock : MonoBehaviour
 
     public void SetControlsLocked(Object owner, bool locked)
     {
-        Object effectiveOwner = owner != null ? owner : this;
+        SetControlLock(owner, HearthPlayerControlMask.All, locked);
+    }
 
+    public void SetControlLock(
+        Object owner,
+        HearthPlayerControlMask mask,
+        bool locked)
+    {
+        Object effectiveOwner = owner != null ? owner : this;
+        if (mask == HearthPlayerControlMask.None)
+        {
+            return;
+        }
+
+        bool wasUnlocked = ownerLocks.Count == 0;
         if (locked)
         {
-            if (!lockOwners.Add(effectiveOwner))
+            HearthPlayerControlMask existingMask;
+            ownerLocks.TryGetValue(effectiveOwner, out existingMask);
+            HearthPlayerControlMask nextMask = existingMask | mask;
+            if (nextMask == existingMask)
             {
                 return;
             }
 
-            if (lockOwners.Count > 1)
+            ownerLocks[effectiveOwner] = nextMask;
+            if (wasUnlocked)
             {
-                controlsLocked = true;
-                ActiveLocks.Add(this);
+                ResolveReferences();
+                CaptureEnabledStates();
+            }
+
+            ReapplyOwnerLocks();
+            if ((mask & HearthPlayerControlMask.Movement) != 0)
+            {
+                ClearRigidbodies();
+            }
+        }
+        else
+        {
+            HearthPlayerControlMask existingMask;
+            if (!ownerLocks.TryGetValue(effectiveOwner, out existingMask))
+            {
                 return;
             }
 
-            ResolveReferences();
-            controlsLocked = true;
-            ActiveLocks.Add(this);
-            CaptureEnabledStates();
-            SetCoreControlsEnabled(false);
-            ClearRigidbodies();
-            return;
-        }
+            HearthPlayerControlMask nextMask = existingMask & ~mask;
+            if (nextMask == HearthPlayerControlMask.None)
+            {
+                ownerLocks.Remove(effectiveOwner);
+            }
+            else
+            {
+                ownerLocks[effectiveOwner] = nextMask;
+            }
 
-        if (!lockOwners.Remove(effectiveOwner))
-        {
-            return;
+            ReapplyOwnerLocks();
         }
+    }
 
-        if (lockOwners.Count > 0)
-        {
-            controlsLocked = true;
-            return;
-        }
-
-        controlsLocked = false;
-        ActiveLocks.Remove(this);
-        RestoreEnabledStates();
-        if (disableJumpAlways)
-        {
-            SetJumpComponentsEnabled(false);
-        }
-
-        if (disableCrouchAlways)
-        {
-            SetCrouchComponentsEnabled(false);
-        }
+    public bool IsLocked(HearthPlayerControlMask mask)
+    {
+        return (activeMask & mask) != 0;
     }
 
     public void LockControls()
@@ -236,6 +271,7 @@ public class HearthPlayerControlLock : MonoBehaviour
         Capture(crouchComponents);
         Capture(jumpComponents);
         Capture(interactionComponents);
+        Capture(menuComponents);
         Capture(extraBehavioursToDisable);
     }
 
@@ -256,15 +292,39 @@ public class HearthPlayerControlLock : MonoBehaviour
         }
     }
 
-    private void SetCoreControlsEnabled(bool enabled)
+    private void ReapplyOwnerLocks()
     {
-        SetEnabled(movementComponents, enabled);
-        SetEnabled(lookComponents, enabled);
-        SetEnabled(interactionComponents, enabled);
+        if (ownerLocks.Count == 0)
+        {
+            activeMask = HearthPlayerControlMask.None;
+            controlsLocked = false;
+            ActiveLocks.Remove(this);
+            RestoreEnabledStates();
+            ApplyPermanentMovementRestrictions();
+            return;
+        }
 
+        activeMask = HearthPlayerControlMask.None;
+        foreach (KeyValuePair<Object, HearthPlayerControlMask> pair in ownerLocks)
+        {
+            activeMask |= pair.Value;
+        }
+
+        controlsLocked = true;
+        ActiveLocks.Add(this);
+        ApplyGroupLock(movementComponents, HearthPlayerControlMask.Movement);
+        ApplyGroupLock(lookComponents, HearthPlayerControlMask.Look);
+        ApplyGroupLock(interactionComponents, HearthPlayerControlMask.Interaction);
+        ApplyGroupLock(menuComponents, HearthPlayerControlMask.Menu);
+        ApplyGroupLock(extraBehavioursToDisable, HearthPlayerControlMask.Extra);
+
+        bool movementLocked =
+            (activeMask & HearthPlayerControlMask.Movement) != 0;
         if (!disableCrouchAlways)
         {
-            SetCrouchComponentsEnabled(enabled);
+            ApplyGroupLock(crouchComponents, movementLocked
+                ? HearthPlayerControlMask.Movement
+                : HearthPlayerControlMask.None);
         }
         else
         {
@@ -273,14 +333,45 @@ public class HearthPlayerControlLock : MonoBehaviour
 
         if (!disableJumpAlways)
         {
-            SetEnabled(jumpComponents, enabled);
+            ApplyGroupLock(jumpComponents, movementLocked
+                ? HearthPlayerControlMask.Movement
+                : HearthPlayerControlMask.None);
         }
         else
         {
             SetJumpComponentsEnabled(false);
         }
+    }
 
-        SetEnabled(extraBehavioursToDisable, enabled);
+    private void ApplyGroupLock(
+        Behaviour[] behaviours,
+        HearthPlayerControlMask mask)
+    {
+        if (behaviours == null)
+        {
+            return;
+        }
+
+        bool locked =
+            mask != HearthPlayerControlMask.None &&
+            (activeMask & mask) != 0;
+        for (int i = 0; i < behaviours.Length; i++)
+        {
+            Behaviour behaviour = behaviours[i];
+            if (behaviour == null)
+            {
+                continue;
+            }
+
+            bool enabledBefore;
+            if (!enabledBeforeLock.TryGetValue(behaviour, out enabledBefore))
+            {
+                enabledBefore = behaviour.enabled;
+                enabledBeforeLock[behaviour] = enabledBefore;
+            }
+
+            behaviour.enabled = enabledBefore && !locked;
+        }
     }
 
     private void RestoreEnabledStates()
@@ -294,6 +385,19 @@ public class HearthPlayerControlLock : MonoBehaviour
         }
 
         enabledBeforeLock.Clear();
+    }
+
+    private void ApplyPermanentMovementRestrictions()
+    {
+        if (disableJumpAlways)
+        {
+            SetJumpComponentsEnabled(false);
+        }
+
+        if (disableCrouchAlways)
+        {
+            SetCrouchComponentsEnabled(false);
+        }
     }
 
     private void SetJumpComponentsEnabled(bool enabled)
@@ -366,14 +470,15 @@ public class HearthPlayerControlLock : MonoBehaviour
 
     private void ReleaseDestroyedOwners()
     {
-        if (lockOwners.Count == 0)
+        if (ownerLocks.Count == 0)
         {
             return;
         }
 
         List<Object> destroyedOwners = null;
-        foreach (Object owner in lockOwners)
+        foreach (KeyValuePair<Object, HearthPlayerControlMask> pair in ownerLocks)
         {
+            Object owner = pair.Key;
             if (owner != null)
             {
                 continue;
@@ -394,29 +499,16 @@ public class HearthPlayerControlLock : MonoBehaviour
 
         for (int i = 0; i < destroyedOwners.Count; i++)
         {
-            lockOwners.Remove(destroyedOwners[i]);
+            ownerLocks.Remove(destroyedOwners[i]);
         }
 
-        if (lockOwners.Count == 0)
-        {
-            controlsLocked = false;
-            ActiveLocks.Remove(this);
-            RestoreEnabledStates();
-            if (disableJumpAlways)
-            {
-                SetJumpComponentsEnabled(false);
-            }
-
-            if (disableCrouchAlways)
-            {
-                SetCrouchComponentsEnabled(false);
-            }
-        }
+        ReapplyOwnerLocks();
     }
 
     private void ReleaseAllLocks()
     {
-        lockOwners.Clear();
+        ownerLocks.Clear();
+        activeMask = HearthPlayerControlMask.None;
         ActiveLocks.Remove(this);
 
         if (!controlsLocked)
@@ -427,15 +519,7 @@ public class HearthPlayerControlLock : MonoBehaviour
 
         controlsLocked = false;
         RestoreEnabledStates();
-        if (disableJumpAlways)
-        {
-            SetJumpComponentsEnabled(false);
-        }
-
-        if (disableCrouchAlways)
-        {
-            SetCrouchComponentsEnabled(false);
-        }
+        ApplyPermanentMovementRestrictions();
     }
 
     private static void RemoveInvalidActiveLocks()

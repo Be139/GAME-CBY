@@ -22,6 +22,7 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
     [SerializeField] private RectTransform layoutRoot;
     [SerializeField] private Image backdropImage;
     [SerializeField] private Image accentRuleImage;
+    [SerializeField] private Image speakerTabImage;
 
     [Header("UI (legacy-compatible bindings)")]
     [SerializeField] private GameObject subtitlePanel;
@@ -53,9 +54,17 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
     [SerializeField] private AudioSource audioSource;
     [SerializeField] private HearthAudioChannelSource dialogueChannelSource;
 
+    [Header("Dialogue Control")]
+    [SerializeField] private HearthPlayerControlLock playerControlLock;
+    [SerializeField] private KeyCode manualAdvanceKey = KeyCode.Space;
+
     private Coroutine activeRoutine;
     private HearthSubtitleContext activeContext;
     private HearthSubtitlePresentationMode activePresentationMode;
+    private DialogueChannel activeChannel = DialogueChannel.Formal;
+    private SpeakerSide activeSpeakerSide = SpeakerSide.None;
+    private AdvancePolicy activeAdvancePolicy = AdvancePolicy.ManualSpace;
+    private bool ownsControlLock;
     private bool adaptiveLayoutDirty;
     private Vector2 lastLayoutRootSize = new Vector2(-1f, -1f);
     private bool externalPresentationSuppressed;
@@ -81,6 +90,21 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
     public HearthSubtitleContext ActiveContext
     {
         get { return activeContext; }
+    }
+
+    public DialogueChannel ActiveChannel
+    {
+        get { return activeChannel; }
+    }
+
+    public SpeakerSide ActiveSpeakerSide
+    {
+        get { return activeSpeakerSide; }
+    }
+
+    public AdvancePolicy ActiveAdvancePolicy
+    {
+        get { return activeAdvancePolicy; }
     }
 
     public bool ExternalPresentationSuppressed
@@ -122,6 +146,11 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
         defaultHoldSeconds = Mathf.Max(0f, defaultHoldSeconds);
         cleanSpeakerFontSize = Mathf.Max(1f, cleanSpeakerFontSize);
         cleanBodyFontSize = Mathf.Max(1f, cleanBodyFontSize);
+    }
+
+    private void OnDisable()
+    {
+        ReleaseDialogueControlLock();
     }
 
     public Coroutine PlaySequence(IList<MinLoopSubtitleLine> lines)
@@ -209,36 +238,67 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
         HearthSubtitlePresentationMode mode,
         HearthSubtitleContext context)
     {
+        DialogueChannel channel = ResolveChannel(null, context, speaker);
+        ShowLine(
+            speaker,
+            text,
+            mode,
+            context,
+            channel,
+            ResolveSpeakerSide(SpeakerSide.Auto, speaker),
+            AdvancePolicy.ManualSpace,
+            true);
+    }
+
+    private void ShowLine(
+        string speaker,
+        string text,
+        HearthSubtitlePresentationMode mode,
+        HearthSubtitleContext context,
+        DialogueChannel channel,
+        SpeakerSide side,
+        AdvancePolicy advancePolicy,
+        bool showVisual)
+    {
         EnsureReferences();
         activePresentationMode = mode;
         activeContext = context;
+        activeChannel = channel;
+        activeSpeakerSide = side;
+        activeAdvancePolicy = advancePolicy;
 
         if (speakerText != null)
         {
             speakerText.text = speaker;
             speakerText.gameObject.SetActive(
+                showVisual &&
                 mode != HearthSubtitlePresentationMode.TimeCard &&
+                side != SpeakerSide.None &&
                 !string.IsNullOrWhiteSpace(speaker));
         }
 
         if (bodyText != null)
         {
             bodyText.text = text;
+            bodyText.gameObject.SetActive(showVisual);
         }
 
         GameObject root = GetVisualRoot();
         if (root != null)
         {
-            root.SetActive(true);
+            root.SetActive(showVisual);
         }
 
         if (canvasGroup != null)
         {
-            desiredCanvasAlpha = 1f;
+            desiredCanvasAlpha = showVisual ? 1f : 0f;
             ApplyDesiredCanvasAlpha();
         }
 
-        ApplyConfiguredStyle(mode);
+        if (showVisual)
+        {
+            ApplyConfiguredStyle(mode);
+        }
     }
 
     public void SetPresentation(HearthSubtitleStyleProfile profile, HearthSubtitlePresentationMode mode)
@@ -293,11 +353,15 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
         }
 
         IsPlaying = false;
+        ReleaseDialogueControlLock();
     }
 
     private IEnumerator PlaySequenceRoutine(
         IList<MinLoopSubtitleLine> lines,
-        HearthSubtitleContext? explicitContext = null)
+        HearthSubtitleContext? explicitContext = null,
+        DialogueChannel? sequenceChannel = null,
+        SpeakerSide sequenceSpeakerSide = SpeakerSide.Auto,
+        AdvancePolicy sequenceAdvancePolicy = AdvancePolicy.ManualSpace)
     {
         IsPlaying = true;
 
@@ -325,18 +389,34 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
             HearthSubtitlePresentationMode linePresentation = line.presentationKind == HearthSubtitleLinePresentationKind.TimeCard
                 ? HearthSubtitlePresentationMode.TimeCard
                 : presentationMode;
-            if (explicitContext.HasValue)
-            {
-                ShowLine(
-                    line.speaker,
-                    line.text,
-                    linePresentation,
-                    explicitContext.Value);
-            }
-            else
-            {
-                ShowLine(line.speaker, line.text, linePresentation);
-            }
+            HearthSubtitleContext lineContext = explicitContext.HasValue
+                ? explicitContext.Value
+                : ResolveContext(line.speaker);
+            DialogueChannel lineChannel = ResolveLineChannel(
+                line,
+                sequenceChannel,
+                lineContext);
+            SpeakerSide lineSpeakerSide = ResolveLineSpeakerSide(
+                line,
+                sequenceSpeakerSide);
+            AdvancePolicy lineAdvancePolicy = ResolveLineAdvancePolicy(
+                line,
+                sequenceAdvancePolicy);
+            bool audioOnly =
+                line.dialogueMode == HearthDialogueLineMode.AudioOnly ||
+                (lineChannel == DialogueChannel.Auxiliary &&
+                 IsMiaSpeaker(line.speaker));
+
+            ApplyDialogueControlLock(lineChannel);
+            ShowLine(
+                line.speaker,
+                line.text,
+                linePresentation,
+                lineContext,
+                lineChannel,
+                audioOnly ? SpeakerSide.None : lineSpeakerSide,
+                audioOnly ? AdvancePolicy.AudioComplete : lineAdvancePolicy,
+                !audioOnly);
             PlayVoice(line.voiceClip);
 
             float holdSeconds = ResolveLineDuration(line);
@@ -350,6 +430,11 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
                 }
                 yield return FadeCanvas(1f, 0f, fadeSeconds);
             }
+            else if (!audioOnly &&
+                     lineAdvancePolicy == AdvancePolicy.ManualSpace)
+            {
+                yield return WaitForManualAdvance();
+            }
             else if (holdSeconds > 0f)
             {
                 yield return Wait(holdSeconds);
@@ -359,6 +444,7 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
         HideImmediate();
         IsPlaying = false;
         activeRoutine = null;
+        ReleaseDialogueControlLock();
     }
 
     private IEnumerator PlaySequenceRoutine(
@@ -379,7 +465,16 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
             sequenceLines = new List<MinLoopSubtitleLine>(sequence.Lines);
         }
 
-        yield return PlaySequenceRoutine(sequenceLines, explicitContext);
+        DialogueChannel resolvedChannel = ResolveChannel(
+            sequence,
+            explicitContext,
+            null);
+        yield return PlaySequenceRoutine(
+            sequenceLines,
+            explicitContext,
+            resolvedChannel,
+            sequence.DefaultSpeakerSide,
+            sequence.AdvancePolicy);
 
         if (sequence.PostSequenceDelay > 0f)
         {
@@ -422,6 +517,202 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
             default:
                 return voiceDuration;
         }
+    }
+
+    private IEnumerator WaitForManualAdvance()
+    {
+        while (Input.GetKey(manualAdvanceKey))
+        {
+            yield return null;
+        }
+
+        while (!Input.GetKeyDown(manualAdvanceKey))
+        {
+            yield return null;
+        }
+
+        if (audioSource != null && audioSource.isPlaying)
+        {
+            audioSource.Stop();
+        }
+    }
+
+    private DialogueChannel ResolveChannel(
+        HearthDialogueSequence sequence,
+        HearthSubtitleContext? explicitContext,
+        string speaker)
+    {
+        if (explicitContext.HasValue &&
+            (explicitContext.Value == HearthSubtitleContext.FieldUnit ||
+             explicitContext.Value == HearthSubtitleContext.Terminal))
+        {
+            return DialogueChannel.Auxiliary;
+        }
+
+        if (sequence != null)
+        {
+            if (sequence.DialogueChannel == DialogueChannel.Auxiliary)
+            {
+                return DialogueChannel.Auxiliary;
+            }
+
+            IReadOnlyList<MinLoopSubtitleLine> sequenceLines = sequence.Lines;
+            for (int i = 0; i < sequenceLines.Count; i++)
+            {
+                MinLoopSubtitleLine candidate = sequenceLines[i];
+                if (candidate != null &&
+                    (candidate.dialogueMode == HearthDialogueLineMode.Auxiliary ||
+                     IsFieldUnitSpeaker(candidate.speaker)))
+                {
+                    return DialogueChannel.Auxiliary;
+                }
+            }
+        }
+
+        HearthSubtitleContext inferredContext = explicitContext.HasValue
+            ? explicitContext.Value
+            : ResolveContext(speaker);
+        return inferredContext == HearthSubtitleContext.FieldUnit ||
+               inferredContext == HearthSubtitleContext.Terminal
+            ? DialogueChannel.Auxiliary
+            : DialogueChannel.Formal;
+    }
+
+    private DialogueChannel ResolveLineChannel(
+        MinLoopSubtitleLine line,
+        DialogueChannel? sequenceChannel,
+        HearthSubtitleContext context)
+    {
+        if (line.dialogueMode == HearthDialogueLineMode.Formal)
+        {
+            return DialogueChannel.Formal;
+        }
+
+        if (line.dialogueMode == HearthDialogueLineMode.Auxiliary ||
+            line.dialogueMode == HearthDialogueLineMode.AudioOnly)
+        {
+            return DialogueChannel.Auxiliary;
+        }
+
+        if (sequenceChannel.HasValue)
+        {
+            return sequenceChannel.Value;
+        }
+
+        return ResolveChannel(null, context, line.speaker);
+    }
+
+    private static SpeakerSide ResolveLineSpeakerSide(
+        MinLoopSubtitleLine line,
+        SpeakerSide sequenceSpeakerSide)
+    {
+        SpeakerSide requestedSide = line.speakerSide != SpeakerSide.Auto
+            ? line.speakerSide
+            : sequenceSpeakerSide;
+        return ResolveSpeakerSide(requestedSide, line.speaker);
+    }
+
+    private static SpeakerSide ResolveSpeakerSide(
+        SpeakerSide requestedSide,
+        string speaker)
+    {
+        if (requestedSide != SpeakerSide.Auto)
+        {
+            return requestedSide;
+        }
+
+        string normalized = NormalizeSpeaker(speaker);
+        if (normalized.Length == 0)
+        {
+            return SpeakerSide.None;
+        }
+
+        if (IsMiaSpeaker(normalized) ||
+            normalized.Contains("COMPANION") ||
+            normalized.Contains("HOME UNIT") ||
+            normalized.Contains("FIELD UNIT") ||
+            normalized.Contains("SYNTH VOICE"))
+        {
+            return SpeakerSide.Right;
+        }
+
+        return SpeakerSide.Left;
+    }
+
+    private static AdvancePolicy ResolveLineAdvancePolicy(
+        MinLoopSubtitleLine line,
+        AdvancePolicy sequenceAdvancePolicy)
+    {
+        switch (line.advancePolicy)
+        {
+            case HearthDialogueLineAdvancePolicy.ManualSpace:
+                return AdvancePolicy.ManualSpace;
+            case HearthDialogueLineAdvancePolicy.AudioComplete:
+                return AdvancePolicy.AudioComplete;
+            default:
+                return sequenceAdvancePolicy;
+        }
+    }
+
+    private void ApplyDialogueControlLock(DialogueChannel channel)
+    {
+        HearthPlayerControlMask requestedMask = channel == DialogueChannel.Formal
+            ? HearthPlayerControlMask.All
+            : HearthPlayerControlMask.Interaction | HearthPlayerControlMask.Menu;
+
+        EnsurePlayerControlLock();
+        if (playerControlLock == null)
+        {
+            return;
+        }
+
+        if (ownsControlLock &&
+            playerControlLock.IsLocked(requestedMask) &&
+            activeChannel == channel)
+        {
+            return;
+        }
+
+        ReleaseDialogueControlLock();
+        playerControlLock.SetControlLock(this, requestedMask, true);
+        ownsControlLock = true;
+    }
+
+    private void ReleaseDialogueControlLock()
+    {
+        if (!ownsControlLock || playerControlLock == null)
+        {
+            ownsControlLock = false;
+            return;
+        }
+
+        playerControlLock.ReleaseOwner(this);
+        ownsControlLock = false;
+    }
+
+    private void EnsurePlayerControlLock()
+    {
+        if (playerControlLock == null && Application.isPlaying)
+        {
+            playerControlLock =
+                UnityEngine.Object.FindObjectOfType<HearthPlayerControlLock>();
+        }
+    }
+
+    private static string NormalizeSpeaker(string speaker)
+    {
+        return (speaker ?? string.Empty).Trim().ToUpperInvariant();
+    }
+
+    private static bool IsMiaSpeaker(string speaker)
+    {
+        string normalized = NormalizeSpeaker(speaker);
+        return normalized == "MIA" || normalized.StartsWith("MIA ");
+    }
+
+    private static bool IsFieldUnitSpeaker(string speaker)
+    {
+        return NormalizeSpeaker(speaker).Contains("FIELD UNIT");
     }
 
     private IEnumerator Wait(float seconds)
@@ -553,6 +844,15 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
                 accentRuleImage = accent.GetComponent<Image>();
             }
         }
+
+        if (speakerTabImage == null)
+        {
+            Transform speakerTab = GetVisualRoot().transform.Find("SpeakerTab");
+            if (speakerTab != null)
+            {
+                speakerTabImage = speakerTab.GetComponent<Image>();
+            }
+        }
     }
 
     private void EnsureDialogueChannelSource()
@@ -615,6 +915,11 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
         if (accentRuleImage == null)
         {
             accentRuleImage = CreateImage(visualParent, "AccentRule");
+        }
+
+        if (speakerTabImage == null)
+        {
+            speakerTabImage = CreateImage(visualParent, "SpeakerTab");
         }
 
         if (speakerText == null)
@@ -743,6 +1048,20 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
             accentRuleImage.raycastTarget = false;
         }
 
+        if (speakerTabImage != null)
+        {
+            speakerTabImage.color =
+                mode == HearthSubtitlePresentationMode.TimeCard
+                ? Color.clear
+                : (contextStyle != null
+                    ? contextStyle.backgroundColor
+                    : new Color(0.035f, 0.055f, 0.08f, 0.88f));
+            speakerTabImage.raycastTarget = false;
+            speakerTabImage.gameObject.SetActive(
+                mode != HearthSubtitlePresentationMode.TimeCard &&
+                activeSpeakerSide != SpeakerSide.None);
+        }
+
         activePresentationMode = mode;
         adaptiveLayoutDirty = true;
         ApplyAdaptiveLayout(mode, activeContext);
@@ -786,6 +1105,14 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
         }
 
         Vector2 rootSize = ResolveRootSize(rootRect);
+        if (mode == HearthSubtitlePresentationMode.StandardDialogue)
+        {
+            ApplyFixedDialogueLayout(rootSize);
+            lastLayoutRootSize = rootSize;
+            adaptiveLayoutDirty = false;
+            return;
+        }
+
         float rootWidth = Mathf.Max(1f, rootSize.x);
         float rootHeight = Mathf.Max(1f, rootSize.y);
         HearthSubtitleLayoutSettings layout = styleProfile != null
@@ -875,6 +1202,110 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
         adaptiveLayoutDirty = false;
     }
 
+    private void ApplyFixedDialogueLayout(Vector2 rootSize)
+    {
+        bool auxiliary = activeChannel == DialogueChannel.Auxiliary;
+        Rect backdrop = auxiliary
+            ? new Rect(1408f, 318f, 448f, 260f)
+            : new Rect(432f, 670f, 960f, 256f);
+        Rect body = auxiliary
+            ? new Rect(1432f, 382f, 400f, 164f)
+            : new Rect(472f, 714f, 880f, 164f);
+        Rect speaker = auxiliary
+            ? new Rect(1432f, 336f, 400f, 36f)
+            : new Rect(
+                activeSpeakerSide == SpeakerSide.Right ? 1136f : 432f,
+                622f,
+                256f,
+                48f);
+        float accentX = !auxiliary &&
+                        activeSpeakerSide == SpeakerSide.Right
+            ? backdrop.xMax - 2f
+            : backdrop.x;
+        Rect accent = new Rect(accentX, backdrop.y, 2f, backdrop.height);
+
+        ApplyTopLeftRect(
+            backdropImage != null ? backdropImage.rectTransform : null,
+            backdrop,
+            rootSize);
+        ApplyTopLeftRect(
+            accentRuleImage != null ? accentRuleImage.rectTransform : null,
+            accent,
+            rootSize);
+        ApplyTopLeftRect(
+            speakerTabImage != null ? speakerTabImage.rectTransform : null,
+            speaker,
+            rootSize);
+        ApplyTopLeftRect(
+            speakerText != null ? speakerText.rectTransform : null,
+            speaker,
+            rootSize,
+            new Vector4(16f, 4f, 16f, 4f));
+        ApplyTopLeftRect(
+            bodyText != null ? bodyText.rectTransform : null,
+            body,
+            rootSize);
+
+        if (speakerText != null)
+        {
+            speakerText.alignment = auxiliary
+                ? TextAlignmentOptions.Left
+                : (activeSpeakerSide == SpeakerSide.Right
+                    ? TextAlignmentOptions.Right
+                    : TextAlignmentOptions.Left);
+            speakerText.maxVisibleLines = 1;
+            speakerText.overflowMode = TextOverflowModes.Overflow;
+        }
+
+        if (bodyText != null)
+        {
+            bodyText.alignment = TextAlignmentOptions.TopLeft;
+            bodyText.maxVisibleLines = auxiliary ? 6 : 3;
+            bodyText.overflowMode = TextOverflowModes.Overflow;
+        }
+    }
+
+    private static void ApplyTopLeftRect(
+        RectTransform rect,
+        Rect referenceRect,
+        Vector2 rootSize)
+    {
+        ApplyTopLeftRect(
+            rect,
+            referenceRect,
+            rootSize,
+            Vector4.zero);
+    }
+
+    private static void ApplyTopLeftRect(
+        RectTransform rect,
+        Rect referenceRect,
+        Vector2 rootSize,
+        Vector4 padding)
+    {
+        if (rect == null)
+        {
+            return;
+        }
+
+        float scaleX = Mathf.Max(1f, rootSize.x) / 1920f;
+        float scaleY = Mathf.Max(1f, rootSize.y) / 1080f;
+        float x = (referenceRect.x + padding.x) * scaleX;
+        float y = (referenceRect.y + padding.y) * scaleY;
+        float width = Mathf.Max(
+            1f,
+            (referenceRect.width - padding.x - padding.z) * scaleX);
+        float height = Mathf.Max(
+            1f,
+            (referenceRect.height - padding.y - padding.w) * scaleY);
+
+        rect.anchorMin = Vector2.up;
+        rect.anchorMax = Vector2.up;
+        rect.pivot = Vector2.up;
+        rect.anchoredPosition = new Vector2(x, -y);
+        rect.sizeDelta = new Vector2(width, height);
+    }
+
     private static void SetBottomAnchoredRect(
         RectTransform rect,
         float xMin,
@@ -940,11 +1371,7 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
         }
 
         if (normalized.Contains("FIELD UNIT") ||
-            normalized.Contains("COMPANION") ||
-            normalized.EndsWith(" UNIT") ||
-            normalized.Contains(" UNIT ") ||
-            normalized == "MIA" ||
-            normalized.StartsWith("MIA "))
+            normalized == "FIELD COMPANION UNIT")
         {
             return HearthSubtitleContext.FieldUnit;
         }

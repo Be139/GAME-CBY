@@ -15,6 +15,7 @@ public class HearthLobbyHudOverlay : MonoBehaviour
     private void Awake()
     {
         ResolveExternalPresentationGroup();
+        ApplyApprovedLayout();
         HideAllImmediate();
     }
 
@@ -28,6 +29,7 @@ public class HearthLobbyHudOverlay : MonoBehaviour
         expandedMessageGroup = expandedMessage;
         pinnedMessageGroup = pinnedMessage;
         assignmentStatusText = assignmentStatus;
+        ApplyApprovedLayout();
         HideAllImmediate();
     }
 
@@ -113,6 +115,81 @@ public class HearthLobbyHudOverlay : MonoBehaviour
         {
             externalPresentationGroup = gameObject.AddComponent<CanvasGroup>();
         }
+    }
+
+    private void ApplyApprovedLayout()
+    {
+        SetTopLeft(
+            activationGroup != null
+                ? activationGroup.transform as RectTransform
+                : null,
+            64f,
+            178f,
+            620f,
+            140f);
+        SetTopRight(
+            expandedMessageGroup != null
+                ? expandedMessageGroup.transform as RectTransform
+                : null,
+            64f,
+            150f,
+            540f,
+            142f);
+        SetTopRight(
+            pinnedMessageGroup != null
+                ? pinnedMessageGroup.transform as RectTransform
+                : null,
+            64f,
+            150f,
+            540f,
+            84f);
+
+        if (assignmentStatusText != null)
+        {
+            assignmentStatusText.alignment =
+                TextAlignmentOptions.TopRight;
+            assignmentStatusText.enableAutoSizing = false;
+            assignmentStatusText.overflowMode =
+                TextOverflowModes.Overflow;
+        }
+    }
+
+    private static void SetTopLeft(
+        RectTransform rect,
+        float x,
+        float y,
+        float width,
+        float height)
+    {
+        if (rect == null)
+        {
+            return;
+        }
+
+        rect.anchorMin = Vector2.up;
+        rect.anchorMax = Vector2.up;
+        rect.pivot = Vector2.up;
+        rect.anchoredPosition = new Vector2(x, -y);
+        rect.sizeDelta = new Vector2(width, height);
+    }
+
+    private static void SetTopRight(
+        RectTransform rect,
+        float right,
+        float y,
+        float width,
+        float height)
+    {
+        if (rect == null)
+        {
+            return;
+        }
+
+        rect.anchorMin = Vector2.one;
+        rect.anchorMax = Vector2.one;
+        rect.pivot = Vector2.one;
+        rect.anchoredPosition = new Vector2(-right, -y);
+        rect.sizeDelta = new Vector2(width, height);
     }
 
     private static void SetGroup(CanvasGroup group, bool visible)

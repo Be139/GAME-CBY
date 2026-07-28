@@ -87,6 +87,15 @@ public class HearthFirstPersonHudController : MonoBehaviour
     private bool listeningToSettings;
     private bool requestedPersistentVisible = true;
     private bool externalPersistentPresentationSuppressed;
+    private System.Action<MinLoopDispositionChoice> dispositionDecisionCallback;
+    private bool dispositionDecisionActive;
+    private TMP_Text dispositionHeadingText;
+    private TMP_Text dispositionOptionAText;
+    private TMP_Text dispositionOptionBText;
+    private string originalDecisionHeading;
+    private string originalDecisionOptionA;
+    private string originalDecisionOptionB;
+    private bool capturedOriginalDecisionCopy;
 
     public HearthFirstPersonHudPageId CurrentPageId
     {
@@ -106,6 +115,11 @@ public class HearthFirstPersonHudController : MonoBehaviour
     public HearthFirstPersonHudPageEvent PageShown
     {
         get { return pageShown; }
+    }
+
+    public bool IsDispositionDecisionActive
+    {
+        get { return dispositionDecisionActive; }
     }
 
     public UnityEvent OnSyncConfirmed
@@ -227,6 +241,7 @@ public class HearthFirstPersonHudController : MonoBehaviour
 
     private void OnDisable()
     {
+        ClearDispositionDecision(false);
         UnsubscribeFromSettings();
         SetPlayerControlsLocked(false);
     }
@@ -317,6 +332,7 @@ public class HearthFirstPersonHudController : MonoBehaviour
 
     public void ShowFinalChoice(bool returnState)
     {
+        ClearDispositionDecision(false);
         finalChoiceSelectionIndex = 0;
         ShowPage(returnState ? HearthFirstPersonHudPageId.Slide14FinalChoiceReturn : HearthFirstPersonHudPageId.Slide09FinalChoice);
         RefreshFinalChoiceFocus();
@@ -353,6 +369,12 @@ public class HearthFirstPersonHudController : MonoBehaviour
 
     public void ChooseFinalA()
     {
+        if (TryCompleteDispositionDecision(
+                MinLoopDispositionChoice.SystemRecommendedA))
+        {
+            return;
+        }
+
         PlayOneShot(confirmClip);
         onFinalChoiceA.Invoke();
 
@@ -374,6 +396,12 @@ public class HearthFirstPersonHudController : MonoBehaviour
 
     public void ChooseFinalB()
     {
+        if (TryCompleteDispositionDecision(
+                MinLoopDispositionChoice.LowInterventionB))
+        {
+            return;
+        }
+
         PlayOneShot(confirmClip);
         onFinalChoiceB.Invoke();
         if (routeFinalChoiceInternally)
@@ -539,6 +567,11 @@ public class HearthFirstPersonHudController : MonoBehaviour
 
     public void HandleCancel()
     {
+        if (dispositionDecisionActive)
+        {
+            return;
+        }
+
         switch (currentPageId)
         {
             case HearthFirstPersonHudPageId.Slide10ShutdownConfirm:
@@ -607,6 +640,160 @@ public class HearthFirstPersonHudController : MonoBehaviour
                     statusDotImage.color = new Color(1f, 0.25f, 0.18f, 0.95f);
                     break;
             }
+        }
+    }
+
+    public void ShowDispositionDecision(
+        System.Action<MinLoopDispositionChoice> onSubmitted)
+    {
+        dispositionDecisionCallback = onSubmitted;
+        dispositionDecisionActive = true;
+        finalChoiceSelectionIndex = 0;
+        ShowPage(HearthFirstPersonHudPageId.Slide09FinalChoice);
+        ResolveDispositionDecisionText();
+        CaptureOriginalDecisionCopy();
+
+        if (dispositionHeadingText != null)
+        {
+            dispositionHeadingText.text = "SELECT DISPOSITION";
+        }
+
+        if (dispositionOptionAText != null)
+        {
+            dispositionOptionAText.text =
+                "A   ACCEPT SYSTEM RECOMMENDATION";
+        }
+
+        if (dispositionOptionBText != null)
+        {
+            dispositionOptionBText.text =
+                "B   PROMPT FAMILY RESPONSE";
+        }
+
+        RefreshFinalChoiceFocus();
+    }
+
+    public void CancelDispositionDecision()
+    {
+        ClearDispositionDecision(true);
+    }
+
+    private bool TryCompleteDispositionDecision(
+        MinLoopDispositionChoice choice)
+    {
+        if (!dispositionDecisionActive)
+        {
+            return false;
+        }
+
+        System.Action<MinLoopDispositionChoice> callback =
+            dispositionDecisionCallback;
+        dispositionDecisionCallback = null;
+        dispositionDecisionActive = false;
+        RestoreOriginalDecisionCopy();
+        PlayOneShot(confirmClip);
+        HideOverlay();
+        if (callback != null)
+        {
+            callback(choice);
+        }
+
+        return true;
+    }
+
+    private void ClearDispositionDecision(bool hideOverlay)
+    {
+        if (!dispositionDecisionActive &&
+            dispositionDecisionCallback == null)
+        {
+            return;
+        }
+
+        dispositionDecisionActive = false;
+        dispositionDecisionCallback = null;
+        RestoreOriginalDecisionCopy();
+        if (hideOverlay)
+        {
+            HideOverlay();
+        }
+    }
+
+    private void ResolveDispositionDecisionText()
+    {
+        HearthFirstPersonHudPage page;
+        if (!pageMap.TryGetValue(
+                HearthFirstPersonHudPageId.Slide09FinalChoice,
+                out page) ||
+            page == null)
+        {
+            return;
+        }
+
+        if (dispositionHeadingText == null)
+        {
+            dispositionHeadingText =
+                FindTextByName(page.transform, "V2_FinalChoiceHeading");
+        }
+
+        RectTransform optionATarget =
+            FindRectTransformIn(page.transform, "FinalChoiceTarget_A");
+        RectTransform optionBTarget =
+            FindRectTransformIn(page.transform, "FinalChoiceTarget_B");
+        if (dispositionOptionAText == null && optionATarget != null)
+        {
+            dispositionOptionAText =
+                optionATarget.GetComponentInChildren<TMP_Text>(true);
+        }
+
+        if (dispositionOptionBText == null && optionBTarget != null)
+        {
+            dispositionOptionBText =
+                optionBTarget.GetComponentInChildren<TMP_Text>(true);
+        }
+    }
+
+    private void CaptureOriginalDecisionCopy()
+    {
+        if (capturedOriginalDecisionCopy)
+        {
+            return;
+        }
+
+        originalDecisionHeading =
+            dispositionHeadingText != null
+            ? dispositionHeadingText.text
+            : string.Empty;
+        originalDecisionOptionA =
+            dispositionOptionAText != null
+            ? dispositionOptionAText.text
+            : string.Empty;
+        originalDecisionOptionB =
+            dispositionOptionBText != null
+            ? dispositionOptionBText.text
+            : string.Empty;
+        capturedOriginalDecisionCopy = true;
+    }
+
+    private void RestoreOriginalDecisionCopy()
+    {
+        if (!capturedOriginalDecisionCopy)
+        {
+            return;
+        }
+
+        if (dispositionHeadingText != null)
+        {
+            dispositionHeadingText.text = originalDecisionHeading;
+        }
+
+        if (dispositionOptionAText != null)
+        {
+            dispositionOptionAText.text = originalDecisionOptionA;
+        }
+
+        if (dispositionOptionBText != null)
+        {
+            dispositionOptionBText.text = originalDecisionOptionB;
         }
     }
 
@@ -901,6 +1088,36 @@ public class HearthFirstPersonHudController : MonoBehaviour
         }
 
         return null;
+    }
+
+    private static RectTransform FindRectTransformIn(
+        Transform root,
+        string objectName)
+    {
+        if (root == null)
+        {
+            return null;
+        }
+
+        RectTransform[] rects =
+            root.GetComponentsInChildren<RectTransform>(true);
+        for (int i = 0; i < rects.Length; i++)
+        {
+            if (rects[i] != null && rects[i].name == objectName)
+            {
+                return rects[i];
+            }
+        }
+
+        return null;
+    }
+
+    private static TMP_Text FindTextByName(
+        Transform root,
+        string objectName)
+    {
+        RectTransform rect = FindRectTransformIn(root, objectName);
+        return rect != null ? rect.GetComponent<TMP_Text>() : null;
     }
 
     private void SetFocusRect(RectTransform focusRect, RectTransform[] targets, int index, Vector2 padding)

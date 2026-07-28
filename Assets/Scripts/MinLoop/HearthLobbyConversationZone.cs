@@ -2,13 +2,18 @@ using UnityEngine;
 
 [DisallowMultipleComponent]
 [RequireComponent(typeof(Collider))]
-public class HearthLobbyConversationZone : MonoBehaviour
+public class HearthLobbyConversationZone :
+    MonoBehaviour,
+    IInteractable,
+    IInteractionAvailability
 {
     [SerializeField] private HearthLobbyFlowController flowController;
     [SerializeField] private HearthDialogueSequence exchangeSequence;
     [SerializeField] private HearthDialogueSequence exitCommentarySequence;
     [SerializeField] private Transform formalPlayerRoot;
     [SerializeField] private bool playOnce = true;
+    [SerializeField] private bool requireInteraction = true;
+    [SerializeField] private string interactionDescription = "TALK";
     [SerializeField] private bool exchangeCompleted;
     [SerializeField] private bool exitCommentaryCompleted;
 
@@ -27,6 +32,17 @@ public class HearthLobbyConversationZone : MonoBehaviour
     public HearthDialogueSequence ExitCommentarySequence
     {
         get { return exitCommentarySequence; }
+    }
+
+    public bool IsInteractionAvailable
+    {
+        get
+        {
+            return enabled &&
+                flowController != null &&
+                exchangeSequence != null &&
+                (!playOnce || !exchangeCompleted);
+        }
     }
 
     private void Reset()
@@ -63,7 +79,10 @@ public class HearthLobbyConversationZone : MonoBehaviour
         }
 
         playerInside = true;
-        TryStartConversation();
+        if (!requireInteraction)
+        {
+            TryStartConversation();
+        }
     }
 
     private void OnTriggerStay(Collider other)
@@ -74,7 +93,10 @@ public class HearthLobbyConversationZone : MonoBehaviour
         }
 
         playerInside = true;
-        TryStartConversation();
+        if (!requireInteraction)
+        {
+            TryStartConversation();
+        }
     }
 
     private void OnTriggerExit(Collider other)
@@ -105,6 +127,23 @@ public class HearthLobbyConversationZone : MonoBehaviour
         exchangeCompleted = true;
     }
 
+    public void Interact()
+    {
+        if (!IsInteractionAvailable)
+        {
+            return;
+        }
+
+        TryStartConversation(true);
+    }
+
+    public string GetDescription()
+    {
+        return string.IsNullOrWhiteSpace(interactionDescription)
+            ? "TALK"
+            : interactionDescription.Trim();
+    }
+
     public void MarkExitCommentaryCompleted()
     {
         exitCommentaryCompleted = true;
@@ -117,9 +156,16 @@ public class HearthLobbyConversationZone : MonoBehaviour
         playerInside = false;
     }
 
-    private void TryStartConversation()
+    private void TryStartConversation(bool requestedByInteraction = false)
     {
-        if (!playerInside || flowController == null || exchangeSequence == null)
+        if ((!playerInside && !requestedByInteraction) ||
+            flowController == null ||
+            exchangeSequence == null)
+        {
+            return;
+        }
+
+        if (requireInteraction && !requestedByInteraction)
         {
             return;
         }

@@ -26,6 +26,9 @@ public class HearthCompanionHudController : MonoBehaviour
     [SerializeField] private HearthCompanionProjectionPanelView projectionPanelView;
     [SerializeField] private HearthCompanionDirectionGuideView directionGuideView;
     [SerializeField] private HearthCompanionSpecialEffectsView specialEffectsView;
+    [SerializeField] private TMP_Text identityText;
+    [SerializeField] private TMP_Text currentTaskText;
+    [SerializeField] private TMP_Text recText;
     [SerializeField] private TMP_Text modeLabelText;
     [SerializeField] private TMP_Text centerMessageText;
 
@@ -52,6 +55,8 @@ public class HearthCompanionHudController : MonoBehaviour
     private bool explicitVisibility = true;
     private bool missingHoldPromptWarningLogged;
     private HearthCompanionTriggerCardView subscribedTriggerCardView;
+    private Coroutine decisionVisibilityRoutine;
+    private Coroutine centerMessageRoutine;
 
     public HearthCompanionHudSceneData CurrentScene { get { return currentScene; } }
     public string CurrentSceneId { get { return currentScene != null ? currentScene.SceneId : string.Empty; } }
@@ -68,6 +73,7 @@ public class HearthCompanionHudController : MonoBehaviour
 
     private void OnDestroy()
     {
+        StopTransientPresentationRoutines();
         UnbindTriggerCardVisibility();
     }
 
@@ -397,11 +403,13 @@ public class HearthCompanionHudController : MonoBehaviour
         if (decisionPanelView != null)
         {
             decisionPanelView.Apply(scene);
+            StartDecisionVisibilityTimer(scene);
         }
 
         if (dataStreamView != null)
         {
-            dataStreamView.Apply(scene);
+            dataStreamView.Clear();
+            dataStreamView.gameObject.SetActive(false);
         }
 
         if (triggerCardView != null)
@@ -443,10 +451,35 @@ public class HearthCompanionHudController : MonoBehaviour
             modeLabelText.color = scene.AccentColor;
         }
 
+        if (identityText != null)
+        {
+            identityText.text =
+                "COMPANION UNIT · ACTIVE\nUNIT " +
+                NormalizeResidentLabel(scene.ResidentId);
+            identityText.color = scene.AccentColor;
+        }
+
+        if (currentTaskText != null)
+        {
+            string task = string.IsNullOrWhiteSpace(scene.CurrentTask)
+                ? "REVIEW RECORDED HOUSEHOLD EVENT"
+                : scene.CurrentTask.Trim();
+            currentTaskText.text = "CURRENT TASK\n" + task;
+            currentTaskText.color = scene.AccentColor;
+        }
+
+        if (recText != null)
+        {
+            recText.text = "●  REC";
+            recText.color = new Color(0.92f, 0.22f, 0.18f, 1f);
+            recText.gameObject.SetActive(true);
+        }
+
         if (centerMessageText != null)
         {
             centerMessageText.text = scene.CenterMessage;
             centerMessageText.gameObject.SetActive(!string.IsNullOrEmpty(scene.CenterMessage));
+            StartCenterMessageTimer(scene);
         }
 
         RefreshVisibilityFromViewMode();
@@ -478,6 +511,26 @@ public class HearthCompanionHudController : MonoBehaviour
         if (statusPanelView == null)
         {
             statusPanelView = GetComponentInChildren<HearthCompanionStatusPanelView>(true);
+        }
+
+        if (identityText == null)
+        {
+            identityText = FindTextByName("V2_Identity");
+        }
+
+        if (currentTaskText == null)
+        {
+            currentTaskText = FindTextByName("V2_CurrentTask");
+        }
+
+        if (recText == null)
+        {
+            recText = FindTextByName("V2_REC");
+        }
+
+        if (dataStreamView != null)
+        {
+            dataStreamView.gameObject.SetActive(false);
         }
 
         if (triggerCardView == null)
@@ -636,5 +689,136 @@ public class HearthCompanionHudController : MonoBehaviour
         {
             audioSource.PlayOneShot(clip);
         }
+    }
+
+    private void StartDecisionVisibilityTimer(
+        HearthCompanionHudSceneData scene)
+    {
+        if (decisionVisibilityRoutine != null)
+        {
+            StopCoroutine(decisionVisibilityRoutine);
+            decisionVisibilityRoutine = null;
+        }
+
+        if (decisionPanelView == null ||
+            scene == null ||
+            (string.IsNullOrWhiteSpace(scene.DecisionTitle) &&
+             string.IsNullOrWhiteSpace(scene.DecisionBody)))
+        {
+            if (decisionPanelView != null)
+            {
+                decisionPanelView.HideImmediate();
+            }
+            return;
+        }
+
+        float duration = scene.DecisionDisplaySeconds > 0f
+            ? scene.DecisionDisplaySeconds
+            : 4f;
+        decisionVisibilityRoutine =
+            StartCoroutine(HideDecisionAfter(duration));
+    }
+
+    private System.Collections.IEnumerator HideDecisionAfter(float seconds)
+    {
+        yield return new WaitForSecondsRealtime(Mathf.Max(0.1f, seconds));
+        if (decisionPanelView != null)
+        {
+            decisionPanelView.HideImmediate();
+        }
+        decisionVisibilityRoutine = null;
+    }
+
+    private void StartCenterMessageTimer(HearthCompanionHudSceneData scene)
+    {
+        if (centerMessageRoutine != null)
+        {
+            StopCoroutine(centerMessageRoutine);
+            centerMessageRoutine = null;
+        }
+
+        if (centerMessageText == null ||
+            scene == null ||
+            string.IsNullOrWhiteSpace(scene.CenterMessage))
+        {
+            return;
+        }
+
+        float duration = scene.CenterMessageSeconds > 0f
+            ? scene.CenterMessageSeconds
+            : 2.5f;
+        centerMessageRoutine =
+            StartCoroutine(HideCenterMessageAfter(duration));
+    }
+
+    private System.Collections.IEnumerator HideCenterMessageAfter(
+        float seconds)
+    {
+        yield return new WaitForSecondsRealtime(Mathf.Max(0.1f, seconds));
+        if (centerMessageText != null)
+        {
+            centerMessageText.gameObject.SetActive(false);
+        }
+        centerMessageRoutine = null;
+    }
+
+    private void StopTransientPresentationRoutines()
+    {
+        if (decisionVisibilityRoutine != null)
+        {
+            StopCoroutine(decisionVisibilityRoutine);
+            decisionVisibilityRoutine = null;
+        }
+
+        if (centerMessageRoutine != null)
+        {
+            StopCoroutine(centerMessageRoutine);
+            centerMessageRoutine = null;
+        }
+    }
+
+    private TMP_Text FindTextByName(string objectName)
+    {
+        TMP_Text[] texts = GetComponentsInChildren<TMP_Text>(true);
+        for (int i = 0; i < texts.Length; i++)
+        {
+            if (texts[i] != null && texts[i].name == objectName)
+            {
+                return texts[i];
+            }
+        }
+
+        return null;
+    }
+
+    private static string NormalizeResidentLabel(string residentId)
+    {
+        string normalized = (residentId ?? string.Empty)
+            .Trim()
+            .ToUpperInvariant()
+            .Replace("-", string.Empty)
+            .Replace("_", string.Empty)
+            .Replace(" ", string.Empty);
+        if (normalized.Contains("17F01"))
+        {
+            return "17F-01";
+        }
+
+        if (normalized.Contains("17F02"))
+        {
+            return "17F-02";
+        }
+
+        if (normalized.Contains("17F03"))
+        {
+            return "17F-03";
+        }
+
+        if (normalized.Contains("17F04"))
+        {
+            return "17F-04";
+        }
+
+        return string.IsNullOrEmpty(normalized) ? "UNASSIGNED" : normalized;
     }
 }

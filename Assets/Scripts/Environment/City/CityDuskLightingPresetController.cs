@@ -22,7 +22,7 @@ public class CityDuskLightingPresetController : MonoBehaviour
     [SerializeField] private Color ambientSkyColor = new Color(0.12f, 0.16f, 0.24f, 1f);
     [SerializeField] private Color ambientEquatorColor = new Color(0.16f, 0.12f, 0.18f, 1f);
     [SerializeField] private Color ambientGroundColor = new Color(0.055f, 0.04f, 0.06f, 1f);
-    [SerializeField, Min(0f)] private float ambientIntensity = 0.7f;
+    [SerializeField, Min(0f)] private float ambientIntensity = 0.9f;
 
     [Header("Dusk Fog")]
     [SerializeField] private bool fogEnabled = true;

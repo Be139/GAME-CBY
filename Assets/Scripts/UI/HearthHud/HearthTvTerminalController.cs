@@ -574,6 +574,16 @@ public class HearthTvTerminalController : MonoBehaviour
         StartTerminalRoutine(CloseTerminalRoutine(true));
     }
 
+#if UNITY_EDITOR
+    public void CloseTerminalImmediateForPreview()
+    {
+        if (IsOpen)
+        {
+            CloseTerminalInstant(false);
+        }
+    }
+#endif
+
     private IEnumerator OpenTerminalRoutine()
     {
         IsOpen = true;

@@ -314,19 +314,57 @@ public class HearthLocationHudView : MonoBehaviour
     {
         if (titleText != null)
         {
+            ApplyLeftAlignedRect(titleText, 0f, 28f);
+            titleText.fontSize = 16f;
+            titleText.fontSizeMin = 16f;
+            titleText.fontSizeMax = 16f;
+            titleText.enableAutoSizing = false;
+            titleText.alignment = TextAlignmentOptions.BottomLeft;
             titleText.color = titleColor;
         }
 
         if (locationText != null)
         {
+            ApplyLeftAlignedRect(locationText, 30f, 38f);
+            locationText.fontSize = 24f;
+            locationText.fontSizeMin = 24f;
+            locationText.fontSizeMax = 24f;
+            locationText.enableAutoSizing = false;
+            locationText.alignment = TextAlignmentOptions.BottomLeft;
             locationText.color = textColor;
         }
 
         if (glowText != null)
         {
+            ApplyLeftAlignedRect(glowText, 30f, 38f);
+            glowText.fontSize = 24f;
+            glowText.fontSizeMin = 24f;
+            glowText.fontSizeMax = 24f;
+            glowText.enableAutoSizing = false;
+            glowText.alignment = TextAlignmentOptions.BottomLeft;
             glowColor.a = glowAlpha;
             glowText.color = glowColor;
         }
+    }
+
+    private static void ApplyLeftAlignedRect(
+        TMP_Text text,
+        float top,
+        float height)
+    {
+        if (text == null)
+        {
+            return;
+        }
+
+        RectTransform rect = text.rectTransform;
+        rect.anchorMin = Vector2.up;
+        rect.anchorMax = Vector2.up;
+        rect.pivot = Vector2.up;
+        rect.anchoredPosition = new Vector2(0f, -top);
+        rect.sizeDelta = new Vector2(340f, height);
+        text.enableWordWrapping = false;
+        text.overflowMode = TextOverflowModes.Overflow;
     }
 
     private void SetGlowAlpha(float alpha)

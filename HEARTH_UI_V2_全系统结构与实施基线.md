@@ -279,3 +279,21 @@ Companion 的 `PersistentInfoLayer/V2_StatusPanel` 由 SceneData 动态写入并
 - Final Choice、Shutdown Confirm、Low Trust Warning 无启用的 Legacy `Border_*` 遗留细框。
 - Unity Console 无本轮新增错误。
 - Legacy 保留，直到 V2 全流程最终验收完成。
+
+## 13. 2026-07-30 视觉收口状态
+
+- 当前定向入口改为：
+  - `Tools > Hearth > UI V2 > Apply Approved Closure`
+  - `Tools > Hearth > UI V2 > Validate Approved Closure`
+  - `Tools > Hearth > UI V2 > Runtime Preview`
+- 已完成 20 个预览状态：Human 9、Companion 6、Terminal 5。
+- 正式对白与 Auxiliary 已拆成独立 Frame；姓名签左右互斥。
+- Companion 的身份、REC、Current Task、Status、Decision、Formal、Boundary
+  已进入统一全屏框和文字安全区。
+- Doorway/Home 终端已去除旧 6/8 页导航、终端内部 A/B、重复全屏框和 17F04 淡色旧层。
+- 最终 1920×1080 总览：
+  `HEARTH_UI_V2_Baselines/MCP_Final/HEARTH_UI_V2_MCP_Final_ContactSheet.png`。
+- 1280×720 与 2560×1440 代表状态总览：
+  `HEARTH_UI_V2_Baselines/MCP_Responsive/HEARTH_UI_V2_MCP_Responsive_ContactSheet.png`。
+- MCP 区域遮挡审计当前通过；`Validate Approved Closure` 当前通过。
+- 本轮没有跑完整剧情，只验证 Runtime Preview、Prefab 结构、缩放与主要区域遮挡。

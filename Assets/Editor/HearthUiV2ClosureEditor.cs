@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -14,12 +15,41 @@ public static class HearthUiV2ClosureEditor
         "Assets/Prefabs/UI/HearthHud/V2/Companion/HearthCompanionHudRoot_V2.prefab";
     private const string TerminalFolder =
         "Assets/Prefabs/UI/HearthHud/V2/Terminals/";
+    private const string SubtitlePrefab =
+        "Assets/Prefabs/UI/HearthSubtitle/V2/HearthSubtitleVisualCanvas_V2.prefab";
+    private const string VectorRoot =
+        "Assets/UI/HEARTH/V2/VectorParts/";
     private const string CompanionFramePath =
-        "Assets/UI/HEARTH/GeneratedParts/Companion/HUD_Companion_FullscreenFrame.png";
+        VectorRoot +
+        "Companion/HUD_Companion_FullscreenFrame_1920x1080.png";
     private const string ButtonFramePath =
-        "Assets/UI/HEARTH/GeneratedParts/Common/HUD_Common_ButtonFrame_9Slice.png";
+        VectorRoot + "Common/HUD_Common_ButtonFrame_320x72.png";
+    private const string PanelFramePath =
+        VectorRoot + "Common/HUD_Common_PanelFrame_520x320.png";
     private const string PromptFramePath =
-        "Assets/UI/HEARTH/GeneratedParts/Interaction/HUD_Interaction_GazePromptFrame_9Slice.png";
+        VectorRoot +
+        "Interaction/HUD_Interaction_GazePromptFrame_520x128.png";
+    private const string HeaderUnderlinePath =
+        VectorRoot + "Common/HUD_Common_HeaderUnderline_310x8.png";
+    private const string DialogueFramePath =
+        VectorRoot + "Common/HUD_Common_DialogueFrame_960x256.png";
+    private const string SpeakerTabLeftPath =
+        VectorRoot + "Common/HUD_Common_SpeakerTab_Left_340x48.png";
+    private const string SpeakerTabRightPath =
+        VectorRoot + "Common/HUD_Common_SpeakerTab_Right_340x48.png";
+    private const string FieldUnitFramePath =
+        VectorRoot +
+        "Feedback/HUD_Feedback_FieldUnitToastFrame_640x180.png";
+    private const string PhotoFramePath =
+        VectorRoot + "Finale/HUD_Finale_PhotoFrame_1280x720.png";
+    private const string ShutdownFramePath =
+        VectorRoot + "Finale/HUD_Finale_ShutdownModalFrame_720x420.png";
+    private const string WarningFramePath =
+        VectorRoot + "Feedback/HUD_Feedback_WarningModalFrame_720x360.png";
+    private const string TerminalInfoFramePath =
+        VectorRoot + "Terminal/HUD_Terminal_InfoPanelFrame_520x320.png";
+    private const string TerminalPortraitFramePath =
+        VectorRoot + "Terminal/HUD_Terminal_PortraitFrame_240x400.png";
 
     private static readonly Color DeepBlueBlack =
         new Color32(11, 16, 24, 235);
@@ -35,8 +65,12 @@ public static class HearthUiV2ClosureEditor
     [MenuItem("Tools/Hearth/UI V2/Apply Approved Closure")]
     public static void ApplyAll()
     {
+        HearthUiV2VectorAssetEditor.PrepareImportedSprites();
+        ApplySubtitle();
         ApplyHuman();
         ApplyCompanion();
+        ApplyOpenSceneCompanionClosure();
+        ApplyOpenScenePhotoClosure();
         ApplyTerminal(
             TerminalFolder + "Terminal_Lobby_Assignment_V2.prefab",
             HearthTerminalMode.LobbySync);
@@ -57,6 +91,184 @@ public static class HearthUiV2ClosureEditor
         Debug.Log(
             "[HearthUiV2ClosureEditor] Applied the approved second-UI closure " +
             "without rebuilding scene bindings or legacy prefabs.");
+    }
+
+    [MenuItem("Tools/Hearth/UI V2/Closure/Apply Subtitle Visual Closure")]
+    public static void ApplySubtitle()
+    {
+        EditPrefab(
+            SubtitlePrefab,
+            root =>
+            {
+                Transform visual = FindNamed(root.transform, "VisualRoot");
+                if (visual == null)
+                {
+                    Debug.LogWarning(
+                        "[HearthUiV2ClosureEditor] Subtitle VisualRoot missing.");
+                    return;
+                }
+
+                Image backdrop =
+                    FindImage(visual, "Backdrop");
+                if (backdrop != null)
+                {
+                    backdrop.sprite = null;
+                    backdrop.type = Image.Type.Simple;
+                    backdrop.color =
+                        new Color(
+                            DeepBlueBlack.r,
+                            DeepBlueBlack.g,
+                            DeepBlueBlack.b,
+                            0.82f);
+                    backdrop.raycastTarget = false;
+                    backdrop.transform.SetAsFirstSibling();
+                }
+
+                Image formalFrame = CreateOrGetImage(
+                    visual,
+                    "FormalFrame",
+                    DialogueFramePath,
+                    LowSaturationBlue,
+                    false);
+                Image auxiliaryFrame = CreateOrGetImage(
+                    visual,
+                    "AuxiliaryFrame",
+                    FieldUnitFramePath,
+                    LowSaturationBlue,
+                    true);
+                Image leftTab = CreateOrGetImage(
+                    visual,
+                    "SpeakerTabLeft",
+                    SpeakerTabLeftPath,
+                    LowSaturationBlue,
+                    false);
+                Image rightTab = CreateOrGetImage(
+                    visual,
+                    "SpeakerTabRight",
+                    SpeakerTabRightPath,
+                    LowSaturationBlue,
+                    false);
+
+                SetTopLeft(
+                    formalFrame.rectTransform,
+                    432f,
+                    670f,
+                    960f,
+                    256f);
+                SetTopLeft(
+                    auxiliaryFrame.rectTransform,
+                    1216f,
+                    214f,
+                    640f,
+                    180f);
+                SetTopLeft(
+                    leftTab.rectTransform,
+                    432f,
+                    622f,
+                    340f,
+                    48f);
+                SetTopLeft(
+                    rightTab.rectTransform,
+                    1052f,
+                    622f,
+                    340f,
+                    48f);
+
+                Transform legacyTab = FindNamed(visual, "SpeakerTab");
+                if (legacyTab != null)
+                {
+                    legacyTab.gameObject.SetActive(false);
+                }
+
+                Transform legacyAccent = FindNamed(visual, "AccentRule");
+                if (legacyAccent != null)
+                {
+                    legacyAccent.gameObject.SetActive(false);
+                }
+
+                TMP_Text hint = CreateOrGetText(
+                    visual,
+                    "AdvanceHint",
+                    "SPACE  CONTINUE");
+                SetTopLeft(
+                    hint.rectTransform,
+                    1128f,
+                    884f,
+                    224f,
+                    24f);
+                ConfigureText(
+                    hint,
+                    15f,
+                    TextAlignmentOptions.Right,
+                    LowSaturationBlue,
+                    FontStyles.Bold);
+
+                formalFrame.gameObject.SetActive(false);
+                auxiliaryFrame.gameObject.SetActive(false);
+                leftTab.gameObject.SetActive(false);
+                rightTab.gameObject.SetActive(false);
+                hint.gameObject.SetActive(false);
+
+                if (backdrop != null)
+                {
+                    backdrop.transform.SetSiblingIndex(0);
+                }
+                formalFrame.transform.SetSiblingIndex(1);
+                auxiliaryFrame.transform.SetSiblingIndex(2);
+                leftTab.transform.SetSiblingIndex(3);
+                rightTab.transform.SetSiblingIndex(4);
+                hint.transform.SetAsLastSibling();
+            });
+    }
+
+    [MenuItem("Tools/Hearth/UI V2/Validate Approved Closure")]
+    public static void ValidateApprovedClosure()
+    {
+        List<string> issues = new List<string>();
+        ValidateHumanPrefab(issues);
+        ValidateCompanionPrefab(issues);
+        ValidateOpenSceneCompanionInstances(issues);
+        ValidateTerminalPrefab(
+            TerminalFolder + "Terminal_Lobby_Assignment_V2.prefab",
+            HearthTerminalMode.LobbySync,
+            false,
+            issues);
+        ValidateTerminalPrefab(
+            TerminalFolder + "Terminal_17F01_V2.prefab",
+            HearthTerminalMode.Doorway,
+            true,
+            issues);
+        ValidateTerminalPrefab(
+            TerminalFolder + "Terminal_17F02_V2.prefab",
+            HearthTerminalMode.Doorway,
+            true,
+            issues);
+        ValidateTerminalPrefab(
+            TerminalFolder + "Terminal_17F03_Alert_V2.prefab",
+            HearthTerminalMode.Doorway,
+            true,
+            issues);
+        ValidateTerminalPrefab(
+            TerminalFolder + "Terminal_17F04_Home_V2.prefab",
+            HearthTerminalMode.Home,
+            true,
+            issues);
+        ValidateSubtitlePrefab(issues);
+
+        if (issues.Count == 0)
+        {
+            Debug.Log(
+                "[HearthUiV2ClosureEditor] Validation passed: Human, Companion, " +
+                "subtitle, lobby synchronization terminal, doorway terminals, " +
+                "and home terminal all satisfy the approved V2 closure structure.");
+            return;
+        }
+
+        Debug.LogError(
+            "[HearthUiV2ClosureEditor] Validation found " +
+            issues.Count +
+            " issue(s):\n- " +
+            string.Join("\n- ", issues));
     }
 
     [MenuItem("Tools/Hearth/UI V2/Closure/Apply Human Prefab Closure")]
@@ -82,6 +294,17 @@ public static class HearthUiV2ClosureEditor
                 {
                     ApplyPersistentHumanLayout(persistent);
                 }
+
+                ApplyFrame(
+                    FindRect(root.transform, "V2_HeaderUnderline"),
+                    HeaderUnderlinePath,
+                    LowSaturationBlue,
+                    false);
+                ApplyFrame(
+                    FindRect(root.transform, "V2_TaskUnderline"),
+                    HeaderUnderlinePath,
+                    LowSaturationBlue,
+                    false);
 
                 SetBottomLeft(
                     FindRect(root.transform, "LocationHud"),
@@ -128,6 +351,8 @@ public static class HearthUiV2ClosureEditor
 
                 ApplyPhotoLayout(root.transform);
                 ApplyDecisionLayout(root.transform);
+                ApplyShutdownAndTakeoverFrames(root.transform);
+                ApplyInteractiveButtonFrames(root.transform);
                 ApplyKeycapSizing(root.transform);
             });
     }
@@ -161,7 +386,7 @@ public static class HearthUiV2ClosureEditor
                                 LowSaturationBlue.r,
                                 LowSaturationBlue.g,
                                 LowSaturationBlue.b,
-                                0.52f);
+                                0.78f);
                         image.raycastTarget = false;
                     }
                     frame.SetAsFirstSibling();
@@ -216,6 +441,17 @@ public static class HearthUiV2ClosureEditor
                     206f,
                     520f,
                     220f);
+                ApplyOverlayFrame(
+                    FindRect(root.transform, "V2_StatusPanel"),
+                    "V2_VectorPanelFrame",
+                    PanelFramePath,
+                    LowSaturationBlue);
+                ApplyOverlayFrame(
+                    FindRect(root.transform, "DecisionPanel"),
+                    "V2_VectorPanelFrame",
+                    PanelFramePath,
+                    LowSaturationBlue);
+                ApplyCompanionPanelSafeAreas(root.transform);
                 SetTopCenter(
                     FindRect(root.transform, "CenterMessageText"),
                     0f,
@@ -229,7 +465,16 @@ public static class HearthUiV2ClosureEditor
                     760f,
                     28f);
 
+                HearthCompanionHudLayoutController layoutController =
+                    root.GetComponentInChildren<
+                        HearthCompanionHudLayoutController>(true);
+                if (layoutController != null)
+                {
+                    layoutController.RecaptureBaselines();
+                }
+
                 SetNamedActive(root.transform, "DataStreamView", false);
+                SetNamedActive(root.transform, "V2_Status", false);
                 SetNamedActive(root.transform, "V2_PhysicalFeedLabel", false);
                 SetNamedActive(root.transform, "V2_PhysicalFeedRule", false);
                 SetNamedActive(root.transform, "V2_InspectionHeading", false);
@@ -245,6 +490,174 @@ public static class HearthUiV2ClosureEditor
                     stream.gameObject.SetActive(false);
                 }
             });
+    }
+
+    private static void ApplyOpenSceneCompanionClosure()
+    {
+        HearthCompanionHudController[] controllers =
+            Resources.FindObjectsOfTypeAll<HearthCompanionHudController>();
+        bool changed = false;
+        for (int i = 0; i < controllers.Length; i++)
+        {
+            HearthCompanionHudController controller = controllers[i];
+            if (controller == null ||
+                !controller.gameObject.scene.IsValid() ||
+                !controller.gameObject.scene.isLoaded)
+            {
+                continue;
+            }
+
+            RectTransform frame =
+                FindRect(controller.transform, "CompanionRobotFrame");
+            if (frame != null)
+            {
+                SetStretch(frame, 20f, 20f, 20f, 20f);
+                Image image = frame.GetComponent<Image>();
+                if (image != null)
+                {
+                    image.sprite =
+                        AssetDatabase.LoadAssetAtPath<Sprite>(
+                            CompanionFramePath);
+                    image.type = Image.Type.Simple;
+                    image.preserveAspect = false;
+                    image.color =
+                        new Color(
+                            LowSaturationBlue.r,
+                            LowSaturationBlue.g,
+                            LowSaturationBlue.b,
+                            0.78f);
+                    image.raycastTarget = false;
+                    PrefabUtility.RecordPrefabInstancePropertyModifications(
+                        image);
+                }
+                PrefabUtility.RecordPrefabInstancePropertyModifications(frame);
+                frame.SetAsFirstSibling();
+                changed = true;
+            }
+
+            Transform legacyStatus =
+                FindNamed(controller.transform, "V2_Status");
+            if (legacyStatus != null)
+            {
+                legacyStatus.gameObject.SetActive(false);
+                PrefabUtility.RecordPrefabInstancePropertyModifications(
+                    legacyStatus.gameObject);
+                changed = true;
+            }
+
+            RectTransform decision =
+                FindRect(controller.transform, "DecisionPanel");
+            if (decision != null)
+            {
+                SetTopRight(decision, 64f, 206f, 520f, 220f);
+                PrefabUtility.RecordPrefabInstancePropertyModifications(
+                    decision);
+                HearthCompanionHudLayoutController layout =
+                    controller.GetComponentInChildren<
+                        HearthCompanionHudLayoutController>(true);
+                if (layout != null)
+                {
+                    layout.RecaptureBaselines();
+                    EditorUtility.SetDirty(layout);
+                }
+                changed = true;
+            }
+
+            ApplyCompanionPanelSafeAreas(controller.transform);
+
+            if (changed)
+            {
+                EditorSceneManager.MarkSceneDirty(
+                    controller.gameObject.scene);
+            }
+        }
+
+        if (changed)
+        {
+            EditorSceneManager.SaveOpenScenes();
+        }
+    }
+
+    private static void ApplyCompanionPanelSafeAreas(Transform root)
+    {
+        TMP_Text statusTitle =
+            FindText(root, "V2_StatusTitleText");
+        if (statusTitle != null)
+        {
+            SetTopLeft(statusTitle.rectTransform, 26f, 18f, 468f, 34f);
+        }
+
+        TMP_Text statusRows =
+            FindText(root, "V2_StatusRowsText");
+        if (statusRows != null)
+        {
+            SetTopLeft(statusRows.rectTransform, 26f, 76f, 468f, 112f);
+        }
+
+        TMP_Text statusFooter =
+            FindText(root, "V2_StatusFooterText");
+        if (statusFooter != null)
+        {
+            SetTopLeft(statusFooter.rectTransform, 26f, 204f, 468f, 28f);
+        }
+
+        TMP_Text decisionKicker =
+            FindText(root, "DecisionKickerText");
+        if (decisionKicker != null)
+        {
+            SetTopLeft(decisionKicker.rectTransform, 26f, 18f, 468f, 28f);
+        }
+
+        TMP_Text decisionTitle =
+            FindText(root, "DecisionTitleText");
+        if (decisionTitle != null)
+        {
+            SetTopLeft(decisionTitle.rectTransform, 26f, 56f, 468f, 40f);
+        }
+
+        TMP_Text decisionBody =
+            FindText(root, "DecisionBodyText");
+        if (decisionBody != null)
+        {
+            SetTopLeft(decisionBody.rectTransform, 26f, 106f, 468f, 80f);
+        }
+    }
+
+    private static void ApplyOpenScenePhotoClosure()
+    {
+        HearthPhotoFrameInteractable[] interactables =
+            Resources.FindObjectsOfTypeAll<HearthPhotoFrameInteractable>();
+        bool changed = false;
+        for (int i = 0; i < interactables.Length; i++)
+        {
+            HearthPhotoFrameInteractable interactable = interactables[i];
+            if (interactable == null ||
+                !interactable.gameObject.scene.IsValid() ||
+                !interactable.gameObject.scene.isLoaded)
+            {
+                continue;
+            }
+
+            SerializedObject serialized = new SerializedObject(interactable);
+            SerializedProperty size =
+                serialized.FindProperty("archiveRenderTextureSize");
+            if (size == null)
+            {
+                continue;
+            }
+
+            size.vector2IntValue = new Vector2Int(1280, 720);
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            PrefabUtility.RecordPrefabInstancePropertyModifications(
+                interactable);
+            EditorSceneManager.MarkSceneDirty(interactable.gameObject.scene);
+            changed = true;
+        }
+
+        if (changed)
+        {
+            EditorSceneManager.SaveOpenScenes();
+        }
     }
 
     private static void ApplyTerminal(
@@ -306,6 +719,12 @@ public static class HearthUiV2ClosureEditor
                 }
 
                 DisableLegacyTerminalChrome(root.transform);
+                if (mode == HearthTerminalMode.Home)
+                {
+                    DisableHomeLegacyLabels(root.transform);
+                }
+                ApplyTerminalContentFrames(root.transform);
+                ApplyTerminalTextContrast(root.transform);
                 BuildCompactTerminalChrome(root, terminal, mode);
             });
     }
@@ -333,39 +752,39 @@ public static class HearthUiV2ClosureEditor
 
         TMP_Text terminalLabel =
             CreateOrGetText(chrome.transform, "TerminalLabel", "DOORWAY TERMINAL");
-        SetTopLeft(terminalLabel.rectTransform, 76f, 48f, 420f, 32f);
+        SetTopLeft(terminalLabel.rectTransform, 76f, 62f, 420f, 32f);
         ConfigureText(
             terminalLabel,
-            19f,
+            24f,
             TextAlignmentOptions.TopLeft,
-            GreyBlue,
+            Color.white,
             FontStyles.Bold);
 
         TMP_Text residentLabel =
             CreateOrGetText(chrome.transform, "ResidentId", "17F-01");
-        SetTopLeft(residentLabel.rectTransform, 76f, 80f, 300f, 44f);
+        SetTopLeft(residentLabel.rectTransform, 76f, 96f, 300f, 44f);
         ConfigureText(
             residentLabel,
-            28f,
+            32f,
             TextAlignmentOptions.TopLeft,
-            ColdWhite,
-            FontStyles.Normal);
+            Color.white,
+            FontStyles.Bold);
 
         TMP_Text status =
             CreateOrGetText(chrome.transform, "Status", string.Empty);
-        SetTopRight(status.rectTransform, 76f, 52f, 400f, 40f);
+        SetTopRight(status.rectTransform, 76f, 64f, 400f, 40f);
         ConfigureText(
             status,
-            18f,
+            19f,
             TextAlignmentOptions.TopRight,
-            GreyBlue,
+            ColdWhite,
             FontStyles.Bold);
 
         Image before = CreateTab(
             chrome.transform,
             "BeforeTab",
             310f,
-            124f,
+            150f,
             310f,
             52f);
         TMP_Text beforeText = CreateTabText(before.transform, "Label");
@@ -375,7 +794,7 @@ public static class HearthUiV2ClosureEditor
             chrome.transform,
             "AfterTab",
             640f,
-            124f,
+            150f,
             310f,
             52f);
         TMP_Text afterText = CreateTabText(after.transform, "Label");
@@ -385,7 +804,7 @@ public static class HearthUiV2ClosureEditor
             chrome.transform,
             "PrimaryActionTab",
             1274f,
-            124f,
+            150f,
             570f,
             52f);
         TMP_Text primaryText = CreateTabText(primary.transform, "Label");
@@ -393,7 +812,7 @@ public static class HearthUiV2ClosureEditor
             mode == HearthTerminalMode.Home ? "ENTER HOME" : "PRIMARY ACTION";
 
         Image rule = CreateImage(chrome.transform, "HeaderRule", LowSaturationBlue);
-        SetTopLeft(rule.rectTransform, 76f, 194f, 1768f, 2f);
+        SetTopLeft(rule.rectTransform, 76f, 218f, 1768f, 2f);
 
         TMP_Text footer =
             CreateOrGetText(
@@ -403,10 +822,10 @@ public static class HearthUiV2ClosureEditor
         SetBottomRight(footer.rectTransform, 76f, 42f, 900f, 36f);
         ConfigureText(
             footer,
-            18f,
+            20f,
             TextAlignmentOptions.BottomRight,
-            GreyBlue,
-            FontStyles.Normal);
+            Color.white,
+            FontStyles.Bold);
 
         HearthTerminalCompactChromeView view =
             prefabRoot.GetComponent<HearthTerminalCompactChromeView>();
@@ -460,10 +879,10 @@ public static class HearthUiV2ClosureEditor
         SetStretch(text.rectTransform, 18f, 10f, 18f, 10f);
         ConfigureText(
             text,
-            19f,
+            22f,
             TextAlignmentOptions.Center,
-            GreyBlue,
-            FontStyles.Normal);
+            Color.white,
+            FontStyles.Bold);
         return text;
     }
 
@@ -478,10 +897,38 @@ public static class HearthUiV2ClosureEditor
                 name == "V2_FooterRule" ||
                 name == "TerminalLabel" ||
                 name == "ResidentId" ||
+                name == "HeaderRule" ||
+                name == "AccentRule" ||
                 name.StartsWith("Tab_", StringComparison.Ordinal) ||
                 name == "NavigationRule")
             {
                 current.gameObject.SetActive(false);
+            }
+        }
+    }
+
+    private static void DisableHomeLegacyLabels(Transform root)
+    {
+        Transform slide = FindNamed(root, "TerminalSlide01_17F04Home");
+        if (slide == null)
+        {
+            return;
+        }
+
+        string[] legacyNames =
+        {
+            "AccessLabel",
+            "UnitLabel",
+            "Welcome",
+            "Personal",
+            "Confirm"
+        };
+        for (int i = 0; i < legacyNames.Length; i++)
+        {
+            Transform legacy = slide.Find(legacyNames[i]);
+            if (legacy != null)
+            {
+                legacy.gameObject.SetActive(false);
             }
         }
     }
@@ -539,12 +986,28 @@ public static class HearthUiV2ClosureEditor
 
     private static void ApplyPhotoLayout(Transform root)
     {
-        SetNamedRectsTopLeft(root, "V2_PhotoArchiveHeading", 240f, 82f, 800f, 48f);
-        SetNamedRectsTopLeft(root, "V2_PhotoViewport", 240f, 156f, 1440f, 640f);
-        SetNamedRectsTopLeft(root, "V2_PhotoMetadata", 240f, 806f, 520f, 84f);
-        SetNamedRectsTopLeft(root, "V2_PhotoFieldUnit", 432f, 834f, 1056f, 132f);
+        SetNamedRectsTopLeft(root, "V2_PhotoArchiveHeading", 373f, 68f, 800f, 44f);
+        SetNamedRectsTopLeft(root, "V2_PhotoArchiveUnit", 373f, 116f, 520f, 28f);
+        SetNamedRectsTopLeft(root, "V2_PhotoViewport", 373f, 152f, 1174f, 660f);
+        SetNamedRectsTopLeft(root, "V2_PhotoMetadata", 397f, 746f, 520f, 56f);
+        SetNamedRectsTopLeft(root, "V2_PhotoFieldUnit", 432f, 830f, 1056f, 132f);
         SetNamedRectsBottomLeft(root, "V2_PhotoPage", 240f, 52f, 260f, 30f);
-        SetNamedRectsBottomRight(root, "V2_PhotoReturnHint", 240f, 52f, 520f, 30f);
+        SetNamedActive(root, "V2_PhotoReturnHint", false);
+
+        ConfigureNamedTexts(
+            root,
+            "V2_PhotoArchiveHeading",
+            30f,
+            TextAlignmentOptions.TopLeft,
+            ColdWhite,
+            FontStyles.Normal);
+        ConfigureNamedTexts(
+            root,
+            "V2_PhotoArchiveUnit",
+            18f,
+            TextAlignmentOptions.TopLeft,
+            GreyBlue,
+            FontStyles.Normal);
 
         Transform[] transforms = root.GetComponentsInChildren<Transform>(true);
         for (int i = 0; i < transforms.Length; i++)
@@ -553,10 +1016,298 @@ public static class HearthUiV2ClosureEditor
             {
                 ApplyFrame(
                     transforms[i] as RectTransform,
-                    "Assets/UI/HEARTH/GeneratedParts/Finale/HUD_Finale_PhotoFrame_9Slice.png",
+                    PhotoFramePath,
                     GreyBlue,
                     true);
             }
+        }
+
+        ApplyPhotoPageControls(root, "Slide07_Photo2023");
+        ApplyPhotoPageControls(root, "Slide08_Photo2026");
+    }
+
+    private static void ApplyInteractiveButtonFrames(Transform root)
+    {
+        Button[] buttons = root.GetComponentsInChildren<Button>(true);
+        Sprite frame = AssetDatabase.LoadAssetAtPath<Sprite>(ButtonFramePath);
+        for (int i = 0; i < buttons.Length; i++)
+        {
+            Button button = buttons[i];
+            Image image = button.targetGraphic as Image;
+            if (image == null)
+            {
+                image = button.GetComponent<Image>();
+            }
+
+            if (frame == null)
+            {
+                continue;
+            }
+
+            if (image != null && image.sprite == frame)
+            {
+                image.sprite = null;
+                image.type = Image.Type.Simple;
+                image.color = new Color(1f, 1f, 1f, 0f);
+                image.raycastTarget = true;
+                button.targetGraphic = image;
+            }
+
+            Image fill = CreateOrGetImage(
+                button.transform,
+                "V2_ButtonFill",
+                string.Empty,
+                new Color(
+                    DeepBlueBlack.r,
+                    DeepBlueBlack.g,
+                    DeepBlueBlack.b,
+                    0.42f),
+                false);
+            fill.sprite = null;
+            fill.type = Image.Type.Simple;
+            fill.raycastTarget = false;
+            SetStretch(fill.rectTransform, 2f, 2f, 2f, 2f);
+            fill.transform.SetAsFirstSibling();
+
+            Image outline = CreateOrGetImage(
+                button.transform,
+                "V2_VectorButtonFrame",
+                ButtonFramePath,
+                new Color(
+                    LowSaturationBlue.r,
+                    LowSaturationBlue.g,
+                    LowSaturationBlue.b,
+                    0.88f),
+                true);
+            SetStretch(outline.rectTransform, 0f, 0f, 0f, 0f);
+            outline.raycastTarget = false;
+            outline.transform.SetAsLastSibling();
+        }
+    }
+
+    private static void ApplyPhotoPageControls(
+        Transform root,
+        string pageName)
+    {
+        Transform page = FindNamed(root, pageName);
+        if (page == null)
+        {
+            return;
+        }
+
+        Transform closeButton = FindNamed(page, "Button_CloseStory");
+        if (closeButton is RectTransform closeRect)
+        {
+            SetBottomRight(closeRect, 240f, 48f, 340f, 56f);
+            TMP_Text label = CreateOrGetText(
+                closeButton,
+                "V2_ReturnLabel",
+                "SPACE  RETURN");
+            SetStretch(label.rectTransform, 20f, 10f, 20f, 10f);
+            ConfigureText(
+                label,
+                18f,
+                TextAlignmentOptions.Center,
+                ColdWhite,
+                FontStyles.Bold);
+            label.transform.SetAsLastSibling();
+        }
+
+        Transform fieldUnitText = FindNamed(page, "V2_PhotoFieldUnit");
+        if (fieldUnitText != null)
+        {
+            Image frame = CreateOrGetImage(
+                page,
+                "V2_PhotoFieldUnitFrame",
+                FieldUnitFramePath,
+                new Color(
+                    LowSaturationBlue.r,
+                    LowSaturationBlue.g,
+                    LowSaturationBlue.b,
+                    0.82f),
+                true);
+            SetTopLeft(frame.rectTransform, 432f, 830f, 1056f, 132f);
+            frame.transform.SetSiblingIndex(
+                Mathf.Max(0, fieldUnitText.GetSiblingIndex()));
+        }
+    }
+
+    private static void ApplyShutdownAndTakeoverFrames(Transform root)
+    {
+        ApplyPageFrame(
+            root,
+            "Slide10_ShutdownConfirm",
+            "V2_ShutdownModalFrame",
+            ShutdownFramePath,
+            600f,
+            248f,
+            720f,
+            420f,
+            LowSaturationBlue);
+
+        ApplyPageFrame(
+            root,
+            "Slide11_Warning01",
+            "V2_WarningModalFrame",
+            WarningFramePath,
+            600f,
+            280f,
+            720f,
+            360f,
+            Red);
+        ApplyPageFrame(
+            root,
+            "Slide12_Warning02",
+            "V2_WarningModalFrame",
+            WarningFramePath,
+            600f,
+            280f,
+            720f,
+            360f,
+            Red);
+        ApplyPageFrame(
+            root,
+            "Slide13_Warning03",
+            "V2_WarningModalFrame",
+            WarningFramePath,
+            600f,
+            280f,
+            720f,
+            360f,
+            Red);
+    }
+
+    private static void ApplyPageFrame(
+        Transform root,
+        string pageName,
+        string frameName,
+        string spritePath,
+        float x,
+        float y,
+        float width,
+        float height,
+        Color color)
+    {
+        Transform page = FindNamed(root, pageName);
+        if (page == null)
+        {
+            return;
+        }
+
+        Image frame = CreateOrGetImage(
+            page,
+            frameName,
+            spritePath,
+            new Color(color.r, color.g, color.b, 0.9f),
+            true);
+        SetTopLeft(frame.rectTransform, x, y, width, height);
+        frame.transform.SetAsFirstSibling();
+    }
+
+    private static void ApplyTerminalContentFrames(Transform root)
+    {
+        Transform[] transforms = root.GetComponentsInChildren<Transform>(true);
+        for (int i = 0; i < transforms.Length; i++)
+        {
+            Transform current = transforms[i];
+            string spritePath = null;
+            string frameName = null;
+            if (current.name == "HouseholdIntroduction" ||
+                current.name == "FieldUnitPanel")
+            {
+                spritePath = TerminalInfoFramePath;
+                frameName = "V2_VectorInfoFrame";
+                Transform legacyRule =
+                    current.Find(
+                        current.name == "HouseholdIntroduction"
+                            ? "IntroductionRule"
+                            : "FieldUnitRule");
+                if (legacyRule != null)
+                {
+                    legacyRule.gameObject.SetActive(false);
+                }
+            }
+            else if (current.name.StartsWith(
+                         "Portrait_",
+                         StringComparison.Ordinal))
+            {
+                spritePath = TerminalPortraitFramePath;
+                frameName = "V2_VectorPortraitFrame";
+            }
+
+            if (spritePath == null)
+            {
+                continue;
+            }
+
+            Image frame = CreateOrGetImage(
+                current,
+                frameName,
+                spritePath,
+                new Color(
+                    LowSaturationBlue.r,
+                    LowSaturationBlue.g,
+                    LowSaturationBlue.b,
+                    0.9f),
+                true);
+            SetStretch(frame.rectTransform, 0f, 0f, 0f, 0f);
+            frame.transform.SetAsLastSibling();
+        }
+    }
+
+    private static void ApplyOverlayFrame(
+        RectTransform parent,
+        string frameName,
+        string spritePath,
+        Color color)
+    {
+        if (parent == null)
+        {
+            return;
+        }
+
+        Image frame = CreateOrGetImage(
+            parent,
+            frameName,
+            spritePath,
+            new Color(color.r, color.g, color.b, 0.84f),
+            true);
+        SetStretch(frame.rectTransform, 0f, 0f, 0f, 0f);
+        frame.transform.SetAsLastSibling();
+    }
+
+    private static void ApplyTerminalTextContrast(Transform root)
+    {
+        TMP_Text[] texts = root.GetComponentsInChildren<TMP_Text>(true);
+        for (int i = 0; i < texts.Length; i++)
+        {
+            TMP_Text text = texts[i];
+            if (text == null ||
+                text.transform.IsChildOf(
+                    FindNamed(root, "V2_ClosureTerminalChrome")))
+            {
+                continue;
+            }
+
+            string value = (text.text ?? string.Empty).Trim();
+            if (string.IsNullOrEmpty(value))
+            {
+                continue;
+            }
+
+            bool heading =
+                value.IndexOf(
+                    "HOUSEHOLD INTRODUCTION",
+                    StringComparison.OrdinalIgnoreCase) >= 0 ||
+                value.Equals(
+                    "FIELD UNIT",
+                    StringComparison.OrdinalIgnoreCase) ||
+                value.IndexOf(
+                    "PHOTO PENDING",
+                    StringComparison.OrdinalIgnoreCase) >= 0;
+            text.color = heading ? ColdWhite : LowSaturationBlue;
+            text.enableAutoSizing = false;
+            text.overflowMode = TextOverflowModes.Overflow;
         }
     }
 
@@ -565,7 +1316,138 @@ public static class HearthUiV2ClosureEditor
         SetNamedRectsTopLeft(root, "V2_FinalChoiceHeading", 432f, 232f, 1056f, 52f);
         SetNamedRectsTopLeft(root, "FinalChoiceTarget_A", 432f, 350f, 1056f, 112f);
         SetNamedRectsTopLeft(root, "FinalChoiceTarget_B", 432f, 486f, 1056f, 112f);
-        SetNamedRectsBottomCenter(root, "V2_FinalChoiceHint", 0f, 78f, 900f, 42f);
+        SetNamedRectsBottomCenter(
+            root,
+            "FinalChoiceInputHint",
+            0f,
+            78f,
+            900f,
+            42f);
+        SetNamedActive(root, "V2_FinalChoiceHint", false);
+
+        Transform[] transforms =
+            root.GetComponentsInChildren<Transform>(true);
+        for (int i = 0; i < transforms.Length; i++)
+        {
+            Transform page = transforms[i];
+            if (page.name != "Slide09_FinalChoice" &&
+                page.name != "Slide14_FinalChoiceReturn")
+            {
+                continue;
+            }
+
+            ApplyDecisionPageLayout(page);
+        }
+
+        RectTransform focus = FindRect(root, "FinalChoiceFocus");
+        Image focusImage =
+            focus != null ? focus.GetComponent<Image>() : null;
+        if (focusImage != null)
+        {
+            focusImage.color =
+                new Color(
+                    LowSaturationBlue.r,
+                    LowSaturationBlue.g,
+                    LowSaturationBlue.b,
+                    0.28f);
+            focusImage.raycastTarget = false;
+        }
+
+        HearthFirstPersonHudInput input =
+            root.GetComponentInChildren<HearthFirstPersonHudInput>(true);
+        if (input != null)
+        {
+            input.SetFinalChoiceInputProfile(
+                new HearthFinalChoiceInputProfile(
+                    HearthFinalChoiceNavigationAxis.Vertical,
+                    false,
+                    false));
+        }
+    }
+
+    private static void ApplyDecisionPageLayout(Transform page)
+    {
+        SetNamedRectsTopLeft(page, "ShapeFill_001", 432f, 350f, 1056f, 112f);
+        SetNamedRectsTopLeft(page, "Button_ANSWER_LILY", 432f, 350f, 1056f, 112f);
+        SetNamedRectsTopLeft(page, "Text_002_A", 480f, 382f, 64f, 48f);
+        SetNamedRectsTopLeft(
+            page,
+            "Text_003_ANSWER_LILY_YOURSELF",
+            624f,
+            382f,
+            560f,
+            48f);
+        SetNamedRectsTopLeft(page, "V2_FinalChoiceRuleA", 480f, 350f, 4f, 112f);
+        SetNamedRectsTopLeft(
+            page,
+            "V2_FinalChoiceRecommended",
+            1256f,
+            382f,
+            184f,
+            48f);
+
+        SetNamedRectsTopLeft(page, "ShapeFill_004", 432f, 486f, 1056f, 112f);
+        SetNamedRectsTopLeft(
+            page,
+            "Button_COMPANION_ANSWER",
+            432f,
+            486f,
+            1056f,
+            112f);
+        SetNamedRectsTopLeft(page, "Text_005_B", 480f, 518f, 64f, 48f);
+        SetNamedRectsTopLeft(
+            page,
+            "Text_006_LET_THE_COMPANION_ANSWER_FOR_HER",
+            624f,
+            518f,
+            720f,
+            48f);
+        SetNamedRectsTopLeft(page, "V2_FinalChoiceRuleB", 480f, 486f, 4f, 112f);
+        SetNamedRectsTopLeft(page, "V2_FinalChoiceRule", 432f, 310f, 1056f, 2f);
+
+        ConfigureText(
+            FindText(page, "Text_002_A"),
+            28f,
+            TextAlignmentOptions.MidlineLeft,
+            ColdWhite,
+            FontStyles.Bold);
+        ConfigureText(
+            FindText(page, "Text_003_ANSWER_LILY_YOURSELF"),
+            26f,
+            TextAlignmentOptions.MidlineLeft,
+            ColdWhite,
+            FontStyles.Normal);
+        ConfigureText(
+            FindText(page, "Text_005_B"),
+            28f,
+            TextAlignmentOptions.MidlineLeft,
+            ColdWhite,
+            FontStyles.Bold);
+        ConfigureText(
+            FindText(
+                page,
+                "Text_006_LET_THE_COMPANION_ANSWER_FOR_HER"),
+            26f,
+            TextAlignmentOptions.MidlineLeft,
+            ColdWhite,
+            FontStyles.Normal);
+
+        TintNamedImage(
+            page,
+            "ShapeFill_001",
+            new Color(
+                DeepBlueBlack.r,
+                DeepBlueBlack.g,
+                DeepBlueBlack.b,
+                0.72f));
+        TintNamedImage(
+            page,
+            "ShapeFill_004",
+            new Color(
+                DeepBlueBlack.r,
+                DeepBlueBlack.g,
+                DeepBlueBlack.b,
+                0.72f));
     }
 
     private static void ApplyKeycapSizing(Transform root)
@@ -613,6 +1495,324 @@ public static class HearthUiV2ClosureEditor
         }
     }
 
+    private static void ValidateHumanPrefab(List<string> issues)
+    {
+        GameObject root = LoadPrefabForValidation(HumanPrefab, issues);
+        if (root == null)
+        {
+            return;
+        }
+
+        CanvasScaler scaler = root.GetComponent<CanvasScaler>();
+        if (scaler == null ||
+            scaler.uiScaleMode !=
+                CanvasScaler.ScaleMode.ScaleWithScreenSize ||
+            scaler.referenceResolution != new Vector2(1920f, 1080f))
+        {
+            issues.Add(
+                "Human HUD is not locked to the 1920×1080 scaling baseline.");
+        }
+
+        RectTransform location = FindRect(root.transform, "LocationHud");
+        if (location == null ||
+            Mathf.Abs(location.anchoredPosition.x - 64f) > 0.5f)
+        {
+            issues.Add(
+                "Human Location HUD is not aligned to the X=64 identity edge.");
+        }
+
+        if (FindNamed(root.transform, "PlayerInteractionPrompt") == null)
+        {
+            issues.Add(
+                "Human HUD has no independent world-interaction prompt layer.");
+        }
+    }
+
+    private static void ValidateCompanionPrefab(List<string> issues)
+    {
+        GameObject root = LoadPrefabForValidation(CompanionPrefab, issues);
+        if (root == null)
+        {
+            return;
+        }
+
+        Transform frame = FindNamed(root.transform, "CompanionRobotFrame");
+        Image frameImage = frame != null ? frame.GetComponent<Image>() : null;
+        string framePath =
+            frameImage != null && frameImage.sprite != null
+                ? AssetDatabase.GetAssetPath(frameImage.sprite)
+                : string.Empty;
+        if (frameImage == null || framePath != CompanionFramePath)
+        {
+            issues.Add(
+                "Companion HUD is not using the single approved transparent " +
+                "fullscreen technology frame.");
+        }
+
+        RequireActive(root.transform, "V2_REC", "Companion REC marker", issues);
+        RequireActive(
+            root.transform,
+            "V2_CurrentTask",
+            "Companion Current Task",
+            issues);
+        RequireInactive(
+            root.transform,
+            "DataStreamView",
+            "obsolete Monitor Bus",
+            issues);
+        RequireInactive(
+            root.transform,
+            "V2_PhysicalFeedLabel",
+            "obsolete Physical Unit Feed label",
+            issues);
+        RequireInactive(
+            root.transform,
+            "V2_PhysicalFeedRule",
+            "obsolete Physical Unit Feed rule",
+            issues);
+        RequireInactive(
+            root.transform,
+            "V2_InspectionReturn",
+            "replay Esc/Return hint",
+            issues);
+    }
+
+    private static void ValidateOpenSceneCompanionInstances(
+        List<string> issues)
+    {
+        HearthCompanionHudController[] controllers =
+            Resources.FindObjectsOfTypeAll<HearthCompanionHudController>();
+        for (int i = 0; i < controllers.Length; i++)
+        {
+            HearthCompanionHudController controller = controllers[i];
+            if (controller == null ||
+                !controller.gameObject.scene.IsValid() ||
+                !controller.gameObject.scene.isLoaded)
+            {
+                continue;
+            }
+
+            Transform frame =
+                FindNamed(controller.transform, "CompanionRobotFrame");
+            Image image = frame != null ? frame.GetComponent<Image>() : null;
+            string path =
+                image != null && image.sprite != null
+                    ? AssetDatabase.GetAssetPath(image.sprite)
+                    : string.Empty;
+            if (image == null ||
+                path != CompanionFramePath ||
+                image.color.a < 0.75f)
+            {
+                issues.Add(
+                    "Open-scene Companion HUD must use one visible " +
+                    "CompanionRobotFrame without a transparent scene override.");
+            }
+
+            Transform legacyStatus =
+                FindNamed(controller.transform, "V2_Status");
+            if (legacyStatus != null && legacyStatus.gameObject.activeSelf)
+            {
+                issues.Add(
+                    "Open-scene Companion HUD still enables legacy V2_Status.");
+            }
+        }
+    }
+
+    private static void ValidateTerminalPrefab(
+        string path,
+        HearthTerminalMode expectedMode,
+        bool requiresCompactChrome,
+        List<string> issues)
+    {
+        GameObject root = LoadPrefabForValidation(path, issues);
+        if (root == null)
+        {
+            return;
+        }
+
+        HearthTvTerminalController terminal =
+            root.GetComponent<HearthTvTerminalController>() ??
+            root.GetComponentInChildren<HearthTvTerminalController>(true);
+        if (terminal == null)
+        {
+            issues.Add(path + " has no HearthTvTerminalController.");
+            return;
+        }
+
+        if (terminal.TerminalMode != expectedMode)
+        {
+            issues.Add(
+                path +
+                " has the wrong terminal strategy: " +
+                terminal.TerminalMode +
+                ".");
+        }
+
+        Transform chrome =
+            FindNamed(root.transform, "V2_ClosureTerminalChrome");
+        if (requiresCompactChrome)
+        {
+            if (chrome == null ||
+                root.GetComponent<HearthTerminalCompactChromeView>() == null)
+            {
+                issues.Add(path + " is missing the compact three-focus chrome.");
+                return;
+            }
+
+            RequireActive(
+                chrome,
+                "PrimaryActionTab",
+                path + " primary action",
+                issues);
+            ValidateNoActiveLegacyTerminalChrome(root.transform, chrome, path, issues);
+        }
+        else if (chrome != null && chrome.gameObject.activeSelf)
+        {
+            issues.Add(
+                path +
+                " incorrectly contains doorway/home fullscreen navigation chrome.");
+        }
+    }
+
+    private static void ValidateSubtitlePrefab(List<string> issues)
+    {
+        GameObject root = LoadPrefabForValidation(
+            HearthSubtitleV2VisualBuilder.PrefabPath,
+            issues);
+        if (root == null)
+        {
+            return;
+        }
+
+        RequireActive(root.transform, "VisualRoot", "subtitle VisualRoot", issues);
+        RequireInactive(
+            root.transform,
+            "SpeakerTab",
+            "legacy shared subtitle speaker tab",
+            issues);
+        RequireInactive(
+            root.transform,
+            "AccentRule",
+            "legacy shared subtitle accent rule",
+            issues);
+        RequirePresent(
+            root.transform,
+            "FormalFrame",
+            "formal dialogue vector frame",
+            issues);
+        RequirePresent(
+            root.transform,
+            "AuxiliaryFrame",
+            "Field Unit auxiliary vector frame",
+            issues);
+        RequirePresent(
+            root.transform,
+            "SpeakerTabLeft",
+            "left formal speaker tab",
+            issues);
+        RequirePresent(
+            root.transform,
+            "SpeakerTabRight",
+            "right formal speaker tab",
+            issues);
+        RequirePresent(
+            root.transform,
+            "AdvanceHint",
+            "manual Space advance hint",
+            issues);
+
+        TMP_Text body = FindText(root.transform, "Body");
+        if (body == null ||
+            body.enableAutoSizing ||
+            body.overflowMode != TextOverflowModes.Overflow)
+        {
+            issues.Add(
+                "Subtitle body is not fixed-size and overflow-safe.");
+        }
+    }
+
+    private static GameObject LoadPrefabForValidation(
+        string path,
+        List<string> issues)
+    {
+        GameObject root = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+        if (root == null)
+        {
+            issues.Add("Missing prefab: " + path);
+        }
+        return root;
+    }
+
+    private static void ValidateNoActiveLegacyTerminalChrome(
+        Transform root,
+        Transform approvedChrome,
+        string path,
+        List<string> issues)
+    {
+        Transform[] transforms = root.GetComponentsInChildren<Transform>(true);
+        for (int i = 0; i < transforms.Length; i++)
+        {
+            Transform current = transforms[i];
+            if (current == approvedChrome ||
+                current.IsChildOf(approvedChrome) ||
+                !current.gameObject.activeSelf)
+            {
+                continue;
+            }
+
+            string name = current.name;
+            if (name == "KeyboardNavigationRoot" ||
+                name == "V2_FooterRule" ||
+                name == "NavigationRule" ||
+                name.StartsWith("Tab_", StringComparison.Ordinal))
+            {
+                issues.Add(
+                    path +
+                    " still has active legacy terminal chrome: " +
+                    name +
+                    ".");
+            }
+        }
+    }
+
+    private static void RequireActive(
+        Transform root,
+        string name,
+        string label,
+        List<string> issues)
+    {
+        Transform found = FindNamed(root, name);
+        if (found == null || !found.gameObject.activeSelf)
+        {
+            issues.Add(label + " is missing or inactive.");
+        }
+    }
+
+    private static void RequireInactive(
+        Transform root,
+        string name,
+        string label,
+        List<string> issues)
+    {
+        Transform found = FindNamed(root, name);
+        if (found != null && found.gameObject.activeSelf)
+        {
+            issues.Add(label + " must be inactive in the V2 prefab.");
+        }
+    }
+
+    private static void RequirePresent(
+        Transform root,
+        string name,
+        string label,
+        List<string> issues)
+    {
+        if (FindNamed(root, name) == null)
+        {
+            issues.Add(label + " is missing.");
+        }
+    }
+
     private static Transform FindNamed(Transform root, string name)
     {
         Transform[] transforms = root.GetComponentsInChildren<Transform>(true);
@@ -631,10 +1831,40 @@ public static class HearthUiV2ClosureEditor
         return FindNamed(root, name) as RectTransform;
     }
 
+    private static Image FindImage(Transform root, string name)
+    {
+        Transform found = FindNamed(root, name);
+        return found != null ? found.GetComponent<Image>() : null;
+    }
+
     private static TMP_Text FindText(Transform root, string name)
     {
         Transform found = FindNamed(root, name);
         return found != null ? found.GetComponent<TMP_Text>() : null;
+    }
+
+    private static void ConfigureNamedTexts(
+        Transform root,
+        string name,
+        float fontSize,
+        TextAlignmentOptions alignment,
+        Color color,
+        FontStyles style)
+    {
+        Transform[] transforms = root.GetComponentsInChildren<Transform>(true);
+        for (int i = 0; i < transforms.Length; i++)
+        {
+            if (transforms[i].name != name)
+            {
+                continue;
+            }
+
+            TMP_Text text = transforms[i].GetComponent<TMP_Text>();
+            if (text != null)
+            {
+                ConfigureText(text, fontSize, alignment, color, style);
+            }
+        }
     }
 
     private static TMP_Text CreateOrGetText(
@@ -675,6 +1905,30 @@ public static class HearthUiV2ClosureEditor
         imageObject.layer = parent.gameObject.layer;
         imageObject.transform.SetParent(parent, false);
         Image image = imageObject.GetComponent<Image>();
+        image.color = color;
+        image.raycastTarget = false;
+        return image;
+    }
+
+    private static Image CreateOrGetImage(
+        Transform parent,
+        string name,
+        string spritePath,
+        Color color,
+        bool sliced)
+    {
+        Transform existing = parent.Find(name);
+        Image image =
+            existing != null ? existing.GetComponent<Image>() : null;
+        if (image == null)
+        {
+            image = CreateImage(parent, name, color);
+        }
+
+        Sprite sprite = AssetDatabase.LoadAssetAtPath<Sprite>(spritePath);
+        image.sprite = sprite;
+        image.type = sliced ? Image.Type.Sliced : Image.Type.Simple;
+        image.preserveAspect = false;
         image.color = color;
         image.raycastTarget = false;
         return image;
@@ -758,6 +2012,27 @@ public static class HearthUiV2ClosureEditor
             if (transforms[i].name == name)
             {
                 transforms[i].gameObject.SetActive(active);
+            }
+        }
+    }
+
+    private static void TintNamedImage(
+        Transform root,
+        string name,
+        Color color)
+    {
+        Transform[] transforms = root.GetComponentsInChildren<Transform>(true);
+        for (int i = 0; i < transforms.Length; i++)
+        {
+            if (transforms[i].name != name)
+            {
+                continue;
+            }
+
+            Image image = transforms[i].GetComponent<Image>();
+            if (image != null)
+            {
+                image.color = color;
             }
         }
     }

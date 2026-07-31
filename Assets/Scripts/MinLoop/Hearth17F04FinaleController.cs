@@ -41,6 +41,7 @@ public class Hearth17F04FinaleController : MonoBehaviour
     [SerializeField] private FirstPersonLook humanLook;
     [SerializeField] private PlayerInteraction humanInteraction;
     [SerializeField] private Rigidbody humanRigidbody;
+    [SerializeField] private HearthPlayerControlLock playerControlLock;
 
     [Header("Anchors")]
     [SerializeField] private Transform livingRoomAnchor;
@@ -164,14 +165,13 @@ public class Hearth17F04FinaleController : MonoBehaviour
 
     private void OnDestroy()
     {
+        if (playerControlLock != null)
+        {
+            playerControlLock.ReleaseOwner(this);
+        }
         RestoreFinalChoiceInputProfile();
         UnsubscribeEvents();
         StopAllStorySfx();
-    }
-
-    private void LateUpdate()
-    {
-        MaintainFreeControlStages();
     }
 
     private void OnValidate()
@@ -662,6 +662,7 @@ public class Hearth17F04FinaleController : MonoBehaviour
         if (catGuide == null) catGuide = FindObjectOfType<Hearth17F04CatGuideController>(true);
         if (trustState == null) trustState = FindObjectOfType<TrustStateController>(true);
         if (householdProgress == null) householdProgress = FindObjectOfType<HearthHouseholdProgressState>(true);
+        if (playerControlLock == null) playerControlLock = FindObjectOfType<HearthPlayerControlLock>(true);
         if (homeTerminal == null)
         {
             HearthTvTerminalController[] terminals = FindObjectsOfType<HearthTvTerminalController>(true);
@@ -827,45 +828,29 @@ public class Hearth17F04FinaleController : MonoBehaviour
 
     private void SetHumanControls(bool movement, bool look, bool interaction)
     {
-        if (humanMovement != null) humanMovement.enabled = movement;
-        if (humanLook != null) humanLook.enabled = look;
-        if (humanInteraction != null) humanInteraction.SetInteractionEnabled(interaction);
+        HearthPlayerControlMask mask = HearthPlayerControlMask.None;
+        if (!movement) mask |= HearthPlayerControlMask.Movement;
+        if (!look) mask |= HearthPlayerControlMask.Look;
+        if (!interaction) mask |= HearthPlayerControlMask.Interaction;
+
+        if (playerControlLock != null)
+        {
+            playerControlLock.SetControlMask(this, mask);
+        }
+        else
+        {
+            if (humanMovement != null) humanMovement.enabled = movement;
+            if (humanLook != null) humanLook.enabled = look;
+            if (humanInteraction != null)
+            {
+                humanInteraction.SetInteractionEnabled(interaction);
+            }
+        }
+
         if (!movement && humanRigidbody != null && !humanRigidbody.isKinematic)
         {
             humanRigidbody.velocity = Vector3.zero;
             humanRigidbody.angularVelocity = Vector3.zero;
-        }
-    }
-
-    private void MaintainFreeControlStages()
-    {
-        bool freeControlStage = currentStage == FinaleStage.LivingRoom ||
-                                currentStage == FinaleStage.Dialogue ||
-                                currentStage == FinaleStage.ApproachUnit;
-        if (!freeControlStage)
-        {
-            return;
-        }
-
-        if (photoFrame != null && (photoFrame.IsOpen || photoFrame.IsTransitioning))
-        {
-            return;
-        }
-
-        if (firstPersonHud != null &&
-            firstPersonHud.CurrentPageId != HearthFirstPersonHudPageId.None &&
-            firstPersonHud.CurrentPageId != HearthFirstPersonHudPageId.Slide01PersistentHud &&
-            firstPersonHud.CurrentPageId != HearthFirstPersonHudPageId.Slide02TrustDelta)
-        {
-            return;
-        }
-
-        bool needsRepair = humanMovement != null && !humanMovement.enabled ||
-                           humanLook != null && !humanLook.enabled ||
-                           humanInteraction != null && !humanInteraction.InteractionEnabled;
-        if (needsRepair)
-        {
-            SetHumanControls(true, true, true);
         }
     }
 

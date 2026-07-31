@@ -49,7 +49,10 @@ public class HearthFirstPersonHudInput : MonoBehaviour
 
     [Header("Final Choice")]
     [SerializeField] private HearthFinalChoiceInputProfile finalChoiceInputProfile =
-        new HearthFinalChoiceInputProfile(HearthFinalChoiceNavigationAxis.Horizontal, true, true);
+        new HearthFinalChoiceInputProfile(
+            HearthFinalChoiceNavigationAxis.Vertical,
+            false,
+            false);
     [SerializeField] private TMP_Text finalChoiceHintText;
 
     [Header("Settings")]

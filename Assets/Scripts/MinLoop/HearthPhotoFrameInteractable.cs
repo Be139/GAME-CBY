@@ -34,7 +34,8 @@ public class HearthPhotoFrameInteractable : MonoBehaviour, IInteractable, IInter
     [SerializeField] private bool useSecondUiPhotoArchive = true;
     [SerializeField] private HearthFirstPersonHudController photoArchiveHud;
     [SerializeField] private HearthFirstPersonHudInput photoArchiveHudInput;
-    [SerializeField] private Vector2Int archiveRenderTextureSize = new Vector2Int(880, 610);
+    [SerializeField] private Vector2Int archiveRenderTextureSize =
+        new Vector2Int(1280, 720);
 
     [Header("Exit")]
     [SerializeField] private KeyCode confirmExitKey = KeyCode.Space;

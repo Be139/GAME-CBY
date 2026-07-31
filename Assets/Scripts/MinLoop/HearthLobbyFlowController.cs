@@ -30,6 +30,7 @@ public class HearthLobbyFlowController : MonoBehaviour
     [SerializeField] private PlayerInteraction humanInteraction;
     [SerializeField] private Rigidbody humanRigidbody;
     [SerializeField] private Behaviour[] auxiliaryInputBehaviours;
+    [SerializeField] private HearthPlayerControlLock playerControlLock;
 
     [Header("Pose References")]
     [SerializeField] private Transform lobbyStartAnchor;
@@ -46,8 +47,6 @@ public class HearthLobbyFlowController : MonoBehaviour
     [SerializeField] private HearthLocationProbe locationProbe;
     [SerializeField] private HearthTvTerminalController assignmentTerminal;
     [SerializeField] private HearthLobbyConversationZone[] optionalConversationZones;
-    [Tooltip("Screen-space HUD canvases hidden only while the lobby assignment terminal owns the camera.")]
-    [SerializeField] private Canvas[] hudCanvasesHiddenDuringTerminal;
 
     [Header("Dialogue")]
     [SerializeField] private HearthDialogueSequence openingBriefingDialogue;
@@ -79,17 +78,11 @@ public class HearthLobbyFlowController : MonoBehaviour
 
     private Coroutine activeRoutine;
     private bool busy;
-    private bool desiredMove;
-    private bool desiredLook;
-    private bool desiredInteract;
-    private bool desiredControlStateActive;
     private bool[] auxiliaryEnabledBeforeLock;
     private bool auxiliaryLocked;
     private Vector3 cachedCameraLocalPosition;
     private Transform cachedCameraParent;
     private bool hasCachedCameraPivot;
-    private bool terminalHudSuppressed;
-    private bool[] terminalHudCanvasWasEnabled;
     private bool assignmentTerminalCloseAvailable;
     private bool assignmentTerminalCloseRequested;
 
@@ -159,16 +152,6 @@ public class HearthLobbyFlowController : MonoBehaviour
         }
     }
 
-    private void LateUpdate()
-    {
-        RefreshTerminalHudVisibility();
-
-        if (desiredControlStateActive)
-        {
-            ApplyDesiredControlState();
-        }
-    }
-
     private void OnDisable()
     {
         if (sfxCuePlayer != null)
@@ -176,63 +159,11 @@ public class HearthLobbyFlowController : MonoBehaviour
             sfxCuePlayer.StopAllCues();
         }
 
-        RestoreTerminalHudVisibility();
-        desiredControlStateActive = false;
+        if (playerControlLock != null)
+        {
+            playerControlLock.ReleaseOwner(this);
+        }
         RestoreAuxiliaryInputs();
-    }
-
-    private void RefreshTerminalHudVisibility()
-    {
-        bool shouldSuppress = assignmentTerminal != null && assignmentTerminal.IsOpen;
-        if (shouldSuppress == terminalHudSuppressed)
-        {
-            return;
-        }
-
-        if (shouldSuppress)
-        {
-            terminalHudSuppressed = true;
-            terminalHudCanvasWasEnabled = hudCanvasesHiddenDuringTerminal != null
-                ? new bool[hudCanvasesHiddenDuringTerminal.Length]
-                : new bool[0];
-
-            for (int i = 0; i < terminalHudCanvasWasEnabled.Length; i++)
-            {
-                Canvas canvas = hudCanvasesHiddenDuringTerminal[i];
-                terminalHudCanvasWasEnabled[i] = canvas != null && canvas.enabled;
-                if (canvas != null)
-                {
-                    canvas.enabled = false;
-                }
-            }
-
-            return;
-        }
-
-        RestoreTerminalHudVisibility();
-    }
-
-    private void RestoreTerminalHudVisibility()
-    {
-        if (!terminalHudSuppressed)
-        {
-            return;
-        }
-
-        if (hudCanvasesHiddenDuringTerminal != null && terminalHudCanvasWasEnabled != null)
-        {
-            int count = Mathf.Min(hudCanvasesHiddenDuringTerminal.Length, terminalHudCanvasWasEnabled.Length);
-            for (int i = 0; i < count; i++)
-            {
-                if (hudCanvasesHiddenDuringTerminal[i] != null)
-                {
-                    hudCanvasesHiddenDuringTerminal[i].enabled = terminalHudCanvasWasEnabled[i];
-                }
-            }
-        }
-
-        terminalHudSuppressed = false;
-        terminalHudCanvasWasEnabled = null;
     }
 
     private void OnValidate()
@@ -717,11 +648,39 @@ public class HearthLobbyFlowController : MonoBehaviour
 
     private void SetHumanControl(bool move, bool look, bool interact, bool lockAuxiliaryInputs)
     {
-        desiredMove = move;
-        desiredLook = look;
-        desiredInteract = interact;
-        desiredControlStateActive = lockAuxiliaryInputs || !move || !look || !interact;
-        ApplyDesiredControlState();
+        if (playerControlLock == null)
+        {
+            playerControlLock = FindObjectOfType<HearthPlayerControlLock>(true);
+        }
+
+        HearthPlayerControlMask mask = HearthPlayerControlMask.None;
+        if (!move) mask |= HearthPlayerControlMask.Movement;
+        if (!look) mask |= HearthPlayerControlMask.Look;
+        if (!interact) mask |= HearthPlayerControlMask.Interaction;
+        if (lockAuxiliaryInputs)
+        {
+            mask |= HearthPlayerControlMask.Menu |
+                    HearthPlayerControlMask.Extra;
+        }
+
+        if (playerControlLock != null)
+        {
+            playerControlLock.SetControlMask(this, mask);
+        }
+        else
+        {
+            if (humanMovement != null) humanMovement.enabled = move;
+            if (humanLook != null) humanLook.enabled = look;
+            if (humanInteraction != null)
+            {
+                humanInteraction.SetInteractionEnabled(interact);
+            }
+        }
+
+        if (!move)
+        {
+            ClearHumanVelocity();
+        }
 
         if (lockAuxiliaryInputs)
         {
@@ -731,14 +690,6 @@ public class HearthLobbyFlowController : MonoBehaviour
         {
             RestoreAuxiliaryInputs();
         }
-    }
-
-    private void ApplyDesiredControlState()
-    {
-        if (humanMovement != null) humanMovement.enabled = desiredMove;
-        if (humanLook != null) humanLook.enabled = desiredLook;
-        if (humanInteraction != null) humanInteraction.SetInteractionEnabled(desiredInteract);
-        if (!desiredMove) ClearHumanVelocity();
     }
 
     private void LockAuxiliaryInputs()

@@ -22,15 +22,15 @@ public sealed class HearthTerminalCompactChromeView : MonoBehaviour
     [SerializeField] private Image primaryActionBackground;
 
     private static readonly Color IdleBackground =
-        new Color(0.09f, 0.14f, 0.21f, 0.9f);
+        new Color(0.52f, 0.66f, 0.82f, 1f);
     private static readonly Color FocusBackground =
-        new Color(0.29f, 0.41f, 0.54f, 0.96f);
+        new Color(0.82f, 0.92f, 1f, 1f);
     private static readonly Color LockedBackground =
-        new Color(0.16f, 0.18f, 0.21f, 0.88f);
+        new Color(0.34f, 0.40f, 0.48f, 1f);
     private static readonly Color Text =
-        new Color(0.84f, 0.9f, 0.96f, 1f);
+        new Color(0.96f, 0.98f, 1f, 1f);
     private static readonly Color Muted =
-        new Color(0.37f, 0.47f, 0.58f, 0.95f);
+        new Color(0.82f, 0.90f, 0.98f, 1f);
 
     private void Awake()
     {
@@ -108,7 +108,9 @@ public sealed class HearthTerminalCompactChromeView : MonoBehaviour
         SetVisible(beforeBackground, !home);
         SetVisible(afterBackground, !home);
         SetText(terminalLabel, home ? "HOME TERMINAL" : "DOORWAY TERMINAL");
-        SetText(residentLabel, state.TerminalId);
+        SetText(
+            residentLabel,
+            home ? string.Empty : FormatTerminalId(state.TerminalId));
         SetText(beforeLabel, "BEFORE ACQUISITION");
         SetText(afterLabel, "AFTER ACQUISITION");
         SetText(primaryActionLabel, state.PrimaryActionLabel);
@@ -172,6 +174,27 @@ public sealed class HearthTerminalCompactChromeView : MonoBehaviour
 
         target.text = value ?? string.Empty;
         target.gameObject.SetActive(!string.IsNullOrEmpty(target.text));
+    }
+
+    private static string FormatTerminalId(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
+        string compact =
+            value.Trim()
+                .Replace("-", string.Empty)
+                .Replace(" ", string.Empty)
+                .ToUpperInvariant();
+        if (compact.Length == 5 &&
+            compact.StartsWith("17F", System.StringComparison.Ordinal))
+        {
+            return compact.Substring(0, 3) + "-" + compact.Substring(3);
+        }
+
+        return value.Trim();
     }
 
     private static void SetVisible(Image target, bool visible)

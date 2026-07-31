@@ -165,6 +165,43 @@ public class HearthPlayerControlLock : MonoBehaviour
         }
     }
 
+    public void SetControlMask(
+        Object owner,
+        HearthPlayerControlMask mask)
+    {
+        Object effectiveOwner = owner != null ? owner : this;
+        bool wasUnlocked = ownerLocks.Count == 0;
+        if (mask == HearthPlayerControlMask.None)
+        {
+            if (!ownerLocks.Remove(effectiveOwner))
+            {
+                return;
+            }
+        }
+        else
+        {
+            HearthPlayerControlMask existingMask;
+            ownerLocks.TryGetValue(effectiveOwner, out existingMask);
+            if (existingMask == mask)
+            {
+                return;
+            }
+
+            ownerLocks[effectiveOwner] = mask;
+            if (wasUnlocked)
+            {
+                ResolveReferences();
+                CaptureEnabledStates();
+            }
+        }
+
+        ReapplyOwnerLocks();
+        if ((mask & HearthPlayerControlMask.Movement) != 0)
+        {
+            ClearRigidbodies();
+        }
+    }
+
     public bool IsLocked(HearthPlayerControlMask mask)
     {
         return (activeMask & mask) != 0;

@@ -744,11 +744,25 @@ public class HearthFirstPersonHudController : MonoBehaviour
             dispositionOptionAText =
                 optionATarget.GetComponentInChildren<TMP_Text>(true);
         }
+        if (dispositionOptionAText == null)
+        {
+            dispositionOptionAText =
+                FindTextByName(
+                    page.transform,
+                    "Text_003_ANSWER_LILY_YOURSELF");
+        }
 
         if (dispositionOptionBText == null && optionBTarget != null)
         {
             dispositionOptionBText =
                 optionBTarget.GetComponentInChildren<TMP_Text>(true);
+        }
+        if (dispositionOptionBText == null)
+        {
+            dispositionOptionBText =
+                FindTextByName(
+                    page.transform,
+                    "Text_006_LET_THE_COMPANION_ANSWER_FOR_HER");
         }
     }
 

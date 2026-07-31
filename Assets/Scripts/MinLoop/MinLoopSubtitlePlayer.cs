@@ -23,11 +23,16 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
     [SerializeField] private Image backdropImage;
     [SerializeField] private Image accentRuleImage;
     [SerializeField] private Image speakerTabImage;
+    [SerializeField] private Image formalFrameImage;
+    [SerializeField] private Image auxiliaryFrameImage;
+    [SerializeField] private Image leftSpeakerTabImage;
+    [SerializeField] private Image rightSpeakerTabImage;
 
     [Header("UI (legacy-compatible bindings)")]
     [SerializeField] private GameObject subtitlePanel;
     [SerializeField] private TMP_Text speakerText;
     [SerializeField] private TMP_Text bodyText;
+    [SerializeField] private TMP_Text advanceHintText;
     [SerializeField] private CanvasGroup canvasGroup;
     [SerializeField] private bool createFallbackUI = true;
 
@@ -336,7 +341,6 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
     public void Hide()
     {
         Stop();
-        HideImmediate();
     }
 
     public void Stop()
@@ -354,6 +358,7 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
 
         IsPlaying = false;
         ReleaseDialogueControlLock();
+        HideImmediate();
     }
 
     private IEnumerator PlaySequenceRoutine(
@@ -853,6 +858,40 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
                 speakerTabImage = speakerTab.GetComponent<Image>();
             }
         }
+
+        if (formalFrameImage == null)
+        {
+            formalFrameImage =
+                FindImage(GetVisualRoot().transform, "FormalFrame");
+        }
+
+        if (auxiliaryFrameImage == null)
+        {
+            auxiliaryFrameImage =
+                FindImage(GetVisualRoot().transform, "AuxiliaryFrame");
+        }
+
+        if (leftSpeakerTabImage == null)
+        {
+            leftSpeakerTabImage =
+                FindImage(GetVisualRoot().transform, "SpeakerTabLeft");
+        }
+
+        if (rightSpeakerTabImage == null)
+        {
+            rightSpeakerTabImage =
+                FindImage(GetVisualRoot().transform, "SpeakerTabRight");
+        }
+
+        if (advanceHintText == null)
+        {
+            Transform hint =
+                GetVisualRoot().transform.Find("AdvanceHint");
+            if (hint != null)
+            {
+                advanceHintText = hint.GetComponent<TMP_Text>();
+            }
+        }
     }
 
     private void EnsureDialogueChannelSource()
@@ -1050,16 +1089,50 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
 
         if (speakerTabImage != null)
         {
-            speakerTabImage.color =
-                mode == HearthSubtitlePresentationMode.TimeCard
-                ? Color.clear
-                : (contextStyle != null
-                    ? contextStyle.backgroundColor
-                    : new Color(0.035f, 0.055f, 0.08f, 0.88f));
+            speakerTabImage.color = Color.clear;
             speakerTabImage.raycastTarget = false;
-            speakerTabImage.gameObject.SetActive(
-                mode != HearthSubtitlePresentationMode.TimeCard &&
-                activeSpeakerSide != SpeakerSide.None);
+            speakerTabImage.gameObject.SetActive(false);
+        }
+
+        bool standardDialogue =
+            mode == HearthSubtitlePresentationMode.StandardDialogue;
+        bool auxiliary =
+            standardDialogue &&
+            activeChannel == DialogueChannel.Auxiliary;
+        bool formal = standardDialogue && !auxiliary;
+        Color frameColor =
+            contextStyle != null
+                ? contextStyle.accentColor
+                : new Color(0.47f, 0.67f, 0.86f, 0.92f);
+
+        ConfigureFrameVisibility(formalFrameImage, formal, frameColor);
+        ConfigureFrameVisibility(
+            auxiliaryFrameImage,
+            auxiliary,
+            frameColor);
+        ConfigureFrameVisibility(
+            leftSpeakerTabImage,
+            formal && activeSpeakerSide == SpeakerSide.Left,
+            frameColor);
+        ConfigureFrameVisibility(
+            rightSpeakerTabImage,
+            formal && activeSpeakerSide == SpeakerSide.Right,
+            frameColor);
+
+        if (advanceHintText != null)
+        {
+            bool showHint =
+                standardDialogue &&
+                activeAdvancePolicy == AdvancePolicy.ManualSpace;
+            advanceHintText.text = "SPACE  CONTINUE";
+            advanceHintText.gameObject.SetActive(showHint);
+            ApplyTextStyle(
+                advanceHintText,
+                auxiliary ? 14f : 15f,
+                0f,
+                frameColor,
+                FontStyles.Bold);
+            advanceHintText.alignment = TextAlignmentOptions.Right;
         }
 
         activePresentationMode = mode;
@@ -1206,18 +1279,24 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
     {
         bool auxiliary = activeChannel == DialogueChannel.Auxiliary;
         Rect backdrop = auxiliary
-            ? new Rect(1408f, 318f, 448f, 260f)
+            ? new Rect(1216f, 214f, 640f, 180f)
             : new Rect(432f, 670f, 960f, 256f);
         Rect body = auxiliary
-            ? new Rect(1432f, 382f, 400f, 164f)
-            : new Rect(472f, 714f, 880f, 164f);
+            ? new Rect(1244f, 278f, 560f, 76f)
+            : new Rect(472f, 714f, 880f, 150f);
+        const float formalSpeakerWidth = 340f;
         Rect speaker = auxiliary
-            ? new Rect(1432f, 336f, 400f, 36f)
+            ? new Rect(1244f, 238f, 560f, 30f)
             : new Rect(
-                activeSpeakerSide == SpeakerSide.Right ? 1136f : 432f,
+                activeSpeakerSide == SpeakerSide.Right
+                    ? backdrop.xMax - formalSpeakerWidth
+                    : backdrop.x,
                 622f,
-                256f,
+                formalSpeakerWidth,
                 48f);
+        Rect advanceHint = auxiliary
+            ? new Rect(1608f, 358f, 196f, 22f)
+            : new Rect(1128f, 884f, 224f, 24f);
         float accentX = !auxiliary &&
                         activeSpeakerSide == SpeakerSide.Right
             ? backdrop.xMax - 2f
@@ -1237,6 +1316,32 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
             speaker,
             rootSize);
         ApplyTopLeftRect(
+            formalFrameImage != null ? formalFrameImage.rectTransform : null,
+            new Rect(432f, 670f, 960f, 256f),
+            rootSize);
+        ApplyTopLeftRect(
+            auxiliaryFrameImage != null
+                ? auxiliaryFrameImage.rectTransform
+                : null,
+            new Rect(1216f, 214f, 640f, 180f),
+            rootSize);
+        ApplyTopLeftRect(
+            leftSpeakerTabImage != null
+                ? leftSpeakerTabImage.rectTransform
+                : null,
+            new Rect(432f, 622f, formalSpeakerWidth, 48f),
+            rootSize);
+        ApplyTopLeftRect(
+            rightSpeakerTabImage != null
+                ? rightSpeakerTabImage.rectTransform
+                : null,
+            new Rect(
+                1392f - formalSpeakerWidth,
+                622f,
+                formalSpeakerWidth,
+                48f),
+            rootSize);
+        ApplyTopLeftRect(
             speakerText != null ? speakerText.rectTransform : null,
             speaker,
             rootSize,
@@ -1244,6 +1349,12 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
         ApplyTopLeftRect(
             bodyText != null ? bodyText.rectTransform : null,
             body,
+            rootSize);
+        ApplyTopLeftRect(
+            advanceHintText != null
+                ? advanceHintText.rectTransform
+                : null,
+            advanceHint,
             rootSize);
 
         if (speakerText != null)
@@ -1263,6 +1374,32 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
             bodyText.maxVisibleLines = auxiliary ? 6 : 3;
             bodyText.overflowMode = TextOverflowModes.Overflow;
         }
+    }
+
+    private static Image FindImage(Transform root, string objectName)
+    {
+        if (root == null)
+        {
+            return null;
+        }
+
+        Transform found = root.Find(objectName);
+        return found != null ? found.GetComponent<Image>() : null;
+    }
+
+    private static void ConfigureFrameVisibility(
+        Image image,
+        bool visible,
+        Color color)
+    {
+        if (image == null)
+        {
+            return;
+        }
+
+        image.color = color;
+        image.raycastTarget = false;
+        image.gameObject.SetActive(visible);
     }
 
     private static void ApplyTopLeftRect(

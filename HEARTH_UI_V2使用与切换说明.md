@@ -4,6 +4,10 @@
 > 日常只允许使用 `Refresh Existing V2 Prefab Visuals` 定向刷新现有七套 V2 Prefab；
 > `Rebuild All V2 UI Assets` 与 `Use V2 UI In Open Scene` 不得作为日常修复按钮。
 > 若后文历史说明与本段冲突，以本段和“日常安全维护流程”为准。
+>
+> 2026-07-30 手工接管入口：
+> 用户自行摆放固定 UI、导入新矢量 PNG、区分动态文字与点击命中区时，
+> 优先阅读根目录 `HEARTH_UI_V2_手工调整与接管手册.md`。
 
 ## 当前状态
 
@@ -358,3 +362,29 @@ V2 仍有以下未完成项：
   但还没有保存 11 类界面的完整逐界面双分辨率截图矩阵。
 - 已验证“保留现有 Override 的事务切换在保存重载后结构一致”，
   仍未验证“清空视觉 Override 后重开 Unity 仍完全一致”。
+
+## 2026-07-30 V2 视觉与预览收口
+
+本节为当前最新状态，优先于上方较早的“未完成项”描述。
+
+- 20 个 Runtime Preview 状态已经形成一套最终 1920×1080 MCP 基线：
+  Human 9、Companion 6、Terminal 5。
+- Human 的固定 HUD、Field Unit、左右正式对白、Tab、照片、处置、关机和低信任
+  均已接入透明矢量组件与统一灰蓝主题。
+- Companion 已完成全屏科技框、REC、动态住户编号、Current Task、
+  `SUBJECT - MONITORING`、Decision、Formal Dialogue 和 Permission Boundary。
+- Doorway 终端为 Before、After、主动作三个焦点；Home 终端旧淡色标题和确认层已清理；
+  五台终端只保留实体电视外框。
+- `Apply Approved Closure` 可重复执行，`Validate Approved Closure` 当前通过。
+- `Runtime Preview > QA > Audit Active Regions` 已对 1920×1080 全部代表状态检查；
+  Human、Companion 与 Terminal 没有达到阈值的区域遮挡。
+- 1280×720 与 2560×1440 已分别检查 Human Formal、Photo、
+  Companion Decision 与 Doorway Terminal，区域审计均通过。
+
+当前基线：
+
+- `HEARTH_UI_V2_Baselines/MCP_Final/HEARTH_UI_V2_MCP_Final_ContactSheet.png`
+- `HEARTH_UI_V2_Baselines/MCP_Responsive/HEARTH_UI_V2_MCP_Responsive_ContactSheet.png`
+
+本轮遵循用户要求只做 Runtime Preview 和 MCP 验证，没有替用户跑大厅至结局的完整玩法。
+正式剧情输入、控制恢复、音频衔接和所有关卡触发仍由用户最终实机通关验收。

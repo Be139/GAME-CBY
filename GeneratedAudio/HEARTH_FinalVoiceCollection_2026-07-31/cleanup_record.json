@@ -1,0 +1,34 @@
+{
+  "status": "completed",
+  "date": "2026-07-31",
+  "reason": "Consolidated one selected MP3 per authoritative JSONL line and removed superseded or duplicate review/source copies.",
+  "removed_directories": [
+    {
+      "path": "GeneratedAudio/ElevenLabs/CastingAuditions_2026-07-30",
+      "mp3_count": 32,
+      "file_count": 36,
+      "reason": "All 32 audition MP3 files were byte-identical subsets of FullDialogue."
+    },
+    {
+      "path": "GeneratedAudio/ElevenLabs/FullDialogue_2026-07-30",
+      "mp3_count": 338,
+      "file_count": 340,
+      "reason": "Selected ElevenLabs files were copied and hash-verified in the unique final collection; superseded Ben and Unit originals were excluded."
+    },
+    {
+      "path": "GeneratedAudio/BenAndUnit_Balanced_Review_2026-07-31",
+      "mp3_count": 173,
+      "file_count": 182,
+      "reason": "Selected 25 Ben and 147 Unit files were copied and hash-verified; the VoxCPM WifeExit version was excluded."
+    },
+    {
+      "path": "GeneratedAudio/ElevenLabs",
+      "reason": "Empty after consolidation."
+    },
+    {
+      "path": "GeneratedAudio/VoxCPM",
+      "reason": "Empty review directory."
+    }
+  ],
+  "preserved_project_audio": "Unity Assets audio was not modified; no dialogue audition files were found there."
+}

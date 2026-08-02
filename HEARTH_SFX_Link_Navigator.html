@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HEARTH 音效链接导航</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0e1116;
+      --panel: #171c24;
+      --panel-2: #1e2530;
+      --line: #303948;
+      --text: #eef3f8;
+      --muted: #9da9b7;
+      --accent: #7ed7e6;
+      --accent-2: #b7f0b1;
+      --warning: #f5cf78;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(circle at top left, #17222d 0, var(--bg) 38rem);
+      color: var(--text);
+      font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+      line-height: 1.55;
+    }
+    button, input { font: inherit; }
+    .shell { width: min(1440px, calc(100% - 32px)); margin: 0 auto; }
+    header { padding: 44px 0 24px; }
+    .eyebrow { color: var(--accent); font-size: 13px; letter-spacing: .16em; text-transform: uppercase; }
+    h1 { margin: 8px 0 8px; font-size: clamp(30px, 5vw, 56px); line-height: 1.05; }
+    .intro { max-width: 860px; margin: 0; color: var(--muted); }
+    .stats { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+    .stat { padding: 7px 11px; border: 1px solid var(--line); border-radius: 999px; background: #111720cc; color: var(--muted); }
+    .stat strong { color: var(--text); }
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      padding: 14px 0;
+      background: color-mix(in srgb, var(--bg) 88%, transparent);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--line);
+    }
+    .toolbar-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .search {
+      flex: 1 1 320px;
+      min-width: 0;
+      padding: 12px 14px;
+      color: var(--text);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      outline: none;
+    }
+    .search:focus { border-color: var(--accent); box-shadow: 0 0 0 3px #7ed7e61f; }
+    .filters { display: flex; gap: 7px; overflow-x: auto; padding: 10px 0 2px; }
+    .chip, .action {
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: var(--panel);
+      color: var(--muted);
+      padding: 8px 11px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .chip:hover, .action:hover { color: var(--text); border-color: #526073; }
+    .chip.active { color: #081316; background: var(--accent); border-color: var(--accent); }
+    main { padding: 26px 0 64px; }
+    .section { margin: 0 0 38px; }
+    .section-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 12px; }
+    .section h2 { margin: 0; font-size: 22px; }
+    .section-count { color: var(--muted); font-size: 13px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 14px; }
+    .card { border: 1px solid var(--line); border-radius: 14px; background: linear-gradient(145deg, var(--panel), #12171e); overflow: hidden; }
+    .card-head { padding: 18px 18px 14px; border-bottom: 1px solid var(--line); }
+    .card-title { display: flex; gap: 10px; align-items: baseline; }
+    .code { color: var(--accent); font: 700 13px/1.2 ui-monospace, Consolas, monospace; }
+    .card h3 { margin: 0; font-size: 18px; }
+    .meta { display: grid; gap: 8px; margin-top: 13px; color: var(--muted); font-size: 14px; }
+    .meta b { color: var(--text); font-weight: 600; }
+    .links { display: grid; gap: 1px; background: var(--line); }
+    .candidate { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; padding: 11px 14px; background: var(--panel-2); }
+    .candidate:hover { background: #242d3a; }
+    .candidate input { width: 17px; height: 17px; accent-color: var(--accent-2); }
+    .candidate a { color: var(--text); text-decoration: none; min-width: 0; }
+    .candidate a:hover { color: var(--accent); }
+    .domain { color: var(--muted); font-size: 12px; white-space: nowrap; }
+    .card-actions { display: flex; gap: 8px; padding: 12px 14px; }
+    .action { padding: 7px 10px; font-size: 13px; }
+    .notice { margin: 0 0 22px; padding: 12px 14px; border-left: 3px solid var(--warning); background: #f5cf780d; color: var(--muted); }
+    .empty { display: none; padding: 60px 0; text-align: center; color: var(--muted); }
+    .toast { position: fixed; right: 18px; bottom: 18px; padding: 10px 14px; border-radius: 9px; color: #071113; background: var(--accent-2); box-shadow: 0 12px 40px #0008; opacity: 0; transform: translateY(8px); pointer-events: none; transition: .2s ease; }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    @media (max-width: 640px) {
+      .shell { width: min(100% - 20px, 1440px); }
+      header { padding-top: 30px; }
+      .candidate { grid-template-columns: auto 1fr; }
+      .domain { grid-column: 2; }
+    }
+  </style>
+</head>
+<body>
+  <header class="shell">
+    <div class="eyebrow">HEARTH · SFX SOURCE NAVIGATOR</div>
+    <h1>音效链接导航</h1>
+    <p class="intro">双击此 HTML 后，它会在系统默认浏览器中运行。点击候选即可在新标签页打开；勾选框会自动保存在本机，方便你逐项比较并保留中意素材。</p>
+    <div class="stats">
+      <span class="stat"><strong id="itemCount"></strong> 个音效需求</span>
+      <span class="stat"><strong id="linkCount"></strong> 个候选链接</span>
+      <span class="stat"><strong id="selectedCount">0</strong> 个已标记</span>
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <div class="shell">
+      <div class="toolbar-row">
+        <input id="search" class="search" type="search" placeholder="搜索编号、音效、位置、网站……" autofocus>
+        <button id="copySelected" class="action" type="button">复制已标记链接</button>
+        <button id="clearSelected" class="action" type="button">清除标记</button>
+      </div>
+      <div id="filters" class="filters"></div>
+    </div>
+  </div>
+
+  <main class="shell">
+    <p class="notice">“打开本项 5 个候选”可能被浏览器的弹窗保护拦截；遇到这种情况，直接逐条点击候选最稳定。</p>
+    <div id="content"></div>
+    <div id="empty" class="empty">没有匹配结果，请换一个关键词。</div>
+  </main>
+  <div id="toast" class="toast"></div>
+
+  <script>
+    const items = [{"id": "AMB-01", "title": "家庭室内底噪", "category": "底噪与环境", "placement": "共用给 Bedroom.RoomTone、LivingRoom.RoomTone、Home.RoomTone、DaughterRoom.RoomTone，也可作为厨房和前厅的基础底噪", "target": "安静公寓室内、无清晰人声、无宠物、无突出的钟表或单次动作；至少 30 秒，能循环。房间差异只用音量、EQ 和混响处理", "links": [{"label": "Pixabay：Apartment Living Room Room Tone（直达单条）", "url": "https://pixabay.com/sound-effects/household-room-tone-in-an-apartment-living-room-2-6176/"}, {"label": "Freesound：Room Tone 2024 Pack", "url": "https://freesound.org/people/klankbeeld/packs/40249/"}, {"label": "ZapSplat：Room Tone 精准标签", "url": "https://www.zapsplat.com/tags/room-tone/"}, {"label": "Mixkit：Bedroom / quiet interior 候选", "url": "https://mixkit.co/free-sound-effects/bedroom/"}, {"label": "99Sounds：World Sounds 室内录音包", "url": "https://99sounds.org/world-sounds/"}]}, {"id": "AMB-02", "title": "17 楼走廊底噪", "category": "底噪与环境", "placement": "Corridor.RoomTone；到达 17 楼后播放，进入家庭回放时停止或替换", "target": "安静现代公寓/办公走廊，空间狭长，有极轻通风或远处建筑声；不要恐怖无人区 Drone，不要清晰脚步和说话", "links": [{"label": "Freesound：Quiet Corridor Room Tone（直达单条）", "url": "https://freesound.org/s/530750/"}, {"label": "Pixabay：Empty Room Tone 4（直达单条）", "url": "https://pixabay.com/sound-effects/technology-005487-empty-room-tone-4-51110/"}, {"label": "ZapSplat：Room Tone 标签，筛 hallway/corridor", "url": "https://www.zapsplat.com/tags/room-tone/"}, {"label": "SoundJay：Indoor Ambient Sounds", "url": "https://www.soundjay.com/ambient-sounds.html"}, {"label": "Sonniss：GDC Game Audio Bundle，检索 corridor/hallway", "url": "https://gdc.sonniss.com/gdc-game-audio-bundle/"}]}, {"id": "AMB-03", "title": "一楼大厅底噪", "category": "底噪与环境", "placement": "Lobby.RoomTone；开场简报、任务终端和大厅自由探索", "target": "比走廊更宽、更高，现代住宅/酒店大厅；可以有极远 HVAC 和稀疏脚步，但不能有可辨识谈话、前台铃或拥挤人群", "links": [{"label": "Pixabay：Ambient Hotel Lobby（直达单条）", "url": "https://pixabay.com/sound-effects/household-ambient-hotel-lobby-49668/"}, {"label": "Freesound：Lobby ambience 精准结果", "url": "https://freesound.org/search/?q=quiet+modern+lobby+ambience"}, {"label": "ZapSplat：Hotel Lobby Ambience 精准结果", "url": "https://www.zapsplat.com/?s=hotel+lobby+ambience&post_type=music"}, {"label": "Mixkit：Ambience，试听 public interior 候选", "url": "https://mixkit.co/free-sound-effects/ambience/"}, {"label": "Sonniss：GDC Bundle，检索 lobby/foyer/reception", "url": "https://gdc.sonniss.com/gdc-game-audio-bundle/"}]}, {"id": "AMB-09", "title": "一楼大厅极轻纯人声 / Walla", "category": "底噪与环境", "placement": "Lobby.Walla；任务终端周围或等候区，作为 AMB-03 上方很薄的一层", "target": "只要 2–4 名成年人低声、含混、听不清词句的纯人声；不要脚步、衣物、餐具、门、广播、笑声、咳嗽或明显空间事件。优先原本就安静且可循环的录音，不用“大型人群”素材硬压音量；混音时先比正式对白低约 18–24dB，对白播放时再自动降低 4–6dB", "links": [{"label": "Freesound：Indoor Adult Murmur, Couple，两人低声，0:19，CC0，无缝循环", "url": "https://freesound.org/people/SpliceSound/sounds/260124/"}, {"label": "Freesound：Indoor Adult Murmur, Small Group，少量成年人，0:26，CC0，无缝循环", "url": "https://freesound.org/people/SpliceSound/sounds/260121/"}, {"label": "Freesound：Murmur，只有低语与含混人声，0:49，CC0", "url": "https://freesound.org/people/Ben_0815/sounds/515798/"}, {"label": "Bensound：People Group Talking Indoor Generic Walla Casual，1:46（付费/订阅候选）", "url": "https://www.bensound.com/sound-effects/people-group-talking-indoor-generic-walla-casual-01-crowd"}, {"label": "Pond5：Quiet Murmuring，精准选择 Group Murmur / Quiet Walla / Soft Conversation / Light Whispering", "url": "https://www.pond5.com/search?kw=quiet-murmuring&media=sfx"}]}, {"id": "AMB-04", "title": "完整电梯录音", "category": "底噪与环境", "placement": "Elevator.DoorsClose、Elevator.Motor、Elevator.Arrival、Elevator.DoorsOpen；按钮按下共用 UI-01", "target": "优先找一条完整的“关门—短途运行—到达提示—开门”录音，再从同一母素材切成 4 段，避免不同电梯录音质感不一致", "links": [{"label": "ZapSplat：Doors close → short ride → doors open（直达单条）", "url": "https://www.zapsplat.com/music/elevator-lift-doors-open-and-close-very-short-ride-then-doors-open/"}, {"label": "Pixabay：Arrival Ding and Door Opening（直达单条）", "url": "https://pixabay.com/sound-effects/household-elevator-arrival-ding-and-door-opening-339161/"}, {"label": "Freesound：Elevator Doors 1（直达单条）", "url": "https://freesound.org/s/456889/"}, {"label": "Sonniss：Elevators 96kHz/24bit 专业包", "url": "https://sonniss.com/sound-effects/elevators-96khz-24-bit-stereo/"}, {"label": "Pond5：Elevator 完整过程精准结果", "url": "https://www.pond5.com/search?kw=elevator&media=sfx"}]}, {"id": "AMB-05", "title": "冰箱嗡鸣", "category": "底噪与环境", "placement": "正式对白稿的“room tone, refrigerator hum”；只在厨房/客厅需要生活感时低音量叠加", "target": "稳定压缩机 Hum，无开门、瓶罐和报警；可以循环。不能拿它代替整个家庭底噪", "links": [{"label": "Freesound：Residential Kitchen Refrigerator Hum，CC0（直达单条）", "url": "https://freesound.org/people/SpliceSound/sounds/338115/"}, {"label": "Pixabay：Refrigerator Hum（直达单条）", "url": "https://pixabay.com/sound-effects/refrigerator-hum-58719/"}, {"label": "ZapSplat：Refrigerator Hum（直达单条）", "url": "https://www.zapsplat.com/music/refrigerator-hum/"}, {"label": "SoundJay：Appliance Sounds，试听 refrigerator", "url": "https://www.soundjay.com/appliance-sounds-2.html"}, {"label": "Adobe Audition 免费素材：Household 包", "url": "https://www.adobe.com/products/audition/offers/audition-dlc.html"}]}, {"id": "AMB-06", "title": "室内听到的远处交通", "category": "底噪与环境", "placement": "正式对白稿的“distant traffic”；住宅靠窗或城市感需要时叠加", "target": "必须是隔窗/隔墙后的低频交通底层，不要近距离喇叭、急刹、警笛和清晰行人声", "links": [{"label": "Pixabay：Traffic Heard from Apartment Interior（直达单条）", "url": "https://pixabay.com/sound-effects/005354-traffic-heard-from-apartment-interior-51212/"}, {"label": "ZapSplat：Apartment Interior + Distant Traffic（直达单条）", "url": "https://www.zapsplat.com/music/apartment-interior-ambience-room-tone-hallway-open-door-distant-traffic/"}, {"label": "Mixkit：Traffic，试听 City Traffic Background Ambience", "url": "https://mixkit.co/free-sound-effects/traffic/"}, {"label": "Freesound：Traffic Through Closed Window 精准结果", "url": "https://freesound.org/search/?q=traffic+through+closed+window+interior"}, {"label": "99Sounds：World Sounds，检索 urban/apartment", "url": "https://99sounds.org/world-sounds/"}]}, {"id": "AMB-07", "title": "浴室门后持续水声", "category": "底噪与环境", "placement": "正式对白稿“a door closes. Water, faint and steady”；门关闭后作为遮挡后的持续声", "target": "稳定水龙头或淋浴水流，先找干净近录音，再在 Unity/DAW 中低通、降音量，做成门后远声；不要滴水、冲马桶或大水花", "links": [{"label": "Pixabay：Water Running in Sink（直达单条）", "url": "https://pixabay.com/sound-effects/water-running-in-sink-391062/"}, {"label": "Mixkit：Bathroom，试听 Shower Water / Sink Water Running", "url": "https://mixkit.co/free-sound-effects/bathroom/"}, {"label": "ZapSplat：Metal Sink，Tap On → Steady Flow → Off（直达单条）", "url": "https://www.zapsplat.com/music/metal-sink-faucet-tap-on-run-off-steady-fast-flow/"}, {"label": "Freesound：Shower in Next Room 精准结果", "url": "https://freesound.org/search/?q=shower+running+next+room+behind+door"}, {"label": "SoundJay：Household Sounds，筛 faucet/shower", "url": "https://www.soundjay.com/household-sounds.html"}]}, {"id": "AMB-08", "title": "学校体育馆远处底噪", "category": "底噪与环境", "placement": "正式对白稿“a school gymnasium hum, distant”；17F04 记忆段落", "target": "空或稀疏使用中的室内体育馆，长混响、灯具/HVAC、极远球声或鞋底声；不要近距离欢呼和比赛播报", "links": [{"label": "Freesound：Empty School Gym Room Tone（直达单条）", "url": "https://freesound.org/s/192576/"}, {"label": "ZapSplat：Indoor Sports Hall Warm-up Ambience（直达单条）", "url": "https://www.zapsplat.com/music/sports-hall-indoor-gymnasium-ambience-basketball-and-futsal-warmup-voices-balls-bounce-australia/"}, {"label": "Pixabay：Empty Hockey Rink Ambience（直达单条）", "url": "https://pixabay.com/sound-effects/city-ambiencehockeyrinkempty-34361/"}, {"label": "Mixkit：Sports，试听低人声的 Stadium/Indoor 候选", "url": "https://mixkit.co/free-sound-effects/sports/"}, {"label": "Sonniss：GDC Bundle，检索 gym/sports hall", "url": "https://gdc.sonniss.com/gdc-game-audio-bundle/"}]}, {"id": "UI-01", "title": "UI 轻点击 / 角色触屏", "category": "UI 与交互", "placement": "共用给 UI.InteractSingle、普通 UI 点击、终端翻页/焦点移动、角色点击屏幕、电梯按钮、女儿键盘、轻弹窗出现/消失", "target": "一次短、轻、干净的触控反馈，约 0.08-0.25s；不要鼠标实体机械声、硬币声或明显游戏得分感", "links": [{"label": "UI SFX：Press / Select / Focus，CC0", "url": "https://uisfx.com/"}, {"label": "Kenney：UI Audio，50 个 CC0 点击", "url": "https://www.kenney.nl/assets/ui-audio"}, {"label": "Mixkit：Click，优先 Modern Technology Select / Interface Device Click", "url": "https://mixkit.co/free-sound-effects/click/"}, {"label": "ObsydianX：Interface SFX Pack 1，CC0 Cursor Tones", "url": "https://obsydianx.itch.io/interface-sfx-pack-1"}, {"label": "Hove Audio：Free SCI-FI UI Pack，29 Clicks", "url": "https://hoveaudio.itch.io/free-sci-fi-ui-sound-effects-pack"}]}, {"id": "UI-02", "title": "确认 / 提交", "category": "UI 与交互", "placement": "UI.Confirm、Terminal.Submit、AssignmentTerminal.Confirm；关键选择已被系统接受", "target": "比轻点击稍有落点的短确认，约 0.15-0.45s；可用同一素材的小变体，但不要胜利旋律、奖励金币或夸张升级声", "links": [{"label": "UI SFX：Check / Send / Success，CC0", "url": "https://uisfx.com/"}, {"label": "Kenney：Interface Sounds，100 个 CC0 确认/按钮", "url": "https://kenney.nl/assets/interface-sounds"}, {"label": "Mixkit：Interface，试听 Option Select / Confirmation", "url": "https://mixkit.co/free-sound-effects/interface/"}, {"label": "ObsydianX：CC0 Confirm Tones，多套变体", "url": "https://obsydianx.itch.io/interface-sfx-pack-1"}, {"label": "SoundJay：Button Sounds 2，筛干净短确认", "url": "https://www.soundjay.com/button-sounds-2.html"}]}, {"id": "UI-03", "title": "长按进行中", "category": "UI 与交互", "placement": "UI.HoldProgress、HUD 长按环和持续操作过程", "target": "旧候选全部作废。新目标是 1.0-1.6s 的安静循环脉冲/处理中底层，能持续但不催促；不能用单次 Whoosh、倒计时或完成旋律", "links": [{"label": "UI SFX：Loading / Processing / Progress Step，CC0，可直接逐条试听", "url": "https://uisfx.com/"}, {"label": "Eterion RELIC：Charge / System Processing 候选", "url": "https://eterionaudio.com/"}, {"label": "Resonex UI Sounds Digital：Data Processing / Loop 候选", "url": "https://resonex-audio.itch.io/ui-sounds-digital"}, {"label": "BOOM Modern UI：Computer Processing Noises / Reverse Counters", "url": "https://www.boomlibrary.com/sound-effects/modern-ui/"}, {"label": "Hove Audio：Terminal UI Lite，筛持续数据处理声", "url": "https://hoveaudio.itch.io/terminal-user-interface-sound-effects-pack-lite-edition"}]}, {"id": "UI-04", "title": "长按完成 / 操作完成", "category": "UI 与交互", "placement": "UI.HoldComplete、Interaction.ComfortConfirmed、Popup.Success、陪伴单元 Hold Completed Clip", "target": "旧“Loading End / Level Complete”候选作废。新目标是 0.3-0.7s 的克制完成点：短上行或两段式落定；不要关卡胜利、金币、掌声和长尾旋律", "links": [{"label": "UI SFX：Complete / Success，CC0，可直接试听", "url": "https://uisfx.com/"}, {"label": "Freesound：Powerup/Success，0.9s，CC0（直达单条）", "url": "https://freesound.org/people/GabrielAraujo/sounds/242501/"}, {"label": "Pixabay：UI Complete（直达单条）", "url": "https://pixabay.com/sound-effects/film-special-effects-ui-complete-243461/"}, {"label": "Kenney：Interface Sounds，CC0，筛 confirmation/complete", "url": "https://kenney.nl/assets/interface-sounds"}, {"label": "Mixkit：Correct，试听短促 Correct Positive Notification", "url": "https://mixkit.co/free-sound-effects/correct/"}]}, {"id": "UI-05", "title": "柔和通知", "category": "UI 与交互", "placement": "正式对白稿“soft notification tone in Mia's earpiece”；普通非紧急信息到达", "target": "柔和、单次、无压迫感，约 0.25-0.6s；比确认声更像“新信息到达”，但不能像手机短信或门铃", "links": [{"label": "UI SFX：Notification / Receive / Info，CC0", "url": "https://uisfx.com/"}, {"label": "Mixkit：Notification，筛 Interface Hint / Soft Alert", "url": "https://mixkit.co/free-sound-effects/notification/"}, {"label": "Kenney：Interface Sounds，CC0，筛 notification", "url": "https://kenney.nl/assets/interface-sounds"}, {"label": "Hove Audio：Free SCI-FI UI Pack，12 Rings", "url": "https://hoveaudio.itch.io/free-sci-fi-ui-sound-effects-pack"}, {"label": "Eterion RELIC：Notification Soft / UI Message", "url": "https://eterionaudio.com/"}]}, {"id": "UI-06", "title": "警告 / 错误 / 锁定", "category": "UI 与交互", "placement": "Popup.WaveEscalate、HUD Warning Clip、门 Locked Clip、无效操作与低信任升级", "target": "一条短促下降/不协和反馈即可复用；低、中、高警告通过音高、重复次数和音量变化，不需要找三套素材", "links": [{"label": "UI SFX：Warning / Error / Blocked，CC0", "url": "https://uisfx.com/"}, {"label": "ObsydianX：CC0 Error Tones", "url": "https://obsydianx.itch.io/interface-sfx-pack-1"}, {"label": "Mixkit：Alerts，筛 Game Quick Warning / Negative Tone", "url": "https://mixkit.co/free-sound-effects/alerts/"}, {"label": "Hove Audio：Free SCI-FI UI Pack，Glitches / Impacts", "url": "https://hoveaudio.itch.io/free-sci-fi-ui-sound-effects-pack"}, {"label": "SoundJay：Beep Sounds 2，筛短错误提示", "url": "https://www.soundjay.com/beep-sounds-2.html"}]}, {"id": "SYS-01", "title": "数字转场 / 扫描 / 记忆提示", "category": "数字系统", "placement": "Transition.Blackout、Transition.CameraMove、Replay.SceneTransition、System.DataScan、Photo.Memory", "target": "找一条有“数字掠过/扫描纹理”的母素材，剪成短转场、持续扫描和记忆提示；允许反放、截取和轻微变调，但不要电影预告片重击", "links": [{"label": "Pixabay：Futuristic Transition（直达单条）", "url": "https://pixabay.com/sound-effects/technology-futuristic-transition-499653/"}, {"label": "Mixkit：Transition，筛 Technology Slide / Futuristic Sweep", "url": "https://mixkit.co/free-sound-effects/transition/"}, {"label": "99Sounds：Sci-Fi Sounds 免费包", "url": "https://99sounds.org/sci-fi-sounds/"}, {"label": "Hove Audio：Free SCI-FI UI Pack，bleeps/impacts", "url": "https://hoveaudio.itch.io/free-sci-fi-ui-sound-effects-pack"}, {"label": "BOOM Modern UI：Holograms / Noise Sweeps / Digital Hits", "url": "https://www.boomlibrary.com/sound-effects/modern-ui/"}]}, {"id": "SYS-02", "title": "屏幕故障 / 数据损坏", "category": "数字系统", "placement": "所有关卡的 System.Glitch、画面干扰、数据异常", "target": "一条短数字破碎/电噪即可跨关卡复用；不同严重程度用长度、重复和失真量区分。不要持续白噪盖住对白", "links": [{"label": "Pixabay：TV Glitch（直达单条）", "url": "https://pixabay.com/sound-effects/technology-tv-glitch-6245/"}, {"label": "Mixkit：Glitch，筛 Small Electric / Digital Signal Interference", "url": "https://mixkit.co/free-sound-effects/glitch/"}, {"label": "Hove Audio：Free SCI-FI UI Pack，31 Glitches", "url": "https://hoveaudio.itch.io/free-sci-fi-ui-sound-effects-pack"}, {"label": "ZapSplat：Glitch Sounds 分类", "url": "https://www.zapsplat.com/sound-effect-category/glitches/"}, {"label": "99Sounds：Sci-Fi Sounds，筛 glitch/static", "url": "https://99sounds.org/sci-fi-sounds/"}]}, {"id": "SYS-03", "title": "设备开机 / 关机", "category": "数字系统", "placement": "终端 Boot Clip、17F02/03 System.PowerOff、17F04 Unit.PowerOff", "target": "优先选一条有清晰能量方向的 Power Cycle；同一母素材切出开机和关机，或将关机纹理反放重剪。不要爆炸、重型机甲倒地或系统语音", "links": [{"label": "Pixabay：Robot Power Off（直达单条）", "url": "https://pixabay.com/sound-effects/film-special-effects-robot-power-off-97246/"}, {"label": "Mixkit：Technology，试听 Electronics Power Up / Machine Activation", "url": "https://mixkit.co/free-sound-effects/technology/"}, {"label": "Resonex UI Sounds Digital：Power On / Off Transitions", "url": "https://resonex-audio.itch.io/ui-sounds-digital"}, {"label": "Hove Audio：Terminal UI Lite，筛 boot/shutdown", "url": "https://hoveaudio.itch.io/terminal-user-interface-sound-effects-pack-lite-edition"}, {"label": "BOOM Mechanicals：motors / mechanisms / power movement", "url": "https://www.boomlibrary.com/sound-effects/mechanicals/"}]}, {"id": "FOL-01", "title": "住宅门", "category": "人物、物件与剧情动作", "placement": "SmartDoorController、卧室门、浴室门、住户门、最终前门；所有普通住宅门共用", "target": "一条完整室内木门录音，切出开门与关门；最好包含门把/锁舌，但不要古堡吱呀、金属舱门或猛烈摔门", "links": [{"label": "Pixabay：Door Opening and Closing（直达单条）", "url": "https://pixabay.com/sound-effects/household-door-opening-and-closing-18398/"}, {"label": "Mixkit：Doors，筛普通木门 open/close", "url": "https://mixkit.co/free-sound-effects/doors/"}, {"label": "SoundJay：Door Sounds 1", "url": "https://www.soundjay.com/door-sounds-1.html"}, {"label": "FilmCow：Free SFX，筛 residential door", "url": "https://filmcow.itch.io/filmcow-sfx"}, {"label": "Sonniss：GDC Bundle，检索 interior wood door", "url": "https://gdc.sonniss.com/gdc-game-audio-bundle/"}]}, {"id": "FOL-02", "title": "人类室内脚步", "category": "人物、物件与剧情动作", "placement": "米娅、人类角色 Wife.Walk、Daughter.Walk；同类硬地板脚步共用", "target": "一套轻到中等重量的室内脚步，优先木地板/硬地板；不同人物只改音量和轻微音高。不要高跟鞋、军靴和跑步", "links": [{"label": "Nox Essentials：免费 Foley / Footsteps 包", "url": "https://nox-sound-design.itch.io/essentials-series-sfx-nox-sound"}, {"label": "Mixkit：Footsteps，筛 indoor walk", "url": "https://mixkit.co/free-sound-effects/footsteps/"}, {"label": "Pixabay：Boots on Parquet（直达单条，试听后减重）", "url": "https://pixabay.com/sound-effects/film-special-effects-footsteps-walking-boots-parquet-1-420135/"}, {"label": "FilmCow：Free SFX，筛 footsteps", "url": "https://filmcow.itch.io/filmcow-sfx"}, {"label": "Sonniss：GDC Bundle，检索 indoor footsteps wood/tile", "url": "https://gdc.sonniss.com/gdc-game-audio-bundle/"}]}, {"id": "FOL-03", "title": "坐下 / 起身 / 床架受力", "category": "人物、物件与剧情动作", "placement": "Wife.SitOnBed、Wife.StandUp、Mother.StandUp、Daughter.StandUp；17F01 床边动作", "target": "同一段人物重心与家具受力录音可切成坐下、起身；只保留身体落座、床架/软垫受力和轻衣物瞬态，删除床单、被褥和持续布料摩擦", "links": [{"label": "Pixabay 精准结果：选择 Sit Down / Stand Up x2", "url": "https://pixabay.com/sound-effects/search/sit-down/"}, {"label": "ZapSplat：Person Sitting on Bed Mattress Creak（直达单条）", "url": "https://www.zapsplat.com/music/person-sitting-on-bed-mattress-creak-4/"}, {"label": "Freesound：Sit Down + Stand Up Foley 精准结果，筛 CC0/CC BY", "url": "https://freesound.org/search/?q=sit+down+stand+up+foley"}, {"label": "Adobe Audition 免费素材：Foley / Human Elements 包", "url": "https://www.adobe.com/products/audition/offers/audition-dlc.html"}, {"label": "Sonniss：GDC Bundle，检索 sit/stand/bed creak", "url": "https://gdc.sonniss.com/gdc-game-audio-bundle/"}]}, {"id": "FOL-04", "title": "小型履带机器人移动", "category": "人物、物件与剧情动作", "placement": "机器人第一人称移动、Robot.ServoLoop、陪伴单元起步/停止/原地转向；不再使用双足机器人脚步", "target": "用三层合成：①短而稳定的 RC 小电机/履带循环作为主体；②塑料或橡胶轮接触地面的细小颗粒；③只在起步、停下和转向时加入短伺服。删掉柴油发动机、坦克低频、重金属链条和液压冲击；同一母素材做慢行、正常、转向三种速度即可", "links": [{"label": "ZapSplat：Small Robot Tracks，30 条小型履带/轮组素材包", "url": "https://www.zapsplat.com/sound-effect-packs/small-robot-tracks/"}, {"label": "Pro Sound Effects：Servo Robot Toy Mini Tank Tredder，2:06 WAV（付费直达）", "url": "https://www.prosoundeffects.com/sound-effects/PSE_SMPH-RL/VrgfE/Servo-Robot-Toy-Mini-Tank-Tredder"}, {"label": "Freesound：Designer’s Choice TOYS，选择 RC Car Motor，CC0", "url": "https://freesound.org/people/designerschoice/packs/43695/"}, {"label": "Pixabay：Remote Controlled Toy Car，0:45（直达单条）", "url": "https://pixabay.com/sound-effects/film-special-effects-driving-sounds-of-remoted-controlled-toy-car-29656/"}, {"label": "Mixkit：Car，选择 Toy Car Plastic Wheels 作为地面接触层", "url": "https://mixkit.co/free-sound-effects/car/"}]}, {"id": "FOL-05", "title": "餐桌餐具", "category": "人物、物件与剧情动作", "placement": "Parent.TableFoley、Dining.TableFoley；家庭谈话中的克制桌面动作", "target": "盘子、碗、杯或餐具的一两次轻碰，不要洗碗、餐厅人群、连续摆桌或陶瓷摔碎", "links": [{"label": "Pixabay 精准结果：选择 Dishes Clink", "url": "https://pixabay.com/sound-effects/search/tableware/"}, {"label": "Mixkit：Kitchen，试听 Glasses Clinking / Bowl Placed on Table", "url": "https://mixkit.co/free-sound-effects/kitchen/"}, {"label": "SoundJay：Kitchen Sounds 2", "url": "https://www.soundjay.com/kitchen-sounds-2.html"}, {"label": "ZapSplat：Metal Fork Movement in Bowl（直达单条）", "url": "https://www.zapsplat.com/music/metal-fork-movement-in-bowl-3/"}, {"label": "FilmCow：Free SFX，筛 dishes/cutlery/table", "url": "https://filmcow.itch.io/filmcow-sfx"}]}, {"id": "FOL-06", "title": "锅铲碰锅", "category": "人物、物件与剧情动作", "placement": "正式对白稿“a spatula against a pan”；17F04 早晨厨房记忆", "target": "一两次塑料/木锅铲与不粘锅接触，允许有极轻煎炒底声；不要锅碗坠落、持续爆炒或金属刮擦尖叫", "links": [{"label": "Pixabay：Plastic Spatula on Non-Stick Pan（直达单条）", "url": "https://pixabay.com/sound-effects/household-050588-plastic-spatula-on-non-stick-panwav-38063/"}, {"label": "Mixkit：Cooking，筛 pan close / pot hit / frying", "url": "https://mixkit.co/free-sound-effects/cooking/"}, {"label": "ZapSplat：Spatula + Frying Pan 精准结果", "url": "https://www.zapsplat.com/?s=spatula+frying+pan&post_type=music"}, {"label": "Freesound：Spatula on Pan 精准结果，筛 CC0/CC BY", "url": "https://freesound.org/search/?q=spatula+on+pan+foley"}, {"label": "Adobe Audition 免费素材：Foley / Household 包", "url": "https://www.adobe.com/products/audition/offers/audition-dlc.html"}]}, {"id": "FOL-07", "title": "钥匙落桌", "category": "人物、物件与剧情动作", "placement": "正式对白稿“Keys landing on a table”；17F04 日间记忆", "target": "一串金属钥匙轻落在木桌，需有金属短响和木面落点；不要掉在地砖、钥匙插锁或长时间翻找", "links": [{"label": "ZapSplat：Alum Key Drop on Table（直达单条）", "url": "https://www.zapsplat.com/music/alum-key-drop-on-table/"}, {"label": "Mixkit：Drop，试听 Dropping Keys", "url": "https://mixkit.co/free-sound-effects/drop/"}, {"label": "Pixabay：Keys on Wooden Table 精准结果", "url": "https://pixabay.com/sound-effects/search/keys%20wooden%20table/"}, {"label": "FilmCow：Free SFX，筛 keys/drop/table", "url": "https://filmcow.itch.io/filmcow-sfx"}, {"label": "Sonniss：GDC Bundle，检索 keys wood table", "url": "https://gdc.sonniss.com/gdc-game-audio-bundle/"}]}, {"id": "FOL-08", "title": "远雷", "category": "人物、物件与剧情动作", "placement": "正式对白稿“Thunder, far away”；女儿房夜间记忆", "target": "单次远雷或低沉滚雷，无雨或只有极弱雨底；不要近雷爆点、恐怖冲击和连续暴风雨", "links": [{"label": "Pixabay：Dry Thunder / No Rain（直达单条）", "url": "https://pixabay.com/sound-effects/nature-dry-thunder-364468/"}, {"label": "Mixkit：Thunder，试听 Distant Thunder Explosion / Rumble", "url": "https://mixkit.co/free-sound-effects/thunder/"}, {"label": "ZapSplat：Isolated Thunder Rumble, No Rain（直达单条）", "url": "https://www.zapsplat.com/music/a-rumble-of-thunder-isolated-no-rain-1/"}, {"label": "99Sounds：Rain and Thunder 免费包", "url": "https://99sounds.org/rain-and-thunder/"}, {"label": "Helton Yan：Weather Elements 游戏音效包", "url": "https://heltonyan.itch.io/weatherelements"}]}, {"id": "FOL-09", "title": "行李箱滚轮 / 门槛", "category": "人物、物件与剧情动作", "placement": "正式对白稿“suitcase wheels over the doorstep”；17F04 最终前厅记忆", "target": "小型拉杆箱在硬地板短距离滚动，并有一次过门槛的轻撞；优先从一条完整录音切滚动和门槛两段，不再另找撞击声", "links": [{"label": "Pixabay：Roll-Aboard Suitcase on Hard Surface（直达单条）", "url": "https://pixabay.com/sound-effects/roll-aboard-suitcase-rolling-on-hard-surface-63927/"}, {"label": "ZapSplat：Small Carry-On Suitcase Roll（直达单条）", "url": "https://www.zapsplat.com/music/small-carry-on-sized-suitcase-on-wheels-roll-a-short-distance-on-ground-4/"}, {"label": "Freesound：Rolling Suitcase + Threshold 精准结果，筛 CC0/CC BY", "url": "https://freesound.org/search/?q=rolling+suitcase+threshold"}, {"label": "FilmCow：Free SFX，筛 luggage/wheels", "url": "https://filmcow.itch.io/filmcow-sfx"}, {"label": "Sonniss：GDC Bundle，检索 suitcase/luggage wheels", "url": "https://gdc.sonniss.com/gdc-game-audio-bundle/"}]}, {"id": "MUS-01", "title": "柔和爵士", "category": "音乐", "placement": "正式对白稿“soft jazz, low”；17F01 回放中的低音量室内音乐", "target": "慢或中慢速、无歌词、不过度明亮的 Lounge / Soft Jazz；必须能用于游戏并允许剪辑/循环。不要直接使用仅授权视频、不允许游戏的音乐", "links": [{"label": "Pixabay：No Copyright Jazz Lounge（直达单曲）", "url": "https://pixabay.com/music/modern-jazz-no-copyright-jazz-lounge-541629/"}, {"label": "Incompetech：Backbay Lounge，CC BY 4.0（直达单曲）", "url": "https://incompetech.com/music/royalty-free/index.html?Search=Search&isrc=USUAN1700068"}, {"label": "OpenGameArt：Jazz，CC0（直达单曲）", "url": "https://opengameart.org/content/jazz-1"}, {"label": "Free Music Archive：Jazz 精准结果，最终只选 Public Domain / CC BY / CC0", "url": "https://freemusicarchive.org/search/?search-genre=Jazz"}, {"label": "itch.io：Jazz Groove Game Starter Pack，游戏用循环版本", "url": "https://serenofm.itch.io/jazz-groove-starter-music-pack"}]}];
+    const categories = ["底噪与环境", "UI 与交互", "数字系统", "人物、物件与剧情动作", "音乐"];
+    const storageKey = 'hearth-sfx-selected-v1';
+    let activeCategory = '全部';
+    let selected = new Set(JSON.parse(localStorage.getItem(storageKey) || '[]'));
+
+    const escapeHtml = value => String(value)
+      .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
+    const domainOf = url => { try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return ''; } };
+    const toast = message => {
+      const node = document.getElementById('toast');
+      node.textContent = message;
+      node.classList.add('show');
+      clearTimeout(window.toastTimer);
+      window.toastTimer = setTimeout(() => node.classList.remove('show'), 1800);
+    };
+    const saveSelected = () => {
+      localStorage.setItem(storageKey, JSON.stringify([...selected]));
+      document.getElementById('selectedCount').textContent = selected.size;
+    };
+    const copyText = async text => {
+      try { await navigator.clipboard.writeText(text); }
+      catch {
+        const area = document.createElement('textarea');
+        area.value = text;
+        document.body.appendChild(area);
+        area.select();
+        document.execCommand('copy');
+        area.remove();
+      }
+    };
+
+    function renderFilters() {
+      const root = document.getElementById('filters');
+      root.innerHTML = ['全部', ...categories].map(category =>
+        `<button type="button" class="chip ${category === activeCategory ? 'active' : ''}" data-category="${escapeHtml(category)}">${escapeHtml(category)}</button>`
+      ).join('');
+      root.querySelectorAll('.chip').forEach(button => button.addEventListener('click', () => {
+        activeCategory = button.dataset.category;
+        renderFilters();
+        renderItems();
+      }));
+    }
+
+    function renderItems() {
+      const query = document.getElementById('search').value.trim().toLowerCase();
+      const visible = items.filter(item => {
+        const inCategory = activeCategory === '全部' || item.category === activeCategory;
+        const haystack = [item.id, item.title, item.placement, item.target, ...item.links.flatMap(link => [link.label, link.url])].join(' ').toLowerCase();
+        return inCategory && (!query || haystack.includes(query));
+      });
+
+      const grouped = categories.map(category => [category, visible.filter(item => item.category === category)]).filter(([, rows]) => rows.length);
+      document.getElementById('content').innerHTML = grouped.map(([category, rows]) => `
+        <section class="section">
+          <div class="section-head"><h2>${escapeHtml(category)}</h2><span class="section-count">${rows.length} 项</span></div>
+          <div class="grid">${rows.map(item => `
+            <article class="card" data-id="${escapeHtml(item.id)}">
+              <div class="card-head">
+                <div class="card-title"><span class="code">${escapeHtml(item.id)}</span><h3>${escapeHtml(item.title)}</h3></div>
+                <div class="meta">
+                  <div><b>放置：</b>${escapeHtml(item.placement)}</div>
+                  <div><b>目标：</b>${escapeHtml(item.target)}</div>
+                </div>
+              </div>
+              <div class="links">${item.links.map((link, index) => `
+                <label class="candidate">
+                  <input type="checkbox" data-url="${escapeHtml(link.url)}" ${selected.has(link.url) ? 'checked' : ''}>
+                  <a href="${escapeHtml(link.url)}" target="_blank" rel="noopener noreferrer">${index + 1}. ${escapeHtml(link.label)} ↗</a>
+                  <span class="domain">${escapeHtml(domainOf(link.url))}</span>
+                </label>`).join('')}
+              </div>
+              <div class="card-actions">
+                <button type="button" class="action copy-five" data-id="${escapeHtml(item.id)}">复制 5 个链接</button>
+                <button type="button" class="action open-five" data-id="${escapeHtml(item.id)}">打开本项 5 个候选</button>
+              </div>
+            </article>`).join('')}</div>
+        </section>`).join('');
+
+      document.getElementById('empty').style.display = visible.length ? 'none' : 'block';
+      bindCardActions();
+    }
+
+    function bindCardActions() {
+      document.querySelectorAll('input[data-url]').forEach(input => input.addEventListener('change', () => {
+        input.checked ? selected.add(input.dataset.url) : selected.delete(input.dataset.url);
+        saveSelected();
+      }));
+      document.querySelectorAll('.copy-five').forEach(button => button.addEventListener('click', async () => {
+        const item = items.find(row => row.id === button.dataset.id);
+        await copyText(item.links.map(link => link.url).join('\n'));
+        toast(`已复制 ${item.id} 的 5 个链接`);
+      }));
+      document.querySelectorAll('.open-five').forEach(button => button.addEventListener('click', () => {
+        const item = items.find(row => row.id === button.dataset.id);
+        item.links.forEach(link => window.open(link.url, '_blank', 'noopener'));
+        toast('已请求打开 5 个标签页');
+      }));
+    }
+
+    document.getElementById('search').addEventListener('input', renderItems);
+    document.getElementById('copySelected').addEventListener('click', async () => {
+      if (!selected.size) return toast('还没有标记候选');
+      await copyText([...selected].join('\n'));
+      toast(`已复制 ${selected.size} 个已标记链接`);
+    });
+    document.getElementById('clearSelected').addEventListener('click', () => {
+      selected.clear();
+      saveSelected();
+      renderItems();
+      toast('已清除全部标记');
+    });
+
+    document.getElementById('itemCount').textContent = items.length;
+    document.getElementById('linkCount').textContent = items.reduce((sum, item) => sum + item.links.length, 0);
+    saveSelected();
+    renderFilters();
+    renderItems();
+  </script>
+</body>
+</html>

@@ -1,0 +1,166 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 554e82749faeb2844838cc2954c35501, type: 3}
+  m_Name: HearthSfxCatalog
+  m_EditorClassIdentifier: 
+  entries:
+  - soundId: AMB.Interior.Main
+    maintenanceNote: Primary reusable interior room tone.
+    primaryClip: {fileID: 8300000, guid: f34f350ba1a679d4f8d152d73d57939d, type: 3}
+    alternateClips: []
+  - soundId: AMB.Interior.Alt
+    maintenanceNote: Alternate city-apartment interior room tone.
+    primaryClip: {fileID: 8300000, guid: 9752e621824f61144b31c703cf1a0b10, type: 3}
+    alternateClips: []
+  - soundId: AMB.Elevator.DoorsOpen
+    maintenanceNote: Elevator door-open transition.
+    primaryClip: {fileID: 8300000, guid: 03d3129c2182c5f4ca7ea31c6af6de04, type: 3}
+    alternateClips: []
+  - soundId: AMB.Elevator.Motor
+    maintenanceNote: Elevator ride motor loop.
+    primaryClip: {fileID: 8300000, guid: 1689929bea38d6042a6465f3ee5c88e9, type: 3}
+    alternateClips: []
+  - soundId: AMB.Elevator.Arrival
+    maintenanceNote: Elevator arrival chime.
+    primaryClip: {fileID: 8300000, guid: 6ae6af14ec8e9f245816d73294d8b4e8, type: 3}
+    alternateClips: []
+  - soundId: AMB.17F02.Fridge
+    maintenanceNote: 17F02 black-audio kitchen refrigerator room tone source.
+    primaryClip: {fileID: 8300000, guid: 6507a1ab55689e746a24a6c0acde9404, type: 3}
+    alternateClips: []
+  - soundId: AMB.17F02.Traffic
+    maintenanceNote: 17F02 distant city traffic source.
+    primaryClip: {fileID: 8300000, guid: a8e79234bb08a41499dae17ad37b86d0, type: 3}
+    alternateClips: []
+  - soundId: AMB.17F02.Shower
+    maintenanceNote: 17F02 muffled shower-water source.
+    primaryClip: {fileID: 8300000, guid: ae8e7b118e8546149b0988ea449372ba, type: 3}
+    alternateClips: []
+  - soundId: AMB.17F04.Gym
+    maintenanceNote: 17F04 Path B distant gym/open-house ambience.
+    primaryClip: {fileID: 8300000, guid: bddc4e95940ad044e9d0126186ef8215, type: 3}
+    alternateClips: []
+  - soundId: AMB.Lobby.Walla
+    maintenanceNote: Very quiet, local 3D lobby waiting-area walla; keep 18-24 dB
+      below dialogue.
+    primaryClip: {fileID: 8300000, guid: e510d8b1f0c776b4db383bf10cf19aa4, type: 3}
+    alternateClips: []
+  - soundId: UI.Navigation
+    maintenanceNote: Shared navigation/page/focus movement.
+    primaryClip: {fileID: 8300000, guid: 35a8e0ac2fa81a54b9eb1647f5494776, type: 3}
+    alternateClips: []
+  - soundId: UI.DecisionFocus
+    maintenanceNote: Decision A/B focus movement.
+    primaryClip: {fileID: 8300000, guid: faafaf72c619ac3429be4a699e3e0815, type: 3}
+    alternateClips: []
+  - soundId: UI.Close
+    maintenanceNote: Human HUD and terminal close/cancel.
+    primaryClip: {fileID: 8300000, guid: 1b64efe23a507204dab8fb74daae720f, type: 3}
+    alternateClips: []
+  - soundId: UI.Interact
+    maintenanceNote: Valid short-press E interaction confirmation; never used for
+      invalid feedback.
+    primaryClip: {fileID: 8300000, guid: 7478990fafc19bc449d9996da8fe74c1, type: 3}
+    alternateClips: []
+  - soundId: UI.Submit
+    maintenanceNote: Decision/terminal submit confirmation.
+    primaryClip: {fileID: 8300000, guid: f6abec7c6c8811c40bbb97c0d9a9ed7e, type: 3}
+    alternateClips: []
+  - soundId: UI.HoldProgress
+    maintenanceNote: Long-hold E progress loop.
+    primaryClip: {fileID: 8300000, guid: fe42887db8d117c42babfefee6d096f7, type: 3}
+    alternateClips: []
+  - soundId: UI.HoldComplete
+    maintenanceNote: Long-hold E completion.
+    primaryClip: {fileID: 8300000, guid: 7cc21e07b4746124391d77ac9920e786, type: 3}
+    alternateClips: []
+  - soundId: UI.LilyNotification
+    maintenanceNote: Lily voice-message earpiece notification.
+    primaryClip: {fileID: 8300000, guid: 4936746100600a14f943d7e4c12be059, type: 3}
+    alternateClips: []
+  - soundId: UI.Warning
+    maintenanceNote: High-risk warning.
+    primaryClip: {fileID: 8300000, guid: e583dc7779b702b40bd8cc4a18e56481, type: 3}
+    alternateClips: []
+  - soundId: UI.Popup
+    maintenanceNote: 17F04 shutdown popup spawn/error.
+    primaryClip: {fileID: 8300000, guid: c04c3fd29bb69e4419d4c558d10417e4, type: 3}
+    alternateClips: []
+  - soundId: SYS.ViewSwitch
+    maintenanceNote: Human/companion view switch.
+    primaryClip: {fileID: 8300000, guid: 470e312ccdf859c4ea9b9733babef871, type: 3}
+    alternateClips: []
+  - soundId: SYS.TerminalCamera
+    maintenanceNote: Terminal camera/fixed-view transition.
+    primaryClip: {fileID: 8300000, guid: 949f1d6702fe0a54c8d862dcb2151a8d, type: 3}
+    alternateClips: []
+  - soundId: SYS.Glitch
+    maintenanceNote: Companion shutdown/degradation glitch.
+    primaryClip: {fileID: 8300000, guid: e3a91ad48b616fb4c82698cdf21de5c1, type: 3}
+    alternateClips: []
+  - soundId: SYS.TerminalPower
+    maintenanceNote: Terminal device power-on.
+    primaryClip: {fileID: 8300000, guid: 650f9c6b6dbaf674680ca18c44b1957b, type: 3}
+    alternateClips: []
+  - soundId: SYS.PowerOff
+    maintenanceNote: Companion power-off.
+    primaryClip: {fileID: 8300000, guid: ec64979d6437d03408dac80a1131e33d, type: 3}
+    alternateClips: []
+  - soundId: MUSIC.17F02.Jazz
+    maintenanceNote: 17F02 bedroom comfort soft-jazz source.
+    primaryClip: {fileID: 8300000, guid: b51c333e72bc4bd489c26286dc4963ba, type: 3}
+    alternateClips: []
+  - soundId: FOLEY.Door
+    maintenanceNote: Residential open/close source; runtime uses non-destructive
+      halves.
+    primaryClip: {fileID: 8300000, guid: a9a46f9f7500dee4eaac0db8379302f1, type: 3}
+    alternateClips: []
+  - soundId: FOLEY.SitBed
+    maintenanceNote: Claire sits on bed.
+    primaryClip: {fileID: 8300000, guid: f4747f2fb613ec042a567dd046b9e4c0, type: 3}
+    alternateClips: []
+  - soundId: FOLEY.SitStand
+    maintenanceNote: Reusable character sit/stand source.
+    primaryClip: {fileID: 8300000, guid: 3eeeb5e8b762deb48a39ae040fa8ea27, type: 3}
+    alternateClips: []
+  - soundId: FOLEY.RobotTracked
+    maintenanceNote: Light tracked/toy-like companion movement; never tank or diesel.
+    primaryClip: {fileID: 8300000, guid: 9022d2c2569725744a280fc3bec9a1f1, type: 3}
+    alternateClips: []
+  - soundId: FOLEY.Table
+    maintenanceNote: Restrained table/dining foley source.
+    primaryClip: {fileID: 8300000, guid: 8511434be1b6f1249b37cc47fb1e4d15, type: 3}
+    alternateClips: []
+  - soundId: FOLEY.Frying
+    maintenanceNote: 17F04 Path A frying bed.
+    primaryClip: {fileID: 8300000, guid: 194965c202604d8499d7def286f75c51, type: 3}
+    alternateClips: []
+  - soundId: FOLEY.Keys
+    maintenanceNote: 17F04 Path A keys drop.
+    primaryClip: {fileID: 8300000, guid: 469f45dfc6639d7489594ebea148c167, type: 3}
+    alternateClips: []
+  - soundId: FOLEY.Thunder
+    maintenanceNote: 17F04 Path A distant thunder/rain source.
+    primaryClip: {fileID: 8300000, guid: bec9f6e03266907419242518770b7fee, type: 3}
+    alternateClips: []
+  - soundId: FOLEY.SuitcaseImpact
+    maintenanceNote: 17F04 Path B suitcase threshold impact.
+    primaryClip: {fileID: 8300000, guid: 67ea49fac15e0d34ba5072692b0e638f, type: 3}
+    alternateClips: []
+  - soundId: FOLEY.SuitcaseRolling
+    maintenanceNote: 17F04 Path B suitcase rolling source.
+    primaryClip: {fileID: 8300000, guid: 8913cf9ac8cff1540b062426c5776817, type: 3}
+    alternateClips: []
+  - soundId: FOLEY.HumanSteps
+    maintenanceNote: Existing reusable human footstep recording.
+    primaryClip: {fileID: 8300000, guid: f8c14f2814b4b124a894a65c32c44987, type: 3}
+    alternateClips: []

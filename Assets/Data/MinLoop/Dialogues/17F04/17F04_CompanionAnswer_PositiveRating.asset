@@ -14,13 +14,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   sequenceId: 17F04_CompanionAnswer_PositiveRating
   notes: Positive trust rating after retaining the unit.
+  dialogueChannel: 0
+  defaultSpeakerSide: 0
+  advancePolicy: 0
   lines:
-  - presentationKind: 0
+  - lineId: 17F04_CompanionAnswer_PositiveRating_FieldUnit_001
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.15
     speaker: Field Unit
     text: Your shift remains within the accepted performance range.
     holdSeconds: 4.1688676
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 41368ffeae1922e4ebd5e70c8d329555, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
   postSequenceDelay: 0.18

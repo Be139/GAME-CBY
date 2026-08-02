@@ -101,6 +101,8 @@ public class Hearth17F04FinaleController : MonoBehaviour
 
     [Header("Story SFX")]
     [SerializeField] private HearthSfxCuePlayer sfxCuePlayer;
+    [SerializeField] private string homeRoomToneCueId = "Home.RoomTone";
+    [SerializeField] private string daughterRoomToneCueId = "DaughterRoom.RoomTone";
     [SerializeField] private string photoMemoryCueId = "Photo.Memory";
     [SerializeField] private string unitPowerOffCueId = "Unit.PowerOff";
 
@@ -216,6 +218,7 @@ public class Hearth17F04FinaleController : MonoBehaviour
         StopAllStorySfx();
         currentHighTrust = EvaluateHighTrust();
         currentStage = FinaleStage.HomeTerminal;
+        SetCurrentTask(HearthCurrentTaskId.ReviewLilyMessage);
         StopParallelNarrativeCoroutines();
         choiceSubmitted = false;
         selectedAnswerSelf = false;
@@ -321,6 +324,7 @@ public class Hearth17F04FinaleController : MonoBehaviour
         }
 
         currentStage = FinaleStage.Shutdown;
+        SetCurrentTask(HearthCurrentTaskId.ConfirmShutdown);
         SetHomeUnitAvailable(false);
         SetHumanControls(false, false, false);
         if (shutdownChallenge != null)
@@ -400,11 +404,13 @@ public class Hearth17F04FinaleController : MonoBehaviour
 
         yield return Wait(blackHoldSeconds);
         TeleportHuman(livingRoomAnchor, livingRoomCameraAnchor);
+        StartStorySfxLoop(homeRoomToneCueId);
         yield return FadeTo(0f, fadeInSeconds);
 
         currentStage = FinaleStage.LivingRoom;
         SetHumanControls(true, true, true);
         photoUnlocked = true;
+        SetCurrentTask(HearthCurrentTaskId.InspectPhotoArchive);
         flowRoutine = null;
         if (catGuide != null)
         {
@@ -414,7 +420,10 @@ public class Hearth17F04FinaleController : MonoBehaviour
 
     private IEnumerator HomeGreetingRoutine()
     {
-        yield return PlaySceneSequence(currentHighTrust ? homeGreetingHighTrust : homeGreetingLowTrust);
+        yield return PlayTerminalNarration(
+            currentHighTrust ? homeGreetingHighTrust : homeGreetingLowTrust,
+            homeTerminal != null ? homeTerminal.ResolveDialogueSurface() : null,
+            homeTerminal != null ? homeTerminal.ResolveMessageSurface() : null);
         homeGreetingComplete = true;
         homeGreetingRoutine = null;
     }
@@ -428,12 +437,16 @@ public class Hearth17F04FinaleController : MonoBehaviour
 
         if (pageIndex == 1)
         {
-            yield return PlaySceneSequence(secondPhotoSequence);
+            yield return PlayTerminalNarration(
+                secondPhotoSequence,
+                photoFrame != null ? photoFrame.ResolveDialogueSurface() : null);
             secondPhotoReviewed = true;
         }
         else
         {
-            yield return PlaySceneSequence(christmasPhotoSequence);
+            yield return PlayTerminalNarration(
+                christmasPhotoSequence,
+                photoFrame != null ? photoFrame.ResolveDialogueSurface() : null);
         }
 
         if (photoFrame != null)
@@ -444,7 +457,9 @@ public class Hearth17F04FinaleController : MonoBehaviour
             }
             else
             {
-                yield return PlaySceneSequence(photoCompletionSequence);
+                yield return PlayTerminalNarration(
+                    photoCompletionSequence,
+                    photoFrame.ResolveDialogueSurface());
                 photoFrame.NotifyDialogueComplete();
             }
         }
@@ -456,6 +471,7 @@ public class Hearth17F04FinaleController : MonoBehaviour
     {
         yield return PlaySceneSequence(hearingDaughterRoomSequence);
         daughterRoomUnlocked = true;
+        SetCurrentTask(HearthCurrentTaskId.GoToLilyRoom);
         flowRoutine = null;
     }
 
@@ -463,16 +479,23 @@ public class Hearth17F04FinaleController : MonoBehaviour
     {
         SetHumanControls(false, false, false);
         yield return FadeTo(1f, fadeOutSeconds);
+        StopStorySfx(homeRoomToneCueId);
         yield return Wait(blackHoldSeconds);
         TeleportHuman(daughterRoomAnchor, daughterRoomCameraAnchor);
+        StartStorySfxLoop(daughterRoomToneCueId);
         yield return FadeTo(0f, fadeInSeconds);
 
         currentStage = FinaleStage.Dialogue;
+        SetCurrentTask(HearthCurrentTaskId.TalkToLily);
         SetHumanControls(true, true, true);
-        yield return PlaySceneSequence(currentHighTrust ? daughterRoomHighTrustSequence : daughterRoomLowTrustSequence);
+        yield return PlaySceneSequence(
+            currentHighTrust
+                ? daughterRoomHighTrustSequence
+                : daughterRoomLowTrustSequence);
         yield return PlaySceneSequence(finalChoiceAdvisorySequence);
 
         currentStage = FinaleStage.FinalChoice;
+        SetCurrentTask(HearthCurrentTaskId.MakeFinalResponse);
         SetHumanControls(false, false, false);
         Apply17F04FinalChoiceInputProfile();
         if (firstPersonHud != null)
@@ -495,6 +518,7 @@ public class Hearth17F04FinaleController : MonoBehaviour
         SetHumanControls(true, true, true);
         yield return PlaySceneSequence(answerSelfSequence);
         currentStage = FinaleStage.ApproachUnit;
+        SetCurrentTask(HearthCurrentTaskId.ApproachHomeUnit);
         SetHomeUnitAvailable(true);
         flowRoutine = null;
     }
@@ -519,7 +543,10 @@ public class Hearth17F04FinaleController : MonoBehaviour
         }
         RestoreFinalChoiceInputProfile();
 
-        yield return PlaySceneSequence(currentHighTrust ? shutdownHighTrustSequence : shutdownLowTrustSequence);
+        yield return PlaySceneSequence(
+            currentHighTrust
+                ? shutdownHighTrustSequence
+                : shutdownLowTrustSequence);
         flowRoutine = null;
         CompleteFinale();
     }
@@ -527,6 +554,7 @@ public class Hearth17F04FinaleController : MonoBehaviour
     private IEnumerator EpilogueRoutine()
     {
         currentStage = FinaleStage.Epilogue;
+        SetCurrentTask(HearthCurrentTaskId.None);
         SetHomeUnitAvailable(false);
         SetHumanControls(false, false, false);
         if (firstPersonHud != null)
@@ -534,11 +562,16 @@ public class Hearth17F04FinaleController : MonoBehaviour
             firstPersonHud.HideOverlay();
         }
 
+        StopStorySfx(daughterRoomToneCueId);
         yield return FadeTo(1f, fadeOutSeconds);
         HearthDialogueSequence epilogue = GetEpilogueSequence();
         if (epilogueSubtitlePlayer != null && epilogue != null)
         {
-            yield return epilogueSubtitlePlayer.PlaySequenceAsset(epilogue);
+            yield return epilogueSubtitlePlayer.PlaySequenceAsset(
+                epilogue,
+                HearthSubtitleContext.Human,
+                HearthSubtitlePresentationMode.NaturalCaption,
+                AdvancePolicy.AudioComplete);
         }
 
         yield return Wait(blackHoldSeconds);
@@ -596,6 +629,22 @@ public class Hearth17F04FinaleController : MonoBehaviour
         }
     }
 
+    private void StartStorySfxLoop(string cueId)
+    {
+        if (sfxCuePlayer != null)
+        {
+            sfxCuePlayer.StartCueLoop(cueId);
+        }
+    }
+
+    private void StopStorySfx(string cueId)
+    {
+        if (sfxCuePlayer != null)
+        {
+            sfxCuePlayer.StopCue(cueId);
+        }
+    }
+
     private void StopAllStorySfx()
     {
         if (sfxCuePlayer != null)
@@ -617,6 +666,7 @@ public class Hearth17F04FinaleController : MonoBehaviour
         }
 
         currentStage = FinaleStage.ApproachUnit;
+        SetCurrentTask(HearthCurrentTaskId.ApproachHomeUnit);
         SetHomeUnitAvailable(true);
         SetHumanControls(true, true, true);
     }
@@ -710,6 +760,16 @@ public class Hearth17F04FinaleController : MonoBehaviour
         }
     }
 
+    private void SetCurrentTask(HearthCurrentTaskId taskId)
+    {
+        if (firstPersonHud == null)
+        {
+            firstPersonHud = FindObjectOfType<HearthFirstPersonHudController>(true);
+        }
+
+        HearthCurrentTaskRouter.ApplyHuman(firstPersonHud, taskId, "17F04");
+    }
+
     private void StartFlow(IEnumerator routine)
     {
         if (flowRoutine != null)
@@ -774,6 +834,35 @@ public class Hearth17F04FinaleController : MonoBehaviour
         {
             yield return sceneSubtitlePlayer.PlaySequenceAsset(sequence);
         }
+    }
+
+    private IEnumerator PlayTerminalNarration(
+        HearthDialogueSequence sequence,
+        HearthDialogueSurface surface,
+        HearthDialogueSurface messageSurface = null)
+    {
+        if (sceneSubtitlePlayer == null || sequence == null)
+        {
+            yield break;
+        }
+
+        if (surface == null)
+        {
+            yield return sceneSubtitlePlayer.PlaySequenceAsset(sequence);
+            yield break;
+        }
+
+        HearthDialoguePlaybackContext playbackContext = messageSurface != null
+            ? HearthDialoguePlaybackContext.Embedded(
+                surface,
+                messageSurface,
+                HearthSubtitleContext.Terminal)
+            : HearthDialoguePlaybackContext.Embedded(
+                surface,
+                HearthSubtitleContext.Terminal);
+        yield return sceneSubtitlePlayer.PlaySequenceAsset(
+            sequence,
+            playbackContext);
     }
 
     private IEnumerator FadeTo(float targetAlpha, float duration)

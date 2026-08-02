@@ -15,76 +15,111 @@ MonoBehaviour:
   sequenceId: Lobby_OpeningBriefing
   notes: 'Lobby opening briefing; movement and view are locked. Source: HEARTH_Full_Game_Script_No_Audio_Tags_Native_English.md,
     stable marker Lobby_OpeningBriefing. Text is synchronized by Tools/Hearth/Dialogue/Sync
-    All Dialogue From Final Script.'
+    All Dialogue From Final Script. Playback policy HEARTH_V2_DIALOGUE_POLICY_2026_08_01.'
+  dialogueChannel: 0
+  defaultSpeakerSide: 0
+  advancePolicy: 0
   lines:
-  - presentationKind: 0
+  - lineId: Lobby_OpeningBriefing_FieldUnit_001
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.15
     speaker: Field Unit
     text: Good evening, Inspector. Field Companion Unit online. I'll be your partner
       tonight.
     holdSeconds: 5.678302
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 58133efad9c285e4d84a6a790399ebf4, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: Lobby_OpeningBriefing_Mia_001
+    presentationKind: 2
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 2
     startDelay: 0.18
     speaker: Mia
     text: All right.
     holdSeconds: 2.2
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 13ec60087f56d624db263e8913ea9cd6, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: Lobby_OpeningBriefing_FieldUnit_003
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: Field Unit
     text: You are one of HEARTH's most highly regarded inspectors. Tonight, three
       household companion units on the seventeenth floor are scheduled for review.
     holdSeconds: 9.451886
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 6f9d3cddab256d34d839df3f2a1b2b63, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: Lobby_OpeningBriefing_FieldUnit_004
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: Field Unit
     text: You will check how each unit has been operating, identify any problems,
       and decide whether its household-use strategy should be adjusted.
     holdSeconds: 9.074528
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: e51629c37b43456479a4120a574ea39f, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: Lobby_OpeningBriefing_FieldUnit_005
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: Field Unit
     text: 'One additional detail: the seventeenth floor is also where you live.'
     holdSeconds: 5.3009434
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 69f078eb558273f498c396f27e59639c, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: Lobby_OpeningBriefing_FieldUnit_006
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: Field Unit
     text: Before you begin, you may observe how residents are using companion units
       throughout the lobby.
     holdSeconds: 6.810377
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 1be4378b88e64e84fb62eb4f102d50af, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: Lobby_OpeningBriefing_FieldUnit_007
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: Field Unit
     text: "These are our flagship products\u2014and the most successful companion
       technology in the world."
     holdSeconds: 6.0556602
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 4a6cd915c95bf7f49b557fff1289167b, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: Lobby_OpeningBriefing_FieldUnit_008
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: Field Unit
     text: When you're ready, use the assignment terminal to load tonight's inspection
       files.
     holdSeconds: 5.678302
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: b3743472d8c457e45814878a781b8ca0, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
   postSequenceDelay: 0.18

@@ -15,34 +15,49 @@ MonoBehaviour:
   sequenceId: 17F03_CorridorTerminal
   notes: '17F03 corridor-terminal alert and emergency-entry briefing. Source: HEARTH_Full_Game_Script_No_Audio_Tags_Native_English.md,
     stable marker 17F03_CorridorTerminal. Text is synchronized by Tools/Hearth/Dialogue/Sync
-    All Dialogue From Final Script.'
+    All Dialogue From Final Script. Playback policy HEARTH_V2_DIALOGUE_POLICY_2026_08_01.'
+  dialogueChannel: 0
+  defaultSpeakerSide: 0
+  advancePolicy: 0
   lines:
-  - presentationKind: 0
+  - lineId: 17F03_CorridorTerminal_FieldUnit_001
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.15
     speaker: Field Unit
     text: Inspector, 17F-03 went offline ten minutes ago. The corridor terminal can
       read the household file, but the unit will not accept a remote restart.
     holdSeconds: 10.206603
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 6531515929adf0f47be79f262c0813f9, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: 17F03_CorridorTerminal_FieldUnit_002
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: Field Unit
     text: Mark and Laura installed a Family Coordination unit to support communication
       with their fourteen-year-old daughter, Ava. It handles conflict mediation,
       companionship, and guardian updates.
     holdSeconds: 10.206603
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: e5bd167fc9a94e346818e864ad5b2e6a, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: 17F03_CorridorTerminal_FieldUnit_003
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: Field Unit
     text: The failure requires on-site repair. Use the terminal to authorize emergency
       entry, then inspect the unit inside.
     holdSeconds: 7.565094
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 07af3936cf1bd44439184bb681c1a101, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
   postSequenceDelay: 0.18

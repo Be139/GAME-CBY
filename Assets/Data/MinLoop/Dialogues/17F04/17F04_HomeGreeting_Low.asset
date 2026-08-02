@@ -14,40 +14,59 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   sequenceId: 17F04_HomeGreeting_Low
   notes: Low-trust greeting after entering Mia's home.
+  dialogueChannel: 0
+  defaultSpeakerSide: 0
+  advancePolicy: 0
   lines:
-  - presentationKind: 0
+  - lineId: 17F04_HomeGreeting_High_17F04_HomeGreeting_Low_Lily_001
+    presentationKind: 0
+    dialogueMode: 4
+    speakerSide: 0
+    advancePolicy: 1
     startDelay: 0.15
     speaker: Lily
-    text: Mom? Are you coming tomorrow? Ms. Parker said it'd be better if a real
-      person came. Not just a system check-in.
-    holdSeconds: 9.074528
-    voiceClip: {fileID: 0}
+    text: Mom? Are you coming tomorrow? Ms. Parker said it'd be way better if a real
+      person came. Like, not just a system check-in.
+    holdSeconds: 9.829245
+    voiceClip: {fileID: 8300000, guid: f950bff05b881414ca3d20950a634179, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: 17F04_HomeGreeting_High_17F04_HomeGreeting_Low_MiasHomeUnit_001
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: Mia's Home Unit
-    text: Mom will receive your progress report and make sure you have everything
+    text: Mom's gonna get your progress report and make sure you have everything
       you need. Let's finish tonight's practice first, okay?
     holdSeconds: 8.697169
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: efe88d1cc9e49a640be1531e0abd79d2, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: 17F04_HomeGreeting_High_17F04_HomeGreeting_Low_FieldUnit_001
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: Field Unit
     text: Please acknowledge that you've reviewed the pending response. Then return
       home and address it directly.
     holdSeconds: 6.810377
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 5c159f5e587764f439335fa8f2c479c7, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: 17F04_HomeGreeting_High_17F04_HomeGreeting_Low_Mia_001
+    presentationKind: 2
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 2
     startDelay: 0.18
     speaker: Mia
     text: I know.
     holdSeconds: 2.2
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 053d0bc634833744fa08d97f94687fa0, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
   postSequenceDelay: 0.18

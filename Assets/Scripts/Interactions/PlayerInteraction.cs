@@ -32,6 +32,8 @@ public class PlayerInteraction : MonoBehaviour
     private bool promptVisible;
     private float nextDescriptionRefreshTime;
     private float nextPromptResolveTime;
+    private UnityEngine.Object proximityInteractionOwner;
+    private IInteractable proximityInteractable;
 
     public bool InteractionEnabled { get; private set; } = true;
 
@@ -132,6 +134,32 @@ public class PlayerInteraction : MonoBehaviour
         RefreshPrompt(true);
     }
 
+    public void SetProximityInteraction(
+        UnityEngine.Object owner,
+        IInteractable interactable)
+    {
+        if (owner == null || interactable == null)
+        {
+            return;
+        }
+
+        proximityInteractionOwner = owner;
+        proximityInteractable = interactable;
+        SetCurrentTarget(interactable, null);
+    }
+
+    public void ClearProximityInteraction(UnityEngine.Object owner)
+    {
+        if (owner == null || proximityInteractionOwner != owner)
+        {
+            return;
+        }
+
+        proximityInteractionOwner = null;
+        proximityInteractable = null;
+        ClearCurrentTarget();
+    }
+
     public void BindPromptUi(GameObject prompt, TMP_Text label)
     {
         if (uiInteraction != null && uiInteraction != prompt)
@@ -210,6 +238,19 @@ public class PlayerInteraction : MonoBehaviour
 
     private void UpdateCurrentTarget()
     {
+        if (proximityInteractable != null &&
+            IsInteractionAvailable(proximityInteractable))
+        {
+            SetCurrentTarget(proximityInteractable, null);
+            return;
+        }
+
+        if (proximityInteractable != null)
+        {
+            proximityInteractionOwner = null;
+            proximityInteractable = null;
+        }
+
         Ray ray = mainCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
         int hitCount = Physics.RaycastNonAlloc(ray, hitBuffer, interactionRange, interactionLayers, triggerInteraction);
 
@@ -305,7 +346,7 @@ public class PlayerInteraction : MonoBehaviour
             return;
         }
 
-        if (!Input.GetKeyDown(interactKey))
+        if (!Input.GetKeyDown(GetCurrentInteractionKey()))
         {
             return;
         }
@@ -335,7 +376,9 @@ public class PlayerInteraction : MonoBehaviour
             description = fallbackDescription;
         }
 
-        description = FormatPrompt(description);
+        description = FormatPrompt(
+            description,
+            GetCurrentInteractionKeyLabel());
 
         SetInteractionPrompt(true, description, forceTextUpdate || description != currentDescription);
         nextDescriptionRefreshTime = Time.time + descriptionRefreshInterval;
@@ -439,7 +482,26 @@ public class PlayerInteraction : MonoBehaviour
         ForceRefreshPrompt();
     }
 
-    private string FormatPrompt(string description)
+    private KeyCode GetCurrentInteractionKey()
+    {
+        IInteractionKeyProvider provider =
+            CurrentInteractable as IInteractionKeyProvider;
+        return provider != null ? provider.InteractionKey : interactKey;
+    }
+
+    private string GetCurrentInteractionKeyLabel()
+    {
+        IInteractionKeyProvider provider =
+            CurrentInteractable as IInteractionKeyProvider;
+        string targetLabel = provider != null
+            ? provider.InteractionKeyLabel
+            : null;
+        return string.IsNullOrWhiteSpace(targetLabel)
+            ? interactionKeyLabel
+            : targetLabel.Trim();
+    }
+
+    private string FormatPrompt(string description, string keyLabel)
     {
         string value = string.IsNullOrWhiteSpace(description) ? fallbackDescription : description.Trim();
         if (englishPromptsOnly && ContainsNonAscii(value))
@@ -458,7 +520,7 @@ public class PlayerInteraction : MonoBehaviour
             action = "INTERACT";
         }
 
-        return interactionKeyLabel.Trim().ToUpperInvariant() + "  " + action.Trim().ToUpperInvariant();
+        return keyLabel.Trim().ToUpperInvariant() + "  " + action.Trim().ToUpperInvariant();
     }
 
     private static string StripExistingKeyPrefix(string value)

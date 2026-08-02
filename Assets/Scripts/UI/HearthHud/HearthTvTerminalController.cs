@@ -74,6 +74,8 @@ public class HearthTvTerminalController : MonoBehaviour
     [SerializeField] private HearthTerminalBootSequence bootSequence;
     [SerializeField] private HearthTerminalSelectionHighlighter selectionHighlighter;
     [SerializeField] private HearthUiPressFeedback submitFeedback;
+    [SerializeField] private HearthDialogueSurface dialogueSurface;
+    [SerializeField] private HearthDialogueSurface messageSurface;
 
     [Header("Keyboard Navigation")]
     [SerializeField] private bool keyboardNavigationEnabled = true;
@@ -238,6 +240,128 @@ public class HearthTvTerminalController : MonoBehaviour
     }
 
     public event Action<HearthTerminalViewState> TerminalViewStateChanged;
+
+    /// <summary>
+    /// Returns the terminal-owned world-space dialogue lane. Existing V2
+    /// FieldUnitPanel objects are reused; older terminal prefabs receive the
+    /// same lane at runtime without changing their physical transforms.
+    /// </summary>
+    public HearthDialogueSurface ResolveDialogueSurface()
+    {
+        EnsureReferences();
+        if (dialogueSurface != null)
+        {
+            HearthHudPage ownerPage =
+                dialogueSurface.GetComponentInParent<HearthHudPage>(true);
+            if (ownerPage == null || ownerPage == currentPage)
+            {
+                return dialogueSurface;
+            }
+
+            dialogueSurface.HideImmediate();
+            dialogueSurface = null;
+        }
+
+        // Page prefabs can contain several FieldUnitPanel objects under
+        // mutually exclusive V2_PageVisual roots. Only bind the panel owned by
+        // the currently visible page; otherwise use a terminal-wide surface.
+        Transform existingPanel = currentPage != null
+            ? FindDescendantByName(currentPage.transform, "FieldUnitPanel")
+            : null;
+        if (existingPanel == null && contentRoot != null)
+        {
+            existingPanel = contentRoot.Find("TerminalDialogueSurface_V2");
+        }
+        if (existingPanel != null)
+        {
+            dialogueSurface = existingPanel.GetComponent<HearthDialogueSurface>();
+            CanvasGroup group = existingPanel.GetComponent<CanvasGroup>();
+            if (group == null)
+            {
+                group = existingPanel.gameObject.AddComponent<CanvasGroup>();
+            }
+
+            TMP_Text speaker = FindTextInChildren(existingPanel, "Title", "Speaker", "SpeakerName");
+            TMP_Text body = FindTextInChildren(existingPanel, "Body", "DialogueText", "MessageText");
+            TMP_Text hint = FindTextInChildren(existingPanel, "DialogueAdvanceHint", "AdvanceHint");
+            if (hint == null)
+            {
+                hint = CreateDialogueText(
+                    existingPanel as RectTransform,
+                    "DialogueAdvanceHint",
+                    new Vector2(0.62f, 0.02f),
+                    new Vector2(0.97f, 0.24f),
+                    18f,
+                    TextAlignmentOptions.BottomRight);
+            }
+
+            if (dialogueSurface == null)
+            {
+                dialogueSurface = existingPanel.gameObject.AddComponent<HearthDialogueSurface>();
+            }
+
+            dialogueSurface.Configure(group, speaker, body, hint);
+            dialogueSurface.HideImmediate();
+            return dialogueSurface;
+        }
+
+        dialogueSurface = CreateRuntimeDialogueSurface();
+        return dialogueSurface;
+    }
+
+    /// <summary>
+    /// Returns the terminal-owned voice-message card. It is intentionally
+    /// separate from FieldUnitPanel so a recorded Lily message never stacks
+    /// with, or inherits the geometry of, ordinary terminal narration.
+    /// </summary>
+    public HearthDialogueSurface ResolveMessageSurface()
+    {
+        EnsureReferences();
+        if (messageSurface != null)
+        {
+            HearthHudPage ownerPage =
+                messageSurface.GetComponentInParent<HearthHudPage>(true);
+            if (ownerPage == null || ownerPage == currentPage)
+            {
+                return messageSurface;
+            }
+
+            messageSurface.HideImmediate();
+            messageSurface = null;
+        }
+
+        Transform existingPanel = currentPage != null
+            ? FindDescendantByName(currentPage.transform, "LilyMessagePanel")
+            : null;
+        if (existingPanel == null && contentRoot != null)
+        {
+            existingPanel = contentRoot.Find("TerminalMessageSurface_V2");
+        }
+        if (existingPanel != null)
+        {
+            messageSurface = existingPanel.GetComponent<HearthDialogueSurface>();
+            CanvasGroup group = existingPanel.GetComponent<CanvasGroup>();
+            if (group == null)
+            {
+                group = existingPanel.gameObject.AddComponent<CanvasGroup>();
+            }
+
+            TMP_Text speaker = FindTextInChildren(existingPanel, "Speaker", "Title", "SpeakerName");
+            TMP_Text body = FindTextInChildren(existingPanel, "Body", "MessageText", "DialogueText");
+            TMP_Text hint = FindTextInChildren(existingPanel, "AdvanceHint", "DialogueAdvanceHint");
+            if (messageSurface == null)
+            {
+                messageSurface = existingPanel.gameObject.AddComponent<HearthDialogueSurface>();
+            }
+
+            messageSurface.Configure(group, speaker, body, hint);
+            messageSurface.HideImmediate();
+            return messageSurface;
+        }
+
+        messageSurface = CreateRuntimeMessageSurface();
+        return messageSurface;
+    }
 
     public bool IsCustomActionHandoffPending
     {
@@ -410,11 +534,20 @@ public class HearthTvTerminalController : MonoBehaviour
         {
             if (Input.GetKeyDown(submitKey))
             {
+                // Lobby dialogue and the terminal share Space.  The owning
+                // flow disables the primary action while a line is active so
+                // the same key press cannot both advance dialogue and close
+                // the terminal.
+                if (!primaryActionInputEnabled)
+                {
+                    return;
+                }
+
                 if (primaryAction == HearthTerminalPrimaryAction.Custom)
                 {
                     RequestCustomPrimaryAction();
                 }
-                else
+                else if (closeInputEnabled)
                 {
                     CloseTerminal();
                 }
@@ -885,10 +1018,10 @@ public class HearthTvTerminalController : MonoBehaviour
 
     public void SetHideFirstPersonUiWhileOpen(bool value)
     {
-        // Kept for existing scene/prefab bindings. V2 visibility is resolved by
-        // HearthUiStateCoordinator; the terminal no longer snapshots or
-        // restores HUD GameObjects on its own.
-        // Intentionally no local HUD mutation.
+        // Compatibility entry point retained for older installers and scene
+        // bindings. V2 visibility is resolved centrally by
+        // HearthUiStateCoordinator, so terminals no longer persist or mutate
+        // a private list of HUD roots.
     }
 
     public void SetShowCanvasInEditMode(bool value)
@@ -1303,6 +1436,217 @@ public class HearthTvTerminalController : MonoBehaviour
         }
 
         ConfigureActiveLoopSource();
+    }
+
+    private HearthDialogueSurface CreateRuntimeDialogueSurface()
+    {
+        RectTransform parent = contentRoot != null
+            ? contentRoot
+            : transform as RectTransform;
+        if (parent == null)
+        {
+            return null;
+        }
+
+        GameObject panelObject = new GameObject(
+            "TerminalDialogueSurface_V2",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(Image),
+            typeof(Outline),
+            typeof(CanvasGroup));
+        RectTransform panel = panelObject.GetComponent<RectTransform>();
+        panel.SetParent(parent, false);
+        panel.anchorMin = new Vector2(0.12f, 0.08f);
+        panel.anchorMax = new Vector2(0.88f, 0.31f);
+        panel.offsetMin = Vector2.zero;
+        panel.offsetMax = Vector2.zero;
+        panel.SetAsLastSibling();
+
+        Image background = panelObject.GetComponent<Image>();
+        background.color = new Color(0.025f, 0.035f, 0.07f, 0.94f);
+        background.raycastTarget = false;
+        Outline outline = panelObject.GetComponent<Outline>();
+        outline.effectColor = new Color(0.28f, 0.68f, 0.94f, 0.9f);
+        outline.effectDistance = new Vector2(2f, -2f);
+        outline.useGraphicAlpha = false;
+
+        TMP_Text speaker = CreateDialogueText(
+            panel,
+            "Speaker",
+            new Vector2(0.035f, 0.72f),
+            new Vector2(0.965f, 0.96f),
+            26f,
+            TextAlignmentOptions.TopLeft);
+        TMP_Text body = CreateDialogueText(
+            panel,
+            "Body",
+            new Vector2(0.035f, 0.22f),
+            new Vector2(0.965f, 0.72f),
+            22f,
+            TextAlignmentOptions.TopLeft);
+        TMP_Text hint = CreateDialogueText(
+            panel,
+            "DialogueAdvanceHint",
+            new Vector2(0.62f, 0.03f),
+            new Vector2(0.965f, 0.2f),
+            16f,
+            TextAlignmentOptions.BottomRight);
+
+        speaker.color = new Color(0.3f, 0.9f, 1f, 1f);
+        body.color = new Color(0.9f, 0.95f, 1f, 1f);
+        hint.color = new Color(0.3f, 0.9f, 1f, 0.92f);
+
+        CanvasGroup group = panelObject.GetComponent<CanvasGroup>();
+        HearthDialogueSurface surface = panelObject.AddComponent<HearthDialogueSurface>();
+        surface.Configure(group, speaker, body, hint);
+        surface.HideImmediate();
+        return surface;
+    }
+
+    private HearthDialogueSurface CreateRuntimeMessageSurface()
+    {
+        RectTransform parent = contentRoot != null
+            ? contentRoot
+            : transform as RectTransform;
+        if (parent == null)
+        {
+            return null;
+        }
+
+        GameObject panelObject = new GameObject(
+            "TerminalMessageSurface_V2",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(Image),
+            typeof(Outline),
+            typeof(CanvasGroup));
+        RectTransform panel = panelObject.GetComponent<RectTransform>();
+        panel.SetParent(parent, false);
+        panel.anchorMin = new Vector2(0.56f, 0.36f);
+        panel.anchorMax = new Vector2(0.94f, 0.82f);
+        panel.offsetMin = Vector2.zero;
+        panel.offsetMax = Vector2.zero;
+        panel.SetAsLastSibling();
+
+        Image background = panelObject.GetComponent<Image>();
+        background.color = new Color(0.025f, 0.035f, 0.07f, 0.965f);
+        background.raycastTarget = false;
+        Outline outline = panelObject.GetComponent<Outline>();
+        outline.effectColor = new Color(0.28f, 0.68f, 0.94f, 0.94f);
+        outline.effectDistance = new Vector2(2f, -2f);
+        outline.useGraphicAlpha = false;
+
+        TMP_Text speaker = CreateDialogueText(
+            panel,
+            "Speaker",
+            new Vector2(0.05f, 0.76f),
+            new Vector2(0.95f, 0.94f),
+            28f,
+            TextAlignmentOptions.TopLeft);
+        TMP_Text body = CreateDialogueText(
+            panel,
+            "Body",
+            new Vector2(0.05f, 0.20f),
+            new Vector2(0.95f, 0.75f),
+            23f,
+            TextAlignmentOptions.TopLeft);
+        TMP_Text hint = CreateDialogueText(
+            panel,
+            "AdvanceHint",
+            new Vector2(0.55f, 0.035f),
+            new Vector2(0.95f, 0.19f),
+            16f,
+            TextAlignmentOptions.BottomRight);
+
+        speaker.color = new Color(0.9f, 0.95f, 1f, 1f);
+        body.color = new Color(0.9f, 0.95f, 1f, 1f);
+        hint.color = new Color(0.3f, 0.9f, 1f, 0.92f);
+
+        CanvasGroup group = panelObject.GetComponent<CanvasGroup>();
+        HearthDialogueSurface surface = panelObject.AddComponent<HearthDialogueSurface>();
+        surface.Configure(group, speaker, body, hint);
+        surface.HideImmediate();
+        return surface;
+    }
+
+    private TMP_Text CreateDialogueText(
+        RectTransform parent,
+        string objectName,
+        Vector2 anchorMin,
+        Vector2 anchorMax,
+        float fontSize,
+        TextAlignmentOptions alignment)
+    {
+        GameObject textObject = new GameObject(
+            objectName,
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(TextMeshProUGUI));
+        RectTransform rect = textObject.GetComponent<RectTransform>();
+        rect.SetParent(parent, false);
+        rect.anchorMin = anchorMin;
+        rect.anchorMax = anchorMax;
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
+
+        TextMeshProUGUI text = textObject.GetComponent<TextMeshProUGUI>();
+        TMP_Text template = contentRoot != null
+            ? contentRoot.GetComponentInChildren<TMP_Text>(true)
+            : null;
+        if (template != null && template.font != null)
+        {
+            text.font = template.font;
+            text.fontSharedMaterial = template.fontSharedMaterial;
+        }
+
+        text.fontSize = fontSize;
+        text.alignment = alignment;
+        text.enableWordWrapping = true;
+        text.overflowMode = TextOverflowModes.Ellipsis;
+        text.raycastTarget = false;
+        return text;
+    }
+
+    private static Transform FindDescendantByName(Transform root, string objectName)
+    {
+        if (root == null)
+        {
+            return null;
+        }
+
+        Transform[] children = root.GetComponentsInChildren<Transform>(true);
+        for (int i = 0; i < children.Length; i++)
+        {
+            if (children[i] != null && children[i].name == objectName)
+            {
+                return children[i];
+            }
+        }
+
+        return null;
+    }
+
+    private static TMP_Text FindTextInChildren(Transform root, params string[] names)
+    {
+        if (root == null)
+        {
+            return null;
+        }
+
+        TMP_Text[] texts = root.GetComponentsInChildren<TMP_Text>(true);
+        for (int nameIndex = 0; nameIndex < names.Length; nameIndex++)
+        {
+            for (int textIndex = 0; textIndex < texts.Length; textIndex++)
+            {
+                if (texts[textIndex] != null && texts[textIndex].name == names[nameIndex])
+                {
+                    return texts[textIndex];
+                }
+            }
+        }
+
+        return null;
     }
 
     private void EnsureKeyboardNavigationCanvasSorting()

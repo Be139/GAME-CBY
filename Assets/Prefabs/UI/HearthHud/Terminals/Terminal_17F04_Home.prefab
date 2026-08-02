@@ -725,6 +725,7 @@ MonoBehaviour:
   startingPage: 1
   showStartingPageOnStart: 1
   refreshPagesFromChildrenOnAwake: 1
+  terminalMode: 0
   switchCameraWhileOpen: 0
   playerCamera: {fileID: 0}
   terminalCamera: {fileID: 0}
@@ -736,12 +737,12 @@ MonoBehaviour:
   playerInteraction: {fileID: 0}
   playerRigidbody: {fileID: 0}
   unlockCursorWhileOpen: 1
-  hideFirstPersonUiWhileOpen: 1
-  firstPersonUiRootsToHide: []
   zoom: 1
   bootSequence: {fileID: 8105359383984648099}
   selectionHighlighter: {fileID: 0}
   submitFeedback: {fileID: 7789977779324328891}
+  dialogueSurface: {fileID: 0}
+  messageSurface: {fileID: 0}
   keyboardNavigationEnabled: 1
   closeKey: 27
   cyclePageKey: 9
@@ -758,7 +759,7 @@ MonoBehaviour:
   runtimePromptWaitingColor: {r: 0.46, g: 0.52, b: 0.56, a: 0.84}
   pageFocusFormat: PAGE {0}/{1}
   replayFocusLabel: ENTER HOME | SPACE
-  keyboardHintLabel: SPACE CONFIRM     ESC EXIT
+  keyboardHintLabel: LEFT/RIGHT SELECT     SPACE CONFIRM     ESC EXIT
   submitPrimaryActionFromCurrentPage: 1
   pageDrivenSelectionStates: 0
   preChoiceSelectionPageCount: 6

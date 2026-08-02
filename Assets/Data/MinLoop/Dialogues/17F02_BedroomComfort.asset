@@ -15,32 +15,46 @@ MonoBehaviour:
   sequenceId: 17F02_BedroomComfort
   notes: '17F02 comfort response and session archive. Source: HEARTH_Full_Game_Script_No_Audio_Tags_Native_English.md,
     stable marker 17F02_BedroomComfort. Text is synchronized by Tools/Hearth/Dialogue/Sync
-    All Dialogue From Final Script.'
+    All Dialogue From Final Script. Playback policy HEARTH_V2_DIALOGUE_POLICY_2026_08_01.'
+  dialogueChannel: 0
+  defaultSpeakerSide: 0
+  advancePolicy: 0
   lines:
-  - presentationKind: 0
+  - lineId: 17F02_BedroomComfort_17F02HomeUnit_001
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.15
     speaker: 17F-02 Home Unit
-    text: You kept your composure when it mattered. That was a reasonable choice,
-      and it took effort. You're home now, Claire. You don't have to hold it in here.
-      Would you like the jazz playlist you usually use?
+    text: "You held it together when it counted. That takes a lot. You're home now,
+      Claire\u2014you don't have to keep it in. Want me to put on your jazz playlist?"
     holdSeconds: 12
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: a41f225688406ff42b58105300473660, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: 17F02_BedroomComfort_Claire_001
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: Claire
-    text: Yeah. Thank you. I feel so much better with you here.
-    holdSeconds: 5.3009434
-    voiceClip: {fileID: 0}
+    text: Yeah. Please. God, I feel so much better just talking to you.
+    holdSeconds: 5.678302
+    voiceClip: {fileID: 8300000, guid: cb07e7c3047ba6c42b151f3bb3f0c576, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: 17F02_BedroomComfort_17F02SynthVoice_001
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: 17F-02 Synth Voice
     text: Confiding session archived.
     holdSeconds: 2.2820754
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 6e7e77dfcecd69a4daa5cf6c026b0bee, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
   postSequenceDelay: 0.18

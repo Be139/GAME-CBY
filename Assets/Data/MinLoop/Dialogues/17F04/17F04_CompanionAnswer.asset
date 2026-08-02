@@ -14,64 +14,95 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   sequenceId: 17F04_CompanionAnswer
   notes: 'B route: the Companion Unit answers Lily.'
+  dialogueChannel: 0
+  defaultSpeakerSide: 0
+  advancePolicy: 0
   lines:
-  - presentationKind: 0
+  - lineId: 17F04_CompanionAnswer_MiasHomeUnit_001
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.15
     speaker: Mia's Home Unit
     text: Mom will receive your progress report, and she'll make sure you have everything
       you need. Let's finish tonight's run-through first, okay?
     holdSeconds: 9.074528
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: c3b39e32e316a724ca7e1fdae47b9aa4, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: 17F04_CompanionAnswer_Lily_001
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: Lily
     text: Mm.
     holdSeconds: 2.2
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: ccc004b290fca954db8030df32b732bb, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: 17F04_CompanionAnswer_Lily_002
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: Lily
-    text: Okay. Let's just finish.
+    text: Okay. Let's just... finish.
     holdSeconds: 2.6594338
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 660042f6beeaa6445920c84b88111570, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: 17F04_CompanionAnswer_MiasHomeUnit_002
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: Mia's Home Unit
     text: Okay. Start with your name. Nice and slow.
     holdSeconds: 4.1688676
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 1eca857d001515f4daf10ce7c757d91c, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: 17F04_CompanionAnswer_Lily_003
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: Lily
     text: Hi, everyone. I'm Lily, and today I want to tell you about my favorite
       book...
     holdSeconds: 6.810377
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 6377f622b62f07e478adde3139cb2c05, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: 17F04_CompanionAnswer_MiasHomeUnit_003
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: Mia's Home Unit
-    text: That's okay. Better than yesterday.
-    holdSeconds: 3.0367923
-    voiceClip: {fileID: 0}
+    text: That's okay. Way better than yesterday.
+    holdSeconds: 3.414151
+    voiceClip: {fileID: 8300000, guid: 4facdcef7e095d04b85e85027500ef02, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: 17F04_CompanionAnswer_FieldUnit_001
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: Field Unit
     text: Inspector, all reviews and the guardian response are complete. You are
       cleared to log off.
     holdSeconds: 6.810377
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 9826429d0dab24e4f883d5341619a8b3, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
   postSequenceDelay: 0.18

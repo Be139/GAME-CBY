@@ -22,11 +22,17 @@ public class HearthCompanionHoldPrompt : MonoBehaviour, IPointerDownHandler, IPo
     [SerializeField] private Image progressFillImage;
     [SerializeField] private HearthCompanionHudController controller;
 
+    [Header("Audio")]
+    [SerializeField] private HearthSfxCuePlayer sfxCuePlayer;
+    [SerializeField] private string holdProgressCueId = "UI.HoldProgress";
+    [SerializeField] private string holdCompleteCueId = "UI.HoldComplete";
+
     [Header("Events")]
     [SerializeField] private UnityEvent onHoldCompleted = new UnityEvent();
 
     private bool pointerHolding;
     private bool completed;
+    private bool wasHolding;
     private float progress;
 
     public UnityEvent OnHoldCompleted { get { return onHoldCompleted; } }
@@ -42,6 +48,20 @@ public class HearthCompanionHoldPrompt : MonoBehaviour, IPointerDownHandler, IPo
     private void Awake()
     {
         ResolveReferences();
+        holdKey = KeyCode.E;
+    }
+
+    private void OnValidate()
+    {
+        // Story hold actions always use E. Keeping this invariant here also
+        // repairs stale serialized data without requiring a scene rebuild.
+        holdKey = KeyCode.E;
+        holdSeconds = Mathf.Max(0.1f, holdSeconds);
+    }
+
+    private void OnDisable()
+    {
+        StopHoldProgressAudio();
     }
 
     public void Configure(
@@ -71,6 +91,17 @@ public class HearthCompanionHoldPrompt : MonoBehaviour, IPointerDownHandler, IPo
         bool keyboardHolding = allowKeyboardHold && Input.GetKey(holdKey);
         bool isHolding = keyboardHolding || (allowPointerHold && pointerHolding);
 
+        if (isHolding && !wasHolding)
+        {
+            StartHoldProgressAudio();
+        }
+        else if (!isHolding && wasHolding)
+        {
+            StopHoldProgressAudio();
+        }
+
+        wasHolding = isHolding;
+
         if (isHolding)
         {
             progress += Time.unscaledDeltaTime / Mathf.Max(0.1f, holdSeconds);
@@ -96,7 +127,7 @@ public class HearthCompanionHoldPrompt : MonoBehaviour, IPointerDownHandler, IPo
             return;
         }
 
-        holdKey = scene.HoldKey;
+        holdKey = KeyCode.E;
         holdSeconds = Mathf.Max(0.1f, scene.HoldSeconds);
         if (promptText != null)
         {
@@ -105,7 +136,7 @@ public class HearthCompanionHoldPrompt : MonoBehaviour, IPointerDownHandler, IPo
 
         if (keyText != null)
         {
-            keyText.text = holdKey.ToString().ToUpperInvariant();
+            keyText.text = "E";
         }
 
         if (resetWhenShown)
@@ -121,9 +152,19 @@ public class HearthCompanionHoldPrompt : MonoBehaviour, IPointerDownHandler, IPo
         controller = newController;
     }
 
+    public void SetSfxCuePlayer(HearthSfxCuePlayer player)
+    {
+        sfxCuePlayer = player;
+    }
+
     public void SetVisible(bool visible)
     {
         ResolveReferences();
+
+        if (!visible)
+        {
+            StopHoldProgressAudio();
+        }
 
         if (visible && !gameObject.activeSelf)
         {
@@ -145,8 +186,10 @@ public class HearthCompanionHoldPrompt : MonoBehaviour, IPointerDownHandler, IPo
 
     public void ResetHold()
     {
+        StopHoldProgressAudio();
         pointerHolding = false;
         completed = false;
+        wasHolding = false;
         progress = 0f;
         RefreshProgress();
     }
@@ -180,8 +223,15 @@ public class HearthCompanionHoldPrompt : MonoBehaviour, IPointerDownHandler, IPo
 
     private void CompleteHold()
     {
+        StopHoldProgressAudio();
         completed = true;
+        wasHolding = false;
         RefreshProgress();
+
+        if (sfxCuePlayer != null)
+        {
+            sfxCuePlayer.PlayCueOneShot(holdCompleteCueId);
+        }
 
         if (controller != null)
         {
@@ -219,5 +269,23 @@ public class HearthCompanionHoldPrompt : MonoBehaviour, IPointerDownHandler, IPo
         {
             controller = GetComponentInParent<HearthCompanionHudController>(true);
         }
+    }
+
+    private void StartHoldProgressAudio()
+    {
+        if (sfxCuePlayer != null)
+        {
+            sfxCuePlayer.StartCueLoop(holdProgressCueId);
+        }
+    }
+
+    private void StopHoldProgressAudio()
+    {
+        if (sfxCuePlayer != null)
+        {
+            sfxCuePlayer.StopCue(holdProgressCueId);
+        }
+
+        wasHolding = false;
     }
 }

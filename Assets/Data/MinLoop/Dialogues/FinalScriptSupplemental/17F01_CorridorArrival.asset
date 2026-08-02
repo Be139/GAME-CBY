@@ -15,15 +15,22 @@ MonoBehaviour:
   sequenceId: 17F01_CorridorArrival
   notes: 'Floor-17 arrival direction toward the first household. Source: HEARTH_Full_Game_Script_No_Audio_Tags_Native_English.md,
     stable marker 17F01_CorridorArrival. Text is synchronized by Tools/Hearth/Dialogue/Sync
-    All Dialogue From Final Script.'
+    All Dialogue From Final Script. Playback policy HEARTH_V2_DIALOGUE_POLICY_2026_08_01.'
+  dialogueChannel: 0
+  defaultSpeakerSide: 0
+  advancePolicy: 0
   lines:
-  - presentationKind: 0
+  - lineId: 17F01_CorridorArrival_FieldUnit_001
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.15
     speaker: Field Unit
     text: Head forward, Inspector. The nearest corridor terminal belongs to 17F-01.
       You can load the first household file there.
     holdSeconds: 7.9424524
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 528451d5aa4beb840b67f651413fca04, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
   postSequenceDelay: 0.18

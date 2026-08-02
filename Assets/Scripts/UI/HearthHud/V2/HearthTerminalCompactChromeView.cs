@@ -22,11 +22,11 @@ public sealed class HearthTerminalCompactChromeView : MonoBehaviour
     [SerializeField] private Image primaryActionBackground;
 
     private static readonly Color IdleBackground =
-        new Color(0.52f, 0.66f, 0.82f, 1f);
+        new Color(0.37f, 0.47f, 0.58f, 0.16f);
     private static readonly Color FocusBackground =
-        new Color(0.82f, 0.92f, 1f, 1f);
+        new Color(0.47f, 0.67f, 0.86f, 0.34f);
     private static readonly Color LockedBackground =
-        new Color(0.34f, 0.40f, 0.48f, 1f);
+        new Color(0.34f, 0.40f, 0.48f, 0.12f);
     private static readonly Color Text =
         new Color(0.96f, 0.98f, 1f, 1f);
     private static readonly Color Muted =
@@ -101,7 +101,12 @@ public sealed class HearthTerminalCompactChromeView : MonoBehaviour
 
         if (visualRoot != null)
         {
-            visualRoot.SetActive(true);
+            visualRoot.SetActive(state.Visible);
+        }
+
+        if (!state.Visible)
+        {
+            return;
         }
 
         bool home = terminal.TerminalMode == HearthTerminalMode.Home;
@@ -201,7 +206,11 @@ public sealed class HearthTerminalCompactChromeView : MonoBehaviour
     {
         if (target != null)
         {
-            target.gameObject.SetActive(visible);
+            Transform tabRoot =
+                target.name == "SelectionFill" && target.transform.parent != null
+                    ? target.transform.parent
+                    : target.transform;
+            tabRoot.gameObject.SetActive(visible);
         }
     }
 

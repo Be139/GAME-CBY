@@ -14,32 +14,47 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   sequenceId: 17F04_SecondPhoto
   notes: Optional second photo; used only when a second texture is assigned.
+  dialogueChannel: 0
+  defaultSpeakerSide: 0
+  advancePolicy: 0
   lines:
-  - presentationKind: 0
+  - lineId: 17F04_ChristmasPhoto_FieldUnit_003
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.15
     speaker: Field Unit
-    text: This one is from last week. Lily is sitting under her desk lamp, holding
-      a certificate. The home unit took the picture. You're not in it.
-    holdSeconds: 10.96132
-    voiceClip: {fileID: 0}
+    text: This one's from last week. Lily's sitting under her desk lamp, holding
+      a certificate. The home unit took it. You're not in the picture.
+    holdSeconds: 10.206603
+    voiceClip: {fileID: 8300000, guid: 3778f99b6666f5340a1e391c5adf8cc5, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: 17F04_ChristmasPhoto_FieldUnit_004
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: Field Unit
-    text: Her smile-stability score is higher here than in the Christmas photo. Since
-      the home unit came online, her overall emotional stability has increased by
-      twenty-three point four percent.
-    holdSeconds: 11.716038
-    voiceClip: {fileID: 0}
+    text: Her smile-stability score is actually higher here than in the Christmas
+      photo. Since the home unit came online, her overall emotional stability has
+      gone up twenty-three point four percent.
+    holdSeconds: 12
+    voiceClip: {fileID: 8300000, guid: db1571726f15135428049962103ef1a8, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: 17F04_ChristmasPhoto_FieldUnit_005
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: Field Unit
     text: That is one measurable benefit to this household.
     holdSeconds: 4.1688676
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: a5cd3b0dc40d58241b1b22dff1157e4c, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
   postSequenceDelay: 0.18

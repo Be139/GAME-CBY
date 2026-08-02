@@ -15,6 +15,7 @@ public static class HearthFinalDialogueSync
     private const string SupplementalFolder = "Assets/Data/MinLoop/Dialogues/FinalScriptSupplemental";
     private const string SubtitleStylePath = "Assets/Data/MinLoop/UI/Hearth_SubtitleStyle.asset";
     private const string MarkerPrefix = "<!-- HEARTH:SEQUENCES ";
+    private const string VoiceMarkerPrefix = "<!-- HEARTH:VOICE ";
 
     private static readonly Regex SceneRegex = new Regex(
         @"^### Scene\s+([0-9]+\.[0-9]+)\b",
@@ -28,6 +29,10 @@ public static class HearthFinalDialogueSync
         @"^<!--\s*HEARTH:SEQUENCES\s+(.+?)\s*-->$",
         RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
+    private static readonly Regex VoiceMarkerRegex = new Regex(
+        @"^<!--\s*HEARTH:VOICE\s+(.+?)\s*-->$",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
     private sealed class DialogueLine
     {
         public string SceneId;
@@ -35,9 +40,23 @@ public static class HearthFinalDialogueSync
         public string Speaker;
         public string Prefix;
         public string Text;
+        public string LineId;
         public int SourceLine;
         public HearthSubtitleLinePresentationKind PresentationKind;
         public readonly List<string> SequenceIds = new List<string>();
+    }
+
+    private sealed class PreservedLineState
+    {
+        public AudioClip VoiceClip;
+        public HearthSubtitleLinePresentationKind PresentationKind;
+        public HearthDialogueLineMode DialogueMode;
+        public SpeakerSide SpeakerSide;
+        public HearthDialogueLineAdvancePolicy AdvancePolicy;
+        public float StartDelay;
+        public float HoldSeconds;
+        public HearthSubtitleDurationMode DurationMode;
+        public float VoiceTailSeconds;
     }
 
     private sealed class ParsedScript
@@ -169,6 +188,137 @@ public static class HearthFinalDialogueSync
         Debug.LogError("[HearthFinalDialogueSync] Coverage validation failed:\n- " + string.Join("\n- ", issues));
     }
 
+    [MenuItem("Tools/Hearth/Dialogue/Validate V2 Playback Policy")]
+    public static void ValidateV2PlaybackPolicyMenu()
+    {
+        List<string> issues = new List<string>();
+        HashSet<string> foundAutomaticLineIds =
+            new HashSet<string>(StringComparer.Ordinal);
+        HashSet<string> foundEpilogueSequenceIds =
+            new HashSet<string>(StringComparer.Ordinal);
+        HashSet<string> foundDedicatedMessageLineIds =
+            new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (DialogueMapping mapping in BuildMappings())
+        {
+            HearthDialogueSequence sequence =
+                AssetDatabase.LoadAssetAtPath<HearthDialogueSequence>(mapping.AssetPath);
+            if (sequence == null)
+            {
+                issues.Add("Missing dialogue asset: " + mapping.AssetPath);
+                continue;
+            }
+
+            bool epilogue =
+                HearthDialoguePlaybackPolicy.IsAutomaticEpilogueSequence(sequence.SequenceId);
+            if (epilogue)
+            {
+                foundEpilogueSequenceIds.Add(sequence.SequenceId);
+            }
+
+            for (int lineIndex = 0; lineIndex < sequence.Lines.Count; lineIndex++)
+            {
+                MinLoopSubtitleLine line = sequence.Lines[lineIndex];
+                if (line == null)
+                {
+                    continue;
+                }
+
+                bool automatic = HearthDialoguePlaybackPolicy.IsAutomatic(
+                    sequence.SequenceId,
+                    line.lineId);
+                if (HearthDialoguePlaybackPolicy.IsNaturalAutomaticLine(line.lineId))
+                {
+                    foundAutomaticLineIds.Add(line.lineId);
+                }
+
+                if (HearthDialoguePlaybackPolicy.IsDedicatedMessageLine(line.lineId))
+                {
+                    foundDedicatedMessageLineIds.Add(line.lineId);
+                    if (line.dialogueMode != HearthDialogueLineMode.DedicatedMessage ||
+                        line.advancePolicy != HearthDialogueLineAdvancePolicy.ManualSpace)
+                    {
+                        issues.Add(
+                            mapping.AssetPath + " line " + lineIndex + " (" + line.lineId +
+                            ") must be DedicatedMessage + ManualSpace.");
+                    }
+                }
+
+                if (automatic)
+                {
+                    if (line.presentationKind != HearthSubtitleLinePresentationKind.NaturalCaption ||
+                        line.advancePolicy != HearthDialogueLineAdvancePolicy.AudioComplete)
+                    {
+                        issues.Add(
+                            mapping.AssetPath + " line " + lineIndex + " (" + line.lineId +
+                            ") must be NaturalCaption + AudioComplete.");
+                    }
+                    continue;
+                }
+
+                if (line.presentationKind == HearthSubtitleLinePresentationKind.NaturalCaption)
+                {
+                    issues.Add(
+                        mapping.AssetPath + " line " + lineIndex + " (" + line.lineId +
+                        ") is an unregistered automatic caption.");
+                }
+
+                if (line.presentationKind != HearthSubtitleLinePresentationKind.TimeCard)
+                {
+                    AdvancePolicy effectiveAdvance =
+                        line.advancePolicy == HearthDialogueLineAdvancePolicy.AudioComplete
+                            ? AdvancePolicy.AudioComplete
+                            : (line.advancePolicy == HearthDialogueLineAdvancePolicy.ManualSpace
+                                ? AdvancePolicy.ManualSpace
+                                : sequence.AdvancePolicy);
+                    if (effectiveAdvance != AdvancePolicy.ManualSpace)
+                    {
+                        issues.Add(
+                            mapping.AssetPath + " line " + lineIndex + " (" + line.lineId +
+                            ") does not resolve to ManualSpace.");
+                    }
+                }
+            }
+        }
+
+        foreach (string lineId in HearthDialoguePlaybackPolicy.NaturalAutomaticLines)
+        {
+            if (!foundAutomaticLineIds.Contains(lineId))
+            {
+                issues.Add("Automatic-caption line ID is missing from dialogue assets: " + lineId);
+            }
+        }
+
+        foreach (string sequenceId in HearthDialoguePlaybackPolicy.AutomaticEpilogueSequences)
+        {
+            if (!foundEpilogueSequenceIds.Contains(sequenceId))
+            {
+                issues.Add("Automatic epilogue sequence is missing: " + sequenceId);
+            }
+        }
+
+        foreach (string lineId in HearthDialoguePlaybackPolicy.DedicatedMessageLines)
+        {
+            if (!foundDedicatedMessageLineIds.Contains(lineId))
+            {
+                issues.Add("Dedicated-message line ID is missing from dialogue assets: " + lineId);
+            }
+        }
+
+        if (issues.Count == 0)
+        {
+            Debug.Log(
+                "[HearthFinalDialogueSync] V2 playback policy valid: " +
+                HearthDialoguePlaybackPolicy.Version + ".");
+        }
+        else
+        {
+            Debug.LogError(
+                "[HearthFinalDialogueSync] V2 playback policy validation failed:\n- " +
+                string.Join("\n- ", issues));
+        }
+    }
+
     [MenuItem("Tools/Hearth/Dialogue/Validate Two-Line Subtitle Layout")]
     public static void ValidateTwoLineSubtitleLayoutMenu()
     {
@@ -267,8 +417,9 @@ public static class HearthFinalDialogueSync
         {
             Debug.Log(
                 "[HearthFinalDialogueSync] Synced " + sequenceCount + " dialogue assets (" + lineCount +
-                " mapped entries) from " + FinalScriptFileName + ". Existing voice clips were preserved only when " +
-                "speaker and text still matched exactly.");
+                " mapped entries) from " + FinalScriptFileName + ". Existing voice clips and authored playback " +
+                "metadata were preserved by stable line ID (speaker/text fallback is used only for legacy lines). " +
+                "Applied playback policy " + HearthDialoguePlaybackPolicy.Version + ".");
         }
 
         return true;
@@ -312,7 +463,7 @@ public static class HearthFinalDialogueSync
             for (int i = 0; i < sourceLines.Length; i++)
             {
                 string trimmed = sourceLines[i].Trim();
-                if (MarkerRegex.IsMatch(trimmed))
+                if (MarkerRegex.IsMatch(trimmed) || VoiceMarkerRegex.IsMatch(trimmed))
                 {
                     continue;
                 }
@@ -324,12 +475,18 @@ public static class HearthFinalDialogueSync
                     continue;
                 }
 
-                List<string> segments = SplitNaturallyForTwoLines(dialogue.Text, measurer);
+                List<string> segments = !string.IsNullOrWhiteSpace(dialogue.LineId)
+                    ? new List<string> { dialogue.Text }
+                    : SplitNaturallyForTwoLines(dialogue.Text, measurer);
                 splitCount += Mathf.Max(0, segments.Count - 1);
                 List<string> sequenceIds = markerIdsBySourceLine[dialogue.SourceLine];
                 for (int segmentIndex = 0; segmentIndex < segments.Count; segmentIndex++)
                 {
                     output.Add(MarkerPrefix + string.Join(",", sequenceIds) + " -->");
+                    if (!string.IsNullOrWhiteSpace(dialogue.LineId))
+                    {
+                        output.Add(VoiceMarkerPrefix + dialogue.LineId + " -->");
+                    }
                     output.Add(dialogue.Prefix + "\"" + segments[segmentIndex] + "\"");
                     if (segmentIndex < segments.Count - 1)
                     {
@@ -447,6 +604,7 @@ public static class HearthFinalDialogueSync
 
         string currentScene = null;
         List<string> pendingMarkers = new List<string>();
+        string pendingVoiceLineId = null;
         string[] sourceLines = File.ReadAllLines(sourcePath, new UTF8Encoding(false));
         for (int i = 0; i < sourceLines.Length; i++)
         {
@@ -464,6 +622,13 @@ public static class HearthFinalDialogueSync
                 continue;
             }
 
+            Match voiceMarkerMatch = VoiceMarkerRegex.Match(raw);
+            if (voiceMarkerMatch.Success)
+            {
+                pendingVoiceLineId = voiceMarkerMatch.Groups[1].Value.Trim();
+                continue;
+            }
+
             Match sceneMatch = SceneRegex.Match(raw);
             if (sceneMatch.Success)
             {
@@ -474,6 +639,7 @@ public static class HearthFinalDialogueSync
                 }
 
                 pendingMarkers.Clear();
+                pendingVoiceLineId = null;
                 continue;
             }
 
@@ -483,6 +649,7 @@ public static class HearthFinalDialogueSync
                 if (raw.Length > 0 && !raw.StartsWith("<!--", StringComparison.Ordinal))
                 {
                     pendingMarkers.Clear();
+                    pendingVoiceLineId = null;
                 }
                 continue;
             }
@@ -500,6 +667,7 @@ public static class HearthFinalDialogueSync
                 Speaker = dialogueMatch.Groups["speaker"].Value.Trim(),
                 Prefix = dialogueMatch.Groups["prefix"].Value,
                 Text = dialogueMatch.Groups["text"].Value.Trim(),
+                LineId = pendingVoiceLineId,
                 SourceLine = i + 1,
                 PresentationKind = string.Equals(
                     dialogueMatch.Groups["speaker"].Value.Trim(),
@@ -511,6 +679,7 @@ public static class HearthFinalDialogueSync
             line.SequenceIds.AddRange(pendingMarkers);
             script.Scenes[currentScene].Add(line);
             pendingMarkers.Clear();
+            pendingVoiceLineId = null;
         }
 
         if (script.Scenes.Count == 0 || !script.AllLines.Any())
@@ -547,13 +716,38 @@ public static class HearthFinalDialogueSync
 
         SerializedObject serialized = new SerializedObject(asset);
         SerializedProperty oldLines = serialized.FindProperty("lines");
+        Dictionary<string, PreservedLineState> preservedByLineId =
+            new Dictionary<string, PreservedLineState>(StringComparer.Ordinal);
         Dictionary<string, AudioClip> preservedClips = new Dictionary<string, AudioClip>(StringComparer.Ordinal);
         for (int i = 0; i < oldLines.arraySize; i++)
         {
             SerializedProperty oldLine = oldLines.GetArrayElementAtIndex(i);
+            SerializedProperty oldLineIdProperty = oldLine.FindPropertyRelative("lineId");
+            string oldLineId = oldLineIdProperty != null ? oldLineIdProperty.stringValue : string.Empty;
             string speaker = oldLine.FindPropertyRelative("speaker").stringValue;
             string text = oldLine.FindPropertyRelative("text").stringValue;
             AudioClip clip = oldLine.FindPropertyRelative("voiceClip").objectReferenceValue as AudioClip;
+            if (!string.IsNullOrWhiteSpace(oldLineId))
+            {
+                preservedByLineId[oldLineId] = new PreservedLineState
+                {
+                    VoiceClip = clip,
+                    PresentationKind =
+                        (HearthSubtitleLinePresentationKind)oldLine.FindPropertyRelative("presentationKind").enumValueIndex,
+                    DialogueMode =
+                        (HearthDialogueLineMode)oldLine.FindPropertyRelative("dialogueMode").enumValueIndex,
+                    SpeakerSide =
+                        (SpeakerSide)oldLine.FindPropertyRelative("speakerSide").enumValueIndex,
+                    AdvancePolicy =
+                        (HearthDialogueLineAdvancePolicy)oldLine.FindPropertyRelative("advancePolicy").enumValueIndex,
+                    StartDelay = oldLine.FindPropertyRelative("startDelay").floatValue,
+                    HoldSeconds = oldLine.FindPropertyRelative("holdSeconds").floatValue,
+                    DurationMode =
+                        (HearthSubtitleDurationMode)oldLine.FindPropertyRelative("durationMode").enumValueIndex,
+                    VoiceTailSeconds = oldLine.FindPropertyRelative("voiceTailSeconds").floatValue
+                };
+            }
+
             if (clip != null)
             {
                 preservedClips[BuildVoiceKey(speaker, text)] = clip;
@@ -563,7 +757,10 @@ public static class HearthFinalDialogueSync
         serialized.FindProperty("sequenceId").stringValue = mapping.SequenceId;
         serialized.FindProperty("notes").stringValue =
             mapping.Purpose + " Source: " + FinalScriptFileName + ", stable marker " + mapping.SequenceId +
-            ". Text is synchronized by Tools/Hearth/Dialogue/Sync All Dialogue From Final Script.";
+            ". Text is synchronized by Tools/Hearth/Dialogue/Sync All Dialogue From Final Script. Playback policy " +
+            HearthDialoguePlaybackPolicy.Version + ".";
+        serialized.FindProperty("advancePolicy").enumValueIndex =
+            (int)AdvancePolicy.ManualSpace;
 
         SerializedProperty targetLines = serialized.FindProperty("lines");
         targetLines.arraySize = lines.Count;
@@ -571,7 +768,39 @@ public static class HearthFinalDialogueSync
         {
             DialogueLine source = lines[i];
             SerializedProperty target = targetLines.GetArrayElementAtIndex(i);
-            target.FindPropertyRelative("startDelay").floatValue = i == 0 ? 0.15f : 0.18f;
+            SerializedProperty lineIdProperty = target.FindPropertyRelative("lineId");
+            if (lineIdProperty != null)
+            {
+                lineIdProperty.stringValue = source.LineId ?? string.Empty;
+            }
+
+            PreservedLineState preservedState = null;
+            bool hasPreservedState =
+                !string.IsNullOrWhiteSpace(source.LineId) &&
+                preservedByLineId.TryGetValue(source.LineId, out preservedState);
+            HearthSubtitleLinePresentationKind resolvedPresentation =
+                source.PresentationKind == HearthSubtitleLinePresentationKind.TimeCard
+                    ? HearthSubtitleLinePresentationKind.TimeCard
+                    : (hasPreservedState
+                        ? preservedState.PresentationKind
+                        : HearthSubtitleLinePresentationKind.Dialogue);
+            HearthDialogueLineAdvancePolicy resolvedAdvancePolicy =
+                hasPreservedState
+                    ? preservedState.AdvancePolicy
+                    : HearthDialogueLineAdvancePolicy.ManualSpace;
+            HearthDialogueLineMode resolvedDialogueMode = hasPreservedState
+                ? preservedState.DialogueMode
+                : HearthDialogueLineMode.SequenceDefault;
+            HearthDialoguePlaybackPolicy.Apply(
+                mapping.SequenceId,
+                source.LineId,
+                ref resolvedPresentation,
+                ref resolvedAdvancePolicy,
+                ref resolvedDialogueMode);
+
+            target.FindPropertyRelative("startDelay").floatValue = hasPreservedState
+                ? preservedState.StartDelay
+                : (i == 0 ? 0.15f : 0.18f);
             target.FindPropertyRelative("speaker").stringValue = source.PresentationKind == HearthSubtitleLinePresentationKind.TimeCard
                 ? string.Empty
                 : source.Speaker;
@@ -579,16 +808,36 @@ public static class HearthFinalDialogueSync
             SerializedProperty presentationKind = target.FindPropertyRelative("presentationKind");
             if (presentationKind != null)
             {
-                presentationKind.enumValueIndex = (int)source.PresentationKind;
+                presentationKind.enumValueIndex = (int)resolvedPresentation;
             }
-            target.FindPropertyRelative("holdSeconds").floatValue = EstimateHoldSeconds(source.Text);
+            target.FindPropertyRelative("dialogueMode").enumValueIndex =
+                (int)resolvedDialogueMode;
+            target.FindPropertyRelative("speakerSide").enumValueIndex = hasPreservedState
+                ? (int)preservedState.SpeakerSide
+                : (int)SpeakerSide.Auto;
+            target.FindPropertyRelative("advancePolicy").enumValueIndex =
+                (int)resolvedAdvancePolicy;
+            target.FindPropertyRelative("holdSeconds").floatValue = hasPreservedState
+                ? preservedState.HoldSeconds
+                : EstimateHoldSeconds(source.Text);
             AudioClip preserved;
-            preservedClips.TryGetValue(BuildVoiceKey(
-                source.PresentationKind == HearthSubtitleLinePresentationKind.TimeCard ? string.Empty : source.Speaker,
-                source.Text), out preserved);
+            if (hasPreservedState)
+            {
+                preserved = preservedState.VoiceClip;
+            }
+            else
+            {
+                preservedClips.TryGetValue(BuildVoiceKey(
+                    source.PresentationKind == HearthSubtitleLinePresentationKind.TimeCard ? string.Empty : source.Speaker,
+                    source.Text), out preserved);
+            }
             target.FindPropertyRelative("voiceClip").objectReferenceValue = preserved;
-            target.FindPropertyRelative("durationMode").enumValueIndex = (int)HearthSubtitleDurationMode.VoiceClipWhenAssigned;
-            target.FindPropertyRelative("voiceTailSeconds").floatValue = 0.12f;
+            target.FindPropertyRelative("durationMode").enumValueIndex = hasPreservedState
+                ? (int)preservedState.DurationMode
+                : (int)HearthSubtitleDurationMode.VoiceClipWhenAssigned;
+            target.FindPropertyRelative("voiceTailSeconds").floatValue = hasPreservedState
+                ? preservedState.VoiceTailSeconds
+                : 0.12f;
         }
 
         serialized.FindProperty("postSequenceDelay").floatValue = 0.18f;
@@ -625,8 +874,22 @@ public static class HearthFinalDialogueSync
         List<string> issues = new List<string>();
         HashSet<string> knownIds = new HashSet<string>(mappings.Select(mapping => mapping.SequenceId), StringComparer.OrdinalIgnoreCase);
         HashSet<string> usedIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        HashSet<string> usedLineIds = new HashSet<string>(StringComparer.Ordinal);
         foreach (DialogueLine line in script.AllLines)
         {
+            if (string.IsNullOrWhiteSpace(line.LineId))
+            {
+                issues.Add(
+                    "Scene " + line.SceneId + " source line " + line.SourceLine +
+                    " has no stable HEARTH:VOICE line ID.");
+            }
+            else if (!usedLineIds.Add(line.LineId))
+            {
+                issues.Add(
+                    "Duplicate HEARTH:VOICE line ID at source line " + line.SourceLine +
+                    ": " + line.LineId + ".");
+            }
+
             if (line.SequenceIds.Count == 0)
             {
                 issues.Add(

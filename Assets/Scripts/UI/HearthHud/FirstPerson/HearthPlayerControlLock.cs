@@ -47,9 +47,31 @@ public class HearthPlayerControlLock : MonoBehaviour
     {
         get
         {
-            RemoveInvalidActiveLocks();
-            return ActiveLocks.Count > 0;
+            return CombinedActiveMask != HearthPlayerControlMask.None;
         }
+    }
+
+    public static HearthPlayerControlMask CombinedActiveMask
+    {
+        get
+        {
+            RemoveInvalidActiveLocks();
+            HearthPlayerControlMask combined = HearthPlayerControlMask.None;
+            foreach (HearthPlayerControlLock activeLock in ActiveLocks)
+            {
+                if (activeLock != null)
+                {
+                    combined |= activeLock.activeMask;
+                }
+            }
+
+            return combined;
+        }
+    }
+
+    public static bool IsAnyControlLocked(HearthPlayerControlMask mask)
+    {
+        return (CombinedActiveMask & mask) != 0;
     }
 
     public bool ControlsLocked
@@ -127,6 +149,7 @@ public class HearthPlayerControlLock : MonoBehaviour
             HearthPlayerControlMask nextMask = existingMask | mask;
             if (nextMask == existingMask)
             {
+                ReapplyOwnerLocks();
                 return;
             }
 
@@ -184,6 +207,7 @@ public class HearthPlayerControlLock : MonoBehaviour
             ownerLocks.TryGetValue(effectiveOwner, out existingMask);
             if (existingMask == mask)
             {
+                ReapplyOwnerLocks();
                 return;
             }
 
@@ -338,6 +362,7 @@ public class HearthPlayerControlLock : MonoBehaviour
             ActiveLocks.Remove(this);
             RestoreEnabledStates();
             ApplyPermanentMovementRestrictions();
+            RefreshPreferredViewControls();
             return;
         }
 
@@ -378,6 +403,8 @@ public class HearthPlayerControlLock : MonoBehaviour
         {
             SetJumpComponentsEnabled(false);
         }
+
+        RefreshPreferredViewControls();
     }
 
     private void ApplyGroupLock(
@@ -557,6 +584,17 @@ public class HearthPlayerControlLock : MonoBehaviour
         controlsLocked = false;
         RestoreEnabledStates();
         ApplyPermanentMovementRestrictions();
+        RefreshPreferredViewControls();
+    }
+
+    private static void RefreshPreferredViewControls()
+    {
+        ViewSwitchController viewSwitch =
+            ViewSwitchController.FindPreferredController();
+        if (viewSwitch != null)
+        {
+            viewSwitch.RefreshControlsFromLockState();
+        }
     }
 
     private static void RemoveInvalidActiveLocks()

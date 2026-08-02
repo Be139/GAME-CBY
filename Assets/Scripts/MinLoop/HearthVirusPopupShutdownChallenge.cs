@@ -298,14 +298,9 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
 
         if (usingSecondUiHighTrustConfirmation)
         {
-            if (highTrustHudController != null)
-            {
-                highTrustHudController.HandleCancel();
-            }
-            else
-            {
-                HandleHighTrustHudCancelled();
-            }
+            // High-trust shutdown has no cancel branch. Ignore Escape and
+            // any retired cancel-button UnityEvent while the V2 confirmation
+            // is active; low-trust warning cancellation remains unchanged.
             return;
         }
 
@@ -780,9 +775,7 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
         }
 
         highTrustHudController.OnGracefulShutdownConfirmed.RemoveListener(HandleHighTrustHudCompleted);
-        highTrustHudController.OnShutdownCancelled.RemoveListener(HandleHighTrustHudCancelled);
         highTrustHudController.OnGracefulShutdownConfirmed.AddListener(HandleHighTrustHudCompleted);
-        highTrustHudController.OnShutdownCancelled.AddListener(HandleHighTrustHudCancelled);
     }
 
     private void UnsubscribeHighTrustHud()
@@ -793,7 +786,6 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
         }
 
         highTrustHudController.OnGracefulShutdownConfirmed.RemoveListener(HandleHighTrustHudCompleted);
-        highTrustHudController.OnShutdownCancelled.RemoveListener(HandleHighTrustHudCancelled);
     }
 
     private void HandleHighTrustHudCompleted()
@@ -809,20 +801,6 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
         SetVisible(false);
         PlayCue(challengeCompleteCueId);
         completed.Invoke();
-    }
-
-    private void HandleHighTrustHudCancelled()
-    {
-        if (!IsRunning || !usingSecondUiHighTrustConfirmation)
-        {
-            return;
-        }
-
-        UnsubscribeHighTrustHud();
-        usingSecondUiHighTrustConfirmation = false;
-        IsRunning = false;
-        SetVisible(false);
-        cancelled.Invoke();
     }
 
     private void SetVisible(bool visible)

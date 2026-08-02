@@ -34,6 +34,7 @@ public class HearthCompanion17F01ReplayController : MonoBehaviour
     [SerializeField] private Transform childRoomStartAnchor;
     [SerializeField] private Transform bedsideInteractAnchor;
     [SerializeField] private Transform livingRoomStartAnchor;
+    [SerializeField] private Transform livingRoomCameraAnchor;
     [SerializeField] private Transform[] bedsidePathPoints;
 
     [Header("Interaction")]
@@ -300,9 +301,24 @@ public class HearthCompanion17F01ReplayController : MonoBehaviour
 
     public void SetAnchors(Transform childStart, Transform bedside, Transform livingRoom)
     {
+        SetAnchors(childStart, bedside, livingRoom, livingRoomCameraAnchor);
+    }
+
+    public void SetAnchors(
+        Transform childStart,
+        Transform bedside,
+        Transform livingRoom,
+        Transform livingRoomCamera)
+    {
         childRoomStartAnchor = childStart;
         bedsideInteractAnchor = bedside;
         livingRoomStartAnchor = livingRoom;
+        livingRoomCameraAnchor = livingRoomCamera;
+    }
+
+    public void SetLivingRoomCameraAnchor(Transform cameraAnchor)
+    {
+        livingRoomCameraAnchor = cameraAnchor;
     }
 
     public void SetApproachInteractable(HearthCompanionReplayInteractable interactable)
@@ -420,7 +436,7 @@ public class HearthCompanion17F01ReplayController : MonoBehaviour
             flowController.NotifyMorningReviewStarted();
         }
 
-        TeleportRobot(livingRoomStartAnchor);
+        TeleportRobot(livingRoomStartAnchor, livingRoomCameraAnchor);
         SetRobotControl(true, true, false);
 
         if (companionHud != null)
@@ -434,6 +450,7 @@ public class HearthCompanion17F01ReplayController : MonoBehaviour
             yield return new WaitForSeconds(waitBeforeLivingRoomLines);
         }
 
+        PlaySfxCue("Parent.TableFoley");
         if (subtitlePlayer != null)
         {
             yield return PlayDialogue(livingRoomSequence, livingRoomLines);
@@ -567,19 +584,74 @@ public class HearthCompanion17F01ReplayController : MonoBehaviour
 
     private void TeleportRobot(Transform anchor)
     {
-        if (robotRoot == null || anchor == null)
+        TeleportRobot(anchor, null);
+    }
+
+    private void TeleportRobot(Transform rootAnchor, Transform cameraAnchor)
+    {
+        if (robotRoot == null || rootAnchor == null)
         {
             return;
         }
 
-        robotRoot.SetPositionAndRotation(anchor.position, anchor.rotation);
+        robotRoot.SetPositionAndRotation(
+            rootAnchor.position,
+            rootAnchor.rotation);
 
         if (robotLook != null)
         {
-            robotLook.ForceLookFromCurrentTransforms();
+            float yaw = NormalizeAngle(robotRoot.localEulerAngles.y);
+            float pitch = 0f;
+            if (cameraAnchor != null)
+            {
+                Vector3 forward = cameraAnchor.forward.normalized;
+                Vector3 flatForward =
+                    Vector3.ProjectOnPlane(forward, Vector3.up);
+                if (flatForward.sqrMagnitude > 0.0001f)
+                {
+                    Vector3 localForward = robotRoot.parent != null
+                        ? robotRoot.parent.InverseTransformDirection(
+                            flatForward.normalized)
+                        : flatForward.normalized;
+                    yaw = NormalizeAngle(
+                        Mathf.Atan2(localForward.x, localForward.z) *
+                        Mathf.Rad2Deg);
+                }
+
+                pitch = Mathf.Asin(Mathf.Clamp(forward.y, -1f, 1f)) *
+                    Mathf.Rad2Deg;
+            }
+
+            // ForceLookAngles also clears the look component's cached mouse
+            // velocity.  This prevents the following frame from restoring
+            // the low bedroom pitch.
+            robotLook.ForceLookAngles(yaw, pitch);
+        }
+
+        if (cameraAnchor != null)
+        {
+            Transform viewTransform = robotCamera != null
+                ? robotCamera.transform
+                : robotLook != null ? robotLook.transform : null;
+            if (viewTransform != null)
+            {
+                viewTransform.position = cameraAnchor.position;
+                if (robotLook == null)
+                {
+                    viewTransform.rotation = cameraAnchor.rotation;
+                }
+            }
         }
 
         ClearRobotVelocity();
+    }
+
+    private static float NormalizeAngle(float angle)
+    {
+        angle %= 360f;
+        if (angle > 180f) angle -= 360f;
+        if (angle < -180f) angle += 360f;
+        return angle;
     }
 
     private void RotateRobotToward(Quaternion targetRotation)

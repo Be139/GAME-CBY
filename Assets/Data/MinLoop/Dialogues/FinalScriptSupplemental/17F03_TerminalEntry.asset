@@ -15,14 +15,21 @@ MonoBehaviour:
   sequenceId: 17F03_TerminalEntry
   notes: '17F03 enter-unit instruction. Source: HEARTH_Full_Game_Script_No_Audio_Tags_Native_English.md,
     stable marker 17F03_TerminalEntry. Text is synchronized by Tools/Hearth/Dialogue/Sync
-    All Dialogue From Final Script.'
+    All Dialogue From Final Script. Playback policy HEARTH_V2_DIALOGUE_POLICY_2026_08_01.'
+  dialogueChannel: 0
+  defaultSpeakerSide: 0
+  advancePolicy: 0
   lines:
-  - presentationKind: 0
+  - lineId: 17F03_TerminalEntry_FieldUnit_001
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.15
     speaker: Field Unit
     text: Entry is authorized. Go inside, Inspector.
     holdSeconds: 3.414151
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 91fb70a93b4d86e4482f2c68780633c7, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
   postSequenceDelay: 0.18

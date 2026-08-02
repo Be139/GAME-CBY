@@ -7,6 +7,9 @@ public class HearthDialogueSequenceEditor : Editor
 {
     private SerializedProperty sequenceId;
     private SerializedProperty notes;
+    private SerializedProperty dialogueChannel;
+    private SerializedProperty defaultSpeakerSide;
+    private SerializedProperty advancePolicy;
     private SerializedProperty lines;
     private SerializedProperty postSequenceDelay;
     private ReorderableList lineList;
@@ -15,6 +18,9 @@ public class HearthDialogueSequenceEditor : Editor
     {
         sequenceId = serializedObject.FindProperty("sequenceId");
         notes = serializedObject.FindProperty("notes");
+        dialogueChannel = serializedObject.FindProperty("dialogueChannel");
+        defaultSpeakerSide = serializedObject.FindProperty("defaultSpeakerSide");
+        advancePolicy = serializedObject.FindProperty("advancePolicy");
         lines = serializedObject.FindProperty("lines");
         postSequenceDelay = serializedObject.FindProperty("postSequenceDelay");
 
@@ -31,13 +37,19 @@ public class HearthDialogueSequenceEditor : Editor
         EditorGUILayout.PropertyField(sequenceId);
         EditorGUILayout.PropertyField(notes);
         EditorGUILayout.Space(4f);
+        EditorGUILayout.LabelField("Sequence Defaults", EditorStyles.boldLabel);
+        EditorGUILayout.PropertyField(dialogueChannel);
+        EditorGUILayout.PropertyField(defaultSpeakerSide);
+        EditorGUILayout.PropertyField(advancePolicy);
+        EditorGUILayout.Space(4f);
         lineList.DoLayoutList();
         EditorGUILayout.PropertyField(postSequenceDelay);
 
         EditorGUILayout.Space(6f);
         EditorGUILayout.HelpBox(
-            "Each line can use manual timing, follow its AudioClip length, or use whichever is longer. " +
-            "Add, remove and reorder lines here; no script change is required.",
+            "Each line independently selects its visual presentation, dialogue channel, speaker side and " +
+            "advance policy. New ordinary dialogue defaults to framed Space-to-continue playback; the " +
+            "versioned final-script policy owns the small automatic-caption allowlist.",
             MessageType.Info);
 
         serializedObject.ApplyModifiedProperties();
@@ -52,7 +64,12 @@ public class HearthDialogueSequenceEditor : Editor
 
         SerializedProperty line = lines.GetArrayElementAtIndex(index);
         float spacing = EditorGUIUtility.standardVerticalSpacing;
-        return EditorGUI.GetPropertyHeight(line.FindPropertyRelative("speaker")) + spacing +
+        return EditorGUI.GetPropertyHeight(line.FindPropertyRelative("lineId")) + spacing +
+               EditorGUI.GetPropertyHeight(line.FindPropertyRelative("presentationKind")) + spacing +
+               EditorGUI.GetPropertyHeight(line.FindPropertyRelative("dialogueMode")) + spacing +
+               EditorGUI.GetPropertyHeight(line.FindPropertyRelative("speakerSide")) + spacing +
+               EditorGUI.GetPropertyHeight(line.FindPropertyRelative("advancePolicy")) + spacing +
+               EditorGUI.GetPropertyHeight(line.FindPropertyRelative("speaker")) + spacing +
                EditorGUI.GetPropertyHeight(line.FindPropertyRelative("text")) + spacing +
                EditorGUI.GetPropertyHeight(line.FindPropertyRelative("startDelay")) + spacing +
                EditorGUI.GetPropertyHeight(line.FindPropertyRelative("durationMode")) + spacing +
@@ -65,6 +82,11 @@ public class HearthDialogueSequenceEditor : Editor
     {
         SerializedProperty line = lines.GetArrayElementAtIndex(index);
         float y = rect.y + 2f;
+        DrawProperty(ref y, rect, line.FindPropertyRelative("lineId"), "Voice Line ID");
+        DrawProperty(ref y, rect, line.FindPropertyRelative("presentationKind"), "Presentation");
+        DrawProperty(ref y, rect, line.FindPropertyRelative("dialogueMode"), "Dialogue Channel");
+        DrawProperty(ref y, rect, line.FindPropertyRelative("speakerSide"), "Speaker Side");
+        DrawProperty(ref y, rect, line.FindPropertyRelative("advancePolicy"), "Advance Policy");
         DrawProperty(ref y, rect, line.FindPropertyRelative("speaker"), "Speaker");
         DrawProperty(ref y, rect, line.FindPropertyRelative("text"), "Subtitle Text");
         DrawProperty(ref y, rect, line.FindPropertyRelative("startDelay"), "Delay Before Line");

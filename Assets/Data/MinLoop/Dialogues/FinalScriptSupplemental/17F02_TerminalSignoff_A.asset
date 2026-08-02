@@ -15,44 +15,63 @@ MonoBehaviour:
   sequenceId: 17F02_TerminalSignoff_A
   notes: '17F02 option A sign-off and 17F03 alert. Source: HEARTH_Full_Game_Script_No_Audio_Tags_Native_English.md,
     stable marker 17F02_TerminalSignoff_A. Text is synchronized by Tools/Hearth/Dialogue/Sync
-    All Dialogue From Final Script.'
+    All Dialogue From Final Script. Playback policy HEARTH_V2_DIALOGUE_POLICY_2026_08_01.'
+  dialogueChannel: 0
+  defaultSpeakerSide: 0
+  advancePolicy: 0
   lines:
-  - presentationKind: 0
+  - lineId: 17F02_TerminalSignoff_A_FieldUnit_001
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.15
     speaker: Field Unit
     text: Correct disposition. Restart signal sent. The repair module will activate
       within thirty seconds. Stability is projected to return to the safe range within
       twenty-four hours.
     holdSeconds: 10.5839615
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 41f35d8e45f4d5545a550a87b2d4e25f, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: 17F02_TerminalSignoff_A_FieldUnit_002
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: Field Unit
     text: The household will also enter a fourteen-day priority watch. If the relationship
       becomes unstable again, I will flag it. Two reviews completed within specification
       tonight, Inspector.
     holdSeconds: 10.96132
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 39408c4ef12c6c843acfa0d9683730ee, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: 17F02_TerminalSignoff_A_17F02_TerminalSignoff_B_FieldUnit_001
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: Field Unit
     text: Next, proceed to 17F-03 for the final inspection on tonight's route.
     holdSeconds: 5.3009434
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 66e8f2982663c3f41ba89a4cbc5bf80d, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: 17F02_TerminalSignoff_A_17F02_TerminalSignoff_B_FieldUnit_002
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: Field Unit
     text: Inspector, 17F-03 went offline ten minutes ago. Remote restart failed,
       but the corridor terminal can still read the household file. You'll need emergency
       entry for the repair.
     holdSeconds: 11.338679
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 4d7bc016689c61b488f5c63f84a083ee, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
   postSequenceDelay: 0.18

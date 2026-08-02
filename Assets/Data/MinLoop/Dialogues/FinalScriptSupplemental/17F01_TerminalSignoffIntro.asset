@@ -15,41 +15,60 @@ MonoBehaviour:
   sequenceId: 17F01_TerminalSignoffIntro
   notes: '17F01 sign-off recommendation. Source: HEARTH_Full_Game_Script_No_Audio_Tags_Native_English.md,
     stable marker 17F01_TerminalSignoffIntro. Text is synchronized by Tools/Hearth/Dialogue/Sync
-    All Dialogue From Final Script.'
+    All Dialogue From Final Script. Playback policy HEARTH_V2_DIALOGUE_POLICY_2026_08_01.'
+  dialogueChannel: 0
+  defaultSpeakerSide: 0
+  advancePolicy: 0
   lines:
-  - presentationKind: 0
+  - lineId: 17F01_TerminalSignoffIntro_FieldUnit_001
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.15
     speaker: Field Unit
     text: Congratulations, Inspector. You've completed your first point-of-view review.
       Now select a disposition.
     holdSeconds: 5.678302
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: e468151be4660624ca54f99efca5499d, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: 17F01_TerminalSignoffIntro_FieldUnit_002
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: Field Unit
     text: The nightmare response was handled well. The unit calmed Noah successfully,
       and Daniel and Emily requested the upgrade themselves.
     holdSeconds: 8.319811
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 54b88958235a94c47a528bcb4b8deffe, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: 17F01_TerminalSignoffIntro_FieldUnit_003
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: Field Unit
     text: Both dispositions come from the inspection manual. I recommend approving
       the Night Companion Pro upgrade.
     holdSeconds: 6.810377
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 813ecde48c940ce43b3a83c8912af552, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: 17F01_TerminalSignoffIntro_FieldUnit_004
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: Field Unit
-    text: That approach has been validated across a larger number of households.
-    holdSeconds: 5.3009434
-    voiceClip: {fileID: 0}
+    text: That approach has the strongest track record across households.
+    holdSeconds: 4.5462265
+    voiceClip: {fileID: 8300000, guid: e883e93e4cb1f114aa585a28c7d01843, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
   postSequenceDelay: 0.18

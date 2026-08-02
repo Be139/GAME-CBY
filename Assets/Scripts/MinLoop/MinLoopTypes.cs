@@ -39,7 +39,9 @@ public enum HearthSubtitleDurationMode
 public enum HearthSubtitleLinePresentationKind
 {
     Dialogue,
-    TimeCard
+    TimeCard,
+    NaturalCaption,
+    TerminalLowerThird
 }
 
 public enum DialogueChannel
@@ -67,7 +69,8 @@ public enum HearthDialogueLineMode
     SequenceDefault,
     Formal,
     Auxiliary,
-    AudioOnly
+    AudioOnly,
+    DedicatedMessage
 }
 
 public enum HearthDialogueLineAdvancePolicy
@@ -90,6 +93,9 @@ public class MinLoopDispositionEvent : UnityEvent<MinLoopDispositionChoice, int,
 [Serializable]
 public class MinLoopSubtitleLine
 {
+    [Tooltip("Stable ID shared by the final subtitle source and its one-line voice AudioClip.")]
+    public string lineId;
+
     public HearthSubtitleLinePresentationKind presentationKind = HearthSubtitleLinePresentationKind.Dialogue;
 
     [Tooltip("Sequence Default inherits the owning HearthDialogueSequence channel.")]
@@ -98,9 +104,9 @@ public class MinLoopSubtitleLine
     [Tooltip("Auto places NPC/resident names on the left and Mia/Companion names on the right.")]
     public SpeakerSide speakerSide = SpeakerSide.Auto;
 
-    [Tooltip("Sequence Default inherits the owning HearthDialogueSequence advance policy.")]
+    [Tooltip("Manual Space is the production default. Use Audio Complete only for explicitly authored automatic captions.")]
     public HearthDialogueLineAdvancePolicy advancePolicy =
-        HearthDialogueLineAdvancePolicy.SequenceDefault;
+        HearthDialogueLineAdvancePolicy.ManualSpace;
 
     [Min(0f)]
     public float startDelay;

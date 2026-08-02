@@ -14,14 +14,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   sequenceId: 17F04_PhotoCompletion
   notes: Objective after all available photo pages are reviewed.
+  dialogueChannel: 0
+  defaultSpeakerSide: 0
+  advancePolicy: 0
   lines:
-  - presentationKind: 0
+  - lineId: 17F04_ChristmasPhoto_FieldUnit_006
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.15
     speaker: Field Unit
     text: When you're ready, enter Lily's room and address the question from her
       voice message.
     holdSeconds: 6.4330187
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: f89323a91ef55514f9a8606b3572412d, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
   postSequenceDelay: 0.18

@@ -18,6 +18,7 @@ public class HearthLobbyConversationZone :
     [SerializeField] private bool exitCommentaryCompleted;
 
     private bool playerInside;
+    private PlayerInteraction formalPlayerInteraction;
 
     public bool Completed
     {
@@ -79,6 +80,7 @@ public class HearthLobbyConversationZone :
         }
 
         playerInside = true;
+        RegisterProximityPrompt();
         if (!requireInteraction)
         {
             TryStartConversation();
@@ -93,6 +95,7 @@ public class HearthLobbyConversationZone :
         }
 
         playerInside = true;
+        RegisterProximityPrompt();
         if (!requireInteraction)
         {
             TryStartConversation();
@@ -104,6 +107,7 @@ public class HearthLobbyConversationZone :
         if (IsFormalPlayer(other))
         {
             playerInside = false;
+            ClearProximityPrompt();
             TryStartExitCommentary();
         }
     }
@@ -154,6 +158,34 @@ public class HearthLobbyConversationZone :
         exchangeCompleted = false;
         exitCommentaryCompleted = false;
         playerInside = false;
+        ClearProximityPrompt();
+    }
+
+    private void OnDisable()
+    {
+        ClearProximityPrompt();
+    }
+
+    private void RegisterProximityPrompt()
+    {
+        if (formalPlayerInteraction == null && formalPlayerRoot != null)
+        {
+            formalPlayerInteraction =
+                formalPlayerRoot.GetComponent<PlayerInteraction>();
+        }
+
+        if (formalPlayerInteraction != null && IsInteractionAvailable)
+        {
+            formalPlayerInteraction.SetProximityInteraction(this, this);
+        }
+    }
+
+    private void ClearProximityPrompt()
+    {
+        if (formalPlayerInteraction != null)
+        {
+            formalPlayerInteraction.ClearProximityInteraction(this);
+        }
     }
 
     private void TryStartConversation(bool requestedByInteraction = false)

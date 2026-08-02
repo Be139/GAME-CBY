@@ -33,7 +33,10 @@ public class HearthCompanionStatusPanelView : MonoBehaviour
         if (titleText != null)
         {
             titleText.text = scene.StatusTitle;
-            titleText.color = scene.AccentColor;
+            titleText.color = new Color(0.48f, 0.82f, 0.92f, 1f);
+            titleText.fontSize = 20f;
+            titleText.fontStyle = FontStyles.Bold;
+            titleText.alignment = TextAlignmentOptions.TopLeft;
         }
 
         builder.Length = 0;
@@ -65,16 +68,26 @@ public class HearthCompanionStatusPanelView : MonoBehaviour
         if (rowsText != null)
         {
             rowsText.text = builder.ToString();
+            rowsText.color = new Color(0.84f, 0.9f, 0.96f, 0.96f);
+            rowsText.fontSize = 18f;
+            rowsText.fontStyle = FontStyles.Normal;
+            rowsText.alignment = TextAlignmentOptions.TopLeft;
         }
 
         if (footerText != null)
         {
             footerText.text = scene.StatusFooter;
+            footerText.color = new Color(0.56f, 0.72f, 0.84f, 0.92f);
+            footerText.fontSize = 17f;
+            footerText.fontStyle = FontStyles.Bold;
+            footerText.alignment = TextAlignmentOptions.TopLeft;
         }
 
         if (accentImage != null)
         {
-            accentImage.color = scene.AccentColor;
+            // V2 already supplies a complete vector panel frame. The old
+            // full-height accent strip was the visible V1 residue.
+            accentImage.gameObject.SetActive(false);
         }
     }
 

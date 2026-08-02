@@ -44,6 +44,7 @@ public class HearthLobbyFlowController : MonoBehaviour
     [SerializeField] private MinLoopSubtitlePlayer subtitlePlayer;
     [SerializeField] private HearthScreenFader screenFader;
     [SerializeField] private HearthLobbyHudOverlay hudOverlay;
+    [SerializeField] private HearthFirstPersonHudController humanHud;
     [SerializeField] private HearthLocationProbe locationProbe;
     [SerializeField] private HearthTvTerminalController assignmentTerminal;
     [SerializeField] private HearthLobbyConversationZone[] optionalConversationZones;
@@ -130,6 +131,7 @@ public class HearthLobbyFlowController : MonoBehaviour
 
         busy = true;
         currentStage = HearthLobbyFlowStage.Opening;
+        SetCurrentTask(HearthCurrentTaskId.ListenToFieldUnit);
         if (screenFader != null)
         {
             screenFader.SetImmediate(1f);
@@ -147,6 +149,18 @@ public class HearthLobbyFlowController : MonoBehaviour
     private void Start()
     {
         if (autoStart)
+        {
+            StartCoroutine(BeginOpeningAfterSceneInitialization());
+        }
+    }
+
+    private IEnumerator BeginOpeningAfterSceneInitialization()
+    {
+        // Resident flow controllers also reset themselves in Start() and may
+        // stop the shared subtitle player. Let those resets finish first so
+        // the lobby becomes the final startup owner of dialogue playback.
+        yield return null;
+        if (autoStart && isActiveAndEnabled)
         {
             BeginOpening();
         }
@@ -310,8 +324,10 @@ public class HearthLobbyFlowController : MonoBehaviour
     {
         busy = true;
         currentStage = HearthLobbyFlowStage.Opening;
+        SetCurrentTask(HearthCurrentTaskId.ListenToFieldUnit);
         assignmentLoaded = false;
         StartSfxLoop("Lobby.RoomTone");
+        StartSfxLoop("Lobby.Walla");
         SetHumanControl(false, true, false, true);
         TeleportHuman(lobbyStartAnchor, lobbyStartCameraAnchor);
 
@@ -350,6 +366,7 @@ public class HearthLobbyFlowController : MonoBehaviour
             hudOverlay.ShowExpandedVoiceMessage();
         }
 
+        PlaySfxCue("Lily.MessageNotification");
         yield return PlayDialogue(lilyVoiceMessageDialogue);
 
         if (hudOverlay != null)
@@ -366,6 +383,7 @@ public class HearthLobbyFlowController : MonoBehaviour
 
         busy = false;
         currentStage = HearthLobbyFlowStage.FreeExploration;
+        SetCurrentTask(HearthCurrentTaskId.GoToAssignmentTerminal);
         SetHumanControl(true, true, true, false);
         if (onOpeningCompleted != null)
         {
@@ -421,6 +439,7 @@ public class HearthLobbyFlowController : MonoBehaviour
     {
         busy = true;
         currentStage = HearthLobbyFlowStage.AssignmentTerminal;
+        SetCurrentTask(HearthCurrentTaskId.ReviewAssignments);
         assignmentLoaded = true;
         assignmentTerminalCloseAvailable = false;
         assignmentTerminalCloseRequested = false;
@@ -443,39 +462,36 @@ public class HearthLobbyFlowController : MonoBehaviour
             onAssignmentLoaded.Invoke();
         }
 
-        float elapsed = 0f;
+        float earliestCloseTime = Time.unscaledTime +
+            Mathf.Max(0f, assignmentTerminalMinimumViewSeconds);
+
+        // Keep the assignment page open while the briefing plays.  Space is
+        // owned exclusively by the dialogue player during this phase; the
+        // terminal does not regain its primary action until the last line has
+        // completed and the final Space press has been released.
+        HearthDialogueSurface terminalSurface = assignmentTerminal != null
+            ? assignmentTerminal.ResolveDialogueSurface()
+            : null;
+        yield return PlayDialogue(assignmentLoadedDialogue, terminalSurface);
+
+        while (Input.GetKey(KeyCode.Space) || Time.unscaledTime < earliestCloseTime)
+        {
+            yield return null;
+        }
+
+        assignmentTerminalCloseAvailable = true;
+        if (assignmentTerminal != null && assignmentTerminal.IsOpen)
+        {
+            assignmentTerminal.SetPrimaryActionInputEnabled(true);
+            assignmentTerminal.SetRuntimePrompt("SPACE  CLOSE TERMINAL");
+        }
+
         while (!assignmentTerminalCloseRequested)
         {
-            elapsed += Time.unscaledDeltaTime;
-            if (!assignmentTerminalCloseAvailable && elapsed >= assignmentTerminalMinimumViewSeconds)
-            {
-                assignmentTerminalCloseAvailable = true;
-                if (assignmentTerminal != null && assignmentTerminal.IsOpen)
-                {
-                    assignmentTerminal.SetPrimaryActionInputEnabled(true);
-                    assignmentTerminal.SetRuntimePrompt("SPACE  CLOSE TERMINAL");
-                }
-            }
-
             yield return null;
         }
 
         while (assignmentTerminal != null && assignmentTerminal.IsOpen)
-        {
-            yield return null;
-        }
-
-        // The route briefing continues in-world. Mia can move and look, while
-        // all interaction remains locked until the final instruction ends.
-        SetHumanControl(true, true, false, true);
-        if (subtitlePlayer != null &&
-            assignmentLoadedDialogue != null &&
-            assignmentLoadedDialogue.HasLines)
-        {
-            subtitlePlayer.PlaySequence(assignmentLoadedDialogue);
-        }
-
-        while (subtitlePlayer != null && subtitlePlayer.IsPlaying)
         {
             yield return null;
         }
@@ -488,6 +504,7 @@ public class HearthLobbyFlowController : MonoBehaviour
 
         busy = false;
         currentStage = HearthLobbyFlowStage.FreeExploration;
+        SetCurrentTask(HearthCurrentTaskId.GoToElevator);
         SetHumanControl(true, true, true, false);
         activeRoutine = null;
     }
@@ -496,10 +513,12 @@ public class HearthLobbyFlowController : MonoBehaviour
     {
         busy = true;
         currentStage = HearthLobbyFlowStage.ElevatorTransition;
+        SetCurrentTask(HearthCurrentTaskId.RideToFloor17);
         SetHumanControl(false, false, false, true);
         PlaySfxCue("Elevator.Button");
         PlaySfxCue("Elevator.DoorsClose");
         StopSfxCue("Lobby.RoomTone");
+        StopSfxCue("Lobby.Walla");
 
         if (screenFader != null)
         {
@@ -551,6 +570,7 @@ public class HearthLobbyFlowController : MonoBehaviour
 
         busy = false;
         currentStage = HearthLobbyFlowStage.ArrivedFloor17;
+        SetCurrentTask(HearthCurrentTaskId.GoToResidentTerminal);
         SetHumanControl(true, true, true, false);
         if (onFloor17Arrived != null)
         {
@@ -592,6 +612,28 @@ public class HearthLobbyFlowController : MonoBehaviour
         }
 
         yield return subtitlePlayer.PlaySequenceAsset(sequence);
+    }
+
+    private IEnumerator PlayDialogue(
+        HearthDialogueSequence sequence,
+        HearthDialogueSurface surface)
+    {
+        if (subtitlePlayer == null || sequence == null || !sequence.HasLines)
+        {
+            yield break;
+        }
+
+        if (surface == null)
+        {
+            yield return subtitlePlayer.PlaySequenceAsset(sequence);
+            yield break;
+        }
+
+        yield return subtitlePlayer.PlaySequenceAsset(
+            sequence,
+            HearthDialoguePlaybackContext.Embedded(
+                surface,
+                HearthSubtitleContext.Terminal));
     }
 
     private void StartFlowRoutine(IEnumerator routine)
@@ -644,6 +686,26 @@ public class HearthLobbyFlowController : MonoBehaviour
         {
             locationProbe = FindObjectOfType<HearthLocationProbe>(true);
         }
+
+        if (humanHud == null)
+        {
+            humanHud = FindObjectOfType<HearthFirstPersonHudController>(true);
+        }
+    }
+
+    private void SetCurrentTask(HearthCurrentTaskId taskId)
+    {
+        if (humanHud == null)
+        {
+            humanHud = FindObjectOfType<HearthFirstPersonHudController>(true);
+        }
+
+        HearthCurrentTaskRouter.ApplyHuman(
+            humanHud,
+            taskId,
+            taskId == HearthCurrentTaskId.GoToResidentTerminal
+                ? "17F01"
+                : null);
     }
 
     private void SetHumanControl(bool move, bool look, bool interact, bool lockAuxiliaryInputs)

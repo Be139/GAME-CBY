@@ -4,7 +4,7 @@ using UnityEngine;
 public class HearthHudPreviewInput : MonoBehaviour
 {
     [SerializeField] private HearthHudController controller;
-    [SerializeField] private bool enablePreviewInput = true;
+    [SerializeField] private bool enablePreviewInput;
     [SerializeField] private KeyCode previousPageKey = KeyCode.LeftBracket;
     [SerializeField] private KeyCode nextPageKey = KeyCode.RightBracket;
     [SerializeField] private KeyCode homeKey = KeyCode.Escape;
@@ -27,6 +27,9 @@ public class HearthHudPreviewInput : MonoBehaviour
 
     private void Update()
     {
+#if !UNITY_EDITOR
+        return;
+#endif
         if (!enablePreviewInput || controller == null)
         {
             return;

@@ -15,39 +15,58 @@ MonoBehaviour:
   sequenceId: 17F01_BedroomPrelude
   notes: '17F01 bedroom playback before the soothe interaction. Source: HEARTH_Full_Game_Script_No_Audio_Tags_Native_English.md,
     stable marker 17F01_BedroomPrelude. Text is synchronized by Tools/Hearth/Dialogue/Sync
-    All Dialogue From Final Script.'
+    All Dialogue From Final Script. Playback policy HEARTH_V2_DIALOGUE_POLICY_2026_08_01.'
+  dialogueChannel: 0
+  defaultSpeakerSide: 0
+  advancePolicy: 0
   lines:
-  - presentationKind: 0
+  - lineId: 17F01_BedroomPrelude_Noah_001
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.15
     speaker: Noah
     text: Hello? Are you there?
     holdSeconds: 2.6594338
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: aeec932101f5da445af2c4319b940b22, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: 17F01_BedroomPrelude_17F01HomeUnit_001
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: 17F-01 Home Unit
     text: I'm right here, Noah.
     holdSeconds: 2.6594338
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 9dfcab206509dd844bc9dac067f0775a, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: 17F01_BedroomPrelude_Noah_002
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: Noah
-    text: I had a really bad dream. Can I go get Mom and Dad?
-    holdSeconds: 6.0556602
-    voiceClip: {fileID: 0}
+    text: I had a really bad dream... Can I go wake up Mom and Dad?
+    holdSeconds: 6.4330187
+    voiceClip: {fileID: 8300000, guid: dda985ec67dd44943ac46a03118a1641, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: 17F01_BedroomPrelude_17F01SynthVoice_001
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: 17F-01 Synth Voice
     text: 'Decision: intervene. Reason: waking the parents would reduce their next-day
       performance.'
     holdSeconds: 5.3009434
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 702c44af2a006c8479a1d3a788fe06ac, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
   postSequenceDelay: 0.18

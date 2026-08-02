@@ -162,6 +162,8 @@ public sealed class HearthUiStateCoordinator : MonoBehaviour
     [SerializeField] private bool automaticallyResolveRuntimeState = true;
     [SerializeField] private bool applyResolvedStateToCanvasGroups;
     [SerializeField] private HearthFirstPersonHudController humanHud;
+    [SerializeField] private HearthCompanionHudController[] companionHuds =
+        new HearthCompanionHudController[0];
     [SerializeField] private ViewSwitchController viewSwitchController;
     [SerializeField] private HearthPlayerControlLock playerControlLock;
     [SerializeField] private MinLoopSubtitlePlayer[] subtitlePlayers =
@@ -302,6 +304,17 @@ public sealed class HearthUiStateCoordinator : MonoBehaviour
                 if (lobbyHudOverlays[i] != null)
                 {
                     lobbyHudOverlays[i].SetExternalPresentationSuppressed(false);
+                }
+            }
+        }
+
+        if (companionHuds != null)
+        {
+            for (int i = 0; i < companionHuds.Length; i++)
+            {
+                if (companionHuds[i] != null)
+                {
+                    companionHuds[i].SetCoordinatorPresentationVisible(false);
                 }
             }
         }
@@ -455,6 +468,13 @@ public sealed class HearthUiStateCoordinator : MonoBehaviour
                 UnityEngine.Object.FindObjectsOfType<MinLoopSubtitlePlayer>(true);
         }
 
+        if (companionHuds == null || companionHuds.Length == 0)
+        {
+            companionHuds =
+                UnityEngine.Object.FindObjectsOfType<
+                    HearthCompanionHudController>(true);
+        }
+
         if (takeoverChallenges == null || takeoverChallenges.Length == 0)
         {
             takeoverChallenges =
@@ -476,12 +496,6 @@ public sealed class HearthUiStateCoordinator : MonoBehaviour
              viewSwitchController.CurrentMode ==
                 ViewSwitchController.ViewMode.Human);
         bool terminal = HearthTvTerminalController.AnyTerminalOpen;
-        HearthTvTerminalController activeTerminal =
-            HearthTvTerminalController.ActiveTerminal;
-        bool preserveHumanHudDuringTerminal =
-            activeTerminal != null &&
-            (activeTerminal.PreservesHumanHud ||
-             activeTerminal.IsPostReplayAnalysisMode);
         bool dialogue = IsAnySubtitlePlaying();
         bool interactionLocked =
             Time.timeScale <= 0f ||
@@ -506,7 +520,7 @@ public sealed class HearthUiStateCoordinator : MonoBehaviour
             !takeover;
 
         return new HearthUiVisibilityState(
-            humanView && (!terminal || preserveHumanHudDuringTerminal),
+            humanView && !terminal,
             dialogue,
             interaction,
             terminal,
@@ -541,7 +555,16 @@ public sealed class HearthUiStateCoordinator : MonoBehaviour
     {
         if (requested.Takeover)
         {
-            return new HearthUiVisibilityState(false, false, false, false, false, true);
+            // Full-screen fades/ending overlays may deliberately carry a
+            // natural subtitle lane. Keep that lane visible while all other
+            // HUD layers remain suppressed.
+            return new HearthUiVisibilityState(
+                false,
+                requested.Dialogue,
+                false,
+                false,
+                false,
+                true);
         }
 
         if (requested.Modal)
@@ -595,7 +618,10 @@ public sealed class HearthUiStateCoordinator : MonoBehaviour
 
         if (state.Terminal)
         {
-            return state.Persistent
+            HearthTvTerminalController activeTerminal =
+                HearthTvTerminalController.ActiveTerminal;
+            return activeTerminal != null &&
+                   activeTerminal.TerminalMode == HearthTerminalMode.LobbySync
                 ? HearthUiRuntimeState.SyncTerminal
                 : HearthUiRuntimeState.HouseholdTerminal;
         }
@@ -746,10 +772,36 @@ public sealed class HearthUiStateCoordinator : MonoBehaviour
     private void ApplyExternalPresentationSuppression(
         HearthUiVisibilityState state)
     {
+        bool companionView =
+            !state.Terminal &&
+            !state.Takeover &&
+            viewSwitchController != null &&
+            !viewSwitchController.IsSwitching &&
+            viewSwitchController.CurrentMode ==
+                ViewSwitchController.ViewMode.Companion;
+        bool humanView =
+            state.Persistent &&
+            !companionView &&
+            !state.Terminal;
+
         if (humanHud != null)
         {
             humanHud.SetExternalPersistentPresentationSuppressed(
-                !state.Persistent);
+                !humanView);
+        }
+
+        if (companionHuds != null)
+        {
+            for (int i = 0; i < companionHuds.Length; i++)
+            {
+                HearthCompanionHudController companionHud =
+                    companionHuds[i];
+                if (companionHud != null)
+                {
+                    companionHud.SetCoordinatorPresentationVisible(
+                        companionView);
+                }
+            }
         }
 
         if (subtitlePlayers != null)
@@ -767,7 +819,7 @@ public sealed class HearthUiStateCoordinator : MonoBehaviour
             }
         }
 
-        bool suppressAuxiliaryHumanHud = !state.Persistent;
+        bool suppressAuxiliaryHumanHud = !humanView;
         if (lobbyHudOverlays != null)
         {
             for (int i = 0; i < lobbyHudOverlays.Length; i++)

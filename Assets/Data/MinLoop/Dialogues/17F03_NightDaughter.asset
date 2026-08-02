@@ -15,64 +15,96 @@ MonoBehaviour:
   sequenceId: 17F03_NightDaughter
   notes: '17F03 night conversation with Ava. Source: HEARTH_Full_Game_Script_No_Audio_Tags_Native_English.md,
     stable marker 17F03_NightDaughter. Text is synchronized by Tools/Hearth/Dialogue/Sync
-    All Dialogue From Final Script.'
+    All Dialogue From Final Script. Playback policy HEARTH_V2_DIALOGUE_POLICY_2026_08_01.'
+  dialogueChannel: 0
+  defaultSpeakerSide: 0
+  advancePolicy: 0
   lines:
-  - presentationKind: 0
+  - lineId: 17F03_NightDaughter_17F03SynthVoice_001
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.15
     speaker: 17F-03 Synth Voice
     text: 'Decision: open dialogue mode. Reason: Ava initiated contact.'
     holdSeconds: 4.1688676
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 1571fde121f050c4e8690aba696a8dfa, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: 17F03_NightDaughter_Ava_001
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: Ava
-    text: Can you please stop talking for us?
+    text: Can you just... stop talking for us?
     holdSeconds: 3.7915094
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: b963a3562191b6240a7aef5c17331fea, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: 17F03_NightDaughter_17F03SynthVoice_002
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: 17F-03 Synth Voice
     text: 'Decision: standard response. Reason: subject expression can be guided.'
     holdSeconds: 4.5462265
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 1ffac13d45f1698419b2c114a76bfda9, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: 17F03_NightDaughter_17F03HomeUnit_001
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: 17F-03 Home Unit
-    text: If you would rather speak to your parents directly, I can step aside.
-    holdSeconds: 6.0556602
-    voiceClip: {fileID: 0}
+    text: If you'd rather talk to your parents directly, I can step aside.
+    holdSeconds: 5.678302
+    voiceClip: {fileID: 8300000, guid: 701885e9d7225ef4b9f95f1ebae27af6, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: 17F03_NightDaughter_Ava_002
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: Ava
     text: That's not what I mean.
     holdSeconds: 3.0367923
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 49571f51f223a884999b81f5ec430e43, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: 17F03_NightDaughter_Ava_003
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: Ava
-    text: Mom used to get on my case. Dad used to knock on my door himself. They
-      don't anymore. Mom talks to you more than she talks to me. Dad came home today
-      and asked you how I was. He didn't ask me.
+    text: "Mom used to get on my case. Like, actually talk to me\u2014even if it
+      was yelling. Dad used to knock on my door himself. They don't do that anymore.
+      Mom talks to you more than she talks to me. Dad came home today and asked you
+      how I was doing. Not me. You."
     holdSeconds: 12
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 16acc4413c8d79746a55ff674b83c52c, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: 17F03_NightDaughter_Ava_004
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: Ava
-    text: You know them better every day. They know me less.
-    holdSeconds: 4.923585
-    voiceClip: {fileID: 0}
+    text: You know them better every day. And they know me less.
+    holdSeconds: 5.3009434
+    voiceClip: {fileID: 8300000, guid: f0571285dcac87a41a74734e1f03200a, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
   postSequenceDelay: 0.18

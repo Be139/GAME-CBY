@@ -41,6 +41,14 @@ public class SmartDoorController : MonoBehaviour, IInteractable, IInteractionAva
     [SerializeField] private AudioClip openClip;
     [SerializeField] private AudioClip closeClip;
     [SerializeField] private AudioClip lockedClip;
+    [Tooltip("Start position inside Open Clip. Keeps source files untouched when one recording contains both open and close sounds.")]
+    [Min(0f)] [SerializeField] private float openClipStartSeconds;
+    [Tooltip("0 plays to the end of Open Clip.")]
+    [Min(0f)] [SerializeField] private float openClipDurationSeconds;
+    [Tooltip("Start position inside Close Clip. Keeps source files untouched when one recording contains both open and close sounds.")]
+    [Min(0f)] [SerializeField] private float closeClipStartSeconds;
+    [Tooltip("0 plays to the end of Close Clip.")]
+    [Min(0f)] [SerializeField] private float closeClipDurationSeconds;
 
     [Header("Events")]
     [SerializeField] private UnityEvent opened = new UnityEvent();
@@ -49,6 +57,7 @@ public class SmartDoorController : MonoBehaviour, IInteractable, IInteractionAva
 
     private Coroutine moveRoutine;
     private Coroutine autoCloseRoutine;
+    private Coroutine audioStopRoutine;
     private Vector3 openLocalPosition;
     private Quaternion closedLocalRotation;
     private Quaternion openLocalRotation;
@@ -89,6 +98,10 @@ public class SmartDoorController : MonoBehaviour, IInteractable, IInteractionAva
     {
         moveDuration = Mathf.Max(0f, moveDuration);
         autoCloseDelay = Mathf.Max(0f, autoCloseDelay);
+        openClipStartSeconds = Mathf.Max(0f, openClipStartSeconds);
+        openClipDurationSeconds = Mathf.Max(0f, openClipDurationSeconds);
+        closeClipStartSeconds = Mathf.Max(0f, closeClipStartSeconds);
+        closeClipDurationSeconds = Mathf.Max(0f, closeClipDurationSeconds);
     }
 
     public void Interact()
@@ -195,7 +208,7 @@ public class SmartDoorController : MonoBehaviour, IInteractable, IInteractionAva
         Vector3 targetPosition = open ? openLocalPosition : closedLocalPosition;
         Quaternion targetRotation = open ? openLocalRotation : closedLocalRotation;
 
-        PlayClip(open ? openClip : closeClip);
+        PlayDoorClip(open);
 
         if (moveDuration <= 0f)
         {
@@ -350,6 +363,55 @@ public class SmartDoorController : MonoBehaviour, IInteractable, IInteractionAva
         }
 
         audioSource.PlayOneShot(clip);
+    }
+
+    private void PlayDoorClip(bool open)
+    {
+        AudioClip clip = open ? openClip : closeClip;
+        float startSeconds = open ? openClipStartSeconds : closeClipStartSeconds;
+        float durationSeconds = open ? openClipDurationSeconds : closeClipDurationSeconds;
+        if (audioSource == null || clip == null)
+        {
+            return;
+        }
+
+        if (audioStopRoutine != null)
+        {
+            StopCoroutine(audioStopRoutine);
+            audioStopRoutine = null;
+        }
+
+        audioSource.Stop();
+        audioSource.loop = false;
+        audioSource.clip = clip;
+        audioSource.time = Mathf.Clamp(startSeconds, 0f, Mathf.Max(0f, clip.length - 0.01f));
+        audioSource.Play();
+
+        float remaining = Mathf.Max(0f, clip.length - audioSource.time);
+        float duration = durationSeconds > 0f
+            ? Mathf.Min(durationSeconds, remaining)
+            : remaining;
+        if (duration > 0f && duration < remaining - 0.01f)
+        {
+            audioStopRoutine = StartCoroutine(StopDoorAudioAfter(duration));
+        }
+    }
+
+    private IEnumerator StopDoorAudioAfter(float seconds)
+    {
+        float elapsed = 0f;
+        while (elapsed < seconds)
+        {
+            elapsed += GetDeltaTime();
+            yield return null;
+        }
+
+        if (audioSource != null)
+        {
+            audioSource.Stop();
+        }
+
+        audioStopRoutine = null;
     }
 
     private float GetDeltaTime()

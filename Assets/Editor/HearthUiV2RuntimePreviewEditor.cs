@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using TMPro;
 using UnityEditor;
 using UnityEngine;
@@ -16,6 +17,12 @@ public static class HearthUiV2RuntimePreviewEditor
         "The household record shows a repeated conflict between scheduled care, " +
         "work demands, and the child's need for reassurance. I need the complete " +
         "context before I make a disposition.";
+
+    [MenuItem(MenuRoot + "00 Reset Preview State")]
+    public static void ResetPreviewState()
+    {
+        ResetPreviewStateCore(ViewSwitchController.ViewMode.Human);
+    }
 
     [MenuItem(MenuRoot + "Human/01 Persistent HUD")]
     public static void ShowHumanPersistent()
@@ -77,6 +84,27 @@ public static class HearthUiV2RuntimePreviewEditor
     {
         PrepareHuman();
         ShowHumanPage(HearthFirstPersonHudPageId.Slide03MainMenu);
+    }
+
+    [MenuItem(MenuRoot + "Human/05A Today Rounds")]
+    public static void ShowTodayRounds()
+    {
+        PrepareHuman();
+        ShowHumanPage(HearthFirstPersonHudPageId.Slide05TodayRounds);
+    }
+
+    [MenuItem(MenuRoot + "Human/05B Disposition History")]
+    public static void ShowDispositionHistory()
+    {
+        PrepareHuman();
+        ShowHumanPage(HearthFirstPersonHudPageId.Slide18HistoryEmpty);
+    }
+
+    [MenuItem(MenuRoot + "Human/05C System Settings")]
+    public static void ShowSystemSettings()
+    {
+        PrepareHuman();
+        ShowHumanPage(HearthFirstPersonHudPageId.Slide22Settings);
     }
 
     [MenuItem(MenuRoot + "Human/06 Photo Archive")]
@@ -161,33 +189,7 @@ public static class HearthUiV2RuntimePreviewEditor
             return;
         }
 
-        controller.StopAllCoroutines();
-        controller.enabled = false;
-        HearthCompanionDecisionPanelView panel =
-            controller.GetComponentInChildren<HearthCompanionDecisionPanelView>(
-                true);
-        if (panel != null)
-        {
-            panel.gameObject.SetActive(false);
-            CanvasGroup group = panel.GetComponent<CanvasGroup>();
-            if (group != null)
-            {
-                group.alpha = 0f;
-                group.interactable = false;
-                group.blocksRaycasts = false;
-            }
-        }
-        Transform triggerCard =
-            FindNamed(controller.transform, "TriggerCardView");
-        if (triggerCard != null)
-        {
-            triggerCard.gameObject.SetActive(false);
-        }
-        Transform holdPrompt = FindNamed(controller.transform, "HoldPrompt");
-        if (holdPrompt != null)
-        {
-            holdPrompt.gameObject.SetActive(false);
-        }
+        controller.ResetTransientPresentation();
 
         MinLoopSubtitlePlayer player = FindSubtitlePlayer();
         if (player == null)
@@ -235,6 +237,38 @@ public static class HearthUiV2RuntimePreviewEditor
         QueuePreviewRepaint();
     }
 
+    [MenuItem(MenuRoot + "Companion/07 Live Audio")]
+    public static void ShowCompanionLiveAudio()
+    {
+        HearthCompanionHudController controller =
+            ShowCompanionScene(9, true);
+        if (controller != null)
+        {
+            controller.ShowBlackAudio();
+        }
+
+        MinLoopSubtitlePlayer player = FindSubtitlePlayer();
+        if (player != null)
+        {
+            player.PlaySequence(
+                new List<MinLoopSubtitleLine>
+                {
+                    new MinLoopSubtitleLine
+                    {
+                        speaker = "DANIEL · RESIDENT",
+                        text = FormalCapacitySample,
+                        dialogueMode = HearthDialogueLineMode.Formal,
+                        speakerSide = SpeakerSide.Left,
+                        advancePolicy =
+                            HearthDialogueLineAdvancePolicy.ManualSpace,
+                        holdSeconds = 999f
+                    }
+                },
+                HearthSubtitleContext.Human);
+        }
+        QueuePreviewRepaint();
+    }
+
     [MenuItem(MenuRoot + "Terminal/01 Lobby Synchronization")]
     public static void ShowLobbyTerminal()
     {
@@ -268,18 +302,7 @@ public static class HearthUiV2RuntimePreviewEditor
     [MenuItem(MenuRoot + "Stop Preview")]
     public static void StopPreview()
     {
-        StopSubtitles();
-        CloseTerminals();
-
-        HearthCompanionHudController[] companionHuds =
-            UnityEngine.Object.FindObjectsOfType<HearthCompanionHudController>(
-                true);
-        for (int i = 0; i < companionHuds.Length; i++)
-        {
-            companionHuds[i].SetVisible(false);
-        }
-
-        PrepareHuman();
+        ResetPreviewStateCore(ViewSwitchController.ViewMode.Human);
     }
 
     [MenuItem(MenuRoot + "QA/Audit Active Regions")]
@@ -374,6 +397,11 @@ public static class HearthUiV2RuntimePreviewEditor
             }
         }
 
+        AuditBaseViewExclusivity(issues);
+        AuditFrameContainment(issues);
+        AuditDialogueCenter(issues);
+        AuditRuleTextIntersections(issues);
+
         if (issues.Count == 0)
         {
             Debug.Log(
@@ -393,11 +421,33 @@ public static class HearthUiV2RuntimePreviewEditor
         }
     }
 
+    [MenuItem(MenuRoot + "QA/Resolution/1280x720")]
+    public static void SetResolution1280x720()
+    {
+        SetPreviewResolution(1280, 720);
+    }
+
+    [MenuItem(MenuRoot + "QA/Resolution/1920x1080")]
+    public static void SetResolution1920x1080()
+    {
+        SetPreviewResolution(1920, 1080);
+    }
+
+    [MenuItem(MenuRoot + "QA/Resolution/2560x1440")]
+    public static void SetResolution2560x1440()
+    {
+        SetPreviewResolution(2560, 1440);
+    }
+
     [MenuItem(MenuRoot + "Human/01 Persistent HUD", true)]
+    [MenuItem(MenuRoot + "00 Reset Preview State", true)]
     [MenuItem(MenuRoot + "Human/02 Field Unit Auxiliary", true)]
     [MenuItem(MenuRoot + "Human/03 Formal Dialogue Left", true)]
     [MenuItem(MenuRoot + "Human/04 Formal Dialogue Right", true)]
     [MenuItem(MenuRoot + "Human/05 Tab Menu", true)]
+    [MenuItem(MenuRoot + "Human/05A Today Rounds", true)]
+    [MenuItem(MenuRoot + "Human/05B Disposition History", true)]
+    [MenuItem(MenuRoot + "Human/05C System Settings", true)]
     [MenuItem(MenuRoot + "Human/06 Photo Archive", true)]
     [MenuItem(MenuRoot + "Human/07 Disposition Choice", true)]
     [MenuItem(MenuRoot + "Human/08 Shutdown Confirm", true)]
@@ -408,6 +458,7 @@ public static class HearthUiV2RuntimePreviewEditor
     [MenuItem(MenuRoot + "Companion/04 Decision Card", true)]
     [MenuItem(MenuRoot + "Companion/05 Formal Dialogue", true)]
     [MenuItem(MenuRoot + "Companion/06 Permission Boundary", true)]
+    [MenuItem(MenuRoot + "Companion/07 Live Audio", true)]
     [MenuItem(MenuRoot + "Terminal/01 Lobby Synchronization", true)]
     [MenuItem(MenuRoot + "Terminal/02 Doorway 17F01", true)]
     [MenuItem(MenuRoot + "Terminal/03 Doorway 17F02", true)]
@@ -418,6 +469,152 @@ public static class HearthUiV2RuntimePreviewEditor
     private static bool ValidateRuntimePreview()
     {
         return EditorApplication.isPlaying;
+    }
+
+    private static void SetPreviewResolution(int width, int height)
+    {
+        bool selected = TrySelectGameViewSize(width, height);
+        if (!selected && EditorApplication.isPlaying)
+        {
+            Screen.SetResolution(width, height, false);
+        }
+        else if (!selected)
+        {
+            Debug.LogWarning(
+                "[HearthUiV2RuntimePreviewEditor] Could not select the requested " +
+                "Game View size while outside Play Mode.");
+            return;
+        }
+        Debug.Log(
+            "[HearthUiV2RuntimePreviewEditor] Requested preview resolution " +
+            width + "x" + height +
+            (selected ? " through Game View." : " through Screen fallback."));
+        QueuePreviewRepaint();
+    }
+
+    private static bool TrySelectGameViewSize(int width, int height)
+    {
+        const BindingFlags Flags =
+            BindingFlags.Instance |
+            BindingFlags.Static |
+            BindingFlags.Public |
+            BindingFlags.NonPublic;
+
+        Assembly editorAssembly = typeof(Editor).Assembly;
+        Type gameViewType = editorAssembly.GetType("UnityEditor.GameView");
+        Type sizesType = editorAssembly.GetType("UnityEditor.GameViewSizes");
+        Type sizeType = editorAssembly.GetType("UnityEditor.GameViewSize");
+        Type sizeKindType = editorAssembly.GetType("UnityEditor.GameViewSizeType");
+        if (gameViewType == null ||
+            sizesType == null ||
+            sizeType == null ||
+            sizeKindType == null)
+        {
+            return false;
+        }
+
+        Type singletonType =
+            typeof(ScriptableSingleton<>).MakeGenericType(sizesType);
+        PropertyInfo instanceProperty =
+            singletonType.GetProperty("instance", Flags);
+        object sizes =
+            instanceProperty != null
+                ? instanceProperty.GetValue(null, null)
+                : null;
+        PropertyInfo currentGroupProperty =
+            sizesType.GetProperty("currentGroupType", Flags);
+        MethodInfo getGroupMethod = sizesType.GetMethod("GetGroup", Flags);
+        if (sizes == null ||
+            currentGroupProperty == null ||
+            getGroupMethod == null)
+        {
+            return false;
+        }
+
+        object groupKind = currentGroupProperty.GetValue(sizes, null);
+        object group =
+            getGroupMethod.Invoke(sizes, new[] { groupKind });
+        if (group == null)
+        {
+            return false;
+        }
+
+        Type groupType = group.GetType();
+        MethodInfo getBuiltinCount =
+            groupType.GetMethod("GetBuiltinCount", Flags);
+        MethodInfo getCustomCount =
+            groupType.GetMethod("GetCustomCount", Flags);
+        MethodInfo getSize =
+            groupType.GetMethod("GetGameViewSize", Flags);
+        MethodInfo addCustomSize =
+            groupType.GetMethod("AddCustomSize", Flags);
+        if (getBuiltinCount == null ||
+            getCustomCount == null ||
+            getSize == null ||
+            addCustomSize == null)
+        {
+            return false;
+        }
+
+        int builtinCount = (int)getBuiltinCount.Invoke(group, null);
+        int customCount = (int)getCustomCount.Invoke(group, null);
+        int targetIndex = -1;
+        for (int i = 0; i < builtinCount + customCount; i++)
+        {
+            object size = getSize.Invoke(group, new object[] { i });
+            if (ReadGameViewSizeDimension(size, "width") == width &&
+                ReadGameViewSizeDimension(size, "height") == height)
+            {
+                targetIndex = i;
+                break;
+            }
+        }
+
+        if (targetIndex < 0)
+        {
+            object fixedResolution =
+                Enum.Parse(sizeKindType, "FixedResolution");
+            object customSize = Activator.CreateInstance(
+                sizeType,
+                new object[]
+                {
+                    fixedResolution,
+                    width,
+                    height,
+                    "HEARTH " + width + "x" + height
+                });
+            addCustomSize.Invoke(group, new[] { customSize });
+            targetIndex = builtinCount + customCount;
+        }
+
+        EditorWindow gameView = EditorWindow.GetWindow(gameViewType);
+        PropertyInfo selectedSize =
+            gameViewType.GetProperty("selectedSizeIndex", Flags);
+        if (gameView == null || selectedSize == null)
+        {
+            return false;
+        }
+
+        selectedSize.SetValue(gameView, targetIndex, null);
+        gameView.Repaint();
+        return true;
+    }
+
+    private static int ReadGameViewSizeDimension(object size, string name)
+    {
+        if (size == null)
+        {
+            return -1;
+        }
+
+        const BindingFlags Flags =
+            BindingFlags.Instance |
+            BindingFlags.Public |
+            BindingFlags.NonPublic;
+        PropertyInfo property = size.GetType().GetProperty(name, Flags);
+        return property != null
+            ? Convert.ToInt32(property.GetValue(size, null))
+            : -1;
     }
 
     private static void ShowFormal(
@@ -471,19 +668,10 @@ public static class HearthUiV2RuntimePreviewEditor
     }
 
     private static HearthCompanionHudController ShowCompanionScene(
-        int slideNumber)
+        int slideNumber,
+        bool preserveSceneTransient = false)
     {
-        BeginPreviewRendering();
-        SuspendAutomaticPreviewDrivers();
-        StopSubtitles();
-        CloseTerminals();
-
-        ViewSwitchController switcher =
-            ViewSwitchController.FindPreferredController();
-        if (switcher != null)
-        {
-            switcher.SwitchTo(ViewSwitchController.ViewMode.Companion);
-        }
+        ResetPreviewStateCore(ViewSwitchController.ViewMode.Companion);
 
         HearthCompanionHudController controller =
             UnityEngine.Object.FindObjectOfType<HearthCompanionHudController>(
@@ -495,26 +683,13 @@ public static class HearthUiV2RuntimePreviewEditor
         }
 
         controller.enabled = true;
-        Transform decisionPanel =
-            FindNamed(controller.transform, "DecisionPanel");
-        if (decisionPanel != null)
-        {
-            decisionPanel.gameObject.SetActive(true);
-        }
-        Transform triggerCard =
-            FindNamed(controller.transform, "TriggerCardView");
-        if (triggerCard != null)
-        {
-            triggerCard.gameObject.SetActive(true);
-        }
-        Transform holdPrompt = FindNamed(controller.transform, "HoldPrompt");
-        if (holdPrompt != null)
-        {
-            holdPrompt.gameObject.SetActive(true);
-        }
-
+        controller.ResetTransientPresentation();
         controller.SetVisible(true);
         controller.ShowScene(slideNumber);
+        if (!preserveSceneTransient)
+        {
+            controller.ResetTransientPresentation();
+        }
         QueuePreviewRepaint();
         return controller;
     }
@@ -621,33 +796,63 @@ public static class HearthUiV2RuntimePreviewEditor
 
     private static void PrepareHuman()
     {
+        ResetPreviewStateCore(ViewSwitchController.ViewMode.Human);
+    }
+
+    private static void ResetPreviewStateCore(
+        ViewSwitchController.ViewMode targetMode)
+    {
         BeginPreviewRendering();
         SuspendAutomaticPreviewDrivers();
         StopSubtitles();
         CloseTerminals();
-
-        ViewSwitchController switcher =
-            ViewSwitchController.FindPreferredController();
-        if (switcher != null)
-        {
-            switcher.SwitchTo(ViewSwitchController.ViewMode.Human);
-        }
 
         HearthCompanionHudController[] companionHuds =
             UnityEngine.Object.FindObjectsOfType<HearthCompanionHudController>(
                 true);
         for (int i = 0; i < companionHuds.Length; i++)
         {
-            companionHuds[i].SetVisible(false);
+            HearthCompanionHudController companion = companionHuds[i];
+            if (companion == null)
+            {
+                continue;
+            }
+            companion.enabled = true;
+            companion.ResetTransientPresentation();
+            companion.SetVisible(
+                targetMode == ViewSwitchController.ViewMode.Companion);
         }
 
-        HearthFirstPersonHudController controller =
-            UnityEngine.Object.FindObjectOfType<HearthFirstPersonHudController>(
-                true);
-        if (controller != null)
+        ViewSwitchController switcher =
+            ViewSwitchController.FindPreferredController();
+        if (switcher != null)
         {
-            controller.ShowPage(
-                HearthFirstPersonHudPageId.Slide01PersistentHud);
+            switcher.SwitchTo(targetMode);
+        }
+
+        HearthUiStateCoordinator[] coordinators =
+            UnityEngine.Object.FindObjectsOfType<HearthUiStateCoordinator>(true);
+        for (int i = 0; i < coordinators.Length; i++)
+        {
+            if (coordinators[i] != null)
+            {
+                coordinators[i].SetRuntimeIntegration(true, false);
+                coordinators[i].RefreshRuntimeState();
+            }
+        }
+
+        // Switch and refresh ownership before asking the Human page to animate.
+        // Otherwise LocationHud can still be inactive after a Companion preview
+        // and its transition coroutine produces a false preview warning.
+        if (targetMode == ViewSwitchController.ViewMode.Human)
+        {
+            HearthFirstPersonHudController human =
+                UnityEngine.Object.FindObjectOfType<HearthFirstPersonHudController>(
+                    true);
+            if (human != null)
+            {
+                human.ShowPage(HearthFirstPersonHudPageId.Slide01PersistentHud);
+            }
         }
         QueuePreviewRepaint();
     }
@@ -870,6 +1075,135 @@ public static class HearthUiV2RuntimePreviewEditor
         return xMax <= xMin || yMax <= yMin
             ? Rect.zero
             : Rect.MinMaxRect(xMin, yMin, xMax, yMax);
+    }
+
+    private static void AuditBaseViewExclusivity(List<string> issues)
+    {
+        int visibleBaseViews = 0;
+        HearthFirstPersonHudController human =
+            UnityEngine.Object.FindObjectOfType<HearthFirstPersonHudController>(
+                true);
+        Transform persistent =
+            human != null ? FindNamed(human.transform, "PersistentHud") : null;
+        if (persistent is RectTransform &&
+            IsVisuallyActive((RectTransform)persistent))
+        {
+            visibleBaseViews++;
+        }
+
+        HearthCompanionHudController[] companions =
+            UnityEngine.Object.FindObjectsOfType<HearthCompanionHudController>(
+                true);
+        for (int i = 0; i < companions.Length; i++)
+        {
+            CanvasGroup group = companions[i] != null
+                ? companions[i].GetComponent<CanvasGroup>()
+                : null;
+            if (group != null && group.alpha > 0.01f &&
+                group.gameObject.activeInHierarchy)
+            {
+                visibleBaseViews++;
+                break;
+            }
+        }
+
+        if (HearthTvTerminalController.AnyTerminalOpen)
+        {
+            visibleBaseViews++;
+        }
+
+        if (visibleBaseViews > 1)
+        {
+            issues.Add(
+                "Human, Companion and Terminal base views are not mutually " +
+                "exclusive (visible count " + visibleBaseViews + ").");
+        }
+    }
+
+    private static void AuditFrameContainment(List<string> issues)
+    {
+        Image[] images = UnityEngine.Object.FindObjectsOfType<Image>(true);
+        for (int i = 0; i < images.Length; i++)
+        {
+            Image image = images[i];
+            if (image == null || image.name != "PanelBackdrop" ||
+                !IsVisuallyActive(image.rectTransform))
+            {
+                continue;
+            }
+            RectTransform parent = image.rectTransform.parent as RectTransform;
+            if (parent == null)
+            {
+                continue;
+            }
+            Rect outer = GetScreenRect(parent);
+            Rect inner = GetScreenRect(image.rectTransform);
+            if (inner.xMin < outer.xMin - 0.5f ||
+                inner.yMin < outer.yMin - 0.5f ||
+                inner.xMax > outer.xMax + 0.5f ||
+                inner.yMax > outer.yMax + 0.5f)
+            {
+                issues.Add(image.transform.parent.name + " backdrop exceeds frame.");
+            }
+        }
+    }
+
+    private static void AuditDialogueCenter(List<string> issues)
+    {
+        RectTransform[] rects =
+            UnityEngine.Object.FindObjectsOfType<RectTransform>(true);
+        for (int i = 0; i < rects.Length; i++)
+        {
+            RectTransform rect = rects[i];
+            if (rect == null || rect.name != "FormalFrame" ||
+                !IsVisuallyActive(rect))
+            {
+                continue;
+            }
+            Rect screen = GetScreenRect(rect);
+            if (Mathf.Abs(screen.center.x - Screen.width * 0.5f) > 1f)
+            {
+                issues.Add(
+                    "Formal dialogue horizontal center error is " +
+                    Mathf.Abs(screen.center.x - Screen.width * 0.5f) + " px.");
+            }
+        }
+    }
+
+    private static void AuditRuleTextIntersections(List<string> issues)
+    {
+        string[] guardedRules =
+        {
+            "V2_IdentityUnderline", "ChromeHeaderRule", "AudioPulseLine"
+        };
+        Image[] images = UnityEngine.Object.FindObjectsOfType<Image>(true);
+        TMP_Text[] texts = UnityEngine.Object.FindObjectsOfType<TMP_Text>(true);
+        for (int i = 0; i < images.Length; i++)
+        {
+            Image rule = images[i];
+            if (rule == null || Array.IndexOf(guardedRules, rule.name) < 0 ||
+                !IsVisuallyActive(rule.rectTransform))
+            {
+                continue;
+            }
+            Rect ruleRect = GetScreenRect(rule.rectTransform);
+            Canvas ruleCanvas = rule.GetComponentInParent<Canvas>();
+            for (int j = 0; j < texts.Length; j++)
+            {
+                TMP_Text label = texts[j];
+                if (label == null || string.IsNullOrWhiteSpace(label.text) ||
+                    label.GetComponentInParent<Canvas>() != ruleCanvas ||
+                    !IsVisuallyActive(label.rectTransform))
+                {
+                    continue;
+                }
+                Rect intersection = Intersect(ruleRect, GetScreenRect(label.rectTransform));
+                if (intersection.width * intersection.height > 1f)
+                {
+                    issues.Add(rule.name + " intersects text " + label.name + ".");
+                }
+            }
+        }
     }
 
     private readonly struct AuditedRegion

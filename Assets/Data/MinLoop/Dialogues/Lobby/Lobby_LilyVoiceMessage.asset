@@ -15,15 +15,22 @@ MonoBehaviour:
   sequenceId: Lobby_LilyVoiceMessage
   notes: 'Lily''s recorded lobby voice message. Source: HEARTH_Full_Game_Script_No_Audio_Tags_Native_English.md,
     stable marker Lobby_LilyVoiceMessage. Text is synchronized by Tools/Hearth/Dialogue/Sync
-    All Dialogue From Final Script.'
+    All Dialogue From Final Script. Playback policy HEARTH_V2_DIALOGUE_POLICY_2026_08_01.'
+  dialogueChannel: 1
+  defaultSpeakerSide: 3
+  advancePolicy: 0
   lines:
-  - presentationKind: 0
+  - lineId: Lobby_LilyVoiceMessage_Lily_001
+    presentationKind: 0
+    dialogueMode: 3
+    speakerSide: 3
+    advancePolicy: 1
     startDelay: 0.15
     speaker: Lily
     text: Mom, are you getting home late tonight? I wanted to tell you something.
       We can talk when you get home. I'll wait for you... Don't forget, okay?
     holdSeconds: 11.338679
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: cc37b8cf5d87a0e4a98afff7e0c3a12a, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
   postSequenceDelay: 0.18

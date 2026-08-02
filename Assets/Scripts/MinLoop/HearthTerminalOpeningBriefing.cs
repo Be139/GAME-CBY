@@ -110,7 +110,24 @@ public class HearthTerminalOpeningBriefing : MonoBehaviour
 
         if (subtitlePlayer != null && briefingSequence != null && briefingSequence.HasLines)
         {
-            yield return subtitlePlayer.PlaySequenceAsset(briefingSequence);
+            HearthDialogueSurface surface = terminal.ResolveDialogueSurface();
+            if (surface != null)
+            {
+                yield return subtitlePlayer.PlaySequenceAsset(
+                    briefingSequence,
+                    HearthDialoguePlaybackContext.Embedded(
+                        surface,
+                        HearthSubtitleContext.Terminal));
+            }
+            else
+            {
+                yield return subtitlePlayer.PlaySequenceAsset(briefingSequence);
+            }
+        }
+
+        while (Input.GetKey(KeyCode.Space))
+        {
+            yield return null;
         }
 
         briefingPlaying = false;

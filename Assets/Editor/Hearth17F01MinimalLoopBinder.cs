@@ -32,6 +32,17 @@ public static class Hearth17F01MinimalLoopBinder
         Transform childStartAnchor = CreateAnchor(anchorsRoot, "Anchor_Robot_17F01_ChildRoomStart", robot != null ? robot.transform : null);
         Transform bedsideAnchor = robotBedside != null ? CreateAnchor(anchorsRoot, "Anchor_Robot_17F01_BedsideInteract", robotBedside.transform) : null;
         Transform livingAnchor = CreateAnchor(anchorsRoot, "Anchor_Robot_17F01_LivingRoomStart", robotLiving != null ? robotLiving.transform : null);
+        Camera livingReferenceCamera =
+            robotLiving != null
+                ? robotLiving.GetComponentInChildren<Camera>(true)
+                : null;
+        Transform livingCameraAnchor =
+            livingReferenceCamera != null
+                ? CreateAnchor(
+                    anchorsRoot,
+                    "Anchor_Camera_17F01_LivingRoomView",
+                    livingReferenceCamera.transform)
+                : null;
         Transform pathAnchor = robotBedside != null ? CreatePathAnchor(anchorsRoot, childStartAnchor, bedsideAnchor) : null;
 
         DisableReferenceController(robotLiving);
@@ -108,6 +119,7 @@ public static class Hearth17F01MinimalLoopBinder
             childStartAnchor,
             bedsideAnchor,
             livingAnchor,
+            livingCameraAnchor,
             pathAnchor,
             approachInteractable,
             boyPose,
@@ -278,6 +290,7 @@ public static class Hearth17F01MinimalLoopBinder
         Transform childStartAnchor,
         Transform bedsideAnchor,
         Transform livingAnchor,
+        Transform livingCameraAnchor,
         Transform pathAnchor,
         HearthCompanionReplayInteractable approachInteractable,
         HearthActorPosePreset boyPose,
@@ -306,10 +319,17 @@ public static class Hearth17F01MinimalLoopBinder
         SetObject(so, "robotLook", robot != null ? robot.GetComponentInChildren<FirstPersonLook>(true) : null);
         SetObject(so, "robotInteraction", robot != null ? robot.GetComponent<PlayerInteraction>() : null);
         SetObject(so, "robotRigidbody", robot != null ? robot.GetComponent<Rigidbody>() : null);
-        SetObject(so, "childRoomStartAnchor", childStartAnchor);
-        SetObject(so, "bedsideInteractAnchor", bedsideAnchor);
-        SetObject(so, "livingRoomStartAnchor", livingAnchor);
-        SetArray(so, "bedsidePathPoints", pathAnchor != null ? new Object[] { pathAnchor } : new Object[0]);
+        SetObjectIfMissing(so, "childRoomStartAnchor", childStartAnchor);
+        SetObjectIfMissing(so, "bedsideInteractAnchor", bedsideAnchor);
+        SetObjectIfMissing(so, "livingRoomStartAnchor", livingAnchor);
+        SetObjectIfMissing(
+            so,
+            "livingRoomCameraAnchor",
+            livingCameraAnchor);
+        SetArrayIfEmpty(
+            so,
+            "bedsidePathPoints",
+            pathAnchor != null ? new Object[] { pathAnchor } : new Object[0]);
         SetObject(so, "approachBoyInteractable", approachInteractable);
         SetFloat(so, "promptDelayAfterBedroomPrelude", 1.5f);
         SetFloat(so, "autoMoveSpeed", RobotAutoMoveSpeed);
@@ -862,6 +882,12 @@ public static class Hearth17F01MinimalLoopBinder
 
     private static Transform CreateAnchor(Transform parent, string name, Transform source)
     {
+        Transform existing = parent != null ? parent.Find(name) : null;
+        if (existing != null)
+        {
+            return existing;
+        }
+
         Transform anchor = FindOrCreateChild(parent, name);
         if (source != null)
         {
@@ -874,6 +900,15 @@ public static class Hearth17F01MinimalLoopBinder
 
     private static Transform CreatePathAnchor(Transform parent, Transform start, Transform end)
     {
+        Transform existing =
+            parent != null
+                ? parent.Find("Anchor_Robot_17F01_BedsidePath_01")
+                : null;
+        if (existing != null)
+        {
+            return existing;
+        }
+
         Transform anchor = FindOrCreateChild(parent, "Anchor_Robot_17F01_BedsidePath_01");
         if (start != null && end != null)
         {
@@ -1157,6 +1192,38 @@ public static class Hearth17F01MinimalLoopBinder
         if (property != null)
         {
             property.objectReferenceValue = value;
+        }
+    }
+
+    private static void SetObjectIfMissing(
+        SerializedObject so,
+        string path,
+        Object value)
+    {
+        SerializedProperty property = so.FindProperty(path);
+        if (property != null &&
+            property.objectReferenceValue == null &&
+            value != null)
+        {
+            property.objectReferenceValue = value;
+        }
+    }
+
+    private static void SetArrayIfEmpty(
+        SerializedObject so,
+        string path,
+        Object[] values)
+    {
+        SerializedProperty property = so.FindProperty(path);
+        if (property == null || !property.isArray || property.arraySize > 0)
+        {
+            return;
+        }
+
+        property.arraySize = values != null ? values.Length : 0;
+        for (int i = 0; values != null && i < values.Length; i++)
+        {
+            property.GetArrayElementAtIndex(i).objectReferenceValue = values[i];
         }
     }
 

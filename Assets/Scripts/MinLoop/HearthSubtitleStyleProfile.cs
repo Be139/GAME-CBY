@@ -5,7 +5,9 @@ public enum HearthSubtitlePresentationMode
 {
     StandardDialogue,
     CenteredEpilogue,
-    TimeCard
+    TimeCard,
+    NaturalCaption,
+    TerminalLowerThird
 }
 
 public enum HearthSubtitleContext
@@ -23,14 +25,14 @@ public class HearthSubtitleLayoutSettings
     [Range(0.03f, 0.18f)] public float speakerHeightFraction = 0.06f;
     [Range(0.05f, 0.9f)] public float bodyCenterY = 0.22f;
     [Range(0.06f, 0.4f)] public float bodyHeightFraction = 0.09f;
-    public float speakerFontSize = 22f;
+    public float speakerFontSize = 28f;
     public float speakerMinimumFontSize = 16f;
-    public float bodyFontSize = 28f;
+    public float bodyFontSize = 26f;
     public float bodyMinimumFontSize = 18f;
     [Min(1), Tooltip("QA budget only. Runtime never truncates authored dialogue at this line count.")]
     public int bodyMaximumLines = 8;
     public float lineSpacing;
-    [Min(28f)] public float speakerHeightPixels = 34f;
+    [Min(28f)] public float speakerHeightPixels = 40f;
     [Min(48f)] public float minimumBodyHeightPixels = 96f;
     [Min(0f), Tooltip("QA budget only. Runtime may grow higher when required to preserve the full authored line.")]
     public float maximumBodyHeightPixels = 360f;
@@ -58,10 +60,10 @@ public class HearthSubtitleStyleProfile : ScriptableObject
         speakerCenterY = 0.59f,
         bodyCenterY = 0.46f,
         bodyHeightFraction = 0.3f,
-        speakerFontSize = 22f,
-        speakerMinimumFontSize = 22f,
-        bodyFontSize = 30f,
-        bodyMinimumFontSize = 30f,
+        speakerFontSize = 30f,
+        speakerMinimumFontSize = 30f,
+        bodyFontSize = 28f,
+        bodyMinimumFontSize = 28f,
         bodyMaximumLines = 10,
         minimumBodyHeightPixels = 92f,
         maximumBodyHeightPixels = 440f
@@ -131,20 +133,14 @@ public class HearthSubtitleStyleProfile : ScriptableObject
 
     public float GetSpeakerFontSize(HearthSubtitlePresentationMode mode)
     {
-        return mode == HearthSubtitlePresentationMode.TimeCard ? 1f : 22f;
+        HearthSubtitleLayoutSettings layout = GetLayout(mode);
+        return layout != null ? layout.speakerFontSize : 1f;
     }
 
     public float GetBodyFontSize(HearthSubtitlePresentationMode mode)
     {
-        switch (mode)
-        {
-            case HearthSubtitlePresentationMode.CenteredEpilogue:
-                return 30f;
-            case HearthSubtitlePresentationMode.TimeCard:
-                return 34f;
-            default:
-                return 28f;
-        }
+        HearthSubtitleLayoutSettings layout = GetLayout(mode);
+        return layout != null ? layout.bodyFontSize : 1f;
     }
 
     public float TimeCardFadeSeconds
@@ -157,8 +153,8 @@ public class HearthSubtitleStyleProfile : ScriptableObject
         textColor = HtmlColor("#D7E6F6", Color.white);
 
         EnsureInstances();
-        ConfigureLayout(standardDialogue, 0.66f, 0.31f, 0.06f, 0.223f, 0.09f, 22f, 28f, 8, 34f, 96f, 360f);
-        ConfigureLayout(centeredEpilogue, 0.66f, 0.59f, 0.06f, 0.46f, 0.3f, 22f, 30f, 10, 34f, 92f, 440f);
+        ConfigureLayout(standardDialogue, 0.66f, 0.31f, 0.06f, 0.223f, 0.09f, 28f, 26f, 8, 40f, 96f, 360f);
+        ConfigureLayout(centeredEpilogue, 0.66f, 0.59f, 0.06f, 0.46f, 0.3f, 30f, 28f, 10, 40f, 92f, 440f);
         ConfigureLayout(timeCard, 0.72f, 0.56f, 0.04f, 0.5f, 0.18f, 1f, 34f, 8, 28f, 72f, 360f);
 
         ConfigureContext(

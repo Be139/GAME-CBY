@@ -25,8 +25,6 @@ public static class Hearth17F04FinaleBinder
     private const string HomeTerminalPrefabPath = "Assets/Prefabs/UI/HearthHud/Terminals/Terminal_17F04_Home.prefab";
     private const string HomeTerminalV2PrefabPath = "Assets/Prefabs/UI/HearthHud/V2/Terminals/Terminal_17F04_Home_V2.prefab";
     private const string DialogueFolder = "Assets/Data/MinLoop/Dialogues/17F04";
-    private const string MaterialFolder = "Assets/materials/Hearth";
-    private const string PhotoMaterialPath = MaterialFolder + "/17F04_Photo_Unlit.mat";
     private const string PhotoTexturePath = "Assets/Art/UI/HearthHud/Finale/FamilyPhoto.png";
     private const string SecondPhotoTexturePath = "Assets/Art/UI/HearthHud/Finale/FamilyPhoto_Second.png";
 
@@ -63,8 +61,6 @@ public static class Hearth17F04FinaleBinder
         EnsureAssetFolder("Assets/Data/MinLoop");
         EnsureAssetFolder("Assets/Data/MinLoop/Dialogues");
         EnsureAssetFolder(DialogueFolder);
-        EnsureAssetFolder("Assets/materials");
-        EnsureAssetFolder(MaterialFolder);
 
         if (!HearthFinalDialogueSync.SyncAllFromFinalScript(false))
         {
@@ -194,20 +190,20 @@ public static class Hearth17F04FinaleBinder
             errors.Add("17F04 still contains the retired sequential shutdown challenge.");
         }
 
-        Transform photoHintTransform = FindTransform(FinaleRootPath + "/UI/PhotoExitHintCanvas/HintPanel/HintText");
-        TMP_Text photoHintText = photoHintTransform != null ? photoHintTransform.GetComponent<TMP_Text>() : null;
-        if (photoHintText == null)
-        {
-            errors.Add("17F04 photo exit hint text is missing.");
-        }
-        else if (photoHintText.enableAutoSizing || photoHintText.overflowMode != TextOverflowModes.Overflow)
+        Transform retiredPhotoHint =
+            FindTransform(FinaleRootPath + "/UI/PhotoExitHintCanvas");
+        if (retiredPhotoHint != null)
         {
             errors.Add(
-                "17F04 photo exit hint must use its fixed font size with Overflow (autoSize=" +
-                photoHintText.enableAutoSizing +
-                ", overflow=" +
-                photoHintText.overflowMode +
-                ").");
+                "17F04 still contains the retired PhotoExitHintCanvas.");
+        }
+
+        Transform retiredCameraFeed =
+            FindSceneTransformByName("PhotoCameraFeed_V2");
+        if (retiredCameraFeed != null)
+        {
+            errors.Add(
+                "17F04 still contains the retired PhotoCameraFeed_V2.");
         }
 
         Hearth17F04FinaleController finaleController = UnityEngine.Object.FindObjectOfType<Hearth17F04FinaleController>(true);
@@ -224,6 +220,26 @@ public static class Hearth17F04FinaleBinder
         if (tv4 != null && tv4.GetComponentInChildren<HearthTvTerminalController>(true) != null)
         {
             errors.Add("TV (4) still contains a terminal controller instead of the photo-frame interaction.");
+        }
+        if (tv4 != null &&
+            tv4.GetComponent<HearthPhotoArchiveWorldView>() == null)
+        {
+            errors.Add("TV (4) is missing HearthPhotoArchiveWorldView.");
+        }
+        HearthPhotoFrameInteractable photoFrame =
+            tv4 != null
+                ? tv4.GetComponent<HearthPhotoFrameInteractable>()
+                : null;
+        if (photoFrame != null)
+        {
+            SerializedObject photoSo = new SerializedObject(photoFrame);
+            SerializedProperty useSecondUi =
+                photoSo.FindProperty("useSecondUiPhotoArchive");
+            if (useSecondUi != null && useSecondUi.boolValue)
+            {
+                errors.Add(
+                    "TV (4) still enables the retired full-screen photo archive.");
+            }
         }
 
         Transform door7 = FindTransform(Door7Path);
@@ -458,11 +474,25 @@ public static class Hearth17F04FinaleBinder
             human.GetComponentInChildren<FirstPersonLook>(true),
             interaction,
             human.GetComponent<Rigidbody>());
-        PhotoExitHint hint = EnsurePhotoExitHint(uiRoot);
-        photo.SetExitHint(hint.Group, hint.Text);
+        RemoveRetiredPhotoArchiveUi(uiRoot);
+        photo.SetExitHint(null, null);
+
+        HearthPhotoArchiveWorldView worldView =
+            tv.GetComponent<HearthPhotoArchiveWorldView>();
+        if (worldView == null)
+        {
+            worldView =
+                Undo.AddComponent<HearthPhotoArchiveWorldView>(tv.gameObject);
+        }
+        SerializedObject photoSo = new SerializedObject(photo);
+        SetObjectIfMissing(
+            photoSo,
+            "photoArchiveWorldView",
+            worldView);
+        SetBool(photoSo, "useSecondUiPhotoArchive", false);
+        photoSo.ApplyModifiedPropertiesWithoutUndo();
 
         EnsureInteractionCollider(tv.gameObject);
-        ConfigurePhotoMaterial(tv);
         Transform photoVisual = tv.GetComponentsInChildren<Transform>(true).FirstOrDefault(item => item.name == "photo");
         Renderer photoRenderer = photoVisual != null ? photoVisual.GetComponent<Renderer>() : null;
         Texture firstPhoto = AssetDatabase.LoadAssetAtPath<Texture2D>(PhotoTexturePath);
@@ -473,7 +503,11 @@ public static class Hearth17F04FinaleBinder
             if (firstPhoto == null && material.HasProperty("_MainTex")) firstPhoto = material.GetTexture("_MainTex");
         }
         Texture secondPhoto = AssetDatabase.LoadAssetAtPath<Texture2D>(SecondPhotoTexturePath);
-        photo.ConfigurePhotoPages(photoRenderer, firstPhoto, secondPhoto);
+        SerializedObject photoPagesSo = new SerializedObject(photo);
+        SetObjectIfMissing(photoPagesSo, "photoRenderer", photoRenderer);
+        SetObjectIfMissing(photoPagesSo, "firstPhotoTexture", firstPhoto);
+        SetObjectIfMissing(photoPagesSo, "secondPhotoTexture", secondPhoto);
+        photoPagesSo.ApplyModifiedPropertiesWithoutUndo();
         EditorUtility.SetDirty(tv.gameObject);
         EditorUtility.SetDirty(photo);
         return photo;
@@ -494,83 +528,27 @@ public static class Hearth17F04FinaleBinder
         return interactable;
     }
 
-    private static PhotoExitHint EnsurePhotoExitHint(Transform uiRoot)
+    private static void RemoveRetiredPhotoArchiveUi(Transform uiRoot)
     {
-        Transform existing = uiRoot.Find("PhotoExitHintCanvas");
-        if (existing != null)
+        Transform oldHint =
+            uiRoot != null ? uiRoot.Find("PhotoExitHintCanvas") : null;
+        if (oldHint != null)
         {
-            CanvasGroup existingGroup = existing.GetComponentInChildren<CanvasGroup>(true);
-            TMP_Text existingText = existing.Find("HintPanel/HintText") != null
-                ? existing.Find("HintPanel/HintText").GetComponent<TMP_Text>()
-                : null;
-            if (existingGroup != null && existingText != null)
+            Undo.DestroyObjectImmediate(oldHint.gameObject);
+        }
+
+        Transform[] sceneTransforms =
+            Resources.FindObjectsOfTypeAll<Transform>();
+        for (int i = sceneTransforms.Length - 1; i >= 0; i--)
+        {
+            Transform item = sceneTransforms[i];
+            if (item == null ||
+                item.name != "PhotoCameraFeed_V2" ||
+                !item.gameObject.scene.IsValid())
             {
-                SanitizeExistingText(existingText);
-                return new PhotoExitHint { Group = existingGroup, Text = existingText };
+                continue;
             }
-        }
-
-        if (existing != null)
-        {
-            Undo.DestroyObjectImmediate(existing.gameObject);
-        }
-
-        GameObject canvasObject = new GameObject(
-            "PhotoExitHintCanvas",
-            typeof(RectTransform),
-            typeof(Canvas),
-            typeof(CanvasScaler),
-            typeof(GraphicRaycaster));
-        canvasObject.transform.SetParent(uiRoot, false);
-        Canvas canvas = canvasObject.GetComponent<Canvas>();
-        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.overrideSorting = true;
-        canvas.sortingOrder = 7800;
-        CanvasScaler scaler = canvasObject.GetComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920f, 1080f);
-
-        GameObject panel = new GameObject(
-            "HintPanel",
-            typeof(RectTransform),
-            typeof(CanvasGroup),
-            typeof(CanvasRenderer),
-            typeof(Image));
-        panel.transform.SetParent(canvasObject.transform, false);
-        SetTopLeft(panel.GetComponent<RectTransform>(), new Rect(710f, 932f, 500f, 54f));
-        Image back = panel.GetComponent<Image>();
-        back.color = new Color(0.01f, 0.025f, 0.04f, 0.56f);
-        back.raycastTarget = false;
-        CanvasGroup group = panel.GetComponent<CanvasGroup>();
-        group.alpha = 0f;
-        group.interactable = false;
-        group.blocksRaycasts = false;
-
-        TMP_Text text = CreateText(
-            panel.transform,
-            "HintText",
-            "SPACE  RETURN",
-            new Rect(0f, 10f, 500f, 34f),
-            19f,
-            new Color(0.78f, 0.96f, 1f, 0.96f),
-            TextAlignmentOptions.Center);
-        text.fontStyle = FontStyles.Bold;
-        return new PhotoExitHint { Group = group, Text = text };
-    }
-
-    private static void SanitizeExistingText(TMP_Text text)
-    {
-        if (text == null)
-        {
-            return;
-        }
-
-        bool changed = text.enableAutoSizing || text.overflowMode != TextOverflowModes.Overflow;
-        text.enableAutoSizing = false;
-        text.overflowMode = TextOverflowModes.Overflow;
-        if (changed)
-        {
-            EditorUtility.SetDirty(text);
+            Undo.DestroyObjectImmediate(item.gameObject);
         }
     }
 
@@ -1021,54 +999,6 @@ public static class Hearth17F04FinaleBinder
         EditorUtility.SetDirty(controller);
     }
 
-    private static void ConfigurePhotoMaterial(Transform tv)
-    {
-        Transform photo = tv.GetComponentsInChildren<Transform>(true).FirstOrDefault(item => item.name == "photo");
-        Renderer renderer = photo != null ? photo.GetComponent<Renderer>() : null;
-        if (renderer == null)
-        {
-            Debug.LogWarning("[Hearth17F04FinaleBinder] TV (4) has no child renderer named 'photo'; photo material was not changed.");
-            return;
-        }
-
-        Texture texture = AssetDatabase.LoadAssetAtPath<Texture2D>(PhotoTexturePath);
-        if (texture == null)
-        {
-            Material oldMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Art/UI/HearthHud/Finale/PhotoFrame_Legacy.mat");
-            if (oldMaterial != null && oldMaterial.HasProperty("_DetailAlbedoMap"))
-            {
-                texture = oldMaterial.GetTexture("_DetailAlbedoMap");
-            }
-        }
-
-        if (texture == null)
-        {
-            Debug.LogWarning("[Hearth17F04FinaleBinder] The current Christmas photo texture could not be found.");
-            return;
-        }
-
-        Material material = AssetDatabase.LoadAssetAtPath<Material>(PhotoMaterialPath);
-        Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
-        if (shader == null) shader = Shader.Find("Unlit/Texture");
-        if (material == null)
-        {
-            material = new Material(shader) { name = "17F04_Photo_Unlit" };
-            AssetDatabase.CreateAsset(material, PhotoMaterialPath);
-        }
-        else if (shader != null)
-        {
-            material.shader = shader;
-        }
-
-        if (material.HasProperty("_BaseMap")) material.SetTexture("_BaseMap", texture);
-        if (material.HasProperty("_MainTex")) material.SetTexture("_MainTex", texture);
-        if (material.HasProperty("_BaseColor")) material.SetColor("_BaseColor", Color.white);
-        if (material.HasProperty("_Color")) material.SetColor("_Color", Color.white);
-        renderer.sharedMaterial = material;
-        EditorUtility.SetDirty(material);
-        EditorUtility.SetDirty(renderer);
-    }
-
     private static Transform EnsureWorldBox(Transform parent, string name, Vector3 worldCenter, Vector3 worldSize, bool trigger)
     {
         Transform root = parent.Find(name);
@@ -1387,6 +1317,24 @@ public static class Hearth17F04FinaleBinder
         return null;
     }
 
+    private static Transform FindSceneTransformByName(string objectName)
+    {
+        Transform[] transforms =
+            Resources.FindObjectsOfTypeAll<Transform>();
+        for (int i = 0; i < transforms.Length; i++)
+        {
+            Transform item = transforms[i];
+            if (item != null &&
+                item.name == objectName &&
+                item.gameObject.scene.IsValid())
+            {
+                return item;
+            }
+        }
+
+        return null;
+    }
+
     private static Transform FindTransformRecursive(Transform current, string hierarchyPath)
     {
         if (GetHierarchyPath(current) == hierarchyPath)
@@ -1539,6 +1487,20 @@ public static class Hearth17F04FinaleBinder
         if (property != null) property.objectReferenceValue = value;
     }
 
+    private static void SetObjectIfMissing(
+        SerializedObject so,
+        string name,
+        UnityEngine.Object value)
+    {
+        SerializedProperty property = so.FindProperty(name);
+        if (property != null &&
+            property.objectReferenceValue == null &&
+            value != null)
+        {
+            property.objectReferenceValue = value;
+        }
+    }
+
     private static void SetBool(SerializedObject so, string name, bool value)
     {
         SerializedProperty property = so.FindProperty(name);
@@ -1579,12 +1541,6 @@ public static class Hearth17F04FinaleBinder
         public MinLoopSubtitlePlayer Epilogue;
         public CanvasGroup BlackoutGroup;
         public Image BlackoutImage;
-    }
-
-    private struct PhotoExitHint
-    {
-        public CanvasGroup Group;
-        public TMP_Text Text;
     }
 
     private struct DialogueLibrary

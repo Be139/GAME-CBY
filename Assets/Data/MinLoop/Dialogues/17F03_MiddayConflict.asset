@@ -15,24 +15,35 @@ MonoBehaviour:
   sequenceId: 17F03_MiddayConflict
   notes: '17F03 midday conflict opening. Source: HEARTH_Full_Game_Script_No_Audio_Tags_Native_English.md,
     stable marker 17F03_MiddayConflict. Text is synchronized by Tools/Hearth/Dialogue/Sync
-    All Dialogue From Final Script.'
+    All Dialogue From Final Script. Playback policy HEARTH_V2_DIALOGUE_POLICY_2026_08_01.'
+  dialogueChannel: 0
+  defaultSpeakerSide: 0
+  advancePolicy: 0
   lines:
-  - presentationKind: 0
+  - lineId: 17F03_MiddayConflict_Laura_001
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.15
     speaker: Laura
-    text: Ava, seriously? You've been on that phone all day. Is your homework even
-      done?
-    holdSeconds: 6.4330187
-    voiceClip: {fileID: 0}
+    text: Ava. Seriously? You've been glued to that phone all day. Is your homework
+      even done?
+    holdSeconds: 6.810377
+    voiceClip: {fileID: 8300000, guid: 18590d063059e84499d9d43e79a45f4d, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: 17F03_MiddayConflict_17F03SynthVoice_001
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: 17F-03 Synth Voice
     text: 'Decision: initiate family conflict de-escalation. Reason: high probability
       of escalation.'
     holdSeconds: 4.923585
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 6d50be97156abf241b25f3d786674bd1, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
   postSequenceDelay: 0.18

@@ -11,6 +11,15 @@ public class HearthAudioChannelSource : MonoBehaviour
     [SerializeField] private HearthAudioChannel channel = HearthAudioChannel.SFX;
     [Range(0f, 1f)] [SerializeField] private float baseVolume = 1f;
 
+    [Header("Dialogue Ducking")]
+    [SerializeField] private bool duckWhileDialogue;
+    [Tooltip("0.56 is approximately -5 dB, suitable for the quiet lobby walla under speech.")]
+    [Range(0.1f, 1f)] [SerializeField] private float dialogueDuckScale = 0.56f;
+    [Min(0.01f)] [SerializeField] private float duckAttackSeconds = 0.12f;
+    [Min(0.01f)] [SerializeField] private float duckReleaseSeconds = 0.35f;
+
+    private float currentDuckScale = 1f;
+
     public HearthAudioChannel Channel
     {
         get { return channel; }
@@ -24,6 +33,7 @@ public class HearthAudioChannelSource : MonoBehaviour
     private void Awake()
     {
         ResolveSource();
+        currentDuckScale = ResolveTargetDuckScale();
         ApplyVolume();
     }
 
@@ -34,6 +44,7 @@ public class HearthAudioChannelSource : MonoBehaviour
             ActiveSources.Add(this);
         }
 
+        currentDuckScale = ResolveTargetDuckScale();
         ApplyVolume();
     }
 
@@ -45,10 +56,30 @@ public class HearthAudioChannelSource : MonoBehaviour
     private void OnValidate()
     {
         baseVolume = Mathf.Clamp01(baseVolume);
+        dialogueDuckScale = Mathf.Clamp(dialogueDuckScale, 0.1f, 1f);
+        duckAttackSeconds = Mathf.Max(0.01f, duckAttackSeconds);
+        duckReleaseSeconds = Mathf.Max(0.01f, duckReleaseSeconds);
         ResolveSource();
 
         if (!Application.isPlaying)
         {
+            ApplyVolume();
+        }
+    }
+
+    private void Update()
+    {
+        float target = ResolveTargetDuckScale();
+        float seconds = target < currentDuckScale
+            ? duckAttackSeconds
+            : duckReleaseSeconds;
+        float next = Mathf.MoveTowards(
+            currentDuckScale,
+            target,
+            Time.unscaledDeltaTime / Mathf.Max(0.01f, seconds));
+        if (!Mathf.Approximately(next, currentDuckScale))
+        {
+            currentDuckScale = next;
             ApplyVolume();
         }
     }
@@ -73,6 +104,20 @@ public class HearthAudioChannelSource : MonoBehaviour
         ApplyVolume();
     }
 
+    public void ConfigureDialogueDucking(
+        bool shouldDuck,
+        float duckScale = 0.56f,
+        float attackSeconds = 0.12f,
+        float releaseSeconds = 0.35f)
+    {
+        duckWhileDialogue = shouldDuck;
+        dialogueDuckScale = Mathf.Clamp(duckScale, 0.1f, 1f);
+        duckAttackSeconds = Mathf.Max(0.01f, attackSeconds);
+        duckReleaseSeconds = Mathf.Max(0.01f, releaseSeconds);
+        currentDuckScale = ResolveTargetDuckScale();
+        ApplyVolume();
+    }
+
     public void ApplyVolume()
     {
         ResolveSource();
@@ -83,7 +128,7 @@ public class HearthAudioChannelSource : MonoBehaviour
 
         HearthAudioSettingsController settings = HearthAudioSettingsController.Resolve();
         float channelScale = settings != null ? settings.GetLinearVolume(channel) : 1f;
-        audioSource.volume = baseVolume * channelScale;
+        audioSource.volume = baseVolume * channelScale * currentDuckScale;
     }
 
     public static void RefreshAll()
@@ -107,5 +152,12 @@ public class HearthAudioChannelSource : MonoBehaviour
         {
             audioSource = GetComponent<AudioSource>();
         }
+    }
+
+    private float ResolveTargetDuckScale()
+    {
+        return duckWhileDialogue && MinLoopSubtitlePlayer.AnyDialoguePlaying
+            ? dialogueDuckScale
+            : 1f;
     }
 }

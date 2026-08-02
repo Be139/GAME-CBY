@@ -25,6 +25,9 @@ public static class HearthLobbyOpeningBinder
     private const string DialogueFolder = "Assets/Data/MinLoop/Dialogues/Lobby";
     private const string TerminalPrefabPath = "Assets/Prefabs/UI/HearthHud/Terminals/Terminal_Lobby_Assignment.prefab";
     private const string FinalScriptFileName = "HEARTH_Full_Game_Script_No_Audio_Tags_Native_English.md";
+    private const string LilyMessageFramePath =
+        "Assets/UI/HEARTH/V2/VectorParts/Feedback/" +
+        "HUD_Feedback_LilyVoiceMessageFrame_540x300.png";
     private static readonly string[] LobbyOverlayTextPaths =
     {
         "ActivationPanel/ActivationTitle",
@@ -32,6 +35,7 @@ public static class HearthLobbyOpeningBinder
         "ExpandedLilyMessage/MessageHeader",
         "ExpandedLilyMessage/MessageMeta",
         "ExpandedLilyMessage/MessageTranscript",
+        "ExpandedLilyMessage/MessageAdvanceHint",
         "PinnedLilyMessage/PinnedMessage",
         "PinnedLilyMessage/AssignmentStatus"
     };
@@ -78,6 +82,7 @@ public static class HearthLobbyOpeningBinder
             Debug.LogError("[HearthLobbyOpeningBinder] Lobby setup stopped because the final dialogue source could not be synchronized.");
             return;
         }
+        ConfigureLilyDialogueAsset(dialogues.LilyMessage);
         dialogues.Floor17Arrival = AssetDatabase.LoadAssetAtPath<HearthDialogueSequence>(
             "Assets/Data/MinLoop/Dialogues/FinalScriptSupplemental/17F01_CorridorArrival.asset");
         BuildAssignmentTerminalPrefab();
@@ -152,6 +157,41 @@ public static class HearthLobbyOpeningBinder
 
         Debug.Log("[HearthLobbyOpeningBinder] Ground-floor opening applied. Existing NPC, trigger, terminal camera, and reference-controller transforms were preserved.");
         ValidateSetup();
+    }
+
+    [MenuItem("Tools/Hearth/Lobby/Repair Opening Message UI And Input")]
+    public static void RepairOpeningMessageUiAndInput()
+    {
+        if (Application.isPlaying)
+        {
+            Debug.LogError(
+                "[HearthLobbyOpeningBinder] Exit Play Mode before repairing " +
+                "the lobby message UI.");
+            return;
+        }
+
+        HearthUiV2VectorAssetEditor.PrepareImportedSprites();
+        HearthLobbyHudOverlay overlay =
+            UnityEngine.Object.FindObjectOfType<HearthLobbyHudOverlay>(true);
+        if (overlay == null)
+        {
+            Debug.LogError(
+                "[HearthLobbyOpeningBinder] No HearthLobbyHudOverlay exists " +
+                "in the active scene.");
+            return;
+        }
+
+        RepairLobbyVoiceMessageUi(overlay);
+        HearthDialogueSequence lily =
+            AssetDatabase.LoadAssetAtPath<HearthDialogueSequence>(
+                DialogueFolder + "/Lobby_LilyVoiceMessage.asset");
+        ConfigureLilyDialogueAsset(lily);
+        EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
+        EditorSceneManager.SaveOpenScenes();
+        AssetDatabase.SaveAssets();
+        Debug.Log(
+            "[HearthLobbyOpeningBinder] Lily now uses the dedicated upper-right " +
+            "message card and remains skippable with Space.");
     }
 
     [MenuItem("Tools/Hearth/Lobby/Capture Current Player Pose As 17F Arrival")]
@@ -723,6 +763,7 @@ public static class HearthLobbyOpeningBinder
 
             ReplaceText(existingOverlay.transform, "ExpandedLilyMessage/MessageMeta", "FROM  LILY\nTIME  4:42 PM");
             ReplaceText(existingOverlay.transform, "PinnedLilyMessage/PinnedMessage", "LILY VOICE MESSAGE  /  READ  /  4:42 PM");
+            RepairLobbyVoiceMessageUi(existingOverlay);
             SanitizeLobbyUiText(existingOverlay.transform);
             EditorUtility.SetDirty(existingOverlay);
             return new LobbyUiReferences { Overlay = existingOverlay, Fader = existingFader };
@@ -768,6 +809,7 @@ public static class HearthLobbyOpeningBinder
 
         HearthLobbyHudOverlay overlay = overlayObject.GetComponent<HearthLobbyHudOverlay>();
         overlay.Configure(activation, expanded, pinned, status);
+        RepairLobbyVoiceMessageUi(overlay);
 
         GameObject blackoutCanvasObject = new GameObject("LobbyBlackoutCanvas", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(CanvasGroup), typeof(GraphicRaycaster), typeof(HearthScreenFader));
         blackoutCanvasObject.transform.SetParent(uiRoot, false);
@@ -1018,6 +1060,209 @@ public static class HearthLobbyOpeningBinder
         so.ApplyModifiedPropertiesWithoutUndo();
         EditorUtility.SetDirty(asset);
         return asset;
+    }
+
+    private static void ConfigureLilyDialogueAsset(
+        HearthDialogueSequence asset)
+    {
+        if (asset == null)
+        {
+            return;
+        }
+
+        SerializedObject so = new SerializedObject(asset);
+        SetInt(so, "dialogueChannel", (int)DialogueChannel.Auxiliary);
+        SetInt(so, "defaultSpeakerSide", (int)SpeakerSide.None);
+        SetInt(so, "advancePolicy", (int)AdvancePolicy.ManualSpace);
+        SerializedProperty lines = so.FindProperty("lines");
+        if (lines != null && lines.arraySize > 0)
+        {
+            SerializedProperty line = lines.GetArrayElementAtIndex(0);
+            SetRelativeInt(
+                line,
+                "dialogueMode",
+                (int)HearthDialogueLineMode.AudioOnly);
+            SetRelativeInt(line, "speakerSide", (int)SpeakerSide.None);
+            SetRelativeInt(
+                line,
+                "advancePolicy",
+                (int)HearthDialogueLineAdvancePolicy.ManualSpace);
+        }
+
+        so.ApplyModifiedPropertiesWithoutUndo();
+        EditorUtility.SetDirty(asset);
+    }
+
+    private static void RepairLobbyVoiceMessageUi(
+        HearthLobbyHudOverlay overlay)
+    {
+        if (overlay == null)
+        {
+            return;
+        }
+
+        Transform expanded = overlay.transform.Find("ExpandedLilyMessage");
+        if (expanded != null)
+        {
+            RectTransform expandedRect = expanded as RectTransform;
+            if (expandedRect != null)
+            {
+                expandedRect.anchorMin = Vector2.one;
+                expandedRect.anchorMax = Vector2.one;
+                expandedRect.pivot = Vector2.one;
+                expandedRect.anchoredPosition = new Vector2(-64f, -150f);
+                expandedRect.sizeDelta = new Vector2(540f, 300f);
+            }
+
+            Image back = EnsureImage(expanded, "MessageBack");
+            SetTopLeft(back.rectTransform, new Rect(0f, 0f, 540f, 300f));
+            back.sprite = null;
+            back.color = new Color(0.015f, 0.04f, 0.062f, 0.78f);
+            back.transform.SetAsFirstSibling();
+
+            DestroyDirectChild(expanded, "BorderTop");
+            DestroyDirectChild(expanded, "BorderBottom");
+            DestroyDirectChild(expanded, "BorderLeft");
+            DestroyDirectChild(expanded, "BorderRight");
+            Image frame = EnsureImage(expanded, "MessageFrame");
+            SetTopLeft(frame.rectTransform, new Rect(0f, 0f, 540f, 300f));
+            frame.sprite = AssetDatabase.LoadAssetAtPath<Sprite>(
+                LilyMessageFramePath);
+            frame.type = Image.Type.Simple;
+            frame.preserveAspect = false;
+            frame.color = new Color(0.47f, 0.76f, 0.94f, 0.95f);
+
+            ConfigureLobbyText(
+                expanded,
+                "MessageHeader",
+                new Rect(24f, 20f, 492f, 30f),
+                18f,
+                TextAlignmentOptions.TopLeft);
+            ConfigureLobbyText(
+                expanded,
+                "MessageMeta",
+                new Rect(24f, 62f, 492f, 50f),
+                16f,
+                TextAlignmentOptions.TopLeft);
+            ConfigureLobbyText(
+                expanded,
+                "MessageTranscript",
+                new Rect(24f, 126f, 492f, 116f),
+                17f,
+                TextAlignmentOptions.TopLeft);
+            TMP_Text hint = EnsureText(
+                expanded,
+                "MessageAdvanceHint",
+                "SPACE  SKIP MESSAGE");
+            SetTopLeft(
+                hint.rectTransform,
+                new Rect(278f, 260f, 238f, 22f));
+            hint.fontSize = 14f;
+            hint.fontSizeMin = 14f;
+            hint.fontSizeMax = 14f;
+            hint.color = new Color(0.47f, 0.76f, 0.94f, 0.95f);
+            hint.alignment = TextAlignmentOptions.TopRight;
+            hint.fontStyle = FontStyles.Bold;
+            hint.raycastTarget = false;
+            frame.transform.SetAsLastSibling();
+        }
+
+        Transform pinned = overlay.transform.Find("PinnedLilyMessage");
+        if (pinned != null)
+        {
+            RectTransform pinnedRect = pinned as RectTransform;
+            if (pinnedRect != null)
+            {
+                pinnedRect.anchorMin = Vector2.one;
+                pinnedRect.anchorMax = Vector2.one;
+                pinnedRect.pivot = Vector2.one;
+                pinnedRect.anchoredPosition = new Vector2(-64f, -150f);
+                pinnedRect.sizeDelta = new Vector2(540f, 84f);
+            }
+            Image pinnedBack = EnsureImage(pinned, "PinnedBack");
+            SetTopLeft(pinnedBack.rectTransform, new Rect(0f, 0f, 540f, 84f));
+            Image pinnedRule = EnsureImage(pinned, "PinnedRule");
+            SetTopLeft(pinnedRule.rectTransform, new Rect(0f, 0f, 3f, 84f));
+            ConfigureLobbyText(
+                pinned,
+                "PinnedMessage",
+                new Rect(18f, 12f, 500f, 24f),
+                15f,
+                TextAlignmentOptions.TopLeft);
+            ConfigureLobbyText(
+                pinned,
+                "AssignmentStatus",
+                new Rect(18f, 46f, 500f, 24f),
+                15f,
+                TextAlignmentOptions.TopLeft);
+        }
+
+        SanitizeLobbyUiText(overlay.transform);
+        EditorUtility.SetDirty(overlay);
+    }
+
+    private static Image EnsureImage(Transform parent, string name)
+    {
+        Transform existing = FindDirectChild(parent, name);
+        Image image = existing != null ? existing.GetComponent<Image>() : null;
+        if (image != null)
+        {
+            return image;
+        }
+
+        return CreateImage(
+            parent,
+            name,
+            new Rect(0f, 0f, 1f, 1f),
+            Color.white);
+    }
+
+    private static TMP_Text EnsureText(
+        Transform parent,
+        string name,
+        string value)
+    {
+        Transform existing = FindDirectChild(parent, name);
+        TMP_Text text = existing != null ? existing.GetComponent<TMP_Text>() : null;
+        if (text == null)
+        {
+            text = CreateText(
+                parent,
+                name,
+                value,
+                new Rect(0f, 0f, 1f, 1f),
+                16f,
+                Color.white,
+                TextAlignmentOptions.TopLeft);
+        }
+        text.text = value;
+        return text;
+    }
+
+    private static void ConfigureLobbyText(
+        Transform parent,
+        string name,
+        Rect rect,
+        float size,
+        TextAlignmentOptions alignment)
+    {
+        Transform child = FindDirectChild(parent, name);
+        TMP_Text text = child != null ? child.GetComponent<TMP_Text>() : null;
+        if (text == null)
+        {
+            return;
+        }
+
+        SetTopLeft(text.rectTransform, rect);
+        text.fontSize = size;
+        text.fontSizeMin = size;
+        text.fontSizeMax = size;
+        text.enableAutoSizing = false;
+        text.enableWordWrapping = true;
+        text.overflowMode = TextOverflowModes.Overflow;
+        text.alignment = alignment;
+        text.raycastTarget = false;
+        EditorUtility.SetDirty(text);
     }
 
     private static float EstimateHoldSeconds(string text)

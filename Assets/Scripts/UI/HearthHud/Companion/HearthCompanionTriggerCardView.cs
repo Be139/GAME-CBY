@@ -6,6 +6,11 @@ using UnityEngine.UI;
 [DisallowMultipleComponent]
 public class HearthCompanionTriggerCardView : MonoBehaviour
 {
+    private static readonly Color V2TitleColor =
+        new Color32(122, 209, 235, 255);
+    private static readonly Color V2BodyColor =
+        new Color32(215, 230, 246, 245);
+
     [Header("Bindings")]
     [SerializeField] private CanvasGroup canvasGroup;
     [SerializeField] private TMP_Text titleText;
@@ -29,6 +34,7 @@ public class HearthCompanionTriggerCardView : MonoBehaviour
         titleText = newTitleText;
         bodyText = newBodyText;
         accentImage = newAccentImage;
+        ApplyV2VisualPolicy();
         HideImmediate();
     }
 
@@ -70,6 +76,7 @@ public class HearthCompanionTriggerCardView : MonoBehaviour
         }
 
         StopActiveRoutine();
+        ApplyV2VisualPolicy();
 
         routine = StartCoroutine(CueSequenceRoutine(cues, accentColor));
     }
@@ -83,6 +90,7 @@ public class HearthCompanionTriggerCardView : MonoBehaviour
         }
 
         StopActiveRoutine();
+        ApplyV2VisualPolicy();
 
         routine = StartCoroutine(CardRoutine(title, body, accentColor, delay, seconds));
     }
@@ -113,17 +121,11 @@ public class HearthCompanionTriggerCardView : MonoBehaviour
         if (titleText != null)
         {
             titleText.text = title;
-            titleText.color = accentColor;
         }
 
         if (bodyText != null)
         {
             bodyText.text = body;
-        }
-
-        if (accentImage != null)
-        {
-            accentImage.color = accentColor;
         }
 
         if (delay > 0f)
@@ -169,17 +171,11 @@ public class HearthCompanionTriggerCardView : MonoBehaviour
             if (titleText != null)
             {
                 titleText.text = cue.title;
-                titleText.color = accentColor;
             }
 
             if (bodyText != null)
             {
                 bodyText.text = cue.body;
-            }
-
-            if (accentImage != null)
-            {
-                accentImage.color = accentColor;
             }
 
             SetVisibleState(true);
@@ -195,6 +191,40 @@ public class HearthCompanionTriggerCardView : MonoBehaviour
         }
 
         routine = null;
+    }
+
+    private void ApplyV2VisualPolicy()
+    {
+        if (titleText != null)
+        {
+            titleText.color = V2TitleColor;
+            titleText.fontSize = 20f;
+            titleText.fontStyle = FontStyles.Bold;
+            titleText.alignment = TextAlignmentOptions.TopLeft;
+            titleText.enableAutoSizing = false;
+            titleText.enableWordWrapping = true;
+            titleText.overflowMode = TextOverflowModes.Overflow;
+        }
+
+        if (bodyText != null)
+        {
+            bodyText.color = V2BodyColor;
+            bodyText.fontSize = 18f;
+            bodyText.fontStyle = FontStyles.Normal;
+            bodyText.alignment = TextAlignmentOptions.TopLeft;
+            bodyText.enableAutoSizing = false;
+            bodyText.enableWordWrapping = true;
+            bodyText.overflowMode = TextOverflowModes.Overflow;
+        }
+
+        // The old TriggerCardAccent is the full-height V1 vertical rule.  It
+        // remains serialized for backwards-compatible prefab bindings, but
+        // V2 owns its border through the fixed vector panel frame instead.
+        if (accentImage != null)
+        {
+            accentImage.raycastTarget = false;
+            accentImage.gameObject.SetActive(false);
+        }
     }
 
     private void StopActiveRoutine()

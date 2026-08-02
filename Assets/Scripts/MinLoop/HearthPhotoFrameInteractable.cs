@@ -1,7 +1,6 @@
 using System.Collections;
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 
 [DisallowMultipleComponent]
 public class HearthPhotoFrameInteractable : MonoBehaviour, IInteractable, IInteractionAvailability
@@ -30,18 +29,11 @@ public class HearthPhotoFrameInteractable : MonoBehaviour, IInteractable, IInter
     [SerializeField] private string navigationHintLabel = "LEFT / RIGHT  SWITCH PHOTO";
     [SerializeField] private string browseAndExitHintLabel = "LEFT / RIGHT  SWITCH PHOTO     SPACE  RETURN";
 
-    [Header("Second UI Photo Archive")]
-    [SerializeField] private bool useSecondUiPhotoArchive = true;
-    [SerializeField] private HearthFirstPersonHudController photoArchiveHud;
-    [SerializeField] private HearthFirstPersonHudInput photoArchiveHudInput;
-    [SerializeField] private Vector2Int archiveRenderTextureSize =
-        new Vector2Int(1280, 720);
+    [Header("World-Space Photo Archive V2")]
+    [SerializeField] private HearthPhotoArchiveWorldView photoArchiveWorldView;
 
     [Header("Exit")]
     [SerializeField] private KeyCode confirmExitKey = KeyCode.Space;
-    [SerializeField] private KeyCode cancelExitKey = KeyCode.Escape;
-    [SerializeField] private CanvasGroup exitHintGroup;
-    [SerializeField] private TMP_Text exitHintText;
     [SerializeField] private string exitHintLabel = "SPACE  RETURN";
 
     private bool viewOpen;
@@ -55,15 +47,10 @@ public class HearthPhotoFrameInteractable : MonoBehaviour, IInteractable, IInter
     private bool playerAudioWasEnabled;
     private bool photoAudioWasEnabled;
     private bool pageNavigationEnabled;
+    private bool exitInputArmed;
     private int currentPageIndex;
     private MaterialPropertyBlock photoPropertyBlock;
-    private RenderTexture archiveRenderTexture;
-    private RenderTexture previousPhotoTargetTexture;
-    private HearthFirstPersonHudPage activeArchivePage;
-    private TMP_Text activeArchiveHintText;
-    private HearthFirstPersonHudPageId previousHudPage = HearthFirstPersonHudPageId.Slide01PersistentHud;
     private bool archiveOverlayOpen;
-    private bool archiveHudInputWasEnabled;
 
     public bool IsOpen
     {
@@ -93,24 +80,23 @@ public class HearthPhotoFrameInteractable : MonoBehaviour, IInteractable, IInter
     private void Awake()
     {
         ResolveReferences();
+        ResolvePhotoArchiveWorldView();
         if (photoCamera != null)
         {
             SetCameraState(photoCamera, false, false);
         }
+        if (photoArchiveWorldView != null)
+        {
+            photoArchiveWorldView.Hide();
+        }
         SetHint(string.Empty, false);
-    }
-
-    private void OnDestroy()
-    {
-        RestorePhotoCameraTarget();
-        ReleaseArchiveRenderTexture();
     }
 
     private void OnDisable()
     {
-        if (Application.isPlaying && archiveOverlayOpen)
+        if (photoArchiveWorldView != null)
         {
-            CloseSecondUiPhotoArchive();
+            photoArchiveWorldView.Hide();
         }
     }
 
@@ -141,7 +127,13 @@ public class HearthPhotoFrameInteractable : MonoBehaviour, IInteractable, IInter
             return;
         }
 
-        if (Input.GetKeyDown(confirmExitKey) || Input.GetKeyDown(cancelExitKey))
+        if (!exitInputArmed)
+        {
+            exitInputArmed = !Input.GetKey(confirmExitKey);
+            return;
+        }
+
+        if (Input.GetKeyDown(confirmExitKey))
         {
             CloseView();
         }
@@ -184,12 +176,14 @@ public class HearthPhotoFrameInteractable : MonoBehaviour, IInteractable, IInter
     {
         pageNavigationEnabled = HasSecondPhoto;
         dialogueComplete = true;
+        exitInputArmed = false;
         SetHint(pageNavigationEnabled ? browseAndExitHintLabel : exitHintLabel, true);
     }
 
     public void NotifyPageReadyForNavigation()
     {
         dialogueComplete = false;
+        exitInputArmed = false;
         pageNavigationEnabled = HasSecondPhoto;
         SetHint(pageNavigationEnabled ? navigationHintLabel : exitHintLabel, true);
     }
@@ -241,9 +235,18 @@ public class HearthPhotoFrameInteractable : MonoBehaviour, IInteractable, IInter
 
     public void SetExitHint(CanvasGroup group, TMP_Text text)
     {
-        exitHintGroup = group;
-        exitHintText = text;
-        SetHint(string.Empty, false);
+        // Backward-compatible editor hook: TV4 owns the only visible hint.
+        if (text != null)
+        {
+            text.text = string.Empty;
+        }
+        if (group != null)
+        {
+            group.alpha = 0f;
+            group.interactable = false;
+            group.blocksRaycasts = false;
+            group.gameObject.SetActive(false);
+        }
     }
 
     public void ConfigureSecondUiPhotoArchive(
@@ -251,9 +254,16 @@ public class HearthPhotoFrameInteractable : MonoBehaviour, IInteractable, IInter
         HearthFirstPersonHudInput hudInput,
         bool enabled)
     {
-        photoArchiveHud = hud;
-        photoArchiveHudInput = hudInput;
-        useSecondUiPhotoArchive = enabled;
+        // Kept only so old scene/prefab bindings deserialize safely. TV4 no
+        // longer opens the global Slide07/08 archive or a RenderTexture feed.
+    }
+
+    public HearthDialogueSurface ResolveDialogueSurface()
+    {
+        ResolvePhotoArchiveWorldView();
+        return photoArchiveWorldView != null
+            ? photoArchiveWorldView.ResolveDialogueSurface()
+            : null;
     }
 
     private IEnumerator OpenViewRoutine()
@@ -268,6 +278,7 @@ public class HearthPhotoFrameInteractable : MonoBehaviour, IInteractable, IInter
         transitioning = true;
         dialogueComplete = false;
         pageNavigationEnabled = false;
+        exitInputArmed = false;
         currentPageIndex = 0;
         ApplyCurrentPhoto();
         SetHint(string.Empty, false);
@@ -287,14 +298,14 @@ public class HearthPhotoFrameInteractable : MonoBehaviour, IInteractable, IInter
 
         viewOpen = true;
         transitioning = false;
-        OpenSecondUiPhotoArchive();
+        OpenWorldSpacePhotoArchive();
         finaleController.BeginPhotoInspection();
     }
 
     private IEnumerator CloseViewRoutine()
     {
         transitioning = true;
-        PrepareSecondUiPhotoArchiveExit();
+        PrepareWorldSpacePhotoArchiveExit();
 
         if (cameraTransition != null && cameraTransition.CanRunExitTransition(playerCamera, photoCamera))
         {
@@ -313,7 +324,7 @@ public class HearthPhotoFrameInteractable : MonoBehaviour, IInteractable, IInter
             SetCameraState(playerCamera, playerCameraWasEnabled, playerAudioWasEnabled);
         }
 
-        CloseSecondUiPhotoArchive();
+        CloseWorldSpacePhotoArchive();
         viewOpen = false;
         dialogueComplete = false;
         pageNavigationEnabled = false;
@@ -355,15 +366,18 @@ public class HearthPhotoFrameInteractable : MonoBehaviour, IInteractable, IInter
         {
             cameraTransition = GetComponent<HearthTerminalCameraTransition>();
         }
+    }
 
-        if (photoArchiveHud == null)
+    private void ResolvePhotoArchiveWorldView()
+    {
+        if (photoArchiveWorldView == null)
         {
-            photoArchiveHud = FindObjectOfType<HearthFirstPersonHudController>(true);
+            photoArchiveWorldView = GetComponent<HearthPhotoArchiveWorldView>();
         }
 
-        if (photoArchiveHudInput == null)
+        if (photoArchiveWorldView == null && Application.isPlaying)
         {
-            photoArchiveHudInput = FindObjectOfType<HearthFirstPersonHudInput>(true);
+            photoArchiveWorldView = gameObject.AddComponent<HearthPhotoArchiveWorldView>();
         }
     }
 
@@ -429,7 +443,7 @@ public class HearthPhotoFrameInteractable : MonoBehaviour, IInteractable, IInter
 
         currentPageIndex = nextIndex;
         ApplyCurrentPhoto();
-        ShowSecondUiPhotoPage();
+        ShowWorldSpacePhotoPage();
 
         if (dialogueComplete)
         {
@@ -471,117 +485,43 @@ public class HearthPhotoFrameInteractable : MonoBehaviour, IInteractable, IInter
 
     private void SetHint(string label, bool visible)
     {
-        if (archiveOverlayOpen)
+        if (photoArchiveWorldView != null && archiveOverlayOpen)
         {
-            if (activeArchiveHintText != null)
-            {
-                activeArchiveHintText.text = visible ? label : "PLEASE WAIT";
-                activeArchiveHintText.gameObject.SetActive(true);
-            }
-
-            if (exitHintGroup != null)
-            {
-                exitHintGroup.alpha = 0f;
-                exitHintGroup.interactable = false;
-                exitHintGroup.blocksRaycasts = false;
-                exitHintGroup.gameObject.SetActive(true);
-            }
-
-            return;
+            photoArchiveWorldView.SetHint(label, visible);
         }
-
-        if (exitHintText != null)
-        {
-            exitHintText.text = label;
-        }
-
-        if (exitHintGroup == null)
-        {
-            return;
-        }
-
-        exitHintGroup.alpha = visible ? 1f : 0f;
-        exitHintGroup.interactable = false;
-        exitHintGroup.blocksRaycasts = false;
-        exitHintGroup.gameObject.SetActive(true);
     }
 
-    private void OpenSecondUiPhotoArchive()
+    private void OpenWorldSpacePhotoArchive()
     {
         ResolveReferences();
-        if (!useSecondUiPhotoArchive || photoArchiveHud == null || photoCamera == null)
-        {
-            return;
-        }
-
-        HearthFirstPersonHudPage firstPage = FindPhotoArchivePage(0);
-        if (firstPage == null ||
-            FindNamedChild(firstPage.transform, "V2_PhotoViewport") == null)
+        ResolvePhotoArchiveWorldView();
+        if (photoArchiveWorldView == null || photoCamera == null)
         {
             Debug.LogWarning(
-                "[HearthPhotoFrameInteractable] V2 photo archive page or camera viewport is missing; keeping the physical photo camera view.",
+                "[HearthPhotoFrameInteractable] TV4 world-space photo archive view is unavailable.",
                 this);
             return;
         }
 
-        previousHudPage = photoArchiveHud.CurrentPageId;
-        if (previousHudPage == HearthFirstPersonHudPageId.None ||
-            previousHudPage == HearthFirstPersonHudPageId.Slide07Photo2023 ||
-            previousHudPage == HearthFirstPersonHudPageId.Slide08Photo2026)
-        {
-            previousHudPage = HearthFirstPersonHudPageId.Slide01PersistentHud;
-        }
-
-        if (photoArchiveHudInput != null)
-        {
-            archiveHudInputWasEnabled = photoArchiveHudInput.enabled;
-            photoArchiveHudInput.enabled = false;
-        }
-
-        EnsureArchiveRenderTexture();
-        if (archiveRenderTexture == null)
-        {
-            if (photoArchiveHudInput != null)
-            {
-                photoArchiveHudInput.enabled = archiveHudInputWasEnabled;
-            }
-            return;
-        }
-
-        previousPhotoTargetTexture = photoCamera.targetTexture;
-        photoCamera.targetTexture = archiveRenderTexture;
         archiveOverlayOpen = true;
-        ShowSecondUiPhotoPage();
+        photoArchiveWorldView.Show(
+            photoCamera,
+            photoRenderer,
+            currentPageIndex,
+            HasSecondPhoto ? 2 : 1);
         SetHint(string.Empty, false);
     }
 
-    private void ShowSecondUiPhotoPage()
+    private void ShowWorldSpacePhotoPage()
     {
-        if (!archiveOverlayOpen || photoArchiveHud == null)
+        if (!archiveOverlayOpen || photoArchiveWorldView == null)
         {
             return;
         }
 
-        HearthFirstPersonHudPage page = FindPhotoArchivePage(currentPageIndex);
-        if (page == null)
-        {
-            return;
-        }
-
-        page.Configure(page.PageId, page.FullscreenTakeover, false);
-        photoArchiveHud.ShowPage(page.PageId);
-        activeArchivePage = page;
-        SetArchiveNarrativeLaneVisible(page, false);
-        BindArchiveCameraFeed(page);
-        activeArchiveHintText = FindNamedText(page.transform, "V2_PhotoReturnHint");
-        TMP_Text pageCounter = FindNamedText(page.transform, "V2_PhotoPage");
-        if (pageCounter != null)
-        {
-            pageCounter.text = string.Format(
-                "PAGE {0:00} / {1:00}",
-                currentPageIndex + 1,
-                HasSecondPhoto ? 2 : 1);
-        }
+        photoArchiveWorldView.SetPage(
+            currentPageIndex,
+            HasSecondPhoto ? 2 : 1);
 
         string label = dialogueComplete
             ? (pageNavigationEnabled ? browseAndExitHintLabel : exitHintLabel)
@@ -591,210 +531,30 @@ public class HearthPhotoFrameInteractable : MonoBehaviour, IInteractable, IInter
         SetHint(label, dialogueComplete || pageNavigationEnabled);
     }
 
-    private void PrepareSecondUiPhotoArchiveExit()
+    private void PrepareWorldSpacePhotoArchiveExit()
     {
-        if (!archiveOverlayOpen)
+        if (!archiveOverlayOpen || photoArchiveWorldView == null)
         {
             return;
         }
 
-        RestorePhotoCameraTarget();
-        if (activeArchivePage != null)
-        {
-            activeArchivePage.Hide();
-        }
+        photoArchiveWorldView.Hide();
     }
 
-    private void CloseSecondUiPhotoArchive()
+    private void CloseWorldSpacePhotoArchive()
     {
         if (!archiveOverlayOpen)
         {
             return;
         }
 
-        RestorePhotoCameraTarget();
+        if (photoArchiveWorldView != null)
+        {
+            photoArchiveWorldView.Hide();
+        }
         archiveOverlayOpen = false;
-        activeArchivePage = null;
-        activeArchiveHintText = null;
-        SetAllArchiveNarrativeLanesVisible(true);
-
-        if (photoArchiveHud != null)
-        {
-            photoArchiveHud.ShowPage(previousHudPage);
-        }
-
-        if (photoArchiveHudInput != null)
-        {
-            photoArchiveHudInput.enabled = archiveHudInputWasEnabled;
-        }
 
         SetHint(string.Empty, false);
     }
 
-    private HearthFirstPersonHudPage FindPhotoArchivePage(int pageIndex)
-    {
-        if (photoArchiveHud == null)
-        {
-            return null;
-        }
-
-        HearthFirstPersonHudPageId requestedId = pageIndex == 1
-            ? HearthFirstPersonHudPageId.Slide08Photo2026
-            : HearthFirstPersonHudPageId.Slide07Photo2023;
-        HearthFirstPersonHudPage[] pages =
-            photoArchiveHud.GetComponentsInChildren<HearthFirstPersonHudPage>(true);
-        for (int i = 0; i < pages.Length; i++)
-        {
-            if (pages[i] != null && pages[i].PageId == requestedId)
-            {
-                return pages[i];
-            }
-        }
-
-        return null;
-    }
-
-    private void BindArchiveCameraFeed(HearthFirstPersonHudPage page)
-    {
-        if (page == null || archiveRenderTexture == null)
-        {
-            return;
-        }
-
-        Transform viewport = FindNamedChild(page.transform, "V2_PhotoViewport");
-        if (viewport == null)
-        {
-            return;
-        }
-
-        Transform existing = viewport.Find("PhotoCameraFeed_V2");
-        RawImage feed;
-        if (existing == null)
-        {
-            GameObject target = new GameObject(
-                "PhotoCameraFeed_V2",
-                typeof(RectTransform),
-                typeof(CanvasRenderer),
-                typeof(RawImage));
-            target.transform.SetParent(viewport, false);
-            RectTransform rect = target.GetComponent<RectTransform>();
-            rect.anchorMin = Vector2.zero;
-            rect.anchorMax = Vector2.one;
-            rect.offsetMin = new Vector2(8f, 8f);
-            rect.offsetMax = new Vector2(-8f, -8f);
-            target.transform.SetAsFirstSibling();
-            feed = target.GetComponent<RawImage>();
-        }
-        else
-        {
-            feed = existing.GetComponent<RawImage>();
-        }
-
-        if (feed != null)
-        {
-            feed.texture = archiveRenderTexture;
-            feed.color = Color.white;
-            feed.raycastTarget = false;
-            feed.uvRect = new Rect(0f, 0f, 1f, 1f);
-        }
-    }
-
-    private void SetAllArchiveNarrativeLanesVisible(bool visible)
-    {
-        SetArchiveNarrativeLaneVisible(FindPhotoArchivePage(0), visible);
-        SetArchiveNarrativeLaneVisible(FindPhotoArchivePage(1), visible);
-    }
-
-    private static void SetArchiveNarrativeLaneVisible(
-        HearthFirstPersonHudPage page,
-        bool visible)
-    {
-        if (page == null)
-        {
-            return;
-        }
-
-        Transform lane = FindNamedChild(page.transform, "V2_PhotoFieldUnit");
-        if (lane != null)
-        {
-            lane.gameObject.SetActive(visible);
-        }
-    }
-
-    private void EnsureArchiveRenderTexture()
-    {
-        int width = Mathf.Max(320, archiveRenderTextureSize.x);
-        int height = Mathf.Max(180, archiveRenderTextureSize.y);
-        if (archiveRenderTexture != null &&
-            (archiveRenderTexture.width != width || archiveRenderTexture.height != height))
-        {
-            ReleaseArchiveRenderTexture();
-        }
-
-        if (archiveRenderTexture != null)
-        {
-            if (!archiveRenderTexture.IsCreated())
-            {
-                archiveRenderTexture.Create();
-            }
-            return;
-        }
-
-        archiveRenderTexture = new RenderTexture(width, height, 24, RenderTextureFormat.ARGB32)
-        {
-            name = "HEARTH_PhotoArchiveFeed_V2",
-            filterMode = FilterMode.Bilinear,
-            wrapMode = TextureWrapMode.Clamp,
-            useMipMap = false,
-            autoGenerateMips = false
-        };
-        archiveRenderTexture.Create();
-    }
-
-    private void RestorePhotoCameraTarget()
-    {
-        if (photoCamera != null && photoCamera.targetTexture == archiveRenderTexture)
-        {
-            photoCamera.targetTexture = previousPhotoTargetTexture;
-        }
-
-        previousPhotoTargetTexture = null;
-    }
-
-    private void ReleaseArchiveRenderTexture()
-    {
-        if (archiveRenderTexture == null)
-        {
-            return;
-        }
-
-        archiveRenderTexture.Release();
-        Destroy(archiveRenderTexture);
-        archiveRenderTexture = null;
-    }
-
-    private static Transform FindNamedChild(Transform root, string childName)
-    {
-        if (root == null)
-        {
-            return null;
-        }
-
-        Transform[] children = root.GetComponentsInChildren<Transform>(true);
-        for (int i = 0; i < children.Length; i++)
-        {
-            if (children[i] != null && children[i].name == childName)
-            {
-                return children[i];
-            }
-        }
-
-        return null;
-    }
-
-    private static TMP_Text FindNamedText(Transform root, string childName)
-    {
-        Transform child = FindNamedChild(root, childName);
-        return child != null ? child.GetComponent<TMP_Text>() : null;
-    }
 }

@@ -105,6 +105,39 @@ public class ViewSwitchController : MonoBehaviour
             }
         }
 
+        public void SetControlsActive(
+            bool isActive,
+            HearthPlayerControlMask lockedMask)
+        {
+            if (movement != null)
+            {
+                movement.enabled =
+                    isActive &&
+                    (lockedMask & HearthPlayerControlMask.Movement) == 0;
+            }
+
+            if (look != null)
+            {
+                look.enabled =
+                    isActive &&
+                    (lockedMask & HearthPlayerControlMask.Look) == 0;
+            }
+
+            if (interaction != null)
+            {
+                AssignInteractionCamera();
+                interaction.SetInteractionEnabled(
+                    isActive &&
+                    (lockedMask & HearthPlayerControlMask.Interaction) == 0);
+            }
+
+            if (!isActive ||
+                (lockedMask & HearthPlayerControlMask.Movement) != 0)
+            {
+                ClearVelocity();
+            }
+        }
+
         public void ClearVelocity()
         {
             if (rigidbody == null || !rigidbody.gameObject.activeInHierarchy || rigidbody.isKinematic)
@@ -214,6 +247,28 @@ public class ViewSwitchController : MonoBehaviour
         {
             manualSwitchBlockers.Remove(effectiveOwner);
         }
+    }
+
+    /// <summary>
+    /// Reconciles the active view rig with the central owner-based control
+    /// masks. This is safe to call after any dialogue or flow lock changes and
+    /// prevents script execution order from restoring a stale disabled state.
+    /// </summary>
+    public void RefreshControlsFromLockState()
+    {
+        ResolveMissingReferences();
+        if (IsSwitching)
+        {
+            SetAllControlsActive(false);
+            return;
+        }
+
+        HearthPlayerControlMask lockedMask =
+            HearthPlayerControlLock.CombinedActiveMask;
+        bool humanActive = currentMode == ViewMode.Human;
+        human.SetControlsActive(humanActive, lockedMask);
+        companion.SetControlsActive(!humanActive, lockedMask);
+        UpdateCameraTags(humanActive);
     }
 
     private static ViewSwitchController FindPreferredControllerInternal(Scene scene, bool restrictToScene)
@@ -365,7 +420,7 @@ public class ViewSwitchController : MonoBehaviour
         ApplyMode(targetMode, false);
         yield return FadeTo(0f, fadeInDuration);
 
-        SetActiveRigControls(!HearthPlayerControlLock.AnyControlsLocked);
+        RefreshControlsFromLockState();
         LockCursorForGameplay();
 
         IsSwitching = false;
@@ -387,8 +442,15 @@ public class ViewSwitchController : MonoBehaviour
         companion.SetVisualsActive(!humanActive);
         UpdateCameraTags(humanActive);
 
-        human.SetControlsActive(humanActive && controlsActive);
-        companion.SetControlsActive(!humanActive && controlsActive);
+        if (controlsActive)
+        {
+            RefreshControlsFromLockState();
+        }
+        else
+        {
+            human.SetControlsActive(false);
+            companion.SetControlsActive(false);
+        }
 
         LockCursorForGameplay();
     }
@@ -397,22 +459,6 @@ public class ViewSwitchController : MonoBehaviour
     {
         human.SetControlsActive(isActive && currentMode == ViewMode.Human);
         companion.SetControlsActive(isActive && currentMode == ViewMode.Companion);
-    }
-
-    private void SetActiveRigControls(bool isActive)
-    {
-        if (currentMode == ViewMode.Human)
-        {
-            human.SetControlsActive(isActive);
-            companion.SetControlsActive(false);
-        }
-        else
-        {
-            human.SetControlsActive(false);
-            companion.SetControlsActive(isActive);
-        }
-
-        UpdateCameraTags(currentMode == ViewMode.Human);
     }
 
     private void UpdateCameraTags(bool humanActive)

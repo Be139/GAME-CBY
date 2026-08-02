@@ -5,8 +5,8 @@ using UnityEngine;
 
 /// <summary>
 /// Applies deterministic Unity import settings to the approved transparent V2
-/// vector-PNG library. The files are exported at 2x resolution; RectTransforms
-/// continue to use the design sizes encoded in each filename.
+/// vector-PNG library. Fixed-purpose frames are exported at their exact design
+/// size, while older shared assets retain their existing sliced borders.
 /// </summary>
 public static class HearthUiV2VectorAssetEditor
 {
@@ -19,7 +19,7 @@ public static class HearthUiV2VectorAssetEditor
             { "Common/HUD_Common_ButtonFrame_320x72.png", Border(32f) },
             { "Common/HUD_Common_PanelFrame_520x320.png", Border(40f) },
             {
-                "Feedback/HUD_Feedback_FieldUnitToastFrame_640x180.png",
+                "Feedback/HUD_Feedback_FieldUnitToastFrame_640x400.png",
                 Border(40f)
             },
             {
@@ -129,10 +129,10 @@ public static class HearthUiV2VectorAssetEditor
         string[] guids = AssetDatabase.FindAssets("t:Texture2D", new[] { Root });
         List<string> issues = new List<string>();
 
-        if (guids.Length != 27)
+        if (guids.Length != 39)
         {
             issues.Add(
-                "Expected 27 vector PNGs but Unity currently sees " +
+                "Expected 39 vector PNGs but Unity currently sees " +
                 guids.Length +
                 ".");
         }
@@ -156,7 +156,7 @@ public static class HearthUiV2VectorAssetEditor
         {
             Debug.Log(
                 "[HearthUiV2VectorAssetEditor] Validation passed for all " +
-                "27 imported vector PNG sprites.");
+                "39 imported vector PNG sprites.");
         }
         else
         {

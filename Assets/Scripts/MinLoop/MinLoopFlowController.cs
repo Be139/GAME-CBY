@@ -179,6 +179,20 @@ public class MinLoopFlowController : MonoBehaviour
     public void SetActiveReplayResident(string residentId)
     {
         activeReplayResidentId = NormalizeResidentId(residentId);
+        if (currentStage == MinLoopStage.Corridor ||
+            currentStage == MinLoopStage.Complete)
+        {
+            if (humanHud != null)
+            {
+                humanHud.SetCurrentTask(
+                    HearthCurrentTaskRouter.Resolve(
+                        HearthCurrentTaskId.GoToResidentTerminal,
+                        activeReplayResidentId));
+            }
+            return;
+        }
+
+        RefreshHumanTask();
     }
 
     public void SetActiveReplayResident(string residentId, HearthTvTerminalController terminal)
@@ -528,7 +542,7 @@ public class MinLoopFlowController : MonoBehaviour
         {
             yield return PlayDialogue(
                 dialogueSet.PreChoiceBriefing,
-                HearthSubtitleContext.FieldUnit);
+                HearthSubtitleContext.Terminal);
         }
 
         SetStage(MinLoopStage.DispositionChoice);
@@ -621,10 +635,10 @@ public class MinLoopFlowController : MonoBehaviour
                 : dialogueSet.OptionBResult;
             yield return PlayDialogue(
                 result,
-                HearthSubtitleContext.FieldUnit);
+                HearthSubtitleContext.Terminal);
             yield return PlayDialogue(
                 dialogueSet.PostChoiceCommon,
-                HearthSubtitleContext.FieldUnit);
+                HearthSubtitleContext.Terminal);
         }
 
         if (tvTerminalController != null && tvTerminalController.IsOpen)
@@ -662,6 +676,24 @@ public class MinLoopFlowController : MonoBehaviour
     {
         if (subtitlePlayer == null || sequence == null || !sequence.HasLines)
         {
+            yield break;
+        }
+
+        if (context == HearthSubtitleContext.Terminal)
+        {
+            HearthDialogueSurface surface = tvTerminalController != null
+                ? tvTerminalController.ResolveDialogueSurface()
+                : null;
+            if (surface != null)
+            {
+                yield return subtitlePlayer.PlaySequenceAsset(
+                    sequence,
+                    HearthDialoguePlaybackContext.Embedded(surface, context));
+            }
+            else
+            {
+                yield return subtitlePlayer.PlaySequenceAsset(sequence, context);
+            }
             yield break;
         }
 
@@ -703,10 +735,24 @@ public class MinLoopFlowController : MonoBehaviour
         }
 
         currentStage = nextStage;
+        RefreshHumanTask();
         if (stageChanged != null)
         {
             stageChanged.Invoke(currentStage);
         }
+    }
+
+    private void RefreshHumanTask()
+    {
+        if (humanHud == null)
+        {
+            return;
+        }
+
+        humanHud.SetCurrentTask(
+            HearthCurrentTaskRouter.ResolveMinLoopTask(
+                currentStage,
+                activeReplayResidentId));
     }
 
     private void StartFlowRoutine(IEnumerator routine)

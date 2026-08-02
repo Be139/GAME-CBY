@@ -15,15 +15,23 @@ MonoBehaviour:
   sequenceId: Lobby_Group02_MiaExit
   notes: 'Mia''s commentary after leaving the young-man conversation zone. Source:
     HEARTH_Full_Game_Script_No_Audio_Tags_Native_English.md, stable marker Lobby_Group02_MiaExit.
-    Text is synchronized by Tools/Hearth/Dialogue/Sync All Dialogue From Final Script.'
+    Text is synchronized by Tools/Hearth/Dialogue/Sync All Dialogue From Final Script.
+    Playback policy HEARTH_V2_DIALOGUE_POLICY_2026_08_01.'
+  dialogueChannel: 0
+  defaultSpeakerSide: 0
+  advancePolicy: 0
   lines:
-  - presentationKind: 0
+  - lineId: Lobby_Group02_MiaExit_Mia_001
+    presentationKind: 2
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 2
     startDelay: 0.15
     speaker: Mia
-    text: It's not just work. It handles all the little day-to-day stuff, too. I've
-      been using mine that way for years.
-    holdSeconds: 8.697169
-    voiceClip: {fileID: 0}
+    text: It's not just work stuff. It handles all the little day-to-day things,
+      too... I've been using mine like that for years.
+    holdSeconds: 9.074528
+    voiceClip: {fileID: 8300000, guid: d8e39085aa5517148a929cd1158fa9ba, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
   postSequenceDelay: 0.18

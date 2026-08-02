@@ -13,3 +13,13 @@ public interface IInteractionAvailability
 {
     bool IsInteractionAvailable { get; }
 }
+
+/// <summary>
+/// Optional target-specific short-press key. Interactables that do not
+/// implement this continue to use PlayerInteraction's default E key.
+/// </summary>
+public interface IInteractionKeyProvider
+{
+    KeyCode InteractionKey { get; }
+    string InteractionKeyLabel { get; }
+}

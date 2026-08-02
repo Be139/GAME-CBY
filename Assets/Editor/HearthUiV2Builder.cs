@@ -165,8 +165,6 @@ public static class HearthUiV2Builder
         "playerInteraction",
         "playerRigidbody",
         "unlockCursorWhileOpen",
-        "hideFirstPersonUiWhileOpen",
-        "firstPersonUiRootsToHide",
         "openClip",
         "closeClip",
         "bootClip",
@@ -341,6 +339,8 @@ public static class HearthUiV2Builder
             FindSceneObjects<HearthCompanionHudController>(scene).ToArray();
         HearthTvTerminalController[] terminals =
             FindSceneObjects<HearthTvTerminalController>(scene).ToArray();
+        HearthUiStateCoordinator[] stateCoordinators =
+            FindSceneObjects<HearthUiStateCoordinator>(scene).ToArray();
         ViewSwitchController[] viewSwitches =
             FindSceneObjects<ViewSwitchController>(scene).ToArray();
 
@@ -378,6 +378,18 @@ public static class HearthUiV2Builder
             issues++;
         }
 
+        if (stateCoordinators.Length != 1 ||
+            !stateCoordinators[0].enabled ||
+            !stateCoordinators[0].gameObject.activeInHierarchy ||
+            !stateCoordinators[0].AutomaticallyResolveRuntimeState ||
+            !stateCoordinators[0].HasHumanHudBinding)
+        {
+            Debug.LogWarning(
+                "[HearthUiV2Builder] Expected one active V2 UI state coordinator with automatic runtime resolution and a human HUD binding, found " +
+                stateCoordinators.Length + ".");
+            issues++;
+        }
+
         HashSet<string> terminalSlots = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         HashSet<Camera> terminalCameras = new HashSet<Camera>();
         for (int i = 0; i < terminals.Length; i++)
@@ -385,14 +397,8 @@ public static class HearthUiV2Builder
             issues += ValidateTerminalPageReferences(terminals[i]);
 
             SerializedObject so = new SerializedObject(terminals[i]);
-            SerializedProperty hideHud = so.FindProperty("hideFirstPersonUiWhileOpen");
             SerializedProperty switchCamera = so.FindProperty("switchCameraWhileOpen");
             SerializedProperty worldCamera = so.FindProperty("worldCamera");
-            if (hideHud == null || !hideHud.boolValue)
-            {
-                Debug.LogWarning("[HearthUiV2Builder] Terminal does not hide first-person UI: " + GetPath(terminals[i].transform), terminals[i]);
-                issues++;
-            }
 
             Transform hardwareRoot = FindTerminalHardwareRoot(terminals[i].transform);
             Camera expectedCamera = FindCameraOutsideUiRoot(hardwareRoot, terminals[i].transform);
@@ -1218,17 +1224,34 @@ public static class HearthUiV2Builder
         if (buttonA != null)
         {
             SetTopLeft(buttonA.GetComponent<RectTransform>(), optionA);
-            StyleButtonImage(buttonA.GetComponent<Image>(), ButtonSelected);
+            StyleButtonImage(buttonA.GetComponent<Image>(), ButtonIdle);
+            EnsureChoiceSelectionFill(buttonA);
         }
 
         if (buttonB != null)
         {
             SetTopLeft(buttonB.GetComponent<RectTransform>(), optionB);
             StyleButtonImage(buttonB.GetComponent<Image>(), ButtonIdle);
+            EnsureChoiceSelectionFill(buttonB);
         }
 
-        CreateImage(page.transform, "V2_FinalChoiceRuleA", new Rect(optionA.x, optionA.y, 4f, optionA.height), null, Cyan, false, false);
-        CreateImage(page.transform, "V2_FinalChoiceRuleB", new Rect(optionB.x, optionB.y, 2f, optionB.height), null, TextSecondary, false, false);
+        RectTransform legacyFillA =
+            FindRect(page.transform, "ShapeFill_001");
+        RectTransform legacyFillB =
+            FindRect(page.transform, "ShapeFill_004");
+        if (legacyFillA != null)
+        {
+            legacyFillA.gameObject.SetActive(false);
+        }
+        if (legacyFillB != null)
+        {
+            legacyFillB.gameObject.SetActive(false);
+        }
+
+        Image ruleA = CreateImage(page.transform, "V2_FinalChoiceRuleA", new Rect(optionA.x, optionA.y, 4f, optionA.height), null, Color.clear, false, false);
+        Image ruleB = CreateImage(page.transform, "V2_FinalChoiceRuleB", new Rect(optionB.x, optionB.y, 2f, optionB.height), null, Color.clear, false, false);
+        ruleA.gameObject.SetActive(false);
+        ruleB.gameObject.SetActive(false);
 
         SetText(FindTextByName(page.transform, "Text_002_"), "A", new Rect(516f, 546f, 72f, 64f), 34f, TextAlignmentOptions.Center, TextPrimary);
         SetText(FindTextByName(page.transform, "Text_003_"), "ANSWER LILY YOURSELF", new Rect(624f, 548f, 600f, 60f), 28f, TextAlignmentOptions.MidlineLeft, TextPrimary);
@@ -1248,6 +1271,43 @@ public static class HearthUiV2Builder
         {
             runtimeHint.enableWordWrapping = false;
         }
+    }
+
+    private static void EnsureChoiceSelectionFill(Button button)
+    {
+        if (button == null)
+        {
+            return;
+        }
+
+        RectTransform row = button.GetComponent<RectTransform>();
+        if (row == null)
+        {
+            return;
+        }
+
+        if (button.GetComponent<RectMask2D>() == null)
+        {
+            Undo.AddComponent<RectMask2D>(button.gameObject);
+        }
+
+        Transform existing = row.Find("SelectionFill");
+        if (existing != null)
+        {
+            UnityEngine.Object.DestroyImmediate(existing.gameObject);
+        }
+
+        Image selection = CreateImage(
+            row,
+            "SelectionFill",
+            new Rect(0f, 0f, row.sizeDelta.x, row.sizeDelta.y),
+            null,
+            new Color(Cyan.r, Cyan.g, Cyan.b, 0.22f),
+            false,
+            false);
+        SetStretch(selection.rectTransform, 8f, 8f, 8f, 8f);
+        selection.transform.SetAsFirstSibling();
+        selection.gameObject.SetActive(false);
     }
 
     private static void StyleShutdownConfirmPage(HearthFirstPersonHudPage page)
@@ -1273,18 +1333,22 @@ public static class HearthUiV2Builder
         Button cancel = FindButton(page.transform, "Button_CANCEL");
         if (confirm != null)
         {
-            SetTopLeft(confirm.GetComponent<RectTransform>(), new Rect(630f, 626f, 660f, 96f));
+            SetTopLeft(confirm.GetComponent<RectTransform>(), new Rect(630f, 686f, 660f, 106f));
             StyleButtonImage(confirm.GetComponent<Image>(), ButtonSelected);
         }
 
         if (cancel != null)
         {
-            SetTopLeft(cancel.GetComponent<RectTransform>(), new Rect(910f, 748f, 380f, 60f));
-            StyleButtonImage(cancel.GetComponent<Image>(), ButtonIdle);
+            cancel.gameObject.SetActive(false);
         }
 
-        SetText(FindTextByName(page.transform, "Text_005_"), "SPACE   CONFIRM SHUTDOWN", new Rect(690f, 646f, 540f, 54f), 26f, TextAlignmentOptions.Center, TextPrimary);
-        SetText(FindTextByName(page.transform, "Text_007_"), "ESC   CANCEL", new Rect(950f, 758f, 300f, 40f), 21f, TextAlignmentOptions.Center, TextSecondary);
+        SetText(FindTextByName(page.transform, "Text_005_"), "SPACE   CONFIRM SHUTDOWN", new Rect(690f, 712f, 540f, 54f), 26f, TextAlignmentOptions.Center, TextPrimary);
+        TMP_Text retiredCancel = FindTextByName(page.transform, "Text_007_");
+        if (retiredCancel != null)
+        {
+            retiredCancel.text = string.Empty;
+            retiredCancel.gameObject.SetActive(false);
+        }
     }
 
     private static void StyleLowTrustWarningPage(HearthFirstPersonHudPage page)
@@ -1420,10 +1484,48 @@ public static class HearthUiV2Builder
         Transform trigger = root.transform.Find("TimedCardLayer/TriggerCardView");
         if (trigger != null)
         {
-            SetTopLeft(trigger as RectTransform, new Rect(58f, 150f, 520f, 230f));
-            Image bg = CreateImage(trigger, "V2_Backplate", new Rect(0f, 0f, 520f, 230f), null, PanelFill, false, false);
+            SetTopLeft(trigger as RectTransform, new Rect(52f, 160f, 520f, 240f));
+            Image bg = CreateImage(trigger, "V2_Backplate", new Rect(6f, 6f, 508f, 228f), null, PanelFill, false, false);
             bg.transform.SetAsFirstSibling();
-            CreateImage(trigger, "V2_TriggerRule", new Rect(0f, 0f, 2f, 230f), null, Cyan, false, false);
+            Image triggerFrame = CreateImage(
+                trigger,
+                "V2_TriggerFrame",
+                new Rect(0f, 0f, 520f, 240f),
+                LoadSprite(PanelSpritePath),
+                Cyan,
+                true,
+                false);
+            triggerFrame.transform.SetAsLastSibling();
+
+            Transform legacyAccent = trigger.Find("TriggerCardAccent");
+            if (legacyAccent != null)
+            {
+                legacyAccent.gameObject.SetActive(false);
+            }
+            Transform legacyRule = trigger.Find("V2_TriggerRule");
+            if (legacyRule != null)
+            {
+                legacyRule.gameObject.SetActive(false);
+            }
+
+            TMP_Text triggerTitle =
+                FindTextByName(trigger, "TriggerCardTitleText");
+            TMP_Text triggerBody =
+                FindTextByName(trigger, "TriggerCardBodyText");
+            SetText(
+                triggerTitle,
+                triggerTitle != null ? triggerTitle.text : string.Empty,
+                new Rect(24f, 20f, 472f, 34f),
+                20f,
+                TextAlignmentOptions.TopLeft,
+                CyanSoft);
+            SetText(
+                triggerBody,
+                triggerBody != null ? triggerBody.text : string.Empty,
+                new Rect(24f, 70f, 472f, 150f),
+                18f,
+                TextAlignmentOptions.TopLeft,
+                TextPrimary);
         }
 
         Transform hold = root.transform.Find("InteractionLayer/HoldPrompt");
@@ -1487,14 +1589,25 @@ public static class HearthUiV2Builder
             false);
         backplate.transform.SetAsFirstSibling();
 
+        Image frame = CreateImage(
+            panel.transform,
+            "V2_StatusFrame",
+            new Rect(0f, 0f, width, height),
+            LoadSprite(PanelSpritePath),
+            Cyan,
+            true,
+            false);
+        frame.transform.SetAsLastSibling();
+
         Image accent = CreateImage(
             panel.transform,
             "V2_StatusAccent",
             new Rect(0f, 0f, 3f, height),
             null,
-            Cyan,
+            Color.clear,
             false,
             false);
+        accent.gameObject.SetActive(false);
         TMP_Text title = CreateText(
             panel.transform,
             "V2_StatusTitleText",
@@ -1503,14 +1616,6 @@ public static class HearthUiV2Builder
             20f,
             TextAlignmentOptions.TopLeft,
             CyanSoft);
-        CreateImage(
-            panel.transform,
-            "V2_StatusRule",
-            new Rect(26f, 58f, 468f, 2f),
-            null,
-            new Color(Cyan.r, Cyan.g, Cyan.b, 0.72f),
-            false,
-            false);
         TMP_Text rows = CreateText(
             panel.transform,
             "V2_StatusRowsText",
@@ -1853,7 +1958,12 @@ public static class HearthUiV2Builder
             so.FindProperty("keyboardHintText").objectReferenceValue = hint;
             so.FindProperty("keyboardFocusText").objectReferenceValue = focus;
             so.FindProperty("runtimePromptText").objectReferenceValue = runtime;
-            so.FindProperty("hideFirstPersonUiWhileOpen").boolValue = true;
+            SerializedProperty retiredHideHud =
+                so.FindProperty("hideFirstPersonUiWhileOpen");
+            if (retiredHideHud != null)
+            {
+                retiredHideHud.boolValue = true;
+            }
             so.ApplyModifiedPropertiesWithoutUndo();
         }
     }

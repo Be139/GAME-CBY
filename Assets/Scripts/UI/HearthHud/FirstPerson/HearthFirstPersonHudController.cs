@@ -18,6 +18,7 @@ public class HearthFirstPersonHudController : MonoBehaviour
     [SerializeField] private Image statusDotImage;
     [SerializeField] private TMP_Text statusText;
     [SerializeField] private TMP_Text taskText;
+    [SerializeField] private string currentTaskLabel;
     [SerializeField] private TMP_Text clockText;
 
     [Header("Trust")]
@@ -34,7 +35,6 @@ public class HearthFirstPersonHudController : MonoBehaviour
     [Header("Menu Focus")]
     [SerializeField] private RectTransform menuFocusRect;
     [SerializeField] private RectTransform[] menuFocusTargets;
-    [SerializeField] private Vector2 menuFocusPadding = new Vector2(8f, 4f);
 
     [Header("Final Choice Focus")]
     [SerializeField] private RectTransform finalChoiceFocusRect;
@@ -176,6 +176,7 @@ public class HearthFirstPersonHudController : MonoBehaviour
     private void Awake()
     {
         BuildPageMap();
+        ResolvePersistentTextReferences();
         ResolveFocusTargets();
         ResolvePlayerControlLock();
         HideAllPages();
@@ -232,6 +233,14 @@ public class HearthFirstPersonHudController : MonoBehaviour
 
         page.Show();
         currentPageId = pageId;
+        if (IsFinalChoicePage(pageId))
+        {
+            ApplyFinalChoiceRuntimePolicy(page);
+        }
+        else if (pageId == HearthFirstPersonHudPageId.Slide10ShutdownConfirm)
+        {
+            ApplyShutdownConfirmationRuntimePolicy(page);
+        }
         SetPersistentVisible(page.KeepPersistentHudVisible);
         SetPlayerControlsLocked(ShouldLockPlayerControls(pageId));
         RefreshPageHelpers();
@@ -422,6 +431,14 @@ public class HearthFirstPersonHudController : MonoBehaviour
 
     public void CancelShutdownDecision()
     {
+        if (currentPageId == HearthFirstPersonHudPageId.Slide10ShutdownConfirm)
+        {
+            // The high-trust shutdown page has one authorized action only.
+            // Keep this guard here as well as in HandleCancel so retired
+            // Button/UnityEvent bindings cannot restore the old branch.
+            return;
+        }
+
         PlayOneShot(cancelClip);
         onShutdownCancelled.Invoke();
         if (routeFinalChoiceInternally)
@@ -575,7 +592,8 @@ public class HearthFirstPersonHudController : MonoBehaviour
         switch (currentPageId)
         {
             case HearthFirstPersonHudPageId.Slide10ShutdownConfirm:
-                CancelShutdownDecision();
+                // Authorized shutdown is intentionally a one-action
+                // confirmation. Escape must not restore the retired branch.
                 break;
             case HearthFirstPersonHudPageId.Slide11Warning01:
             case HearthFirstPersonHudPageId.Slide12Warning02:
@@ -826,8 +844,57 @@ public class HearthFirstPersonHudController : MonoBehaviour
 
         if (taskText != null)
         {
-            taskText.text = "CURRENT TASK\nNIGHT ROUNDS - BLOCK A - 17F\n" + completedRounds + "/" + totalRounds;
+            RefreshCurrentTaskText();
         }
+    }
+
+    public void SetCurrentTask(string task)
+    {
+        currentTaskLabel = HearthCurrentTaskRouter.NormalizeTaskText(task);
+        RefreshCurrentTaskText();
+    }
+
+    private void RefreshCurrentTaskText()
+    {
+        ResolvePersistentTextReferences();
+        if (taskText == null)
+        {
+            return;
+        }
+
+        taskText.text = string.IsNullOrWhiteSpace(currentTaskLabel)
+            ? "CURRENT TASK"
+            : "CURRENT TASK\n" + currentTaskLabel;
+    }
+
+    private void ResolvePersistentTextReferences()
+    {
+        if (taskText == null)
+        {
+            taskText = FindTextByName(transform, "Text_006_CURRENT_TASK");
+        }
+
+        if (taskText == null)
+        {
+            taskText = FindTextByName(transform, "V2_CurrentTask");
+        }
+
+        if (taskText == null)
+        {
+            return;
+        }
+
+        RectTransform taskRect = taskText.rectTransform;
+        if (taskRect != null && taskRect.sizeDelta.y < 88f)
+        {
+            taskRect.sizeDelta = new Vector2(
+                Mathf.Max(448f, taskRect.sizeDelta.x),
+                88f);
+        }
+
+        taskText.enableWordWrapping = true;
+        taskText.overflowMode = TextOverflowModes.Overflow;
+        taskText.alignment = TextAlignmentOptions.TopRight;
     }
 
     public void SetTrustScore(int value)
@@ -1032,13 +1099,25 @@ public class HearthFirstPersonHudController : MonoBehaviour
     private void RefreshMenuFocus()
     {
         ResolveFocusTargets();
-        SetFocusRect(menuFocusRect, menuFocusTargets, menuSelectionIndex, menuFocusPadding);
+        if (menuFocusRect != null)
+        {
+            menuFocusRect.gameObject.SetActive(false);
+        }
+        SetSelectionFills(menuFocusTargets, menuSelectionIndex, true);
     }
 
     private void RefreshFinalChoiceFocus()
     {
         ResolveFocusTargets();
-        SetFocusRect(finalChoiceFocusRect, finalChoiceFocusTargets, finalChoiceSelectionIndex, finalChoiceFocusPadding);
+        ResolveFinalChoiceTargetsForCurrentPage();
+        if (finalChoiceFocusRect != null)
+        {
+            finalChoiceFocusRect.gameObject.SetActive(false);
+        }
+        SetSelectionFills(
+            finalChoiceFocusTargets,
+            finalChoiceSelectionIndex,
+            true);
     }
 
     private void ResolveFocusTargets()
@@ -1069,12 +1148,38 @@ public class HearthFirstPersonHudController : MonoBehaviour
             finalChoiceFocusTargets.Length != 2 ||
             HasMissingTarget(finalChoiceFocusTargets))
         {
+            HearthFirstPersonHudPage defaultPage;
+            Transform choiceRoot = pageMap.TryGetValue(
+                    HearthFirstPersonHudPageId.Slide09FinalChoice,
+                    out defaultPage) &&
+                defaultPage != null
+                    ? defaultPage.transform
+                    : transform;
             finalChoiceFocusTargets = new[]
             {
-                FindRectTransformByName("FinalChoiceTarget_A"),
-                FindRectTransformByName("FinalChoiceTarget_B")
+                FindRectTransformIn(choiceRoot, "Button_ANSWER_LILY"),
+                FindRectTransformIn(
+                    choiceRoot,
+                    "Button_COMPANION_ANSWER")
             };
         }
+    }
+
+    private void ResolveFinalChoiceTargetsForCurrentPage()
+    {
+        HearthFirstPersonHudPage page;
+        if (!pageMap.TryGetValue(currentPageId, out page) || page == null)
+        {
+            return;
+        }
+
+        finalChoiceFocusTargets = new[]
+        {
+            FindRectTransformIn(page.transform, "Button_ANSWER_LILY"),
+            FindRectTransformIn(
+                page.transform,
+                "Button_COMPANION_ANSWER")
+        };
     }
 
     private static bool HasMissingTarget(RectTransform[] targets)
@@ -1088,6 +1193,185 @@ public class HearthFirstPersonHudController : MonoBehaviour
         }
 
         return false;
+    }
+
+    private void SetSelectionFills(
+        RectTransform[] targets,
+        int selectedIndex,
+        bool visible)
+    {
+        if (targets == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < targets.Length; i++)
+        {
+            RectTransform target = targets[i];
+            if (target == null)
+            {
+                continue;
+            }
+
+            Transform selection = EnsureSelectionFill(target);
+            if (selection != null)
+            {
+                selection.gameObject.SetActive(visible && i == selectedIndex);
+                selection.SetAsFirstSibling();
+            }
+        }
+    }
+
+    private Transform EnsureSelectionFill(RectTransform target)
+    {
+        if (target == null)
+        {
+            return null;
+        }
+
+        if (target.GetComponent<RectMask2D>() == null)
+        {
+            target.gameObject.AddComponent<RectMask2D>();
+        }
+
+        Transform existing = target.Find("SelectionFill");
+        if (existing != null)
+        {
+            Image existingImage = existing.GetComponent<Image>();
+            if (existingImage != null)
+            {
+                existingImage.raycastTarget = false;
+            }
+            return existing;
+        }
+
+        GameObject selectionObject = new GameObject(
+            "SelectionFill",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(Image));
+        selectionObject.layer = target.gameObject.layer;
+        selectionObject.transform.SetParent(target, false);
+        RectTransform selectionRect =
+            selectionObject.GetComponent<RectTransform>();
+        selectionRect.anchorMin = Vector2.zero;
+        selectionRect.anchorMax = Vector2.one;
+        selectionRect.pivot = new Vector2(0.5f, 0.5f);
+        selectionRect.offsetMin = new Vector2(8f, 8f);
+        selectionRect.offsetMax = new Vector2(-8f, -8f);
+        Image selectionImage = selectionObject.GetComponent<Image>();
+        selectionImage.sprite = null;
+        selectionImage.type = Image.Type.Simple;
+        selectionImage.color = new Color32(120, 170, 220, 56);
+        selectionImage.raycastTarget = false;
+        selectionObject.SetActive(false);
+        selectionObject.transform.SetAsFirstSibling();
+        return selectionObject.transform;
+    }
+
+    private void ApplyFinalChoiceRuntimePolicy(
+        HearthFirstPersonHudPage page)
+    {
+        if (page == null)
+        {
+            return;
+        }
+
+        string[] retiredNames =
+        {
+            "ShapeFill_001", "ShapeFill_004",
+            "V2_FinalChoiceRuleA", "V2_FinalChoiceRuleB",
+            "FinalChoiceFocus"
+        };
+        SetNamedObjectsActive(page.transform, retiredNames, false);
+
+        RectTransform[] actualRows =
+        {
+            FindRectTransformIn(page.transform, "Button_ANSWER_LILY"),
+            FindRectTransformIn(
+                page.transform,
+                "Button_COMPANION_ANSWER")
+        };
+        for (int i = 0; i < actualRows.Length; i++)
+        {
+            RectTransform row = actualRows[i];
+            if (row == null)
+            {
+                continue;
+            }
+
+            Image rowImage = row.GetComponent<Image>();
+            if (rowImage != null)
+            {
+                rowImage.color = new Color32(95, 120, 149, 34);
+            }
+            EnsureSelectionFill(row);
+        }
+    }
+
+    private static void ApplyShutdownConfirmationRuntimePolicy(
+        HearthFirstPersonHudPage page)
+    {
+        if (page == null)
+        {
+            return;
+        }
+
+        Transform[] items =
+            page.GetComponentsInChildren<Transform>(true);
+        for (int i = 0; i < items.Length; i++)
+        {
+            Transform item = items[i];
+            if (item == null ||
+                item.name.IndexOf(
+                    "CANCEL",
+                    System.StringComparison.OrdinalIgnoreCase) < 0)
+            {
+                continue;
+            }
+
+            Button button = item.GetComponent<Button>();
+            if (button != null)
+            {
+                button.interactable = false;
+            }
+            CanvasGroup group = item.GetComponent<CanvasGroup>();
+            if (group != null)
+            {
+                group.interactable = false;
+                group.blocksRaycasts = false;
+            }
+            Graphic[] graphics = item.GetComponentsInChildren<Graphic>(true);
+            for (int g = 0; g < graphics.Length; g++)
+            {
+                graphics[g].raycastTarget = false;
+            }
+            item.gameObject.SetActive(false);
+        }
+    }
+
+    private static void SetNamedObjectsActive(
+        Transform root,
+        string[] names,
+        bool active)
+    {
+        if (root == null || names == null)
+        {
+            return;
+        }
+
+        Transform[] items = root.GetComponentsInChildren<Transform>(true);
+        for (int i = 0; i < items.Length; i++)
+        {
+            for (int n = 0; n < names.Length; n++)
+            {
+                if (items[i].name == names[n])
+                {
+                    items[i].gameObject.SetActive(active);
+                    break;
+                }
+            }
+        }
     }
 
     private RectTransform FindRectTransformByName(string objectName)
@@ -1157,6 +1441,11 @@ public class HearthFirstPersonHudController : MonoBehaviour
 
     private void HideFocusRects()
     {
+        SetSelectionFills(menuFocusTargets, -1, false);
+        HideFinalChoiceSelectionFills(
+            HearthFirstPersonHudPageId.Slide09FinalChoice);
+        HideFinalChoiceSelectionFills(
+            HearthFirstPersonHudPageId.Slide14FinalChoiceReturn);
         if (menuFocusRect != null)
         {
             menuFocusRect.gameObject.SetActive(false);
@@ -1171,6 +1460,25 @@ public class HearthFirstPersonHudController : MonoBehaviour
         {
             settingsView.SetFocusVisible(false);
         }
+    }
+
+    private void HideFinalChoiceSelectionFills(
+        HearthFirstPersonHudPageId pageId)
+    {
+        HearthFirstPersonHudPage page;
+        if (!pageMap.TryGetValue(pageId, out page) || page == null)
+        {
+            return;
+        }
+
+        RectTransform[] targets =
+        {
+            FindRectTransformIn(page.transform, "Button_ANSWER_LILY"),
+            FindRectTransformIn(
+                page.transform,
+                "Button_COMPANION_ANSWER")
+        };
+        SetSelectionFills(targets, -1, false);
     }
 
     private void HideTrustDeltaImmediate()

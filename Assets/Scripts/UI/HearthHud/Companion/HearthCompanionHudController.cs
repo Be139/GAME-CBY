@@ -13,7 +13,6 @@ public class HearthCompanionHudController : MonoBehaviour
 
     [Header("Visibility")]
     [SerializeField] private CanvasGroup rootCanvasGroup;
-    [SerializeField] private bool visibleOnlyInCompanionView = true;
     [SerializeField] private ViewSwitchController viewSwitchController;
     [SerializeField] private bool autoFindViewSwitchController = true;
 
@@ -53,10 +52,14 @@ public class HearthCompanionHudController : MonoBehaviour
 
     private HearthCompanionHudSceneData currentScene;
     private bool explicitVisibility = true;
+    private bool coordinatorPresentationVisible;
     private bool missingHoldPromptWarningLogged;
     private HearthCompanionTriggerCardView subscribedTriggerCardView;
     private Coroutine decisionVisibilityRoutine;
     private Coroutine centerMessageRoutine;
+    private PlayerInteraction companionInteraction;
+    private bool shortPressInteractionSuspendedByHold;
+    private bool shortPressInteractionEnabledBeforeHold;
 
     public HearthCompanionHudSceneData CurrentScene { get { return currentScene; } }
     public string CurrentSceneId { get { return currentScene != null ? currentScene.SceneId : string.Empty; } }
@@ -69,12 +72,19 @@ public class HearthCompanionHudController : MonoBehaviour
         ResolveReferences();
         BindTriggerCardVisibility();
         BuildSceneMap();
+        ApplyRootVisibility();
     }
 
     private void OnDestroy()
     {
+        RestoreShortPressInteractionAfterHold();
         StopTransientPresentationRoutines();
         UnbindTriggerCardVisibility();
+    }
+
+    private void OnDisable()
+    {
+        RestoreShortPressInteractionAfterHold();
     }
 
     private void Start()
@@ -84,12 +94,7 @@ public class HearthCompanionHudController : MonoBehaviour
             ShowScene(startingSceneId);
         }
 
-        RefreshVisibilityFromViewMode();
-    }
-
-    private void LateUpdate()
-    {
-        RefreshVisibilityFromViewMode();
+        ApplyRootVisibility();
     }
 
     public void Configure(
@@ -135,7 +140,6 @@ public class HearthCompanionHudController : MonoBehaviour
     public void SetViewSwitchController(ViewSwitchController controller)
     {
         viewSwitchController = controller;
-        RefreshVisibilityFromViewMode();
     }
 
     public void ShowScene(string sceneId)
@@ -268,6 +272,11 @@ public class HearthCompanionHudController : MonoBehaviour
                 missingHoldPromptWarningLogged = true;
             }
 
+            if (!visible)
+            {
+                RestoreShortPressInteractionAfterHold();
+            }
+
             return;
         }
 
@@ -277,8 +286,11 @@ public class HearthCompanionHudController : MonoBehaviour
             if (currentScene == null || !currentScene.ShowHoldPrompt)
             {
                 holdPrompt.SetVisible(false);
+                RestoreShortPressInteractionAfterHold();
                 return;
             }
+
+            SuspendShortPressInteractionForHold();
 
             if (!holdPrompt.IsVisible)
             {
@@ -297,6 +309,8 @@ public class HearthCompanionHudController : MonoBehaviour
             holdPrompt.SetVisible(false);
             holdPrompt.ResetHold();
         }
+
+        RestoreShortPressInteractionAfterHold();
     }
 
     public void ShowCurrentHoldPrompt()
@@ -308,7 +322,7 @@ public class HearthCompanionHudController : MonoBehaviour
             return;
         }
 
-        holdPrompt.Apply(currentScene);
+        SetHoldPromptVisible(true);
     }
 
     public void SetDirectionGuideVisible(bool visible)
@@ -332,6 +346,22 @@ public class HearthCompanionHudController : MonoBehaviour
         if (holdPrompt != null)
         {
             holdPrompt.ResetHold();
+        }
+    }
+
+    public void SetCurrentTask(string task)
+    {
+        if (currentTaskText == null)
+        {
+            ResolveReferences();
+        }
+
+        if (currentTaskText != null)
+        {
+            string normalized = HearthCurrentTaskRouter.NormalizeTaskText(task);
+            currentTaskText.text = string.IsNullOrWhiteSpace(normalized)
+                ? "CURRENT TASK"
+                : "CURRENT TASK\n" + normalized;
         }
     }
 
@@ -381,7 +411,58 @@ public class HearthCompanionHudController : MonoBehaviour
     public void SetVisible(bool visible)
     {
         explicitVisibility = visible;
-        RefreshVisibilityFromViewMode();
+        if (!visible)
+        {
+            SetHoldPromptVisible(false);
+        }
+        ApplyRootVisibility();
+    }
+
+    /// <summary>
+    /// Called only by HearthUiStateCoordinator. The Companion controller owns
+    /// the data inside its HUD, while the coordinator owns whether the HUD is
+    /// presented at all.
+    /// </summary>
+    public void SetCoordinatorPresentationVisible(bool visible)
+    {
+        coordinatorPresentationVisible = visible;
+        ApplyRootVisibility();
+    }
+
+    public bool CoordinatorPresentationVisible
+    {
+        get { return coordinatorPresentationVisible; }
+    }
+
+    public void ResetTransientPresentation()
+    {
+        StopTransientPresentationRoutines();
+
+        if (decisionPanelView != null)
+        {
+            decisionPanelView.HideImmediate();
+        }
+
+        if (triggerCardView != null)
+        {
+            // Keep the view object active and hide it through its CanvasGroup.
+            // ApplyScene may immediately start a timed cue on this component;
+            // a disabled GameObject would make that coroutine fail to start.
+            triggerCardView.gameObject.SetActive(true);
+            triggerCardView.HideImmediate();
+        }
+
+        SetHoldPromptVisible(false);
+
+        if (centerMessageText != null)
+        {
+            centerMessageText.gameObject.SetActive(false);
+        }
+
+        if (specialEffectsView != null)
+        {
+            specialEffectsView.HideImmediate();
+        }
     }
 
     private void ApplyScene(HearthCompanionHudSceneData scene)
@@ -392,7 +473,6 @@ public class HearthCompanionHudController : MonoBehaviour
         }
 
         currentScene = scene;
-        explicitVisibility = true;
 
         if (statusPanelView != null)
         {
@@ -420,7 +500,7 @@ public class HearthCompanionHudController : MonoBehaviour
 
         if (holdPrompt != null)
         {
-            holdPrompt.Apply(scene);
+            SetHoldPromptVisible(scene.ShowHoldPrompt);
         }
 
         if (projectionPanelView != null)
@@ -461,10 +541,10 @@ public class HearthCompanionHudController : MonoBehaviour
 
         if (currentTaskText != null)
         {
-            string task = string.IsNullOrWhiteSpace(scene.CurrentTask)
-                ? "REVIEW RECORDED HOUSEHOLD EVENT"
-                : scene.CurrentTask.Trim();
-            currentTaskText.text = "CURRENT TASK\n" + task;
+            currentTaskText.text =
+                "CURRENT TASK\n" + HearthCurrentTaskRouter.ResolveCompanionSceneTask(
+                    scene.SceneId,
+                    scene.CurrentTask);
             currentTaskText.color = scene.AccentColor;
         }
 
@@ -482,7 +562,7 @@ public class HearthCompanionHudController : MonoBehaviour
             StartCenterMessageTimer(scene);
         }
 
-        RefreshVisibilityFromViewMode();
+        ApplyRootVisibility();
         PlayOneShot(sceneChangedClip);
 
         if (sceneShown != null)
@@ -552,6 +632,51 @@ public class HearthCompanionHudController : MonoBehaviour
         if (holdPrompt != null)
         {
             holdPrompt.SetController(this);
+        }
+
+        if (companionInteraction == null)
+        {
+            PlayerInteraction[] interactions =
+                FindObjectsOfType<PlayerInteraction>(true);
+            for (int i = 0; i < interactions.Length; i++)
+            {
+                if (interactions[i] != null &&
+                    interactions[i].gameObject.scene == gameObject.scene &&
+                    interactions[i].name == "Robot Controller")
+                {
+                    companionInteraction = interactions[i];
+                    break;
+                }
+            }
+        }
+    }
+
+    private void SuspendShortPressInteractionForHold()
+    {
+        ResolveReferences();
+        if (shortPressInteractionSuspendedByHold || companionInteraction == null)
+        {
+            return;
+        }
+
+        shortPressInteractionEnabledBeforeHold =
+            companionInteraction.InteractionEnabled;
+        shortPressInteractionSuspendedByHold = true;
+        companionInteraction.SetInteractionEnabled(false);
+    }
+
+    private void RestoreShortPressInteractionAfterHold()
+    {
+        if (!shortPressInteractionSuspendedByHold)
+        {
+            return;
+        }
+
+        shortPressInteractionSuspendedByHold = false;
+        if (companionInteraction != null)
+        {
+            companionInteraction.SetInteractionEnabled(
+                shortPressInteractionEnabledBeforeHold);
         }
     }
 
@@ -657,19 +782,9 @@ public class HearthCompanionHudController : MonoBehaviour
         }
     }
 
-    private void RefreshVisibilityFromViewMode()
+    private void ApplyRootVisibility()
     {
-        bool allowedByMode = true;
-        if (visibleOnlyInCompanionView)
-        {
-            ResolveReferences();
-            if (viewSwitchController != null)
-            {
-                allowedByMode = viewSwitchController.CurrentMode == ViewSwitchController.ViewMode.Companion;
-            }
-        }
-
-        bool visible = explicitVisibility && allowedByMode;
+        bool visible = explicitVisibility && coordinatorPresentationVisible;
 
         if (rootCanvasGroup != null)
         {

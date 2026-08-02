@@ -107,7 +107,9 @@ public static class HearthHudPrefabBuilder
         controller.Configure(canvas, scaler, persistentLayer, panelLayer, fullscreenLayer, subtitleLayer, debugLayer, persistentView, pageInstances.ToArray());
 
         HearthHudPreviewInput previewInput = root.GetComponent<HearthHudPreviewInput>();
-        previewInput.SetPreviewInputEnabled(true);
+        // Preview shortcuts are opt-in QA controls. Generated gameplay HUDs
+        // must not consume number keys during a normal play-through.
+        previewInput.SetPreviewInputEnabled(false);
 
         return root;
     }

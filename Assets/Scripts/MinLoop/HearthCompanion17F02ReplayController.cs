@@ -157,12 +157,17 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
 
     [Header("Story SFX")]
     [SerializeField] private HearthSfxCuePlayer sfxCuePlayer;
+    [SerializeField] private string wifeSitCueId = "Wife.SitOnBed";
     [SerializeField] private string wifeStandCueId = "Wife.StandUp";
     [SerializeField] private string wifeWalkCueId = "Wife.Walk";
+    [SerializeField] private string bedroomJazzCueId = "Bedroom.Jazz";
     [SerializeField] private string diningFoleyCueId = "Dining.TableFoley";
     [SerializeField] private string dataScanCueId = "System.DataScan";
+    [SerializeField] private string bathroomShowerCueId = "Bathroom.Shower";
     [SerializeField] private string glitchCueId = "System.Glitch";
     [SerializeField] private string powerOffCueId = "System.PowerOff";
+    [SerializeField] private string blackFridgeCueId = "BlackAudio.Fridge";
+    [SerializeField] private string blackTrafficCueId = "BlackAudio.Traffic";
 
     [Header("Runtime")]
     [SerializeField] private ReplayStep currentStep = ReplayStep.Inactive;
@@ -353,6 +358,7 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
 
         currentStep = ReplayStep.BedroomWake;
         onBedroomWakeStarted.Invoke();
+        PlayStorySfx(wifeSitCueId);
         SetBlackoutAlpha(1f);
 
         if (initialBlackSeconds > 0f)
@@ -456,6 +462,7 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
         currentStep = ReplayStep.LivingRoomTerminal;
         onLivingRoomTerminalStarted.Invoke();
         PlayStorySfx(dataScanCueId);
+        StartStorySfxLoop(bathroomShowerCueId);
         SetStageActors(false, false, true);
         PlayActorLoopOrPose(terminalHusbandAnimation, terminalHusbandAnimationId, terminalHusbandPose, terminalHusbandPoseId);
         TeleportRobot(livingRoomTerminalAnchor, livingRoomTerminalCameraAnchor);
@@ -470,6 +477,7 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
         }
 
         currentStep = ReplayStep.ForcedShutdown;
+        StopStorySfx(bathroomShowerCueId);
         onForcedShutdownStarted.Invoke();
         shutdownConfirmed = false;
         ShowHudScene(forcedShutdownSceneId, waitForShutdownConfirmation);
@@ -499,8 +507,12 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
         PlayStorySfx(powerOffCueId);
 
         currentStep = ReplayStep.BlackAudio;
+        StartStorySfxLoop(blackFridgeCueId);
+        StartStorySfxLoop(blackTrafficCueId);
         ShowHudScene(blackAudioSceneId, false);
         yield return PlayDialogue(blackAudioSequence);
+        StopStorySfx(blackFridgeCueId);
+        StopStorySfx(blackTrafficCueId);
 
         if (waitBeforeReturnSeconds > 0f)
         {
@@ -851,6 +863,7 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
 
     private IEnumerator PlayBedroomTalkingAndComfort()
     {
+        StartStorySfxLoop(bedroomJazzCueId);
         float animationSeconds = PlayActorOnce(bedroomWifeAnimation, bedroomWifeTalkingAnimationId);
         float maxSeconds = ResolveBedroomTalkingMaxSeconds(animationSeconds);
         bool waitFullLength = bedroomTalkingMaxSeconds <= 0f;
@@ -891,6 +904,7 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
         }
 
         StopActorAndHold(bedroomWifeAnimation);
+        StopStorySfx(bedroomJazzCueId);
     }
 
     private static bool BedroomTalkingWaitIsDone(

@@ -57,7 +57,13 @@ public class HearthLocationHudView : MonoBehaviour
         holdWhenLost = Mathf.Max(0f, holdWhenLost);
         blurStartScale = Mathf.Max(1f, blurStartScale);
         glowAlpha = Mathf.Clamp01(glowAlpha);
-        ApplyStyle();
+        // RectTransform writes from OnValidate can dispatch TMP dimension
+        // callbacks during Unity's consistency pass. Runtime Awake and the
+        // explicit editor Configure path both apply the same style safely.
+        if (Application.isPlaying)
+        {
+            ApplyStyle();
+        }
     }
 
     public void ShowLocation(string label)
@@ -161,6 +167,27 @@ public class HearthLocationHudView : MonoBehaviour
         if (show && canvasGroup != null)
         {
             canvasGroup.gameObject.SetActive(true);
+        }
+
+        // The V2 preview and the central UI coordinator can suppress the
+        // complete Human HUD while a different base view is active. A child
+        // under that inactive hierarchy cannot own a coroutine, so commit the
+        // requested state immediately and let the next visible presentation
+        // animate normally.
+        if (!isActiveAndEnabled || !gameObject.activeInHierarchy)
+        {
+            StopRoutines();
+            visible = show || keepVisibleWhenHidden;
+            if (canvasGroup != null)
+            {
+                canvasGroup.alpha = visible ? 1f : 0f;
+                canvasGroup.gameObject.SetActive(visible);
+            }
+
+            transform.localScale = Vector3.one;
+            SetLocationValueAlpha(1f);
+            SetGlowAlpha(0f);
+            return;
         }
 
         if (transitionRoutine != null)

@@ -134,7 +134,7 @@ public class HearthLobbyHudOverlay : MonoBehaviour
             64f,
             150f,
             540f,
-            142f);
+            300f);
         SetTopRight(
             pinnedMessageGroup != null
                 ? pinnedMessageGroup.transform as RectTransform

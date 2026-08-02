@@ -15,75 +15,110 @@ MonoBehaviour:
   sequenceId: Lobby_ElevatorRide
   notes: 'Elevator briefing before arrival on floor 17. Source: HEARTH_Full_Game_Script_No_Audio_Tags_Native_English.md,
     stable marker Lobby_ElevatorRide. Text is synchronized by Tools/Hearth/Dialogue/Sync
-    All Dialogue From Final Script.'
+    All Dialogue From Final Script. Playback policy HEARTH_V2_DIALOGUE_POLICY_2026_08_01.'
+  dialogueChannel: 0
+  defaultSpeakerSide: 0
+  advancePolicy: 0
   lines:
-  - presentationKind: 0
+  - lineId: Lobby_ElevatorRide_FieldUnit_001
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.15
     speaker: Field Unit
     text: Inspector, before we reach seventeen, I'll give you a brief overview. Procedure
       first, then I'll guide you into the route.
     holdSeconds: 8.697169
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 563a0fadc7f814749982204f97fd0c2e, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: Lobby_ElevatorRide_Mia_001
+    presentationKind: 2
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 2
     startDelay: 0.18
     speaker: Mia
     text: Go ahead.
     holdSeconds: 2.2
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 55b39e39f490ab34793a7194cd9ab25c, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: Lobby_ElevatorRide_FieldUnit_002
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: Field Unit
     text: Every inspection has three steps. First, read the household file at the
       corridor terminal.
     holdSeconds: 6.4330187
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: c8746da604dcd934a813d079247cdff3, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: Lobby_ElevatorRide_FieldUnit_003
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: Field Unit
     text: Second, enter the household unit's point of view and replay the event under
       review.
     holdSeconds: 6.4330187
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 66e84715081227847a470a21a6da42fb, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: Lobby_ElevatorRide_FieldUnit_004
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: Field Unit
     text: Third, select a disposition. Your decision changes how the unit is used
       and may affect the Household Emotional Stability Index.
     holdSeconds: 8.697169
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: d40ea315481b30c47814da8c5988f5ed, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: Lobby_ElevatorRide_Mia_002
+    presentationKind: 2
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 2
     startDelay: 0.18
     speaker: Mia
-    text: And you'll tell me which disposition you prefer.
+    text: And you'll tell me which one you'd pick.
     holdSeconds: 4.1688676
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 46bbe71e05273d3478aed6a11ffa9430, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: Lobby_ElevatorRide_FieldUnit_005
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: Field Unit
-    text: "Of course. Every recommendation comes from the inspection manual\u2014the
-      company's standard answer."
-    holdSeconds: 5.678302
-    voiceClip: {fileID: 0}
+    text: "Of course. Every recommendation comes straight from the manual\u2014the
+      company line."
+    holdSeconds: 5.3009434
+    voiceClip: {fileID: 8300000, guid: 1ae881c21b88ef149a00abef5cffa4d8, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: Lobby_ElevatorRide_Mia_003
+    presentationKind: 2
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 2
     startDelay: 0.18
     speaker: Mia
     text: Understood. I'll still make my own call.
     holdSeconds: 3.7915094
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 9ad1e87899f3e4e4aac3618c9e32d8ae, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
   postSequenceDelay: 0.18

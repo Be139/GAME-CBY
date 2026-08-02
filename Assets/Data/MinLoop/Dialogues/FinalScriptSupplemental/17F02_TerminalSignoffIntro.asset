@@ -15,51 +15,74 @@ MonoBehaviour:
   sequenceId: 17F02_TerminalSignoffIntro
   notes: '17F02 terminal recommendation. Source: HEARTH_Full_Game_Script_No_Audio_Tags_Native_English.md,
     stable marker 17F02_TerminalSignoffIntro. Text is synchronized by Tools/Hearth/Dialogue/Sync
-    All Dialogue From Final Script.'
+    All Dialogue From Final Script. Playback policy HEARTH_V2_DIALOGUE_POLICY_2026_08_01.'
+  dialogueChannel: 0
+  defaultSpeakerSide: 0
+  advancePolicy: 0
   lines:
-  - presentationKind: 0
+  - lineId: 17F02_TerminalSignoffIntro_FieldUnit_001
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.15
     speaker: Field Unit
     text: Inspector, this household's Emotional Stability Index has fallen below
       the warning threshold.
     holdSeconds: 5.678302
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: fb363f8a513a7d54ca37a97dc50a1860, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: 17F02_TerminalSignoffIntro_FieldUnit_002
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: Field Unit
-    text: Based on the current pattern, without outside companion support, Ben and
-      Claire are likely to separate within two weeks.
-    holdSeconds: 8.319811
-    voiceClip: {fileID: 0}
+    text: At the current trajectory, without companion support, Ben and Claire are
+      projected to separate within two weeks.
+    holdSeconds: 7.565094
+    voiceClip: {fileID: 8300000, guid: 661c21ec264a21942ad7658ccb159bab, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: 17F02_TerminalSignoffIntro_FieldUnit_003
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: Field Unit
     text: The inspection manual recommends remotely restarting the unit and launching
       the partner-repair module. That significantly reduces the projected risk.
     holdSeconds: 8.319811
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 40f2eacb8afcb864ab3bd08a1186f9fc, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: 17F02_TerminalSignoffIntro_FieldUnit_004
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: Field Unit
     text: Keeping the unit offline is also permitted. Ben and Claire would handle
       the next several days themselves, but comparable cases show a lower stabilization
       rate.
     holdSeconds: 10.5839615
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 5262c3213163f03489fe22d02381f06b, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: 17F02_TerminalSignoffIntro_FieldUnit_005
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: Field Unit
     text: Select a disposition, Inspector.
     holdSeconds: 2.6594338
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: a5d7ad314f2af4540933f1aec5ca66ab, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
   postSequenceDelay: 0.18

@@ -15,41 +15,60 @@ MonoBehaviour:
   sequenceId: 17F02_BedroomConfide
   notes: '17F02 companion-mode decision and Claire''s account. Source: HEARTH_Full_Game_Script_No_Audio_Tags_Native_English.md,
     stable marker 17F02_BedroomConfide. Text is synchronized by Tools/Hearth/Dialogue/Sync
-    All Dialogue From Final Script.'
+    All Dialogue From Final Script. Playback policy HEARTH_V2_DIALOGUE_POLICY_2026_08_01.'
+  dialogueChannel: 0
+  defaultSpeakerSide: 0
+  advancePolicy: 0
   lines:
-  - presentationKind: 0
+  - lineId: 17F02_BedroomConfide_17F02SynthVoice_001
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.15
     speaker: 17F-02 Synth Voice
     text: 'Decision: open companion mode. Reason: Claire is a high-frequency confidant
       and unreleased stress is present.'
     holdSeconds: 6.810377
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 7176dec50d32b3e4bba50a4f2aff2f83, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: 17F02_BedroomConfide_17F02HomeUnit_001
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: 17F-02 Home Unit
     text: How'd today go?
     holdSeconds: 2.2820754
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 1016c7bfbb8715c4c8412fd12dc8cb88, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: 17F02_BedroomConfide_Claire_001
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: Claire
     text: My manager called me out again, in front of everybody. Same thing as last
       week. He said my numbers weren't 'presentation-ready.' I almost snapped at
       him. I mean, I really almost did.
     holdSeconds: 12
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 110703c9792176f4fb53776724d8674c, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: 17F02_BedroomConfide_Claire_002
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: Claire
     text: I just stood there and took it, and I'm still furious.
     holdSeconds: 5.3009434
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: b21899548c4ad13439bdcefe7d77612f, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
   postSequenceDelay: 0.18

@@ -18,9 +18,10 @@ public class HearthCompanionSpecialEffectsView : MonoBehaviour
     [SerializeField] private bool useUnscaledTime = true;
     [SerializeField] private float fadeSeconds = 0.2f;
 
-    [Header("Centered Layout")]
+    [Header("Reference Layout")]
     [SerializeField] private bool enforceHorizontalCenter = true;
     [SerializeField] private float referenceCanvasWidth = 1920f;
+    [SerializeField] private float referenceCanvasHeight = 1080f;
 
     private Coroutine activeRoutine;
 
@@ -38,7 +39,7 @@ public class HearthCompanionSpecialEffectsView : MonoBehaviour
     {
         fadeSeconds = Mathf.Max(0.01f, fadeSeconds);
         referenceCanvasWidth = Mathf.Max(1f, referenceCanvasWidth);
-        ApplyCenteredLayout();
+        referenceCanvasHeight = Mathf.Max(1f, referenceCanvasHeight);
     }
 
     public void Configure(
@@ -201,28 +202,45 @@ public class HearthCompanionSpecialEffectsView : MonoBehaviour
             return;
         }
 
-        CenterRect(titleText != null ? titleText.rectTransform : null);
-        CenterRect(bodyText != null ? bodyText.rectTransform : null);
-        CenterRect(statusText != null ? statusText.rectTransform : null);
-        CenterRect(pulseImage != null ? pulseImage.rectTransform : null);
+        ApplyTopLeftRect(
+            titleText != null ? titleText.rectTransform : null,
+            new Rect(520f, 300f, 880f, 64f));
+        ApplyTopLeftRect(
+            bodyText != null ? bodyText.rectTransform : null,
+            new Rect(560f, 374f, 800f, 160f));
+        ApplyTopLeftRect(
+            statusText != null ? statusText.rectTransform : null,
+            new Rect(620f, 552f, 680f, 42f));
+        ApplyTopLeftRect(
+            pulseImage != null ? pulseImage.rectTransform : null,
+            new Rect(760f, 608f, 400f, 2f));
         ConfigureContainedText(titleText);
         ConfigureContainedText(bodyText);
         ConfigureContainedText(statusText);
     }
 
-    private void CenterRect(RectTransform rect)
+    private void ApplyTopLeftRect(RectTransform rect, Rect referenceRect)
     {
         if (rect == null)
         {
             return;
         }
 
-        Vector2 position = rect.anchoredPosition;
+        RectTransform parent = rect.parent as RectTransform;
+        Vector2 parentSize = parent != null && parent.rect.width > 1f
+            ? parent.rect.size
+            : new Vector2(referenceCanvasWidth, referenceCanvasHeight);
+        float scaleX = parentSize.x / referenceCanvasWidth;
+        float scaleY = parentSize.y / referenceCanvasHeight;
         rect.anchorMin = new Vector2(0f, 1f);
         rect.anchorMax = new Vector2(0f, 1f);
         rect.pivot = new Vector2(0f, 1f);
-        position.x = (referenceCanvasWidth - rect.sizeDelta.x) * 0.5f;
-        rect.anchoredPosition = position;
+        rect.anchoredPosition = new Vector2(
+            referenceRect.x * scaleX,
+            -referenceRect.y * scaleY);
+        rect.sizeDelta = new Vector2(
+            referenceRect.width * scaleX,
+            referenceRect.height * scaleY);
     }
 
     private static void ConfigureContainedText(TMP_Text text)

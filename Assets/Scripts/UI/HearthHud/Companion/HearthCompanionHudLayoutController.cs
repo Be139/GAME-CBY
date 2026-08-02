@@ -6,6 +6,7 @@ using UnityEngine;
 public class HearthCompanionHudLayoutController : MonoBehaviour
 {
     [SerializeField] private HearthCompanionHudLayoutProfile layoutProfile;
+    [SerializeField] private bool applyLegacyRelativeOffsets;
     [SerializeField] private RectTransform decisionRegion;
     [SerializeField] private RectTransform dataStreamRegion;
     [SerializeField] private TMP_Text[] sharedRegionTexts = new TMP_Text[0];
@@ -57,8 +58,17 @@ public class HearthCompanionHudLayoutController : MonoBehaviour
 
     public void ApplySharedLayout()
     {
-        if (layoutProfile == null)
+        if (layoutProfile == null || !applyLegacyRelativeOffsets)
         {
+            if (decisionRegion != null)
+            {
+                decisionRegion.localScale = Vector3.one;
+            }
+
+            if (dataStreamRegion != null)
+            {
+                dataStreamRegion.localScale = Vector3.one;
+            }
             return;
         }
 

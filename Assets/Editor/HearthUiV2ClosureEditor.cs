@@ -26,6 +26,8 @@ public static class HearthUiV2ClosureEditor
         VectorRoot + "Common/HUD_Common_ButtonFrame_320x72.png";
     private const string PanelFramePath =
         VectorRoot + "Common/HUD_Common_PanelFrame_520x320.png";
+    private const string StatusFramePath =
+        VectorRoot + "Common/HUD_Common_StatusFrame_520x240.png";
     private const string PromptFramePath =
         VectorRoot +
         "Interaction/HUD_Interaction_GazePromptFrame_520x128.png";
@@ -86,6 +88,10 @@ public static class HearthUiV2ClosureEditor
         ApplyTerminal(
             TerminalFolder + "Terminal_17F04_Home_V2.prefab",
             HearthTerminalMode.Home);
+        // The approved closure predates the final V2 visual repair. Normalize
+        // its output through the current authoritative layout so rerunning
+        // this compatibility menu cannot restore retired terminal chrome.
+        HearthUiV2FinalVisualRepairEditor.ApplyAll();
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
         Debug.Log(
@@ -236,22 +242,22 @@ public static class HearthUiV2ClosureEditor
         ValidateTerminalPrefab(
             TerminalFolder + "Terminal_17F01_V2.prefab",
             HearthTerminalMode.Doorway,
-            true,
+            false,
             issues);
         ValidateTerminalPrefab(
             TerminalFolder + "Terminal_17F02_V2.prefab",
             HearthTerminalMode.Doorway,
-            true,
+            false,
             issues);
         ValidateTerminalPrefab(
             TerminalFolder + "Terminal_17F03_Alert_V2.prefab",
             HearthTerminalMode.Doorway,
-            true,
+            false,
             issues);
         ValidateTerminalPrefab(
             TerminalFolder + "Terminal_17F04_Home_V2.prefab",
             HearthTerminalMode.Home,
-            true,
+            false,
             issues);
         ValidateSubtitlePrefab(issues);
 
@@ -431,10 +437,10 @@ public static class HearthUiV2ClosureEditor
 
                 SetTopLeft(
                     FindRect(root.transform, "V2_StatusPanel"),
-                    64f,
-                    294f,
+                    52f,
+                    160f,
                     520f,
-                    250f);
+                    240f);
                 SetTopRight(
                     FindRect(root.transform, "DecisionPanel"),
                     64f,
@@ -444,13 +450,52 @@ public static class HearthUiV2ClosureEditor
                 ApplyOverlayFrame(
                     FindRect(root.transform, "V2_StatusPanel"),
                     "V2_VectorPanelFrame",
-                    PanelFramePath,
+                    StatusFramePath,
                     LowSaturationBlue);
                 ApplyOverlayFrame(
                     FindRect(root.transform, "DecisionPanel"),
                     "V2_VectorPanelFrame",
                     PanelFramePath,
                     LowSaturationBlue);
+                RectTransform trigger =
+                    FindRect(root.transform, "TriggerCardView");
+                SetTopLeft(trigger, 52f, 160f, 520f, 240f);
+                ApplyOverlayFrame(
+                    trigger,
+                    "V2_VectorTriggerFrame",
+                    StatusFramePath,
+                    LowSaturationBlue);
+                SetNamedActive(trigger, "TriggerCardAccent", false);
+                SetNamedActive(trigger, "V2_TriggerRule", false);
+                SetNamedActive(trigger, "V2_Backplate", false);
+                TMP_Text triggerTitle =
+                    FindText(trigger, "TriggerCardTitleText");
+                TMP_Text triggerBody =
+                    FindText(trigger, "TriggerCardBodyText");
+                SetTopLeft(
+                    triggerTitle != null ? triggerTitle.rectTransform : null,
+                    24f,
+                    20f,
+                    472f,
+                    34f);
+                SetTopLeft(
+                    triggerBody != null ? triggerBody.rectTransform : null,
+                    24f,
+                    70f,
+                    472f,
+                    150f);
+                ConfigureText(
+                    triggerTitle,
+                    20f,
+                    TextAlignmentOptions.TopLeft,
+                    LowSaturationBlue,
+                    FontStyles.Bold);
+                ConfigureText(
+                    triggerBody,
+                    18f,
+                    TextAlignmentOptions.TopLeft,
+                    ColdWhite,
+                    FontStyles.Normal);
                 ApplyCompanionPanelSafeAreas(root.transform);
                 SetTopCenter(
                     FindRect(root.transform, "CenterMessageText"),
@@ -563,6 +608,29 @@ public static class HearthUiV2ClosureEditor
                 changed = true;
             }
 
+            RectTransform status =
+                FindRect(controller.transform, "V2_StatusPanel");
+            if (status != null)
+            {
+                SetTopLeft(status, 52f, 160f, 520f, 240f);
+                PrefabUtility.RecordPrefabInstancePropertyModifications(
+                    status);
+                changed = true;
+            }
+
+            RectTransform trigger =
+                FindRect(controller.transform, "TriggerCardView");
+            if (trigger != null)
+            {
+                SetTopLeft(trigger, 52f, 160f, 520f, 240f);
+                SetNamedActive(trigger, "TriggerCardAccent", false);
+                SetNamedActive(trigger, "V2_TriggerRule", false);
+                SetNamedActive(trigger, "V2_Backplate", false);
+                PrefabUtility.RecordPrefabInstancePropertyModifications(
+                    trigger);
+                changed = true;
+            }
+
             ApplyCompanionPanelSafeAreas(controller.transform);
 
             if (changed)
@@ -639,14 +707,12 @@ public static class HearthUiV2ClosureEditor
             }
 
             SerializedObject serialized = new SerializedObject(interactable);
-            SerializedProperty size =
-                serialized.FindProperty("archiveRenderTextureSize");
-            if (size == null)
+            SerializedProperty useSecondUi =
+                serialized.FindProperty("useSecondUiPhotoArchive");
+            if (useSecondUi != null)
             {
-                continue;
+                useSecondUi.boolValue = false;
             }
-
-            size.vector2IntValue = new Vector2Int(1280, 720);
             serialized.ApplyModifiedPropertiesWithoutUndo();
             PrefabUtility.RecordPrefabInstancePropertyModifications(
                 interactable);
@@ -1139,11 +1205,33 @@ public static class HearthUiV2ClosureEditor
             "Slide10_ShutdownConfirm",
             "V2_ShutdownModalFrame",
             ShutdownFramePath,
-            600f,
-            248f,
-            720f,
-            420f,
+            555f,
+            222f,
+            810f,
+            620f,
             LowSaturationBlue);
+
+        Transform shutdownPage =
+            FindNamed(root, "Slide10_ShutdownConfirm");
+        if (shutdownPage != null)
+        {
+            SetNamedActive(shutdownPage, "Button_CANCEL", false);
+            SetNamedActive(shutdownPage, "Text_007_CANCEL", false);
+            SetNamedRectsTopLeft(
+                shutdownPage,
+                "Button_CONFIRM",
+                630f,
+                686f,
+                660f,
+                106f);
+            SetNamedRectsTopLeft(
+                shutdownPage,
+                "Text_005_CONFIRM",
+                690f,
+                712f,
+                540f,
+                54f);
+        }
 
         ApplyPageFrame(
             root,
@@ -1278,13 +1366,15 @@ public static class HearthUiV2ClosureEditor
 
     private static void ApplyTerminalTextContrast(Transform root)
     {
+        Transform terminalChrome =
+            FindNamed(root, "V2_ClosureTerminalChrome");
         TMP_Text[] texts = root.GetComponentsInChildren<TMP_Text>(true);
         for (int i = 0; i < texts.Length; i++)
         {
             TMP_Text text = texts[i];
             if (text == null ||
-                text.transform.IsChildOf(
-                    FindNamed(root, "V2_ClosureTerminalChrome")))
+                (terminalChrome != null &&
+                 text.transform.IsChildOf(terminalChrome)))
             {
                 continue;
             }
@@ -1352,6 +1442,10 @@ public static class HearthUiV2ClosureEditor
                     0.28f);
             focusImage.raycastTarget = false;
         }
+        if (focus != null)
+        {
+            focus.gameObject.SetActive(false);
+        }
 
         HearthFirstPersonHudInput input =
             root.GetComponentInChildren<HearthFirstPersonHudInput>(true);
@@ -1378,6 +1472,7 @@ public static class HearthUiV2ClosureEditor
             560f,
             48f);
         SetNamedRectsTopLeft(page, "V2_FinalChoiceRuleA", 480f, 350f, 4f, 112f);
+        SetNamedActive(page, "V2_FinalChoiceRuleA", false);
         SetNamedRectsTopLeft(
             page,
             "V2_FinalChoiceRecommended",
@@ -1403,6 +1498,7 @@ public static class HearthUiV2ClosureEditor
             720f,
             48f);
         SetNamedRectsTopLeft(page, "V2_FinalChoiceRuleB", 480f, 486f, 4f, 112f);
+        SetNamedActive(page, "V2_FinalChoiceRuleB", false);
         SetNamedRectsTopLeft(page, "V2_FinalChoiceRule", 432f, 310f, 1056f, 2f);
 
         ConfigureText(
@@ -1432,22 +1528,46 @@ public static class HearthUiV2ClosureEditor
             ColdWhite,
             FontStyles.Normal);
 
-        TintNamedImage(
-            page,
-            "ShapeFill_001",
-            new Color(
-                DeepBlueBlack.r,
-                DeepBlueBlack.g,
-                DeepBlueBlack.b,
-                0.72f));
-        TintNamedImage(
-            page,
-            "ShapeFill_004",
-            new Color(
-                DeepBlueBlack.r,
-                DeepBlueBlack.g,
-                DeepBlueBlack.b,
-                0.72f));
+        SetNamedActive(page, "ShapeFill_001", false);
+        SetNamedActive(page, "ShapeFill_004", false);
+        EnsureChoiceSelectionFill(page, "Button_ANSWER_LILY");
+        EnsureChoiceSelectionFill(page, "Button_COMPANION_ANSWER");
+    }
+
+    private static void EnsureChoiceSelectionFill(
+        Transform page,
+        string buttonName)
+    {
+        RectTransform button = FindRect(page, buttonName);
+        if (button == null)
+        {
+            return;
+        }
+
+        if (button.GetComponent<RectMask2D>() == null)
+        {
+            button.gameObject.AddComponent<RectMask2D>();
+        }
+
+        Transform existing = button.Find("SelectionFill");
+        Image selection =
+            existing != null ? existing.GetComponent<Image>() : null;
+        if (selection == null)
+        {
+            selection = CreateImage(
+                button,
+                "SelectionFill",
+                new Color(
+                    LowSaturationBlue.r,
+                    LowSaturationBlue.g,
+                    LowSaturationBlue.b,
+                    0.22f));
+        }
+
+        SetStretch(selection.rectTransform, 8f, 8f, 8f, 8f);
+        selection.raycastTarget = false;
+        selection.transform.SetAsFirstSibling();
+        selection.gameObject.SetActive(false);
     }
 
     private static void ApplyKeycapSizing(Transform root)
@@ -2006,6 +2126,11 @@ public static class HearthUiV2ClosureEditor
         string name,
         bool active)
     {
+        if (root == null)
+        {
+            return;
+        }
+
         Transform[] transforms = root.GetComponentsInChildren<Transform>(true);
         for (int i = 0; i < transforms.Length; i++)
         {

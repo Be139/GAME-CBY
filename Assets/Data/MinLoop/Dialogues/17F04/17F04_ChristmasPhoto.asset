@@ -14,22 +14,33 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   sequenceId: 17F04_ChristmasPhoto
   notes: Mandatory Christmas photo inspection at TV (4).
+  dialogueChannel: 0
+  defaultSpeakerSide: 0
+  advancePolicy: 0
   lines:
-  - presentationKind: 0
+  - lineId: 17F04_ChristmasPhoto_FieldUnit_001
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.15
     speaker: Field Unit
     text: This was Christmas 2044. You took half a day off and came home for dinner.
       Lily was seven.
     holdSeconds: 7.9424524
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 1964588c98ceddc42b98fe9e646c6f4f, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: 17F04_ChristmasPhoto_FieldUnit_002
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: Field Unit
-    text: You're both looking at the camera. You're both smiling.
-    holdSeconds: 4.5462265
-    voiceClip: {fileID: 0}
+    text: You're both looking at the camera. Both smiling.
+    holdSeconds: 4.1688676
+    voiceClip: {fileID: 8300000, guid: b8ae7a25fac0e3849860d5b9bc176690, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
   postSequenceDelay: 0.18

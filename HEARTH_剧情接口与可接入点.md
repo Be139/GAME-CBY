@@ -281,10 +281,10 @@
 ### 正式流程入口
 
 - 总控制器：`MIN_LOOP_ROOT/LobbyOpening/HearthLobbyFlowController`。
-- `BeginOpening()`：把正式米娅放到 `Person Controller (4)` 锚点，锁定移动和视角并播放开场。
-- `TryPlayOptionalConversation(...)`：播放任一大堂可选对白；播放时只锁移动，保留鼠标视角。
-- `TryPlayExitCommentary(...)`：NPC 对话完成并离开 Trigger 后播放 Mia 感想；播放时不锁移动和视角。
-- `AcquireAssignmentFromTerminal()`：在同步终端按 Space 后领取任务。成功领取后终端本轮永久不可再次打开；终端关闭后的任务说明对白期间允许移动和转头，但 E 交互保持关闭，电梯会等说明全部结束后才开放。
+- `BeginOpening()`：把正式米娅放到 `Person Controller (4)` 锚点，锁定移动和普通交互、保留鼠标观察，并自动播放开场。
+- `TryPlayOptionalConversation(...)`：玩家进入任一大堂可选对白范围后，使用短按 `1` 开始；播放时锁移动、保留鼠标视角，Field Unit/NPC 与 Mia 按语音长度自动接续，不需要 Space。
+- `TryPlayExitCommentary(...)`：NPC 对话完成并离开 Trigger 后自动播放 Mia 感想；播放时不锁移动和视角，字幕按语音长度自动结束。
+- `AcquireAssignmentFromTerminal()`：在同步终端按 Space 后领取任务。成功领取后终端本轮永久不可再次打开；终端关闭后的任务说明属于固定剧情，移动、视角与 E 全部保持锁定，直到 Field Unit/Mia 全部讲完才开放电梯。
 - `BeginElevatorRide()`：渐黑进入 `Person Controller (5)` 电梯锚点，播放对白，再抵达 17 楼。
 - `ResetLobbyFlowForPreview()`：清空本轮状态，供 Play Mode 反复测试。
 - 事件接口：`onOpeningCompleted`、`onAssignmentLoaded`、`onElevatorEntered`、`onFloor17Arrived`。
@@ -293,6 +293,7 @@
 
 - 触发脚本为 `HearthLobbyConversationZone`，挂在 `space / space1 / space2` 的 Trigger Collider 上。
 - 每个范围包含 `Exchange Sequence` 与 `Exit Commentary Sequence`：前者在区域内播放 NPC 对话，后者在对话完成且玩家离开区域后播放 Mia 感想。
+- 范围内提示由 `PlayerInteraction.SetProximityInteraction(...)` 显示为 `1  TALK`；只响应 `KeyDown Alpha1`，不是长按。`HearthCompanionHoldPrompt` 中的固定剧情操作仍保留长按 `1`，两类输入不能混用。
 - 不要求三组全部完成，也不决定终端是否可用。若上一段感想仍在播放，下一组 NPC 对话会等待共享字幕播放器空闲。
 - 调整范围只需移动或缩放对应 Collider。NPC 位置、朝向和动作不由该脚本修改。
 - `Play Once` 默认开启；需要重新测试时调用 `ResetConversation()` 或重置整个 Lobby Flow。
@@ -302,7 +303,7 @@
 - 终端交互脚本：`HearthLobbyTaskTerminalInteractable`，复用 `HearthTvTerminalController` 的蓝色 E 提示、0.5 秒镜头平移、开机闪烁和 Space 主操作。
 - 任务终端启用 `Hide Canvas When Closed`：关闭时整个 World Space Canvas 不渲染；E 打开时才启用。`TaskTerminalScreenAnchor` 控制 Canvas 与实体屏幕的相对位置、朝向和大小，Lobby Apply 不覆盖终端 Camera。
 - 一次性规则：成功按 Space 后 `AssignmentLoaded = true`，`CanOpenAssignmentTerminal` 永久返回 `false`，终端不再显示 E。若玩家在尚未确认任务时误按 Esc，仍允许重新打开，避免本轮流程软锁。
-- 任务说明对白期间：米娅 Movement/Look 保持开启，`PlayerInteraction` 暂时关闭；因此可以在大厅走动和观察，但不能提前触发电梯或其他 E 交互。
+- 任务说明对白期间：米娅 Movement/Look、`PlayerInteraction`、Tab 与其他辅助输入全部锁定；对白结束后一次性恢复并把 Current Task 更新为 `GO TO THE ELEVATOR`。
 - 电梯交互脚本：`HearthLobbyElevatorInteractable`，实现 `IInteractionAvailability`；只有 `AssignmentLoaded = true`、任务说明播放完毕且流程不忙时才显示 E。
 - 一楼终端 Prefab：`Assets/Prefabs/UI/HearthHud/Terminals/Terminal_Lobby_Assignment.prefab`。
 - 调整 `Person Controller (4)/(5)` 后，运行时会直接读取其位置与摄像机朝向；不需要重新执行绑定菜单。
@@ -498,3 +499,110 @@
 - 剧情需要临时强制保留某个额外 Screen Space UI 时，可把该对象从终端自动发现命名中移除；需要额外隐藏时，把根对象加入终端的 `First Person Ui Roots To Hide`。
 - 陪伴单元共享布局仍由 `Hearth_CompanionHudLayout.asset` 控制；V2 Prefab 切换后由 `RecaptureBaselines()` 自动登记新版位置。
 - UI 主题切换不改变 Dialogue Asset、信任度、回放阶段或交互条件；剧情脚本引用由生成器自动重映射。
+
+## 最终配音逐句绑定接口（2026-08-01）
+
+- 游戏运行字幕仍以 `HEARTH_Full_Game_Script_No_Audio_Tags_Native_English.md` 为唯一同步入口；
+  项目内 `HEARTH_ElevenLabs_v3_API_Voice_Lines_Manual_Revision.jsonl` 是本轮配音定稿快照，
+  先通过 `Tools/Audio/sync_final_voice_subtitles.py` 更新正式 Markdown。
+- 每条正式对白使用 `HEARTH:VOICE <line_id>` 和 `MinLoopSubtitleLine.lineId` 贯通
+  Markdown、Dialogue Asset、`<line_id>.mp3`；后续禁止再用数组下标猜测语音归属。
+- 批量入口：`Tools > Hearth > Dialogue > Import Final Voice Collection And Bind Subtitles`；
+  校验入口：同目录 `Validate Final Voice Bindings`。当前基线为 330 个正文 Clip、394 个分支条目。
+- `HearthFinalDialogueSync` 重跑时优先按 Line ID 保留 Clip；带 Line ID 的句子不得自动拆成多个字幕条，
+  因为一个 MP3 只对应一个完整句子。
+- `Prologue_HEARTHCommercial` 与 `Lobby_OpeningBriefing_FieldUnit_002` 当前排除；启动流程仍直接进入
+  一楼大厅。若以后恢复宣传片，必须同时恢复这 8 条内容并重新检查大厅开场语境，不能只接回视频。
+- 17F04 照片语音的源序列虽统一为 `17F04_ChristmasPhoto`，运行时仍分别绑定到
+  `17F04_ChristmasPhoto / 17F04_SecondPhoto / 17F04_PhotoCompletion`，不要合并状态机。
+- 大厅自动开场会在其他场景组件完成 `Start()` 重置后的下一帧取得全局字幕播放器；其他系统若要
+  中断正式对白必须调用播放器 `Stop/Hide`，播放器会用内部代次令旧外部协程退出，不能直接停
+  AudioSource 或只隐藏 VisualRoot。
+
+## V2 逐行对白与世界空间 Surface 接口（2026-08-01 最新）
+
+### 逐行播放权威
+
+- `MinLoopSubtitleLine.lineId`：正式稿、Dialogue Asset、AudioClip 和播放策略的稳定主键。
+- `HearthDialoguePlaybackPolicy`：只登记少量自动 Mia、17F04 黑幕尾声和专用 Lily 留言；新增对白默认 ManualSpace。
+- `MinLoopSubtitlePlayer.PlaySequenceAsset(sequence)`：普通全局 V2 对白。
+- `PlaySequenceAsset(sequence, HearthDialoguePlaybackContext.Embedded(surface, context))`：普通终端/TV 下方框。
+- `Embedded(framedSurface, messageSurface, context)`：同一序列逐行在专用留言卡、普通终端框和全局 NaturalCaption 之间切换。
+- `HearthDialogueSurface` 只接收 `Show/HideImmediate`；音频、Space、时长和控制锁仍由唯一播放器负责，禁止 Surface 自行读键。
+
+### 正式同步与校验
+
+- `HearthFinalDialogueSync` 按 lineId 保留 `VoiceClip`、PresentationKind、DialogueMode、SpeakerSide、AdvancePolicy、StartDelay、HoldSeconds、DurationMode 和 VoiceTail。
+- 菜单顺序：`Sync All Dialogue From Final Script` → `Validate Final Script Coverage` → `Validate V2 Playback Policy`。
+- 运行时策略会即时纠正已登记行；资产同步后同一分类也会写回 Dialogue Asset，后续 Sync 不再覆盖。
+
+### 终端与 TV4
+
+- `HearthTvTerminalController.ResolveDialogueSurface()`：复用/补建 `FieldUnitPanel`。
+- `ResolveMessageSurface()`：复用/补建 `LilyMessagePanel`；只供 `DedicatedMessage` 行。
+- `SetPrimaryActionInputEnabled(false)` 与 `SetCloseInputEnabled(false)`：对白期间让渡 Space/关闭输入。
+- 一楼任务终端：`BeginAssignmentBriefingFromTerminal()` 在页面开启时播放；`ConfirmAssignmentTerminalClose()` 只在对白结束、Space 松开和门槛满足后生效。
+- `HearthPhotoFrameInteractable.ResolveDialogueSurface()`：取得 TV4 下 `HearthPhotoArchiveWorldView` 的下方框。
+- `HearthPhotoArchiveWorldView.Show/Hide/SetPage/SetHint`：只控制 TV4 世界空间 Chrome；实体 Renderer 继续负责照片，不需要 RenderTexture。
+
+### 交互与 Current Task
+
+- `PlayerInteraction.SetProximityInteraction(owner, interactable)` / `ClearProximityInteraction(owner)`：大厅触发区把短按 E 的唯一所有权交给玩家交互器。
+- `HearthCompanionHudController.SetHoldPromptVisible(true)`：显示 Hold E 时暂停 Robot 短按交互；隐藏、完成或 Disable 后恢复进入前状态。
+- `HearthCurrentTaskRouter.ApplyHuman/ApplyCompanion`：只写目标正文，不写按键。
+- `ResolveMinLoopTask(stage, residentId)`：住户主流程任务；`ResolveCompanionSceneTask(sceneId, fallback)`：陪伴视角任务；`ResolveHouseholdCompletionTask`：跨住户目标。
+
+### 17F04 任务节点
+
+- `BeginFromHomeTerminal`：ReviewLilyMessage，并用 Home Terminal 的 framed/message 两个 Surface 播放。
+- `BeginPhotoInspection/RequestPhotoPage/CompletePhotoInspection`：InspectPhotoArchive → GoToLilyRoom；照片对白使用 TV4 Surface。
+- `EnterDaughterRoom`：TalkToLily；对话结束进入 MakeFinalResponse。
+- `ChooseAnswerSelf`：结束后 ApproachHomeUnit；`BeginUnitShutdown`：ConfirmShutdown。
+- `EpilogueRoutine`：先清空 Current Task，再完全淡黑，随后才用 NaturalCaption + AudioComplete 播放结尾。
+
+### UI 修复工具约束
+
+- V2 Builder、Closure、Final Visual Repair 必须同步维护选择色块、关机确认、STATUS CHANGE、Field Unit 9-slice 和 TV4 世界空间入口。
+- 修复工具只可补缺失组件/引用；已有 Camera Anchor、Photo Camera、Renderer、TV 和终端 Transform 一律视为用户数据，不得写回默认坐标。
+- `PhotoExitHintCanvas`、`PhotoCameraFeed_V2`、Slide07/08 相册运行路径、旧 A/B 左线和高信任 Esc Cancel 均为退役接口，不得重新生成或绑定。
+
+## V2 最终落盘约束与校验状态（2026-08-02）
+
+- 终端 Surface 的有效作用域是“当前打开页面”，禁止从整个终端根跨页抓取隐藏的 `HearthDialogueSurface`；生成名固定为 `TerminalDialogueSurface_V2` / `TerminalMessageSurface_V2`。
+- TV4 世界空间 UI 必须对父层 `lossyScale` 做反向补偿；外观尺寸变化只改 `HearthPhotoArchiveWorldView` 的画布参数，不能重置用户 TV4、照片 Renderer、Photo Camera 或过渡锚点。
+- `HearthDialoguePlaybackPolicy` 与 Dialogue Asset 当前一致：98 份自动记录、两份专用 Lily 留言记录；Sync 后必须继续得到同一结果。394 份正式分支行均有非空 `lineId` 与 AudioClip。
+- 场景生产输入残留扫描只允许命中带构建保护的 `HearthHudPreviewInput` 和未引用第三方示例；正式脚本、Prefab、场景不得重新出现 Alpha1、Keypad1、`interactionKey: 49` 或 `useNumberOneForStoryHolds`。
+- 当前离线验证通过两套程序集编译、配音 330/330 对齐审计及目标差异检查。Unity MCP 编辑器心跳尚未恢复，菜单内 Sync/Coverage/Policy 与 Play Mode 画面验收必须在编辑器重启后补跑。
+
+## 正式音效维护与剧情接入接口（2026-08-02）
+
+### 三层稳定主键
+
+- `HearthSfxCatalog.SoundEntry.soundId`：素材层稳定键，例如 `AMB.Lobby.Walla`、`UI.HoldProgress`、`SYS.PowerOff`。
+- `HearthSfxCuePlayer.CueSlot.cueId`：剧情层稳定键，例如 `Lobby.Walla`、`BlackAudio.Fridge`、`Epilogue.PathA.Keys`；多个 Cue 可复用一个 Sound ID。
+- `HearthDialogueSfxTrack.CueAction`：精确时间层，使用 `sequenceId + lineId + action + cueId`，禁止用对白数组下标或文本模糊匹配。
+
+### 运行接口
+
+- 一次性：`HearthSfxCuePlayer.PlayCue/PlayCueOneShot(cueId)`。
+- 循环：`StartCueLoop(cueId)`；阶段结束 `StopCue(cueId)`；关卡取消或 Disable 调 `StopAllCues()`。
+- 局部覆盖：Cue 的 `Primary Clip / Alternate Clips` 优先于 Catalog；`SetCatalog()` 可替换整套目录。
+- 非破坏性片段：Cue 的 `Play From Seconds / Play Duration Seconds`；门使用 `SmartDoorController` 的 Open/Close Start/Duration。
+- 对白 Duck：`HearthAudioChannelSource.ConfigureDialogueDucking()`；全局状态来自 `MinLoopSubtitlePlayer.AnyDialoguePlaying`。
+- 逐行事件：`MinLoopSubtitlePlayer.LineStarted`、`SequenceCompleted`；新逐句 Foley 优先挂 `HearthDialogueSfxTrack`，不要改字幕协程。
+
+### 编辑器入口与落盘对象
+
+- 应用：`Tools > Hearth > Audio > Apply Production Story SFX Setup`。
+- 校验：`Tools > Hearth > Audio > Validate Production Story SFX Setup`。
+- 中央资产：`Assets/Audio/HEARTH/HearthSfxCatalog.asset`。
+- 场景播放器：`MIN_LOOP_ROOT/Audio/StorySFX_Global / Lobby / 17F01 / 17F02 / 17F03 / 17F04`。
+- 工具会绑定终端、Human HUD、Companion HUD、Hold E、FirstPersonAudio、SmartDoor 和 17F04 Epilogue Track，但不会移动 UI、相机、TV、演员或锚点。
+
+### 混音与扩展约束
+
+- Dialogue/Ambient/SFX 继续由 `HearthAudioSettingsController` 控制；环境层允许 Duck，UI 和关键 Foley 默认不 Duck。
+- 大厅 Walla 必须局部 3D、极低音量且不可听清具体句子；不得加入脚步、餐具、门、笑声或广播。
+- 陪伴脚步只用轻型履带/伺服质感；人类脚步和机器人移动声不得互换。
+- 无效操作与门锁拒绝保持静默；新增失败反馈前必须有新的体验要求。
+- 新场景顺序：Catalog 加 Sound ID → StorySFX 加 Cue → 状态机调用；只有需要逐句时才加 Dialogue Track。

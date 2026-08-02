@@ -31,6 +31,7 @@ public static class HearthEarlyHouseholdValidationTools
             issues,
             "robotRoot", "robotCamera", "robotMovement", "robotLook", "robotInteraction", "robotRigidbody",
             "childRoomStartAnchor", "livingRoomStartAnchor",
+            "livingRoomCameraAnchor",
             "approachBoyInteractable", "boyAnimation", "motherAnimation", "fatherAnimation");
         RequireDialogues(controller, issues, "bedroomPreludeSequence", "soothingSequence", "livingRoomSequence");
         RequireAnimationClip(controller, "boyAnimation", "boySleepAnimationId", issues);

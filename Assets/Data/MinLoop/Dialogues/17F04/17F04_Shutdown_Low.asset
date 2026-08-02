@@ -14,61 +14,92 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   sequenceId: 17F04_Shutdown_Low
   notes: Low-trust forced shutdown after clearing the virus popup challenge.
+  dialogueChannel: 0
+  defaultSpeakerSide: 0
+  advancePolicy: 0
   lines:
-  - presentationKind: 0
+  - lineId: 17F04_Shutdown_High_17F04_Shutdown_Low_Mia_001
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.15
     speaker: Mia
     text: I'm shutting you down.
     holdSeconds: 2.6594338
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: e98512b7248c91140912bc7ae3bf368c, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: 17F04_Shutdown_High_17F04_Shutdown_Low_MiasHomeUnit_001
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: Mia's Home Unit
     text: Okay.
     holdSeconds: 2.2
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 7ca8884809724be4e8df381d09d7bb3d, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: 17F04_Shutdown_High_17F04_Shutdown_Low_MiasHomeUnit_002
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: Mia's Home Unit
-    text: Lily, your mom is here now. I can go.
-    holdSeconds: 4.5462265
-    voiceClip: {fileID: 0}
+    text: Lily, your mom's here now. I can go.
+    holdSeconds: 4.1688676
+    voiceClip: {fileID: 8300000, guid: 11416540ec9c89443b0fd307e01ca6f8, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: 17F04_Shutdown_Low_MiasHomeUnit_001
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: Mia's Home Unit
-    text: Mia... are you sure you want to shut me down?
-    holdSeconds: 4.923585
-    voiceClip: {fileID: 0}
+    text: Mia... you're sure about this?
+    holdSeconds: 3.0367923
+    voiceClip: {fileID: 8300000, guid: 70255b88d67b0c74aab0e8e364914799, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: 17F04_Shutdown_Low_Lily_001
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: Lily
-    text: Mom, did you turn it off?
+    text: Mom... did you turn it off?
     holdSeconds: 3.414151
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: abddd43cc3b1d9a40a1395cc33985d11, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: 17F04_Shutdown_Low_Mia_001
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: Mia
     text: Yeah. I did.
     holdSeconds: 2.2820754
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: bbf5e34a02f45d84c929e66726794850, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
-  - presentationKind: 0
+  - lineId: 17F04_Shutdown_Low_Mia_002
+    presentationKind: 0
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 0
     startDelay: 0.18
     speaker: Mia
-    text: I'm gonna be here more. I promise.
+    text: I'm gonna be around more. I promise.
     holdSeconds: 3.7915094
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 81b2c29b086b56e469c0945df6b1e6dc, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
   postSequenceDelay: 0.18

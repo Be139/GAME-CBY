@@ -296,6 +296,91 @@ public static class HearthUiV2Builder
             "existing V2 prefabs. Functional roots and serialized gameplay bindings were retained.");
     }
 
+    [MenuItem(MenuRoot + "Apply Current Profiles")]
+    public static void ApplyCurrentProfiles()
+    {
+        if (EditorApplication.isPlayingOrWillChangePlaymode)
+        {
+            Debug.LogError(
+                "[HearthUiV2Builder] Exit Play Mode before applying V2 UI profiles.");
+            return;
+        }
+        if (!EnsureV2AssetsExist())
+        {
+            return;
+        }
+
+        // This is deliberately visual-only. RestyleExistingPrefab preserves
+        // functional roots and serialized gameplay bindings, while the final
+        // repair reads the same profiles for deterministic geometry.
+        RefreshExistingV2PrefabVisuals();
+        HearthUiV2FinalVisualRepairEditor.ApplyAll();
+
+        HearthSubtitleStyleProfile subtitleStyle =
+            AssetDatabase.LoadAssetAtPath<HearthSubtitleStyleProfile>(
+                "Assets/Data/MinLoop/UI/Hearth_SubtitleStyle.asset");
+        if (subtitleStyle != null && SharedTheme != null)
+        {
+            subtitleStyle.ApplyV2FinaleTypography(
+                SharedTheme.SceneCardFontSize,
+                SharedTheme.EpilogueCaptionFontSize);
+            EditorUtility.SetDirty(subtitleStyle);
+        }
+
+        Scene scene = EditorSceneManager.GetActiveScene();
+        if (scene.IsValid() && scene.isLoaded)
+        {
+            HearthTvTerminalController[] terminals =
+                FindSceneObjects<HearthTvTerminalController>(scene).ToArray();
+            for (int i = 0; i < terminals.Length; i++)
+            {
+                terminals[i].SetUiProfiles(SharedTheme, SharedLayout);
+                EditorUtility.SetDirty(terminals[i]);
+            }
+
+            HearthPhotoArchiveWorldView[] archives =
+                FindSceneObjects<HearthPhotoArchiveWorldView>(scene).ToArray();
+            for (int i = 0; i < archives.Length; i++)
+            {
+                archives[i].SetUiProfiles(SharedTheme, SharedLayout);
+                EditorUtility.SetDirty(archives[i]);
+            }
+
+            MinLoopSubtitlePlayer[] subtitlePlayers =
+                FindSceneObjects<MinLoopSubtitlePlayer>(scene).ToArray();
+            for (int i = 0; i < subtitlePlayers.Length; i++)
+            {
+                if (subtitlePlayers[i].PresentationMode !=
+                    HearthSubtitlePresentationMode.CenteredEpilogue)
+                {
+                    continue;
+                }
+                subtitlePlayers[i].SetUiProfiles(SharedTheme, SharedLayout);
+                EditorUtility.SetDirty(subtitlePlayers[i]);
+            }
+
+            SmartDoorController[] doors =
+                FindSceneObjects<SmartDoorController>(scene).ToArray();
+            for (int i = 0; i < doors.Length; i++)
+            {
+                if (doors[i].MotionMode == SmartDoorController.DoorMotionMode.Slide)
+                {
+                    continue;
+                }
+                doors[i].SetDirectPlayerInteractionAllowed(false);
+                EditorUtility.SetDirty(doors[i]);
+            }
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+        }
+
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
+        Debug.Log(
+            "[HearthUiV2Builder] Current V2 profiles applied. Dialogue, voice, " +
+            "SFX, story events and model transforms were not reset.");
+    }
+
     [MenuItem(MenuRoot + "Use V2 UI In Open Scene")]
     public static void UseV2InOpenScene()
     {
@@ -1205,6 +1290,22 @@ public static class HearthUiV2Builder
     {
         DisableLegacyBorderGraphics(page.transform);
 
+        Rect dimmerRect = LayoutRect(
+            HearthUiLayoutRegion.FullscreenSelectionDimmer,
+            new Rect(0f, 0f, 1920f, 1080f));
+        float dimmerAlpha = SharedTheme != null
+            ? SharedTheme.FullscreenDecisionDimmerAlpha
+            : 0.82f;
+        Image dimmer = CreateImage(
+            page.transform,
+            "FullscreenSelectionDimmer",
+            dimmerRect,
+            null,
+            new Color(0f, 0f, 0f, dimmerAlpha),
+            false,
+            false);
+        dimmer.transform.SetAsFirstSibling();
+
         Rect panelRect = new Rect(410f, 356f, 1100f, 500f);
         Image panel = FindDirectImage(page.transform, "V2_PagePanel");
         if (panel != null)
@@ -1455,8 +1556,23 @@ public static class HearthUiV2Builder
         Transform persistent = root.transform.Find("PersistentInfoLayer");
         if (persistent != null)
         {
-            CreateText(persistent, "V2_Status", "COMPANION UNIT · ACTIVE", new Rect(58f, 54f, 430f, 32f), 22f, TextAlignmentOptions.TopLeft, TextSecondary);
-            CreateText(persistent, "V2_Identity", "UNIT 17F-03", new Rect(58f, 92f, 430f, 42f), 30f, TextAlignmentOptions.TopLeft, TextPrimary);
+            Rect identityHeading = LayoutRect(
+                HearthUiLayoutRegion.CompanionIdentityHeading,
+                new Rect(60f, 42f, 430f, 30f));
+            Rect identityValue = LayoutRect(
+                HearthUiLayoutRegion.CompanionIdentityValue,
+                new Rect(60f, 76f, 430f, 44f));
+            Rect taskHeading = LayoutRect(
+                HearthUiLayoutRegion.CompanionTaskHeading,
+                new Rect(1340f, 42f, 520f, 28f));
+            Rect taskBody = LayoutRect(
+                HearthUiLayoutRegion.CompanionTaskBody,
+                new Rect(1340f, 74f, 520f, 58f));
+            HearthUiThemeProfile theme = SharedTheme;
+            CreateText(persistent, "V2_IdentityHeading", "COMPANION UNIT · ACTIVE", identityHeading, theme != null ? theme.CompanionIdentityHeadingFontSize : 21f, TextAlignmentOptions.TopLeft, TextSecondary);
+            CreateText(persistent, "V2_IdentityValue", "UNIT 17F-03", identityValue, theme != null ? theme.CompanionIdentityValueFontSize : 32f, TextAlignmentOptions.TopLeft, TextPrimary);
+            CreateText(persistent, "V2_TaskHeading", "CURRENT TASK", taskHeading, theme != null ? theme.CompanionTaskHeadingFontSize : 19f, TextAlignmentOptions.TopRight, TextSecondary);
+            CreateText(persistent, "V2_TaskBody", string.Empty, taskBody, theme != null ? theme.CompanionTaskBodyFontSize : 22f, TextAlignmentOptions.TopRight, TextPrimary);
             CreateImage(persistent, "V2_IdentityUnderline", new Rect(58f, 86f, 310f, 2f), null, Cyan, false, false);
 
             HearthCompanionStatusPanelView statusPanel =
@@ -1535,25 +1651,75 @@ public static class HearthUiV2Builder
             Transform box = hold.Find("HoldPromptBox");
             if (box != null)
             {
+                SetTopLeft(
+                    box as RectTransform,
+                    new Rect(24f, 18f, 632f, 69.333f));
                 Image boxImage = box.GetComponent<Image>();
                 if (boxImage == null)
                 {
                     boxImage = box.gameObject.AddComponent<Image>();
                 }
 
-                boxImage.sprite = null;
-                boxImage.color = new Color32(9, 16, 28, 224);
-                boxImage.type = Image.Type.Simple;
-                DisableDirectImages(box, boxImage);
-                CreateImage(box, "V2_HoldRule", new Rect(0f, 0f, 680f, 2f), null, Cyan, false, false);
+                boxImage.sprite = LoadSprite(HoldSpritePath);
+                boxImage.color = Cyan;
+                boxImage.type = Image.Type.Sliced;
+                boxImage.preserveAspect = false;
+                boxImage.raycastTarget = false;
             }
 
             Transform fill = hold.Find("HoldProgressFill");
             if (fill != null)
             {
+                SetTopLeft(
+                    fill as RectTransform,
+                    new Rect(62.667f, 119f, 554.667f, 5.333f));
                 Image fillImage = fill.GetComponent<Image>();
-                fillImage.sprite = null;
+                fillImage.sprite = LoadSprite(HoldFillSpritePath);
                 fillImage.color = Cyan;
+                fillImage.type = Image.Type.Filled;
+                fillImage.fillMethod = Image.FillMethod.Horizontal;
+                fillImage.fillOrigin = 0;
+            }
+
+            TMP_Text holdText = FindTextByName(hold, "HoldPromptText");
+            if (holdText != null)
+            {
+                SetTopLeft(
+                    holdText.rectTransform,
+                    new Rect(62.267f, 34f, 555.6f, 34f));
+                float promptSize = SharedTheme != null
+                    ? SharedTheme.InteractionPromptFontSize
+                    : 22f;
+                holdText.fontSize = promptSize;
+                holdText.fontSizeMin = promptSize;
+                holdText.fontSizeMax = promptSize;
+                holdText.enableAutoSizing = false;
+                holdText.color = TextPrimary;
+                holdText.alignment = TextAlignmentOptions.Center;
+            }
+
+            RectTransform holdKey = hold.Find("HoldKeyText") as RectTransform;
+            if (holdKey != null)
+            {
+                SetTopLeft(holdKey, new Rect(250.533f, 94f, 24f, 20f));
+            }
+
+            RectTransform progressText =
+                hold.Find("HoldProgressText") as RectTransform;
+            if (progressText != null)
+            {
+                SetTopLeft(
+                    progressText,
+                    new Rect(278.667f, 93f, 226.667f, 22f));
+            }
+
+            RectTransform progressBack =
+                hold.Find("HoldProgressBack") as RectTransform;
+            if (progressBack != null)
+            {
+                SetTopLeft(
+                    progressBack,
+                    new Rect(62.667f, 119f, 554.667f, 5.333f));
             }
         }
 
@@ -1681,19 +1847,27 @@ public static class HearthUiV2Builder
             image = prompt.gameObject.AddComponent<Image>();
         }
 
-        image.sprite = null;
-        image.type = Image.Type.Simple;
-        image.color = new Color32(9, 16, 28, 224);
+        image.sprite = LoadSprite(TapSpritePath);
+        image.type = Image.Type.Sliced;
+        image.color = companion ? Amber : Cyan;
         image.raycastTarget = false;
-        DisableDirectImages(prompt, image);
-
-        CreateImage(prompt, "V2_PromptRule", new Rect(0f, 0f, 2f, promptRect.height), null, companion ? Amber : Cyan, false, false);
+        Transform obsoleteRule = prompt.Find("V2_PromptRule");
+        if (obsoleteRule != null)
+        {
+            UnityEngine.Object.DestroyImmediate(obsoleteRule.gameObject);
+        }
 
         TMP_Text text = prompt.GetComponentInChildren<TMP_Text>(true);
         if (text != null)
         {
             SetStretch(text.rectTransform, 28f, 16f, 28f, 16f);
-            text.fontSize = companion ? 22f : 21f;
+            float promptSize = SharedTheme != null
+                ? SharedTheme.InteractionPromptFontSize
+                : 22f;
+            text.fontSize = promptSize;
+            text.fontSizeMin = promptSize;
+            text.fontSizeMax = promptSize;
+            text.enableAutoSizing = false;
             text.color = TextPrimary;
             text.alignment = TextAlignmentOptions.Center;
             text.enableWordWrapping = true;
@@ -1761,9 +1935,9 @@ public static class HearthUiV2Builder
         bool beforeSelected = localIndex == 0;
         bool afterSelected = localIndex > 0 && localIndex < actionIndex;
         bool actionSelected = localIndex == actionIndex;
-        CreateTerminalTab(visual.transform, new Rect(410f, 126f, 340f, 54f), "BEFORE ACQUISITION", beforeSelected);
-        CreateTerminalTab(visual.transform, new Rect(780f, 126f, 360f, 54f), "AFTER ACQUISITION", afterSelected);
-        CreateTerminalTab(visual.transform, new Rect(1320f, 126f, 500f, 54f), primaryActionLabel, actionSelected);
+        CreateTerminalTab(visual.transform, new Rect(318f, 142f, 310f, 52f), "BEFORE ACQUISITION", beforeSelected);
+        CreateTerminalTab(visual.transform, new Rect(652f, 142f, 310f, 52f), "AFTER ACQUISITION", afterSelected);
+        CreateTerminalTab(visual.transform, new Rect(1274f, 142f, 570f, 52f), primaryActionLabel, actionSelected);
         CreateImage(visual.transform, "NavigationRule", new Rect(180f, 194f, 1560f, 2f), null, new Color(Cyan.r, Cyan.g, Cyan.b, 0.42f), false, false);
 
         if (localIndex >= pageCount - 2)
@@ -1786,30 +1960,60 @@ public static class HearthUiV2Builder
         string[] portraits = { portraitA, portraitB, portraitC };
         for (int i = 0; i < portraits.Length; i++)
         {
-            Rect rect = new Rect(216f + i * 268f, 286f, 214f, 390f);
+            HearthUiLayoutRegion portraitRegion = i == 0
+                ? HearthUiLayoutRegion.DoorwayPortraitOne
+                : (i == 1
+                    ? HearthUiLayoutRegion.DoorwayPortraitTwo
+                    : HearthUiLayoutRegion.DoorwayPortraitThree);
+            Rect rect = LayoutRect(
+                portraitRegion,
+                new Rect(180f + i * 260f, 264f, 240f, 400f));
             Image portrait = CreateImage(visual.transform, "Portrait_" + portraits[i], rect, null, new Color32(13, 22, 35, 218), false, false);
             CreateImage(portrait.transform, "PortraitTopRule", new Rect(0f, 0f, rect.width, 2f), null, Cyan, false, false);
             CreateText(portrait.transform, "Placeholder", "PHOTO\nPENDING", new Rect(28f, 140f, 158f, 82f), 20f, TextAlignmentOptions.Center, TextSecondary);
-            CreateText(visual.transform, "PortraitLabel_" + portraits[i], portraits[i], new Rect(rect.x, rect.y + rect.height + 14f, rect.width, 32f), 21f, TextAlignmentOptions.Center, TextPrimary);
+            CreateText(visual.transform, "PortraitLabel_" + portraits[i], portraits[i], new Rect(rect.x, 680f, rect.width, 34f), 21f, TextAlignmentOptions.Center, TextPrimary);
         }
 
-        Image introduction = CreateImage(visual.transform, "HouseholdIntroduction", new Rect(1060f, 286f, 620f, 260f), null, PanelFill, false, false);
-        CreateImage(introduction.transform, "IntroductionRule", new Rect(0f, 0f, 620f, 2f), null, Cyan, false, false);
-        CreateText(introduction.transform, "Title", afterSelected ? "AFTER ACQUISITION" : "HOUSEHOLD INTRODUCTION", new Rect(42f, 34f, 535f, 42f), 27f, TextAlignmentOptions.TopLeft, TextPrimary);
+        Rect introductionRect = LayoutRect(
+            HearthUiLayoutRegion.DoorwayIntroduction,
+            new Rect(1016f, 246f, 828f, 468f));
+        Image introduction = CreateImage(visual.transform, "HouseholdIntroduction", introductionRect, null, PanelFill, false, false);
+        CreateImage(introduction.transform, "IntroductionRule", new Rect(0f, 0f, introductionRect.width, 2f), null, Cyan, false, false);
+        CreateText(introduction.transform, "Title", afterSelected ? "AFTER ACQUISITION" : "HOUSEHOLD INTRODUCTION", new Rect(42f, 34f, introductionRect.width - 84f, 42f), 27f, TextAlignmentOptions.TopLeft, TextPrimary);
         CreateText(introduction.transform, "Body",
             afterSelected
                 ? "Current household status after companion-unit adoption. Records remain editable through the dialogue data assets."
                 : "Resident profile, household context and current inspection notes are displayed here.",
-            new Rect(42f, 96f, 535f, 132f), 22f, TextAlignmentOptions.TopLeft, TextSecondary);
+            new Rect(42f, 96f, introductionRect.width - 84f, introductionRect.height - 124f), 22f, TextAlignmentOptions.TopLeft, TextSecondary);
 
-        Image fieldUnit = CreateImage(visual.transform, "FieldUnitPanel", new Rect(1060f, 582f, 620f, 190f), null, new Color(PanelFill.r, PanelFill.g, PanelFill.b, 0.62f), false, false);
-        CreateImage(fieldUnit.transform, "FieldUnitRule", new Rect(0f, 0f, 4f, 190f), null, Amber, false, false);
-        CreateText(fieldUnit.transform, "Title", "FIELD UNIT", new Rect(42f, 30f, 535f, 36f), 24f, TextAlignmentOptions.TopLeft, TextPrimary);
-        CreateText(fieldUnit.transform, "Body", "Household briefing and system guidance appear inside the terminal interface.", new Rect(42f, 84f, 535f, 88f), 21f, TextAlignmentOptions.TopLeft, TextSecondary);
+        Rect fieldRect = LayoutRect(
+            HearthUiLayoutRegion.DoorwayFieldUnit,
+            new Rect(230f, 745f, 1460f, 248f));
+        Image fieldUnit = CreateImage(visual.transform, "FieldUnitPanel", fieldRect, null, new Color(PanelFill.r, PanelFill.g, PanelFill.b, 0.62f), false, false);
+        CreateImage(fieldUnit.transform, "FieldUnitRule", new Rect(0f, 0f, 4f, fieldRect.height), null, Amber, false, false);
+        HearthUiThemeProfile fieldTheme = SharedTheme;
+        CreateText(fieldUnit.transform, "Title", "FIELD UNIT", new Rect(42f, 22f, fieldRect.width - 84f, 68f), fieldTheme != null ? fieldTheme.TerminalDialogueSpeakerFontSize : 52f, TextAlignmentOptions.TopLeft, TextPrimary);
+        CreateText(fieldUnit.transform, "Body", "Household briefing and system guidance appear inside the terminal interface.", new Rect(42f, 94f, fieldRect.width - 84f, 104f), fieldTheme != null ? fieldTheme.TerminalDialogueBodyFontSize : 26f, TextAlignmentOptions.TopLeft, TextSecondary);
+        CreateText(fieldUnit.transform, "DialogueAdvanceHint", "SPACE  CONTINUE", new Rect(fieldRect.width - 330f, 202f, 288f, 34f), fieldTheme != null ? fieldTheme.TerminalDialogueAdvanceFontSize : 26f, TextAlignmentOptions.BottomRight, Cyan);
     }
 
     private static void BuildTerminalChoicePage(Transform parent, bool choiceA)
     {
+        Rect dimmerRect = LayoutRect(
+            HearthUiLayoutRegion.FullscreenSelectionDimmer,
+            new Rect(0f, 0f, 1920f, 1080f));
+        float dimmerAlpha = SharedTheme != null
+            ? SharedTheme.FullscreenDecisionDimmerAlpha
+            : 0.82f;
+        Image dimmer = CreateImage(
+            parent,
+            "FullscreenSelectionDimmer",
+            dimmerRect,
+            null,
+            new Color(0f, 0f, 0f, dimmerAlpha),
+            false,
+            false);
+        dimmer.transform.SetAsFirstSibling();
         Image panel = CreateImage(parent, "DispositionPanel", new Rect(330f, 250f, 1260f, 560f), null, PanelFill, false, false);
         CreateImage(panel.transform, "DispositionRule", new Rect(0f, 0f, 1260f, 2f), null, Cyan, false, false);
         CreateText(panel.transform, "Title", "SELECT DISPOSITION", new Rect(60f, 42f, 1140f, 52f), 34f, TextAlignmentOptions.TopLeft, TextPrimary);
@@ -1846,7 +2050,7 @@ public static class HearthUiV2Builder
 
             Image panel = CreateImage(visual.transform, "HomePanel", new Rect(430f, 220f, 1060f, 590f), null, PanelFill, false, false);
             CreateImage(panel.transform, "HomeRule", new Rect(0f, 0f, 4f, 590f), null, Amber, false, false);
-            CreateText(panel.transform, "Title", "VOICE MESSAGE AVAILABLE", new Rect(80f, 64f, 900f, 58f), 36f, TextAlignmentOptions.TopLeft, TextPrimary);
+            CreateText(panel.transform, "Title", "WELCOME HOME", new Rect(80f, 64f, 900f, 58f), 36f, TextAlignmentOptions.TopLeft, TextPrimary);
             CreateText(panel.transform, "Welcome", "Welcome home, Inspector Mia.\nA voice message is waiting.", new Rect(80f, 145f, 900f, 96f), 27f, TextAlignmentOptions.TopLeft, TextSecondary);
             Image field = CreateImage(panel.transform, "FieldUnitPanel", new Rect(80f, 285f, 900f, 180f), null, new Color(PanelFill.r, PanelFill.g, PanelFill.b, 0.65f), false, false);
             CreateImage(field.transform, "FieldRule", new Rect(0f, 0f, 2f, 180f), null, Cyan, false, false);
@@ -1912,6 +2116,12 @@ public static class HearthUiV2Builder
     private static void StyleTerminalBase(GameObject root)
     {
         StyleAllText(root, 17f, 32f);
+        HearthTvTerminalController controller =
+            root.GetComponent<HearthTvTerminalController>();
+        if (controller != null)
+        {
+            controller.SetUiProfiles(SharedTheme, SharedLayout);
+        }
         Transform glass = root.transform.Find("TerminalScreenGlass");
         if (glass != null)
         {

@@ -20,6 +20,8 @@ public sealed class HearthPhotoArchiveWorldView : MonoBehaviour
     [SerializeField] private TMP_Text pageText;
     [SerializeField] private TMP_Text hintText;
     [SerializeField] private HearthDialogueSurface dialogueSurface;
+    [SerializeField] private HearthUiThemeProfile uiThemeProfile;
+    [SerializeField] private HearthUiLayoutProfile uiLayoutProfile;
 
     private Camera activeCamera;
     private Renderer activePhotoRenderer;
@@ -33,7 +35,17 @@ public sealed class HearthPhotoArchiveWorldView : MonoBehaviour
     public HearthDialogueSurface ResolveDialogueSurface()
     {
         EnsureBuilt();
+        ApplyProfileToBuiltUi();
         return dialogueSurface;
+    }
+
+    public void SetUiProfiles(
+        HearthUiThemeProfile themeProfile,
+        HearthUiLayoutProfile layoutProfile)
+    {
+        uiThemeProfile = themeProfile;
+        uiLayoutProfile = layoutProfile;
+        ApplyProfileToBuiltUi();
     }
 
     public void Show(
@@ -117,6 +129,7 @@ public sealed class HearthPhotoArchiveWorldView : MonoBehaviour
     {
         if (worldCanvas != null && dialogueSurface != null)
         {
+            ApplyProfileToBuiltUi();
             return;
         }
 
@@ -152,7 +165,7 @@ public sealed class HearthPhotoArchiveWorldView : MonoBehaviour
 
         rootGroup = canvasObject.GetComponent<CanvasGroup>();
         canvasRect = canvasObject.GetComponent<RectTransform>();
-        canvasRect.sizeDelta = new Vector2(1440f, 900f);
+        canvasRect.sizeDelta = ResolveReferenceResolution();
 
         TMP_Text title = CreateText(
             canvasRect,
@@ -177,6 +190,7 @@ public sealed class HearthPhotoArchiveWorldView : MonoBehaviour
             TextAlignmentOptions.MidlineLeft,
             FontStyles.Normal);
         unit.characterSpacing = 1.2f;
+        unit.gameObject.SetActive(false);
 
         pageText = CreateText(
             canvasRect,
@@ -251,6 +265,7 @@ public sealed class HearthPhotoArchiveWorldView : MonoBehaviour
             dialogueSurface = panel.AddComponent<HearthDialogueSurface>();
         }
         dialogueSurface.Configure(panelGroup, speaker, body, advance);
+        ApplyProfileToBuiltUi();
     }
 
     private void UpdatePose()
@@ -269,10 +284,9 @@ public sealed class HearthPhotoArchiveWorldView : MonoBehaviour
         float verticalWorldSize =
             2f * distance * Mathf.Tan(activeCamera.fieldOfView * 0.5f * Mathf.Deg2Rad);
         float desiredHeight = verticalWorldSize * 0.94f;
-        float aspect = Mathf.Clamp(activeCamera.aspect, 1f, 2.4f);
-
-        canvasRect.sizeDelta = new Vector2(900f * aspect, 900f);
-        float desiredWorldScale = desiredHeight / 900f;
+        Vector2 referenceResolution = ResolveReferenceResolution();
+        canvasRect.sizeDelta = referenceResolution;
+        float desiredWorldScale = desiredHeight / referenceResolution.y;
         Vector3 parentScale = canvasRect.parent != null
             ? canvasRect.parent.lossyScale
             : Vector3.one;
@@ -282,6 +296,71 @@ public sealed class HearthPhotoArchiveWorldView : MonoBehaviour
             DivideByScale(desiredWorldScale, parentScale.z));
         canvasRect.position = focus - activeCamera.transform.forward * 0.012f;
         canvasRect.rotation = activeCamera.transform.rotation;
+    }
+
+    private void ApplyProfileToBuiltUi()
+    {
+        if (canvasRect == null && worldCanvas != null)
+        {
+            canvasRect = worldCanvas.GetComponent<RectTransform>();
+        }
+        if (canvasRect == null)
+        {
+            return;
+        }
+
+        Transform unit = canvasRect.Find("ArchiveUnit");
+        if (unit != null)
+        {
+            unit.gameObject.SetActive(false);
+        }
+        Transform topRule = canvasRect.Find("ArchiveTopRule");
+        if (topRule != null)
+        {
+            topRule.gameObject.SetActive(false);
+        }
+
+        if (pageText == null)
+        {
+            Transform page = canvasRect.Find("ArchivePage");
+            pageText = page != null ? page.GetComponent<TMP_Text>() : null;
+        }
+        if (uiLayoutProfile != null)
+        {
+            HearthUiReferenceRect pageRect =
+                uiLayoutProfile.GetRegion(HearthUiLayoutRegion.PhotoArchivePage);
+            pageRect.ApplyTopLeftAnchors(
+                pageText != null ? pageText.rectTransform : null);
+
+            HearthUiReferenceRect dialogueRect =
+                uiLayoutProfile.GetRegion(HearthUiLayoutRegion.PhotoArchiveFieldUnit);
+            dialogueRect.ApplyTopLeftAnchors(
+                dialogueSurface != null
+                    ? dialogueSurface.transform as RectTransform
+                    : null);
+        }
+
+        if (dialogueSurface != null)
+        {
+            dialogueSurface.ApplyTypography(
+                uiThemeProfile != null
+                    ? uiThemeProfile.TerminalDialogueSpeakerFontSize
+                    : 52f,
+                uiThemeProfile != null
+                    ? uiThemeProfile.TerminalDialogueBodyFontSize
+                    : 26f,
+                uiThemeProfile != null
+                    ? uiThemeProfile.TerminalDialogueAdvanceFontSize
+                    : 26f);
+            dialogueSurface.ApplyTerminalInternalLayout();
+        }
+    }
+
+    private Vector2 ResolveReferenceResolution()
+    {
+        return uiLayoutProfile != null
+            ? uiLayoutProfile.ReferenceResolution
+            : new Vector2(1920f, 1080f);
     }
 
     private static float DivideByScale(float value, float scale)

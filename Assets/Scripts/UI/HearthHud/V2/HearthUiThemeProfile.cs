@@ -31,6 +31,28 @@ public sealed class HearthUiThemeProfile : ScriptableObject
     [SerializeField, Min(1f)] private float subtitleFontSize = 28f;
     [SerializeField, Min(1f)] private float endingSubtitleFontSize = 30f;
 
+    [Header("Terminal Dialogue Typography")]
+    [SerializeField, Min(1f)] private float terminalDialogueSpeakerFontSize = 52f;
+    [SerializeField, Min(1f)] private float terminalDialogueBodyFontSize = 26f;
+    [SerializeField, Min(1f)] private float terminalDialogueAdvanceFontSize = 26f;
+
+    [Header("Companion Header Typography")]
+    [SerializeField, Min(1f)] private float companionIdentityHeadingFontSize = 21f;
+    [SerializeField, Min(1f)] private float companionIdentityValueFontSize = 32f;
+    [SerializeField, Min(1f)] private float companionTaskHeadingFontSize = 19f;
+    [SerializeField, Min(1f)] private float companionTaskBodyFontSize = 22f;
+
+    [Header("Interaction Typography")]
+    [SerializeField, Min(1f)] private float interactionPromptFontSize = 22f;
+
+    [Header("Finale Typography")]
+    [SerializeField, Min(1f)] private float sceneCardFontSize = 44f;
+    [SerializeField, Min(1f)] private float epilogueCaptionFontSize = 36f;
+    [SerializeField, Min(1f)] private float persistentSceneHeaderFontSize = 24f;
+
+    [Header("Overlay")]
+    [SerializeField, Range(0f, 1f)] private float fullscreenDecisionDimmerAlpha = 0.82f;
+
     public TMP_FontAsset PrimaryFontAsset { get { return primaryFontAsset; } }
     public Color TerminalBackground { get { return terminalBackground; } }
     public Color TerminalPanelBackground { get { return terminalPanelBackground; } }
@@ -47,6 +69,18 @@ public sealed class HearthUiThemeProfile : ScriptableObject
     public float SpeakerFontSize { get { return speakerFontSize; } }
     public float SubtitleFontSize { get { return subtitleFontSize; } }
     public float EndingSubtitleFontSize { get { return endingSubtitleFontSize; } }
+    public float TerminalDialogueSpeakerFontSize { get { return terminalDialogueSpeakerFontSize; } }
+    public float TerminalDialogueBodyFontSize { get { return terminalDialogueBodyFontSize; } }
+    public float TerminalDialogueAdvanceFontSize { get { return terminalDialogueAdvanceFontSize; } }
+    public float CompanionIdentityHeadingFontSize { get { return companionIdentityHeadingFontSize; } }
+    public float CompanionIdentityValueFontSize { get { return companionIdentityValueFontSize; } }
+    public float CompanionTaskHeadingFontSize { get { return companionTaskHeadingFontSize; } }
+    public float CompanionTaskBodyFontSize { get { return companionTaskBodyFontSize; } }
+    public float InteractionPromptFontSize { get { return interactionPromptFontSize; } }
+    public float SceneCardFontSize { get { return sceneCardFontSize; } }
+    public float EpilogueCaptionFontSize { get { return epilogueCaptionFontSize; } }
+    public float PersistentSceneHeaderFontSize { get { return persistentSceneHeaderFontSize; } }
+    public float FullscreenDecisionDimmerAlpha { get { return fullscreenDecisionDimmerAlpha; } }
 
     private void OnValidate()
     {
@@ -58,5 +92,17 @@ public sealed class HearthUiThemeProfile : ScriptableObject
         speakerFontSize = Mathf.Max(1f, speakerFontSize);
         subtitleFontSize = Mathf.Max(1f, subtitleFontSize);
         endingSubtitleFontSize = Mathf.Max(1f, endingSubtitleFontSize);
+        terminalDialogueSpeakerFontSize = Mathf.Max(1f, terminalDialogueSpeakerFontSize);
+        terminalDialogueBodyFontSize = Mathf.Max(1f, terminalDialogueBodyFontSize);
+        terminalDialogueAdvanceFontSize = Mathf.Max(1f, terminalDialogueAdvanceFontSize);
+        companionIdentityHeadingFontSize = Mathf.Max(1f, companionIdentityHeadingFontSize);
+        companionIdentityValueFontSize = Mathf.Max(1f, companionIdentityValueFontSize);
+        companionTaskHeadingFontSize = Mathf.Max(1f, companionTaskHeadingFontSize);
+        companionTaskBodyFontSize = Mathf.Max(1f, companionTaskBodyFontSize);
+        interactionPromptFontSize = Mathf.Max(1f, interactionPromptFontSize);
+        sceneCardFontSize = Mathf.Max(1f, sceneCardFontSize);
+        epilogueCaptionFontSize = Mathf.Max(1f, epilogueCaptionFontSize);
+        persistentSceneHeaderFontSize = Mathf.Max(1f, persistentSceneHeaderFontSize);
+        fullscreenDecisionDimmerAlpha = Mathf.Clamp01(fullscreenDecisionDimmerAlpha);
     }
 }

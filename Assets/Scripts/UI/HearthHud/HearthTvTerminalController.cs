@@ -76,6 +76,8 @@ public class HearthTvTerminalController : MonoBehaviour
     [SerializeField] private HearthUiPressFeedback submitFeedback;
     [SerializeField] private HearthDialogueSurface dialogueSurface;
     [SerializeField] private HearthDialogueSurface messageSurface;
+    [SerializeField] private HearthUiThemeProfile uiThemeProfile;
+    [SerializeField] private HearthUiLayoutProfile uiLayoutProfile;
 
     [Header("Keyboard Navigation")]
     [SerializeField] private bool keyboardNavigationEnabled = true;
@@ -301,11 +303,14 @@ public class HearthTvTerminalController : MonoBehaviour
             }
 
             dialogueSurface.Configure(group, speaker, body, hint);
+            ApplyDialogueSurfaceProfile(dialogueSurface, existingPanel as RectTransform, false);
+            LinkExclusiveDialogueSurfaces();
             dialogueSurface.HideImmediate();
             return dialogueSurface;
         }
 
         dialogueSurface = CreateRuntimeDialogueSurface();
+        LinkExclusiveDialogueSurfaces();
         return dialogueSurface;
     }
 
@@ -355,12 +360,32 @@ public class HearthTvTerminalController : MonoBehaviour
             }
 
             messageSurface.Configure(group, speaker, body, hint);
+            ApplyDialogueSurfaceProfile(messageSurface, existingPanel as RectTransform, true);
+            LinkExclusiveDialogueSurfaces();
             messageSurface.HideImmediate();
             return messageSurface;
         }
 
         messageSurface = CreateRuntimeMessageSurface();
+        LinkExclusiveDialogueSurfaces();
         return messageSurface;
+    }
+
+    public void SetUiProfiles(
+        HearthUiThemeProfile themeProfile,
+        HearthUiLayoutProfile layoutProfile)
+    {
+        uiThemeProfile = themeProfile;
+        uiLayoutProfile = layoutProfile;
+        ApplyDialogueSurfaceProfile(
+            dialogueSurface,
+            dialogueSurface != null ? dialogueSurface.transform as RectTransform : null,
+            false);
+        ApplyDialogueSurfaceProfile(
+            messageSurface,
+            messageSurface != null ? messageSurface.transform as RectTransform : null,
+            true);
+        LinkExclusiveDialogueSurfaces();
     }
 
     public bool IsCustomActionHandoffPending
@@ -1457,10 +1482,7 @@ public class HearthTvTerminalController : MonoBehaviour
             typeof(CanvasGroup));
         RectTransform panel = panelObject.GetComponent<RectTransform>();
         panel.SetParent(parent, false);
-        panel.anchorMin = new Vector2(0.12f, 0.08f);
-        panel.anchorMax = new Vector2(0.88f, 0.31f);
-        panel.offsetMin = Vector2.zero;
-        panel.offsetMax = Vector2.zero;
+        ApplyTerminalDialogueRect(panel, false);
         panel.SetAsLastSibling();
 
         Image background = panelObject.GetComponent<Image>();
@@ -1476,21 +1498,21 @@ public class HearthTvTerminalController : MonoBehaviour
             "Speaker",
             new Vector2(0.035f, 0.72f),
             new Vector2(0.965f, 0.96f),
-            26f,
+            ResolveTerminalSpeakerSize(),
             TextAlignmentOptions.TopLeft);
         TMP_Text body = CreateDialogueText(
             panel,
             "Body",
             new Vector2(0.035f, 0.22f),
             new Vector2(0.965f, 0.72f),
-            22f,
+            ResolveTerminalBodySize(),
             TextAlignmentOptions.TopLeft);
         TMP_Text hint = CreateDialogueText(
             panel,
             "DialogueAdvanceHint",
             new Vector2(0.62f, 0.03f),
             new Vector2(0.965f, 0.2f),
-            16f,
+            ResolveTerminalAdvanceSize(),
             TextAlignmentOptions.BottomRight);
 
         speaker.color = new Color(0.3f, 0.9f, 1f, 1f);
@@ -1500,6 +1522,11 @@ public class HearthTvTerminalController : MonoBehaviour
         CanvasGroup group = panelObject.GetComponent<CanvasGroup>();
         HearthDialogueSurface surface = panelObject.AddComponent<HearthDialogueSurface>();
         surface.Configure(group, speaker, body, hint);
+        surface.ApplyTypography(
+            ResolveTerminalSpeakerSize(),
+            ResolveTerminalBodySize(),
+            ResolveTerminalAdvanceSize());
+        surface.ApplyTerminalInternalLayout();
         surface.HideImmediate();
         return surface;
     }
@@ -1523,10 +1550,7 @@ public class HearthTvTerminalController : MonoBehaviour
             typeof(CanvasGroup));
         RectTransform panel = panelObject.GetComponent<RectTransform>();
         panel.SetParent(parent, false);
-        panel.anchorMin = new Vector2(0.56f, 0.36f);
-        panel.anchorMax = new Vector2(0.94f, 0.82f);
-        panel.offsetMin = Vector2.zero;
-        panel.offsetMax = Vector2.zero;
+        ApplyTerminalDialogueRect(panel, true);
         panel.SetAsLastSibling();
 
         Image background = panelObject.GetComponent<Image>();
@@ -1542,21 +1566,21 @@ public class HearthTvTerminalController : MonoBehaviour
             "Speaker",
             new Vector2(0.05f, 0.76f),
             new Vector2(0.95f, 0.94f),
-            28f,
+            ResolveTerminalSpeakerSize(),
             TextAlignmentOptions.TopLeft);
         TMP_Text body = CreateDialogueText(
             panel,
             "Body",
             new Vector2(0.05f, 0.20f),
             new Vector2(0.95f, 0.75f),
-            23f,
+            ResolveTerminalBodySize(),
             TextAlignmentOptions.TopLeft);
         TMP_Text hint = CreateDialogueText(
             panel,
             "AdvanceHint",
             new Vector2(0.55f, 0.035f),
             new Vector2(0.95f, 0.19f),
-            16f,
+            ResolveTerminalAdvanceSize(),
             TextAlignmentOptions.BottomRight);
 
         speaker.color = new Color(0.9f, 0.95f, 1f, 1f);
@@ -1566,8 +1590,108 @@ public class HearthTvTerminalController : MonoBehaviour
         CanvasGroup group = panelObject.GetComponent<CanvasGroup>();
         HearthDialogueSurface surface = panelObject.AddComponent<HearthDialogueSurface>();
         surface.Configure(group, speaker, body, hint);
+        surface.ApplyTypography(
+            ResolveTerminalSpeakerSize(),
+            ResolveTerminalBodySize(),
+            ResolveTerminalAdvanceSize());
+        surface.ApplyTerminalInternalLayout();
         surface.HideImmediate();
         return surface;
+    }
+
+    private void ApplyDialogueSurfaceProfile(
+        HearthDialogueSurface surface,
+        RectTransform panel,
+        bool message)
+    {
+        if (surface == null)
+        {
+            return;
+        }
+
+        if (panel != null)
+        {
+            ApplyTerminalDialogueRect(panel, message);
+        }
+
+        surface.ApplyTypography(
+            ResolveTerminalSpeakerSize(),
+            ResolveTerminalBodySize(),
+            ResolveTerminalAdvanceSize());
+        surface.ApplyTerminalInternalLayout();
+    }
+
+    private void ApplyTerminalDialogueRect(RectTransform panel, bool message)
+    {
+        if (panel == null)
+        {
+            return;
+        }
+
+        if (uiLayoutProfile != null)
+        {
+            if (!message && ResolveTerminalMode() == HearthTerminalMode.LobbySync)
+            {
+                return;
+            }
+            HearthUiReferenceRect reference = message
+                ? uiLayoutProfile.GetRegion(HearthUiLayoutRegion.TerminalContent)
+                : uiLayoutProfile.GetRegion(HearthUiLayoutRegion.TerminalMessageLane);
+            if (message)
+            {
+                float horizontalInset = reference.Width * 0.18f;
+                float verticalInset = reference.Height * 0.18f;
+                reference = new HearthUiReferenceRect(
+                    reference.Left + horizontalInset,
+                    reference.Top + verticalInset,
+                    reference.Width - horizontalInset * 2f,
+                    reference.Height - verticalInset * 2f);
+            }
+            reference.ApplyTopLeftAnchors(panel);
+            return;
+        }
+
+        panel.anchorMin = message
+            ? new Vector2(0.22f, 0.34f)
+            : new Vector2(0.12f, 0.08f);
+        panel.anchorMax = message
+            ? new Vector2(0.78f, 0.68f)
+            : new Vector2(0.88f, 0.31f);
+        panel.offsetMin = Vector2.zero;
+        panel.offsetMax = Vector2.zero;
+    }
+
+    private float ResolveTerminalSpeakerSize()
+    {
+        return uiThemeProfile != null
+            ? uiThemeProfile.TerminalDialogueSpeakerFontSize
+            : 52f;
+    }
+
+    private float ResolveTerminalBodySize()
+    {
+        return uiThemeProfile != null
+            ? uiThemeProfile.TerminalDialogueBodyFontSize
+            : 26f;
+    }
+
+    private float ResolveTerminalAdvanceSize()
+    {
+        return uiThemeProfile != null
+            ? uiThemeProfile.TerminalDialogueAdvanceFontSize
+            : 26f;
+    }
+
+    private void LinkExclusiveDialogueSurfaces()
+    {
+        if (dialogueSurface != null)
+        {
+            dialogueSurface.SetExclusivePeer(messageSurface);
+        }
+        if (messageSurface != null)
+        {
+            messageSurface.SetExclusivePeer(dialogueSurface);
+        }
     }
 
     private TMP_Text CreateDialogueText(

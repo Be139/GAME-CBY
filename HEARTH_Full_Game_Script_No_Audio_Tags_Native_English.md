@@ -2134,6 +2134,8 @@ Screen: full black. No music. Sounds and voices only,
       one small scene at a time.
 ```
 
+<!-- HEARTH:SEQUENCES 17F04_Epilogue_High_Shutdown,17F04_Epilogue_Low_Shutdown -->
+<!-- HEARTH:TIME_CARD 17F04_Epilogue_Shutdown_TimeCard_Kitchen | A MORNING SOME TIME LATER — KITCHEN -->
 ```
 A MORNING SOME TIME LATER — KITCHEN
 ```
@@ -2160,6 +2162,8 @@ A MORNING SOME TIME LATER — KITCHEN
 <!-- HEARTH:VOICE 17F04_Epilogue_High_Shutdown_17F04_Epilogue_Low_Shutdown_Lily_003 -->
 **Lily:** "It's okay. I'll eat them."
 
+<!-- HEARTH:SEQUENCES 17F04_Epilogue_High_Shutdown,17F04_Epilogue_Low_Shutdown -->
+<!-- HEARTH:TIME_CARD 17F04_Epilogue_Shutdown_TimeCard_HomeFromSchool | THAT AFTERNOON — HOME FROM SCHOOL -->
 ```
 THAT AFTERNOON — HOME FROM SCHOOL
 ```
@@ -2190,6 +2194,8 @@ THAT AFTERNOON — HOME FROM SCHOOL
 <!-- HEARTH:VOICE 17F04_Epilogue_High_Shutdown_17F04_Epilogue_Low_Shutdown_Lily_006 -->
 **Lily:** "Just... okay. Come here, Mom. I'll tell you about it."
 
+<!-- HEARTH:SEQUENCES 17F04_Epilogue_High_Shutdown,17F04_Epilogue_Low_Shutdown -->
+<!-- HEARTH:TIME_CARD 17F04_Epilogue_Shutdown_TimeCard_StormyNight | A STORMY NIGHT — LILY'S ROOM -->
 ```
 A STORMY NIGHT — LILY'S ROOM
 ```
@@ -2322,6 +2328,8 @@ to the lens.
 Screen: full black. No music. Sounds and voices only.
 ```
 
+<!-- HEARTH:SEQUENCES 17F04_Epilogue_High_Retain,17F04_Epilogue_Low_Retain -->
+<!-- HEARTH:TIME_CARD 17F04_Epilogue_Retain_TimeCard_Kitchen | THE NEXT MORNING — KITCHEN -->
 ```
 THE NEXT MORNING — KITCHEN
 ```
@@ -2358,6 +2366,8 @@ THE NEXT MORNING — KITCHEN
 <!-- HEARTH:VOICE 17F04_Epilogue_High_Retain_17F04_Epilogue_Low_Retain_Mia_001 -->
 **Mia:** "Right, I'll be in by nine-thirty. Yeah, the open house. I'll have the unit record it. Yeah. That works."
 
+<!-- HEARTH:SEQUENCES 17F04_Epilogue_High_Retain,17F04_Epilogue_Low_Retain -->
+<!-- HEARTH:TIME_CARD 17F04_Epilogue_Retain_TimeCard_OpenHouse | THAT AFTERNOON — SCHOOL OPEN HOUSE -->
 ```
 THAT AFTERNOON — SCHOOL OPEN HOUSE
 ```
@@ -2398,6 +2408,8 @@ THAT AFTERNOON — SCHOOL OPEN HOUSE
 <!-- HEARTH:VOICE 17F04_Epilogue_High_Retain_17F04_Epilogue_Low_Retain_Lily_007 -->
 **Lily:** "Oh."
 
+<!-- HEARTH:SEQUENCES 17F04_Epilogue_High_Retain,17F04_Epilogue_Low_Retain -->
+<!-- HEARTH:TIME_CARD 17F04_Epilogue_Retain_TimeCard_ThreeYearsLater | THREE YEARS LATER — FRONT HALL -->
 ```
 THREE YEARS LATER — FRONT HALL
 ```

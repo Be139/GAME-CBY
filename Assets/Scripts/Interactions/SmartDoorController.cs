@@ -79,6 +79,11 @@ public class SmartDoorController : MonoBehaviour, IInteractable, IInteractionAva
         get { return locked; }
     }
 
+    public DoorMotionMode MotionMode
+    {
+        get { return motionMode; }
+    }
+
     private void Awake()
     {
         ResolveReferences();

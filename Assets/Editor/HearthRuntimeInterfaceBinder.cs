@@ -535,6 +535,10 @@ public static class HearthRuntimeInterfaceBinder
             SetString(doors[i], "closedDescription", "E  OPEN DOOR");
             SetString(doors[i], "openDescription", "E  CLOSE DOOR");
             SetString(doors[i], "lockedDescription", "DOOR LOCKED");
+            if (doors[i].MotionMode != SmartDoorController.DoorMotionMode.Slide)
+            {
+                SetBool(doors[i], "allowDirectPlayerInteraction", false);
+            }
         }
 
         ComfortActionInteractable[] comfortActions = UnityEngine.Object.FindObjectsOfType<ComfortActionInteractable>(true);

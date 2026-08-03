@@ -189,6 +189,18 @@ public class HearthSubtitleStyleProfile : ScriptableObject
         OnValidate();
     }
 
+    public void ApplyV2FinaleTypography(
+        float sceneCardBodySize,
+        float epilogueBodySize)
+    {
+        EnsureInstances();
+        timeCard.bodyFontSize = Mathf.Max(1f, sceneCardBodySize);
+        timeCard.bodyMinimumFontSize = timeCard.bodyFontSize;
+        centeredEpilogue.bodyFontSize = Mathf.Max(1f, epilogueBodySize);
+        centeredEpilogue.bodyMinimumFontSize = centeredEpilogue.bodyFontSize;
+        OnValidate();
+    }
+
     private void OnValidate()
     {
         EnsureInstances();

@@ -570,7 +570,7 @@ public class Hearth17F04FinaleController : MonoBehaviour
             yield return epilogueSubtitlePlayer.PlaySequenceAsset(
                 epilogue,
                 HearthSubtitleContext.Human,
-                HearthSubtitlePresentationMode.NaturalCaption,
+                HearthSubtitlePresentationMode.CenteredEpilogue,
                 AdvancePolicy.AudioComplete);
         }
 

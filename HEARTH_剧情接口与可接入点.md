@@ -606,3 +606,38 @@
 - 陪伴脚步只用轻型履带/伺服质感；人类脚步和机器人移动声不得互换。
 - 无效操作与门锁拒绝保持静默；新增失败反馈前必须有新的体验要求。
 - 新场景顺序：Catalog 加 Sound ID → StorySFX 加 Cue → 状态机调用；只有需要逐句时才加 Dialogue Track。
+
+## V2 Profile 与黑幕 TimeCard 接口（2026-08-03）
+
+### 唯一视觉配置入口
+
+- `HearthUiThemeProfile`：终端对白、Companion 顶部、E/Hold E、场景卡、黑幕对白和全屏遮罩。
+- `HearthUiLayoutProfile.GetRegion()`：门口终端、相册、Companion 顶部、全屏遮罩和结局场景卡 Rect。
+- `HearthTvTerminalController.SetUiProfiles()`、`HearthPhotoArchiveWorldView.SetUiProfiles()`、`MinLoopSubtitlePlayer.SetUiProfiles()`：运行时注入接口。
+- Editor 统一入口：`Tools > Hearth > UI V2 > Apply Current Profiles`。禁止另一个修复工具重新写一套常量。
+
+### Companion 临时对白独占
+
+- `HearthCompanionHudController` 保留兼容 `SetCurrentTask()`，并分别绑定 Identity Heading/Value 与 Task Heading/Body。
+- 正式 Synth Voice、Field Unit、Home Unit 进入时打开临时独占；`PersistentInfoLayer/DecisionPanel` 在该行期间隐藏。
+- 行结束后只恢复进入前确实可见的面板状态；预览或状态机不得无条件强制打开旧 DecisionPanel。
+
+### 终端与 TV4 互斥 Surface
+
+- `HearthDialogueSurface.SetExclusivePeer()` 保证 Lily Message 与 Field Unit Surface 互斥。
+- Home Terminal 的 Lily 位于中央内容区，Field Unit 位于 `TerminalMessageLane`；门口终端 Field Unit 位于 `DoorwayFieldUnit`。
+- TV4 使用 `PhotoArchiveFieldUnit` 和 `PhotoArchivePage`；不创建屏幕空间相册副本，也不移动用户 Photo Camera。
+
+### TimeCard 数据与播放
+
+- 正式稿标记：`<!-- HEARTH:TIME_CARD stable_id | ENGLISH TEXT -->`。
+- Sync 写入现有 `TimeCard` Presentation，`VoiceClip=null`、`AudioComplete`、回退 1.5 秒；普通对白 Line ID 不变。
+- 播放器先使用 `EpilogueSceneCard` 居中显示，再切换到 `EpilogueSceneHeader`；标题保留到下一张卡或序列结束。
+- 黑幕对白使用 `CenteredEpilogue`，有 Clip 取 `AudioClip.length`，无 Clip 取资产回退时长，不接收 Space。
+- 排序固定为 Blackout Canvas 9000、结局字幕/场景卡 9100 以上。
+
+### E/Hold E 稳定路径
+
+- Human 与 Companion 都保留 `PlayerInteractionPrompt`、`HoldPrompt`、`HoldPromptText`、`HoldProgressFill`。
+- `PlayerInteraction` 独占短按 E；`HearthCompanionHoldPrompt` 独占持续操作并发出开始/取消/完成及 SFX。
+- `SmartDoorController.allowDirectPlayerInteraction=false` 只关闭门的玩家切换入口；剧情 `Open()`、`Close()` 和门事件仍是正式接口。

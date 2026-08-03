@@ -1033,6 +1033,82 @@ Codex 已继续完成动态层、终端和矢量组件接入。用户现在若�
 
 ### 修改后只做预览检查
 
+## 25. 统一 Profile 接管流程（2026-08-03）
+
+本节覆盖前文中“直接改 Prefab 数值”的旧做法。以下两份资产现在是 Builder、Final Visual Repair 和运行时动态 UI 的共同来源：
+
+- 字体、颜色、线宽与遮罩：`Assets/UI/HEARTH/V2/Profiles/Hearth_UiV2Theme.asset`
+- 1920×1080 位置与尺寸：`Assets/UI/HEARTH/V2/Profiles/Hearth_UiV2Layout_1920x1080.asset`
+
+修改完资产后运行 `Tools > Hearth > UI V2 > Apply Current Profiles`。该菜单只重建视觉层和位置，不重置对白资产、AudioClip、SFX Catalog、剧情引用、Camera、TV、人物、终端模型或用户锚点。
+
+### 25.1 字号字段对照
+
+| Inspector 分组/字段 | 控制内容 | 当前值 |
+|---|---|---:|
+| Terminal Dialogue Typography / Speaker | 终端 `Field Unit` 名称 | 52 |
+| Terminal Dialogue Typography / Body | 终端正式正文 | 26 |
+| Terminal Dialogue Typography / Advance | `SPACE CONTINUE` | 26 |
+| Companion Header Typography / Identity Heading | `COMPANION UNIT · ACTIVE` | 21 |
+| Companion Header Typography / Identity Value | `UNIT 17F-01` | 32 |
+| Companion Header Typography / Task Heading | `CURRENT TASK` | 19 |
+| Companion Header Typography / Task Body | 任务正文 | 22 |
+| Interaction Typography / Prompt | 短按 E 与 Hold E 主提示 | 22 |
+| Finale Typography / Scene Card | 黑幕首次出现的场景卡 | 44 |
+| Finale Typography / Epilogue Caption | 黑幕居中对白 | 36 |
+| Finale Typography / Persistent Scene Header | 对白上方持续场景标题 | 24 |
+| Overlay / Fullscreen Decision Dimmer Alpha | A/B 与 Final Response 全屏黑幕 | 0.82 |
+
+普通全局人物名称、普通字幕和旧结尾字幕继续分别使用 `Speaker Font Size`、`Subtitle Font Size`、`Ending Subtitle Font Size`。修改字号时不要打开 TMP 的 Auto Size；本项目需要固定字号和可预测换行。
+
+### 25.2 位置字段对照
+
+Layout Profile 全部采用“左上角为原点”的 `Left / Top / Width / Height`。`Left` 增大向右，`Top` 增大向下。
+
+| Region | 对应对象 |
+|---|---|
+| Companion Identity Heading / Value | Companion 左上两行，运行时对象名为 `V2_IdentityHeading`、`V2_IdentityValue` |
+| Companion Task Heading / Body | Companion 右上两行，运行时对象名为 `V2_TaskHeading`、`V2_TaskBody` |
+| Dynamic Interaction Prompt | Human/Companion 短按 E 提示基线 |
+| Doorway Portrait One/Two/Three | 17F01–03 三张照片 |
+| Doorway Portrait Labels | SON/DAD/MOM 等标签基线 |
+| Doorway Introduction | `HOUSEHOLD INTRODUCTION` |
+| Doorway Navigation | Before/After/Review 一行 |
+| Doorway Field Unit | 门口终端共享底部消息区 |
+| Terminal Message Lane | 同步终端与 17F04 终端共享底部消息区 |
+| Photo Archive Field Unit / Page | TV4 下方 Field Unit 与 `PAGE 01 / 01` |
+| Fullscreen Selection Dimmer | 终端处置、Final Response 全屏遮罩 |
+| Epilogue Scene Card / Header | 黑幕首次场景卡与持续小标题 |
+
+同步终端的现有框体大小不由本轮放大；只读取 Theme 中的三项终端字号。门口终端当前基线为照片 `180/440/700, 264, 240×400`，简介 `1016,246,828×468`，Field Unit `230,745,1460×248`。TV4 Field Unit 为 `320,790,1280×190`，页码为 `240,730`。
+
+### 25.3 直接微调 TMP 的方法
+
+1. 先在对应 Profile 修改字体或 Region；只有 Profile 没有该细项时才进入 Prefab Mode。
+2. TMP 的 `Alignment` 决定文字锚向；Field Unit 名称与正文都使用左上，操作提示使用右下。
+3. `Line Spacing` 只调正文的行距；建议每次改 2–4，避免一次跨太大。
+4. 内边距由 TMP Rect 相对外框 Rect 决定。名称、正文左边缘必须共线；不要拉伸外框图片来制造边距。
+5. 禁止打开 Auto Size；如果文字仍溢出，先增加对应 Region 高度或减少正文长度，再调整字号。
+6. 应用 Profile 后依次运行 `Validate Open Scene UI`、`Validate Repaired Prefabs` 和 Runtime Preview 的 `QA/Audit Active Regions`。
+
+### 25.4 哪些可以直接改，哪些不能改名
+
+- 可以直接改 Prefab：纯装饰图片、颜色、9-slice Border、不会被 Builder 重新生成的固定 TMP 对齐细节。
+- 应通过 Profile 改：所有上表列出的字号和 Rect；终端 Field Unit、Companion 顶部、选择遮罩、TV4 底部区和黑幕场景卡。
+- 运行时生成：缺失时补建的 `TerminalDialogueSurface_V2`、`TerminalMessageSurface_V2`、`PhotoArchiveCanvas_V2`、黑幕持续标题。不要只改 Scene 中临时实例。
+- 绝对不能改名：`PlayerInteractionPrompt`、`HoldPrompt`、`HoldPromptText`、`HoldProgressFill`、`FieldUnitPanel`、`LilyMessagePanel`、上方四个 Companion 分离 TMP 名，以及终端 Before/After/Review 功能节点。
+- 不允许在普通木门上恢复玩家直接 E 开关门；剧情仍可调用 `SmartDoorController.Open()`、`Close()`。
+
+### 25.5 E／Hold E 与预览
+
+短按和长按都采用 V1 功能结构；V2 只替换配色、边框和字体。Hold E 的根及内部六个 Rect 必须一起移动，不能只移动 `HoldPrompt` 根。
+
+- 生成对照图：`Tools > Hearth > UI V2 > Reference > Capture E-Hold E Comparison`
+- 输出目录：`Documentation/HEARTH_UI_V2_Reference`
+- Play Mode 预览：`Tools > Hearth > UI V2 > Runtime Preview`
+- 1920×1080：Runtime Preview 下 `QA/Resolution/1920x1080`
+
+每次重新运行 Builder 后，应再执行 `Apply Current Profiles`；不要手工修改 Builder 生成的 `V2_*` 视觉子节点后期待它永久保留。需要长期保留的调节必须回写 Profile 或 Builder。
 1. 退出 Play Mode 修改 Prefab。
 2. 保存后进入 Play Mode。
 3. 使用 `Tools > Hearth > UI V2 > Runtime Preview` 选择状态。

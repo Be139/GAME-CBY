@@ -27,6 +27,10 @@ public class HearthCompanionHudController : MonoBehaviour
     [SerializeField] private HearthCompanionSpecialEffectsView specialEffectsView;
     [SerializeField] private TMP_Text identityText;
     [SerializeField] private TMP_Text currentTaskText;
+    [SerializeField] private TMP_Text identityHeadingText;
+    [SerializeField] private TMP_Text identityValueText;
+    [SerializeField] private TMP_Text currentTaskHeadingText;
+    [SerializeField] private TMP_Text currentTaskBodyText;
     [SerializeField] private TMP_Text recText;
     [SerializeField] private TMP_Text modeLabelText;
     [SerializeField] private TMP_Text centerMessageText;
@@ -60,12 +64,22 @@ public class HearthCompanionHudController : MonoBehaviour
     private PlayerInteraction companionInteraction;
     private bool shortPressInteractionSuspendedByHold;
     private bool shortPressInteractionEnabledBeforeHold;
+    private bool transientDialogueExclusive;
+    private bool decisionWasVisibleBeforeTransientDialogue;
 
     public HearthCompanionHudSceneData CurrentScene { get { return currentScene; } }
     public string CurrentSceneId { get { return currentScene != null ? currentScene.SceneId : string.Empty; } }
     public HearthCompanionHudSceneEvent SceneShown { get { return sceneShown; } }
     public HearthCompanionHudSceneEvent HoldPromptConfirmed { get { return holdPromptConfirmed; } }
     public UnityEvent ReplayCompleted { get { return replayCompleted; } }
+    public bool IsPresented
+    {
+        get
+        {
+            return explicitVisibility && coordinatorPresentationVisible &&
+                (rootCanvasGroup == null || rootCanvasGroup.alpha > 0.001f);
+        }
+    }
 
     private void Awake()
     {
@@ -351,18 +365,66 @@ public class HearthCompanionHudController : MonoBehaviour
 
     public void SetCurrentTask(string task)
     {
-        if (currentTaskText == null)
+        if (currentTaskText == null && currentTaskBodyText == null)
         {
             ResolveReferences();
         }
 
-        if (currentTaskText != null)
+        string normalized = HearthCurrentTaskRouter.NormalizeTaskText(task);
+        if (currentTaskHeadingText != null)
         {
-            string normalized = HearthCurrentTaskRouter.NormalizeTaskText(task);
+            currentTaskHeadingText.text = "CURRENT TASK";
+        }
+        if (currentTaskBodyText != null)
+        {
+            currentTaskBodyText.text = normalized;
+        }
+        else if (currentTaskText != null)
+        {
             currentTaskText.text = string.IsNullOrWhiteSpace(normalized)
                 ? "CURRENT TASK"
                 : "CURRENT TASK\n" + normalized;
         }
+    }
+
+    /// <summary>
+    /// Temporarily gives a formal Field Unit / Synth Voice subtitle exclusive
+    /// ownership of the right side of the companion HUD. The authored status
+    /// data is kept and the DecisionPanel is restored only after the dialogue
+    /// line has finished.
+    /// </summary>
+    public void SetTransientDialogueExclusive(bool exclusive)
+    {
+        ResolveReferences();
+        if (transientDialogueExclusive == exclusive)
+        {
+            return;
+        }
+
+        transientDialogueExclusive = exclusive;
+        if (exclusive)
+        {
+            decisionWasVisibleBeforeTransientDialogue =
+                decisionPanelView != null && decisionPanelView.IsVisible;
+            if (decisionVisibilityRoutine != null)
+            {
+                StopCoroutine(decisionVisibilityRoutine);
+                decisionVisibilityRoutine = null;
+            }
+            if (decisionPanelView != null)
+            {
+                decisionPanelView.HideImmediate();
+            }
+            return;
+        }
+
+        if (decisionWasVisibleBeforeTransientDialogue &&
+            decisionPanelView != null && currentScene != null)
+        {
+            decisionPanelView.Apply(currentScene);
+            StartDecisionVisibilityTimer(currentScene);
+        }
+        decisionWasVisibleBeforeTransientDialogue = false;
     }
 
     public void NotifyReplayCompleted()
@@ -531,20 +593,40 @@ public class HearthCompanionHudController : MonoBehaviour
             modeLabelText.color = scene.AccentColor;
         }
 
-        if (identityText != null)
+        string residentLabel = "UNIT " + NormalizeResidentLabel(scene.ResidentId);
+        if (identityHeadingText != null)
+        {
+            identityHeadingText.text = "COMPANION UNIT · ACTIVE";
+            identityHeadingText.color = scene.AccentColor;
+        }
+        if (identityValueText != null)
+        {
+            identityValueText.text = residentLabel;
+            identityValueText.color = scene.AccentColor;
+        }
+        else if (identityText != null)
         {
             identityText.text =
-                "COMPANION UNIT · ACTIVE\nUNIT " +
-                NormalizeResidentLabel(scene.ResidentId);
+                "COMPANION UNIT · ACTIVE\n" + residentLabel;
             identityText.color = scene.AccentColor;
         }
 
-        if (currentTaskText != null)
+        string resolvedTask = HearthCurrentTaskRouter.ResolveCompanionSceneTask(
+            scene.SceneId,
+            scene.CurrentTask);
+        if (currentTaskHeadingText != null)
         {
-            currentTaskText.text =
-                "CURRENT TASK\n" + HearthCurrentTaskRouter.ResolveCompanionSceneTask(
-                    scene.SceneId,
-                    scene.CurrentTask);
+            currentTaskHeadingText.text = "CURRENT TASK";
+            currentTaskHeadingText.color = scene.AccentColor;
+        }
+        if (currentTaskBodyText != null)
+        {
+            currentTaskBodyText.text = resolvedTask;
+            currentTaskBodyText.color = scene.AccentColor;
+        }
+        else if (currentTaskText != null)
+        {
+            currentTaskText.text = "CURRENT TASK\n" + resolvedTask;
             currentTaskText.color = scene.AccentColor;
         }
 
@@ -598,9 +680,29 @@ public class HearthCompanionHudController : MonoBehaviour
             identityText = FindTextByName("V2_Identity");
         }
 
+        if (identityHeadingText == null)
+        {
+            identityHeadingText = FindTextByName("V2_IdentityHeading");
+        }
+
+        if (identityValueText == null)
+        {
+            identityValueText = FindTextByName("V2_IdentityValue");
+        }
+
         if (currentTaskText == null)
         {
             currentTaskText = FindTextByName("V2_CurrentTask");
+        }
+
+        if (currentTaskHeadingText == null)
+        {
+            currentTaskHeadingText = FindTextByName("V2_TaskHeading");
+        }
+
+        if (currentTaskBodyText == null)
+        {
+            currentTaskBodyText = FindTextByName("V2_TaskBody");
         }
 
         if (recText == null)
@@ -815,7 +917,8 @@ public class HearthCompanionHudController : MonoBehaviour
             decisionVisibilityRoutine = null;
         }
 
-        if (decisionPanelView == null ||
+        if (transientDialogueExclusive ||
+            decisionPanelView == null ||
             scene == null ||
             (string.IsNullOrWhiteSpace(scene.DecisionTitle) &&
              string.IsNullOrWhiteSpace(scene.DecisionBody)))

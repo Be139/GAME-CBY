@@ -7,6 +7,10 @@ public enum HearthUiLayoutRegion
     TerminalSafeArea,
     HumanIdentity,
     CurrentTask,
+    CompanionIdentityHeading,
+    CompanionIdentityValue,
+    CompanionTaskHeading,
+    CompanionTaskBody,
     SharedLocation,
     SharedSubtitleSpeaker,
     SharedSubtitleBody,
@@ -16,7 +20,19 @@ public enum HearthUiLayoutRegion
     TerminalPrimaryAction,
     TerminalContent,
     TerminalMessageLane,
-    TerminalFooter
+    TerminalFooter,
+    DoorwayPortraitOne,
+    DoorwayPortraitTwo,
+    DoorwayPortraitThree,
+    DoorwayPortraitLabels,
+    DoorwayIntroduction,
+    DoorwayNavigation,
+    DoorwayFieldUnit,
+    PhotoArchiveFieldUnit,
+    PhotoArchivePage,
+    FullscreenSelectionDimmer,
+    EpilogueSceneCard,
+    EpilogueSceneHeader
 }
 
 [Serializable]
@@ -85,6 +101,14 @@ public sealed class HearthUiLayoutProfile : ScriptableObject
         new HearthUiReferenceRect(64f, 48f, 432f, 96f);
     [SerializeField] private HearthUiReferenceRect currentTask =
         new HearthUiReferenceRect(1408f, 48f, 448f, 104f);
+    [SerializeField] private HearthUiReferenceRect companionIdentityHeading =
+        new HearthUiReferenceRect(60f, 42f, 430f, 30f);
+    [SerializeField] private HearthUiReferenceRect companionIdentityValue =
+        new HearthUiReferenceRect(60f, 76f, 430f, 44f);
+    [SerializeField] private HearthUiReferenceRect companionTaskHeading =
+        new HearthUiReferenceRect(1340f, 42f, 520f, 28f);
+    [SerializeField] private HearthUiReferenceRect companionTaskBody =
+        new HearthUiReferenceRect(1340f, 74f, 520f, 58f);
     [SerializeField] private HearthUiReferenceRect sharedLocation =
         new HearthUiReferenceRect(64f, 944f, 360f, 80f);
     [SerializeField] private HearthUiReferenceRect sharedSubtitleSpeaker =
@@ -104,9 +128,37 @@ public sealed class HearthUiLayoutProfile : ScriptableObject
     [SerializeField] private HearthUiReferenceRect terminalContent =
         new HearthUiReferenceRect(120f, 232f, 1680f, 528f);
     [SerializeField] private HearthUiReferenceRect terminalMessageLane =
-        new HearthUiReferenceRect(320f, 790f, 1280f, 120f);
+        new HearthUiReferenceRect(230f, 745f, 1460f, 248f);
     [SerializeField] private HearthUiReferenceRect terminalFooter =
         new HearthUiReferenceRect(96f, 920f, 1728f, 64f);
+
+    [Header("Doorway Terminal")]
+    [SerializeField] private HearthUiReferenceRect doorwayPortraitOne =
+        new HearthUiReferenceRect(180f, 264f, 240f, 400f);
+    [SerializeField] private HearthUiReferenceRect doorwayPortraitTwo =
+        new HearthUiReferenceRect(440f, 264f, 240f, 400f);
+    [SerializeField] private HearthUiReferenceRect doorwayPortraitThree =
+        new HearthUiReferenceRect(700f, 264f, 240f, 400f);
+    [SerializeField] private HearthUiReferenceRect doorwayPortraitLabels =
+        new HearthUiReferenceRect(180f, 680f, 760f, 34f);
+    [SerializeField] private HearthUiReferenceRect doorwayIntroduction =
+        new HearthUiReferenceRect(1016f, 246f, 828f, 468f);
+    [SerializeField] private HearthUiReferenceRect doorwayNavigation =
+        new HearthUiReferenceRect(318f, 142f, 1526f, 52f);
+    [SerializeField] private HearthUiReferenceRect doorwayFieldUnit =
+        new HearthUiReferenceRect(230f, 745f, 1460f, 248f);
+
+    [Header("Photo Archive / Selection / Finale")]
+    [SerializeField] private HearthUiReferenceRect photoArchiveFieldUnit =
+        new HearthUiReferenceRect(320f, 790f, 1280f, 190f);
+    [SerializeField] private HearthUiReferenceRect photoArchivePage =
+        new HearthUiReferenceRect(240f, 730f, 260f, 34f);
+    [SerializeField] private HearthUiReferenceRect fullscreenSelectionDimmer =
+        new HearthUiReferenceRect(0f, 0f, 1920f, 1080f);
+    [SerializeField] private HearthUiReferenceRect epilogueSceneCard =
+        new HearthUiReferenceRect(260f, 390f, 1400f, 160f);
+    [SerializeField] private HearthUiReferenceRect epilogueSceneHeader =
+        new HearthUiReferenceRect(320f, 292f, 1280f, 56f);
 
     public Vector2 ReferenceResolution { get { return referenceResolution; } }
 
@@ -122,6 +174,14 @@ public sealed class HearthUiLayoutProfile : ScriptableObject
                 return humanIdentity;
             case HearthUiLayoutRegion.CurrentTask:
                 return currentTask;
+            case HearthUiLayoutRegion.CompanionIdentityHeading:
+                return companionIdentityHeading;
+            case HearthUiLayoutRegion.CompanionIdentityValue:
+                return companionIdentityValue;
+            case HearthUiLayoutRegion.CompanionTaskHeading:
+                return companionTaskHeading;
+            case HearthUiLayoutRegion.CompanionTaskBody:
+                return companionTaskBody;
             case HearthUiLayoutRegion.SharedLocation:
                 return sharedLocation;
             case HearthUiLayoutRegion.SharedSubtitleSpeaker:
@@ -142,6 +202,30 @@ public sealed class HearthUiLayoutProfile : ScriptableObject
                 return terminalMessageLane;
             case HearthUiLayoutRegion.TerminalFooter:
                 return terminalFooter;
+            case HearthUiLayoutRegion.DoorwayPortraitOne:
+                return doorwayPortraitOne;
+            case HearthUiLayoutRegion.DoorwayPortraitTwo:
+                return doorwayPortraitTwo;
+            case HearthUiLayoutRegion.DoorwayPortraitThree:
+                return doorwayPortraitThree;
+            case HearthUiLayoutRegion.DoorwayPortraitLabels:
+                return doorwayPortraitLabels;
+            case HearthUiLayoutRegion.DoorwayIntroduction:
+                return doorwayIntroduction;
+            case HearthUiLayoutRegion.DoorwayNavigation:
+                return doorwayNavigation;
+            case HearthUiLayoutRegion.DoorwayFieldUnit:
+                return doorwayFieldUnit;
+            case HearthUiLayoutRegion.PhotoArchiveFieldUnit:
+                return photoArchiveFieldUnit;
+            case HearthUiLayoutRegion.PhotoArchivePage:
+                return photoArchivePage;
+            case HearthUiLayoutRegion.FullscreenSelectionDimmer:
+                return fullscreenSelectionDimmer;
+            case HearthUiLayoutRegion.EpilogueSceneCard:
+                return epilogueSceneCard;
+            case HearthUiLayoutRegion.EpilogueSceneHeader:
+                return epilogueSceneHeader;
             default:
                 throw new ArgumentOutOfRangeException("region", region, "Unknown HEARTH UI layout region.");
         }

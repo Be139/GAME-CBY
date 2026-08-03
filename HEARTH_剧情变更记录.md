@@ -1117,3 +1117,15 @@ casual_Female_K (9) -> REF_Wife_17F02_ExitOutside
 - 已建立中央 Sound ID、关卡 Cue ID、对白 `sequenceId + lineId` 精确触发，以及统一 Audio Channel/Duck。
 - 全局换素材改 `HearthSfxCatalog.asset`；单关特例用对应 Cue 的 `Primary Clip` 覆盖。
 - 以上为已实现的脚本/场景变更，不是仅记录意图；仍需 Play Mode 主观试听最终音量、EQ、循环点和门源分段边界。
+
+## 2026-08-03 V2 UI、E/Hold E 与 17F04 黑幕场景卡落盘
+
+- “Few/Fuel Unit”统一为 `Field Unit`。终端内名称/正文/Space 字号统一为 52/26/26；同步终端只放大文字，不改变现有外框尺寸。
+- Companion 顶部身份和任务拆成四个独立 TMP；只调整这四项，其他 Companion 页面保留给用户手调。
+- 短按 E 与 Hold E 恢复 V1 功能结构并应用 V2 蓝色视觉。普通剧情木门不再允许玩家 E 开关；终端、电梯、检查点、相册等合法目标继续短按 E，固定持续剧情继续 Hold E。
+- 门口终端、17F04 Home Terminal、TV4 和 Final Response 按 1920×1080 Profile 重排。处置和 Final Response 遮罩覆盖全屏，操作提示位于遮罩之上。
+- 17F02 正式 Synth Voice/Field Unit 出现时临时隐藏旧 Persistent DecisionPanel，结束后才恢复，避免双层内容叠加。
+- 17F04 Home Terminal 标题改为 `WELCOME HOME`；Lily 留言留在中央内容区，Field Unit 使用底部共享区，二者互斥。
+- 黑幕后 TimeCard 先居中独立显示约 1.5 秒，再缩为对白上方持续场景标题。对白白字居中、按语音自动衔接、无姓名框、无 Space。
+- 正式稿新增稳定 `HEARTH:TIME_CARD` 元数据，英文正文及已有对白 Line ID 不变；逐句 SFX 触发键不变。
+- 本轮不重新导入、不改名现有 36 个正式音效素材，不改变中央 SFX Catalog；仅做 UI 后的 Cue 回归。

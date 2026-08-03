@@ -16,6 +16,7 @@ public static class HearthFinalDialogueSync
     private const string SubtitleStylePath = "Assets/Data/MinLoop/UI/Hearth_SubtitleStyle.asset";
     private const string MarkerPrefix = "<!-- HEARTH:SEQUENCES ";
     private const string VoiceMarkerPrefix = "<!-- HEARTH:VOICE ";
+    private const string TimeCardMarkerPrefix = "<!-- HEARTH:TIME_CARD ";
 
     private static readonly Regex SceneRegex = new Regex(
         @"^### Scene\s+([0-9]+\.[0-9]+)\b",
@@ -31,6 +32,10 @@ public static class HearthFinalDialogueSync
 
     private static readonly Regex VoiceMarkerRegex = new Regex(
         @"^<!--\s*HEARTH:VOICE\s+(.+?)\s*-->$",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+    private static readonly Regex TimeCardMarkerRegex = new Regex(
+        @"^<!--\s*HEARTH:TIME_CARD\s+([^|]+?)\s*\|\s*(.+?)\s*-->$",
         RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     private sealed class DialogueLine
@@ -242,6 +247,25 @@ public static class HearthFinalDialogueSync
                             mapping.AssetPath + " line " + lineIndex + " (" + line.lineId +
                             ") must be DedicatedMessage + ManualSpace.");
                     }
+                }
+
+                if (line.presentationKind ==
+                    HearthSubtitleLinePresentationKind.TimeCard)
+                {
+                    if (line.voiceClip != null)
+                    {
+                        issues.Add(
+                            mapping.AssetPath + " line " + lineIndex + " (" +
+                            line.lineId + ") TimeCard must not bind a voice clip.");
+                    }
+                    if (line.advancePolicy !=
+                        HearthDialogueLineAdvancePolicy.AudioComplete)
+                    {
+                        issues.Add(
+                            mapping.AssetPath + " line " + lineIndex + " (" +
+                            line.lineId + ") TimeCard must advance automatically.");
+                    }
+                    continue;
                 }
 
                 if (automatic)
@@ -463,7 +487,9 @@ public static class HearthFinalDialogueSync
             for (int i = 0; i < sourceLines.Length; i++)
             {
                 string trimmed = sourceLines[i].Trim();
-                if (MarkerRegex.IsMatch(trimmed) || VoiceMarkerRegex.IsMatch(trimmed))
+                if (MarkerRegex.IsMatch(trimmed) ||
+                    VoiceMarkerRegex.IsMatch(trimmed) ||
+                    TimeCardMarkerRegex.IsMatch(trimmed))
                 {
                     continue;
                 }
@@ -629,6 +655,35 @@ public static class HearthFinalDialogueSync
                 continue;
             }
 
+            Match timeCardMarkerMatch = TimeCardMarkerRegex.Match(raw);
+            if (timeCardMarkerMatch.Success)
+            {
+                if (string.IsNullOrEmpty(currentScene))
+                {
+                    error = "Found HEARTH:TIME_CARD before the first Scene heading at source line " +
+                        (i + 1) + ".";
+                    return false;
+                }
+
+                DialogueLine timeCard = new DialogueLine
+                {
+                    SceneId = currentScene,
+                    SceneIndex = script.Scenes[currentScene].Count,
+                    Speaker = string.Empty,
+                    Prefix = string.Empty,
+                    Text = timeCardMarkerMatch.Groups[2].Value.Trim(),
+                    LineId = timeCardMarkerMatch.Groups[1].Value.Trim(),
+                    SourceLine = i + 1,
+                    PresentationKind = HearthSubtitleLinePresentationKind.TimeCard
+                };
+                timeCard.SequenceIds.AddRange(pendingMarkers);
+                script.Scenes[currentScene].Add(timeCard);
+                pendingMarkers.Clear();
+                pendingVoiceLineId = null;
+                script.HasStableMarkers = true;
+                continue;
+            }
+
             Match sceneMatch = SceneRegex.Match(raw);
             if (sceneMatch.Success)
             {
@@ -785,7 +840,9 @@ public static class HearthFinalDialogueSync
                         ? preservedState.PresentationKind
                         : HearthSubtitleLinePresentationKind.Dialogue);
             HearthDialogueLineAdvancePolicy resolvedAdvancePolicy =
-                hasPreservedState
+                source.PresentationKind == HearthSubtitleLinePresentationKind.TimeCard
+                    ? HearthDialogueLineAdvancePolicy.AudioComplete
+                    : hasPreservedState
                     ? preservedState.AdvancePolicy
                     : HearthDialogueLineAdvancePolicy.ManualSpace;
             HearthDialogueLineMode resolvedDialogueMode = hasPreservedState
@@ -817,9 +874,12 @@ public static class HearthFinalDialogueSync
                 : (int)SpeakerSide.Auto;
             target.FindPropertyRelative("advancePolicy").enumValueIndex =
                 (int)resolvedAdvancePolicy;
-            target.FindPropertyRelative("holdSeconds").floatValue = hasPreservedState
-                ? preservedState.HoldSeconds
-                : EstimateHoldSeconds(source.Text);
+            target.FindPropertyRelative("holdSeconds").floatValue =
+                source.PresentationKind == HearthSubtitleLinePresentationKind.TimeCard
+                    ? 1.5f
+                    : (hasPreservedState
+                        ? preservedState.HoldSeconds
+                        : EstimateHoldSeconds(source.Text));
             AudioClip preserved;
             if (hasPreservedState)
             {
@@ -831,13 +891,20 @@ public static class HearthFinalDialogueSync
                     source.PresentationKind == HearthSubtitleLinePresentationKind.TimeCard ? string.Empty : source.Speaker,
                     source.Text), out preserved);
             }
-            target.FindPropertyRelative("voiceClip").objectReferenceValue = preserved;
-            target.FindPropertyRelative("durationMode").enumValueIndex = hasPreservedState
-                ? (int)preservedState.DurationMode
-                : (int)HearthSubtitleDurationMode.VoiceClipWhenAssigned;
-            target.FindPropertyRelative("voiceTailSeconds").floatValue = hasPreservedState
-                ? preservedState.VoiceTailSeconds
-                : 0.12f;
+            target.FindPropertyRelative("voiceClip").objectReferenceValue =
+                source.PresentationKind == HearthSubtitleLinePresentationKind.TimeCard
+                    ? null
+                    : preserved;
+            target.FindPropertyRelative("durationMode").enumValueIndex =
+                source.PresentationKind == HearthSubtitleLinePresentationKind.TimeCard
+                    ? (int)HearthSubtitleDurationMode.ManualHold
+                    : (hasPreservedState
+                        ? (int)preservedState.DurationMode
+                        : (int)HearthSubtitleDurationMode.VoiceClipWhenAssigned);
+            target.FindPropertyRelative("voiceTailSeconds").floatValue =
+                source.PresentationKind == HearthSubtitleLinePresentationKind.TimeCard
+                    ? 0f
+                    : (hasPreservedState ? preservedState.VoiceTailSeconds : 0.12f);
         }
 
         serialized.FindProperty("postSequenceDelay").floatValue = 0.18f;
@@ -881,12 +948,12 @@ public static class HearthFinalDialogueSync
             {
                 issues.Add(
                     "Scene " + line.SceneId + " source line " + line.SourceLine +
-                    " has no stable HEARTH:VOICE line ID.");
+                    " has no stable HEARTH:VOICE / HEARTH:TIME_CARD line ID.");
             }
             else if (!usedLineIds.Add(line.LineId))
             {
                 issues.Add(
-                    "Duplicate HEARTH:VOICE line ID at source line " + line.SourceLine +
+                    "Duplicate stable dialogue/time-card line ID at source line " + line.SourceLine +
                     ": " + line.LineId + ".");
             }
 

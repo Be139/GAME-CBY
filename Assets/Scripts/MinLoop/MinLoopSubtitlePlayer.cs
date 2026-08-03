@@ -17,6 +17,8 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
 
     [Header("Shared Presentation")]
     [SerializeField] private HearthSubtitleStyleProfile styleProfile;
+    [SerializeField] private HearthUiThemeProfile uiThemeProfile;
+    [SerializeField] private HearthUiLayoutProfile uiLayoutProfile;
     [SerializeField] private HearthSubtitlePresentationMode presentationMode = HearthSubtitlePresentationMode.StandardDialogue;
     [SerializeField] private HearthSubtitleContext defaultContext = HearthSubtitleContext.Human;
     [SerializeField] private bool inferContextFromSpeaker = true;
@@ -38,6 +40,8 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
     [SerializeField] private TMP_Text bodyText;
     [SerializeField] private TMP_Text advanceHintText;
     [SerializeField] private CanvasGroup canvasGroup;
+    [SerializeField] private TMP_Text persistentSceneHeaderText;
+    [SerializeField] private CanvasGroup persistentSceneHeaderGroup;
     [SerializeField] private bool createFallbackUI = true;
 
     [Header("Canvas Sorting")]
@@ -104,6 +108,8 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
     private float desiredCanvasAlpha;
     private bool manualAdvanceRequested;
     private HearthDialogueSurface activeExternalSurface;
+    private readonly List<HearthCompanionHudController> suppressedCompanionHuds =
+        new List<HearthCompanionHudController>();
 
     public bool IsPlaying { get; private set; }
 
@@ -194,6 +200,8 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
     private void OnDisable()
     {
         ActiveDialoguePlayers.Remove(this);
+        ClearPersistentSceneHeader();
+        RestoreCompanionDialogueLayers();
         ReleaseDialogueControlLock();
         HideActiveExternalSurface();
     }
@@ -419,6 +427,7 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
                 showVisual &&
                 mode != HearthSubtitlePresentationMode.TimeCard &&
                 mode != HearthSubtitlePresentationMode.NaturalCaption &&
+                mode != HearthSubtitlePresentationMode.CenteredEpilogue &&
                 side != SpeakerSide.None &&
                 !string.IsNullOrWhiteSpace(speaker));
         }
@@ -453,6 +462,16 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
         presentationMode = mode;
         activePresentationMode = mode;
         ApplyConfiguredStyle();
+    }
+
+    public void SetUiProfiles(
+        HearthUiThemeProfile themeProfile,
+        HearthUiLayoutProfile layoutProfile)
+    {
+        uiThemeProfile = themeProfile;
+        uiLayoutProfile = layoutProfile;
+        EnsurePersistentSceneHeader();
+        ApplyPersistentSceneHeaderStyle();
     }
 
     public void SetSubtitleContext(HearthSubtitleContext context)
@@ -514,6 +533,8 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
 
         IsPlaying = false;
         manualAdvanceRequested = false;
+        ClearPersistentSceneHeader();
+        RestoreCompanionDialogueLayers();
         ReleaseDialogueControlLock();
         HideImmediate();
     }
@@ -532,11 +553,13 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
         int playbackToken = playbackGeneration;
         IsPlaying = true;
         ActiveDialoguePlayers.Add(this);
+        ClearPersistentSceneHeader();
 
         if (lines == null || lines.Count == 0)
         {
             ActiveDialoguePlayers.Remove(this);
             HideImmediate();
+            ClearPersistentSceneHeader();
             IsPlaying = false;
             activeRoutine = null;
             yield break;
@@ -624,11 +647,17 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
                 effectiveAdvancePolicy,
                 !audioOnly,
                 lineSurface);
+            SetCompanionDialogueExclusive(
+                ShouldSuppressCompanionDecisionLayer(
+                    line.speaker,
+                    linePresentation,
+                    lineChannel));
             PlayVoice(line.voiceClip);
 
             float holdSeconds = ResolveLineDuration(line);
             if (linePresentation == HearthSubtitlePresentationMode.TimeCard)
             {
+                ClearPersistentSceneHeader();
                 float fadeSeconds = styleProfile != null ? styleProfile.TimeCardFadeSeconds : 0.35f;
                 yield return FadeCanvas(0f, 1f, fadeSeconds);
                 if (playbackToken != playbackGeneration)
@@ -643,7 +672,9 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
                         yield break;
                     }
                 }
-                yield return FadeCanvas(1f, 0f, fadeSeconds);
+                yield return TransitionTimeCardToPersistentHeader(
+                    line.text,
+                    fadeSeconds);
                 if (playbackToken != playbackGeneration)
                 {
                     yield break;
@@ -665,6 +696,8 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
                     yield break;
                 }
             }
+
+            RestoreCompanionDialogueLayers();
         }
 
         if (playbackToken != playbackGeneration)
@@ -673,6 +706,8 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
         }
 
         HideImmediate();
+        ClearPersistentSceneHeader();
+        RestoreCompanionDialogueLayers();
         IsPlaying = false;
         ActiveDialoguePlayers.Remove(this);
         activeRoutine = null;
@@ -916,6 +951,18 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
         {
             case HearthSubtitleLinePresentationKind.TimeCard:
                 return HearthSubtitlePresentationMode.TimeCard;
+        }
+
+        // The black-screen finale explicitly owns the ordinary dialogue lane.
+        // Time cards remain authored above, while every other finale line stays
+        // centered even if it was previously tagged as a natural caption.
+        if (explicitPresentation == HearthSubtitlePresentationMode.CenteredEpilogue)
+        {
+            return HearthSubtitlePresentationMode.CenteredEpilogue;
+        }
+
+        switch (authoredPresentation)
+        {
             case HearthSubtitleLinePresentationKind.NaturalCaption:
                 return HearthSubtitlePresentationMode.NaturalCaption;
             case HearthSubtitleLinePresentationKind.TerminalLowerThird:
@@ -991,6 +1038,63 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
         return normalized == "MIA" || normalized.StartsWith("MIA ");
     }
 
+    private static bool ShouldSuppressCompanionDecisionLayer(
+        string speaker,
+        HearthSubtitlePresentationMode presentation,
+        DialogueChannel channel)
+    {
+        if (presentation == HearthSubtitlePresentationMode.TimeCard ||
+            presentation == HearthSubtitlePresentationMode.NaturalCaption ||
+            presentation == HearthSubtitlePresentationMode.CenteredEpilogue)
+        {
+            return false;
+        }
+
+        // Synth/Field lines can be routed through the auxiliary audio channel
+        // while still being the only formal visual message on Companion HUD.
+        // Do not use the audio channel as the visibility gate.
+        string normalized = NormalizeSpeaker(speaker);
+        return normalized.Contains("FIELD UNIT") ||
+               normalized.Contains("SYNTH VOICE") ||
+               normalized.Contains("HOME UNIT");
+    }
+
+    private void SetCompanionDialogueExclusive(bool exclusive)
+    {
+        RestoreCompanionDialogueLayers();
+        if (!exclusive || !Application.isPlaying)
+        {
+            return;
+        }
+
+        HearthCompanionHudController[] controllers =
+            FindObjectsOfType<HearthCompanionHudController>(true);
+        for (int i = 0; i < controllers.Length; i++)
+        {
+            HearthCompanionHudController controller = controllers[i];
+            if (controller == null || !controller.IsPresented)
+            {
+                continue;
+            }
+
+            controller.SetTransientDialogueExclusive(true);
+            suppressedCompanionHuds.Add(controller);
+        }
+    }
+
+    private void RestoreCompanionDialogueLayers()
+    {
+        for (int i = 0; i < suppressedCompanionHuds.Count; i++)
+        {
+            HearthCompanionHudController controller = suppressedCompanionHuds[i];
+            if (controller != null)
+            {
+                controller.SetTransientDialogueExclusive(false);
+            }
+        }
+        suppressedCompanionHuds.Clear();
+    }
+
     private IEnumerator Wait(float seconds)
     {
         if (useUnscaledTime)
@@ -1026,6 +1130,41 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
 
         desiredCanvasAlpha = to;
         ApplyDesiredCanvasAlpha();
+    }
+
+    private IEnumerator TransitionTimeCardToPersistentHeader(
+        string text,
+        float seconds)
+    {
+        EnsurePersistentSceneHeader();
+        if (persistentSceneHeaderText != null)
+        {
+            persistentSceneHeaderText.text = text ?? string.Empty;
+        }
+
+        if (persistentSceneHeaderGroup == null || seconds <= 0f)
+        {
+            desiredCanvasAlpha = 0f;
+            ApplyDesiredCanvasAlpha();
+            SetPersistentSceneHeaderAlpha(1f);
+            yield break;
+        }
+
+        SetPersistentSceneHeaderAlpha(0f);
+        float elapsed = 0f;
+        while (elapsed < seconds)
+        {
+            elapsed += useUnscaledTime ? Time.unscaledDeltaTime : Time.deltaTime;
+            float progress = Mathf.Clamp01(elapsed / seconds);
+            desiredCanvasAlpha = 1f - progress;
+            ApplyDesiredCanvasAlpha();
+            SetPersistentSceneHeaderAlpha(progress);
+            yield return null;
+        }
+
+        desiredCanvasAlpha = 0f;
+        ApplyDesiredCanvasAlpha();
+        SetPersistentSceneHeaderAlpha(1f);
     }
 
     private void HideImmediate()
@@ -1082,6 +1221,7 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
             FindOptionalVisualReferences();
             ApplyConfiguredStyle();
             EnsureSubtitleCanvasSorting();
+            EnsurePersistentSceneHeader();
             return;
         }
 
@@ -1092,6 +1232,7 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
 
         ApplyConfiguredStyle();
         EnsureSubtitleCanvasSorting();
+        EnsurePersistentSceneHeader();
     }
 
     private void AdoptLegacyVisualBindings()
@@ -1376,7 +1517,8 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
 
         if (backdropImage != null)
         {
-            if (mode == HearthSubtitlePresentationMode.TimeCard)
+            if (mode == HearthSubtitlePresentationMode.TimeCard ||
+                mode == HearthSubtitlePresentationMode.CenteredEpilogue)
             {
                 backdropImage.color = Color.clear;
             }
@@ -1401,7 +1543,8 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
         {
             accentRuleImage.color =
                 mode == HearthSubtitlePresentationMode.TimeCard ||
-                mode == HearthSubtitlePresentationMode.NaturalCaption
+                mode == HearthSubtitlePresentationMode.NaturalCaption ||
+                mode == HearthSubtitlePresentationMode.CenteredEpilogue
                 ? Color.clear
                 : (contextStyle != null ? contextStyle.accentColor : new Color(0.47f, 0.67f, 0.86f, 1f));
             accentRuleImage.raycastTarget = false;
@@ -1460,6 +1603,103 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
         activePresentationMode = mode;
         adaptiveLayoutDirty = true;
         ApplyAdaptiveLayout(mode, activeContext);
+    }
+
+    private void EnsurePersistentSceneHeader()
+    {
+        if (persistentSceneHeaderText != null &&
+            persistentSceneHeaderGroup != null)
+        {
+            ApplyPersistentSceneHeaderStyle();
+            return;
+        }
+
+        GameObject root = GetVisualRoot();
+        Canvas canvas = root != null ? root.GetComponentInParent<Canvas>() : null;
+        if (canvas == null)
+        {
+            return;
+        }
+
+        Transform existing = canvas.transform.Find("PersistentSceneHeader");
+        GameObject headerObject = existing != null
+            ? existing.gameObject
+            : new GameObject(
+                "PersistentSceneHeader",
+                typeof(RectTransform),
+                typeof(CanvasGroup),
+                typeof(TextMeshProUGUI));
+        if (existing == null)
+        {
+            headerObject.transform.SetParent(canvas.transform, false);
+        }
+
+        persistentSceneHeaderText =
+            headerObject.GetComponent<TextMeshProUGUI>();
+        persistentSceneHeaderGroup =
+            headerObject.GetComponent<CanvasGroup>();
+        ApplyPersistentSceneHeaderStyle();
+        SetPersistentSceneHeaderAlpha(0f);
+    }
+
+    private void ApplyPersistentSceneHeaderStyle()
+    {
+        if (persistentSceneHeaderText == null)
+        {
+            return;
+        }
+
+        float fontSize = uiThemeProfile != null
+            ? uiThemeProfile.PersistentSceneHeaderFontSize
+            : 24f;
+        ApplyTextStyle(
+            persistentSceneHeaderText,
+            fontSize,
+            0f,
+            Color.white,
+            FontStyles.Bold);
+        persistentSceneHeaderText.alignment = TextAlignmentOptions.Center;
+        persistentSceneHeaderText.maxVisibleLines = 2;
+
+        RectTransform rect = persistentSceneHeaderText.rectTransform;
+        if (uiLayoutProfile != null)
+        {
+            uiLayoutProfile
+                .GetRegion(HearthUiLayoutRegion.EpilogueSceneHeader)
+                .ApplyTopLeftAnchors(rect);
+        }
+        else
+        {
+            rect.anchorMin = new Vector2(0.5f, 1f);
+            rect.anchorMax = new Vector2(0.5f, 1f);
+            rect.pivot = new Vector2(0.5f, 1f);
+            rect.anchoredPosition = new Vector2(0f, -292f);
+            rect.sizeDelta = new Vector2(1280f, 56f);
+        }
+
+        persistentSceneHeaderText.raycastTarget = false;
+        if (persistentSceneHeaderGroup != null)
+        {
+            persistentSceneHeaderGroup.blocksRaycasts = false;
+            persistentSceneHeaderGroup.interactable = false;
+        }
+    }
+
+    private void ClearPersistentSceneHeader()
+    {
+        if (persistentSceneHeaderText != null)
+        {
+            persistentSceneHeaderText.text = string.Empty;
+        }
+        SetPersistentSceneHeaderAlpha(0f);
+    }
+
+    private void SetPersistentSceneHeaderAlpha(float alpha)
+    {
+        if (persistentSceneHeaderGroup != null)
+        {
+            persistentSceneHeaderGroup.alpha = alpha;
+        }
     }
 
     private void ApplyTextStyle(

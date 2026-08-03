@@ -19,6 +19,11 @@ public class HearthCompanionDecisionPanelView : MonoBehaviour
 
     private Coroutine fadeRoutine;
 
+    public bool IsVisible
+    {
+        get { return canvasGroup != null && canvasGroup.alpha > 0.001f; }
+    }
+
     public void Configure(CanvasGroup newCanvasGroup, TMP_Text newKickerText, TMP_Text newTitleText, TMP_Text newBodyText, Image newAccentImage)
     {
         canvasGroup = newCanvasGroup;

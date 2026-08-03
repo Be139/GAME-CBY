@@ -27,6 +27,10 @@ public static class Hearth17F04FinaleBinder
     private const string DialogueFolder = "Assets/Data/MinLoop/Dialogues/17F04";
     private const string PhotoTexturePath = "Assets/Art/UI/HearthHud/Finale/FamilyPhoto.png";
     private const string SecondPhotoTexturePath = "Assets/Art/UI/HearthHud/Finale/FamilyPhoto_Second.png";
+    private const string UiThemeProfilePath =
+        "Assets/UI/HEARTH/V2/Profiles/Hearth_UiV2Theme.asset";
+    private const string UiLayoutProfilePath =
+        "Assets/UI/HEARTH/V2/Profiles/Hearth_UiV2Layout_1920x1080.asset";
 
     [MenuItem("Tools/Hearth/Finale/Apply 17F04 Home Finale Setup")]
     public static void ApplySetup()
@@ -719,6 +723,11 @@ public static class Hearth17F04FinaleBinder
             profile,
             HearthSubtitlePresentationMode.CenteredEpilogue,
             9100);
+        HearthUiThemeProfile uiTheme =
+            AssetDatabase.LoadAssetAtPath<HearthUiThemeProfile>(UiThemeProfilePath);
+        HearthUiLayoutProfile uiLayout =
+            AssetDatabase.LoadAssetAtPath<HearthUiLayoutProfile>(UiLayoutProfilePath);
+        result.Epilogue.SetUiProfiles(uiTheme, uiLayout);
 
         Transform blackout = uiRoot.Find("FinaleBlackout_17F04");
         if (blackout == null)

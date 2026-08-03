@@ -1142,6 +1142,7 @@ public static class Hearth17F02MinimalLoopBinder
         SetBool(so, "captureClosedStateOnAwake", true);
         SetBool(so, "canToggle", true);
         SetBool(so, "locked", false);
+        SetBool(so, "allowDirectPlayerInteraction", false);
         SetBool(so, "autoClose", false);
         SetBool(so, "useUnscaledTime", true);
         SetFloat(so, "moveDuration", 0.55f);

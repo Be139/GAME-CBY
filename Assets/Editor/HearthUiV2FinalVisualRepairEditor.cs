@@ -25,6 +25,10 @@ public static class HearthUiV2FinalVisualRepairEditor
         "Assets/Prefabs/UI/HearthHud/V2/Terminals/";
     private const string VectorRoot =
         "Assets/UI/HEARTH/V2/VectorParts/";
+    private const string ThemeProfilePath =
+        "Assets/UI/HEARTH/V2/Profiles/Hearth_UiV2Theme.asset";
+    private const string LayoutProfilePath =
+        "Assets/UI/HEARTH/V2/Profiles/Hearth_UiV2Layout_1920x1080.asset";
 
     private const string FullscreenFrame = VectorRoot +
         "Companion/HUD_Companion_FullscreenFrame_1920x1080.png";
@@ -73,6 +77,24 @@ public static class HearthUiV2FinalVisualRepairEditor
         new Color32(224, 151, 44, 255);
     private static readonly Color RecRed =
         new Color32(235, 58, 48, 255);
+
+    private static HearthUiThemeProfile Theme
+    {
+        get
+        {
+            return AssetDatabase.LoadAssetAtPath<HearthUiThemeProfile>(
+                ThemeProfilePath);
+        }
+    }
+
+    private static HearthUiLayoutProfile Layout
+    {
+        get
+        {
+            return AssetDatabase.LoadAssetAtPath<HearthUiLayoutProfile>(
+                LayoutProfilePath);
+        }
+    }
 
     [MenuItem(MenuRoot + "Apply Visual and Structure Repair")]
     public static void ApplyAll()
@@ -283,6 +305,9 @@ public static class HearthUiV2FinalVisualRepairEditor
         {
             return;
         }
+
+        Transform firstChoice = FindNamed(page, "Button_ANSWER_LILY");
+        EnsureFullscreenDimmer(page, firstChoice);
 
         SetNamedActiveAll(page, "ShapeFill_001", false);
         SetNamedActiveAll(page, "ShapeFill_004", false);
@@ -540,13 +565,48 @@ public static class HearthUiV2FinalVisualRepairEditor
             fullscreen.SetAsFirstSibling();
         }
 
-        TMP_Text identity = FindText(root.transform, "V2_Identity");
-        SetTopLeft(identity != null ? identity.rectTransform : null, 60f, 42f, 430f, 88f);
-        ConfigureText(identity, 20f, TextAlignmentOptions.TopLeft, ColdWhite, FontStyles.Normal);
+        Transform persistent = FindNamed(root.transform, "PersistentInfoLayer");
+        TMP_Text legacyIdentity = FindText(root.transform, "V2_Identity");
+        if (legacyIdentity != null)
+        {
+            legacyIdentity.gameObject.SetActive(false);
+        }
+        TMP_Text legacyTask = FindText(root.transform, "V2_CurrentTask");
+        if (legacyTask != null)
+        {
+            legacyTask.gameObject.SetActive(false);
+        }
+
+        TMP_Text identityHeading = EnsureText(
+            persistent,
+            "V2_IdentityHeading",
+            "COMPANION UNIT · ACTIVE");
+        TMP_Text identityValue = EnsureText(
+            persistent,
+            "V2_IdentityValue",
+            "UNIT 17F-01");
+        TMP_Text taskHeading = EnsureText(
+            persistent,
+            "V2_TaskHeading",
+            "CURRENT TASK");
+        TMP_Text taskBody = EnsureText(
+            persistent,
+            "V2_TaskBody",
+            string.Empty);
+
+        SetProfileRect(identityHeading, HearthUiLayoutRegion.CompanionIdentityHeading, new Rect(60f, 42f, 430f, 30f));
+        SetProfileRect(identityValue, HearthUiLayoutRegion.CompanionIdentityValue, new Rect(60f, 76f, 430f, 44f));
+        SetProfileRect(taskHeading, HearthUiLayoutRegion.CompanionTaskHeading, new Rect(1340f, 42f, 520f, 28f));
+        SetProfileRect(taskBody, HearthUiLayoutRegion.CompanionTaskBody, new Rect(1340f, 74f, 520f, 58f));
+        HearthUiThemeProfile theme = Theme;
+        ConfigureText(identityHeading, theme != null ? theme.CompanionIdentityHeadingFontSize : 21f, TextAlignmentOptions.TopLeft, ColdWhite, FontStyles.Normal);
+        ConfigureText(identityValue, theme != null ? theme.CompanionIdentityValueFontSize : 32f, TextAlignmentOptions.TopLeft, ColdWhite, FontStyles.Normal);
+        ConfigureText(taskHeading, theme != null ? theme.CompanionTaskHeadingFontSize : 19f, TextAlignmentOptions.TopRight, ColdWhite, FontStyles.Normal);
+        ConfigureText(taskBody, theme != null ? theme.CompanionTaskBodyFontSize : 22f, TextAlignmentOptions.TopRight, ColdWhite, FontStyles.Normal);
 
         RectTransform identityRule =
             FindRect(root.transform, "V2_IdentityUnderline");
-        SetTopLeft(identityRule, 60f, 132f, 430f, 2f);
+        SetTopLeft(identityRule, 60f, 126f, 430f, 2f);
         ConfigureRule(identityRule, AccentBlue);
 
         TMP_Text rec = FindText(root.transform, "V2_REC");
@@ -556,14 +616,6 @@ public static class HearthUiV2FinalVisualRepairEditor
         {
             rec.text = "●  REC";
             rec.gameObject.SetActive(true);
-        }
-
-        TMP_Text task = FindText(root.transform, "V2_CurrentTask");
-        SetTopRight(task != null ? task.rectTransform : null, 60f, 42f, 520f, 88f);
-        ConfigureText(task, 20f, TextAlignmentOptions.TopRight, ColdWhite, FontStyles.Normal);
-        if (task != null)
-        {
-            task.text = "CURRENT TASK";
         }
 
         RectTransform status = FindRect(root.transform, "V2_StatusPanel");
@@ -685,6 +737,7 @@ public static class HearthUiV2FinalVisualRepairEditor
             return;
         }
         terminal.SetTerminalMode(mode);
+        terminal.SetUiProfiles(Theme, Layout);
 
         Transform content = FindNamed(root.transform, "TerminalContentRoot");
         Transform keyboard = FindNamed(root.transform, "KeyboardNavigationRoot");
@@ -935,20 +988,31 @@ public static class HearthUiV2FinalVisualRepairEditor
         for (int i = 0; i < introductions.Count; i++)
         {
             RectTransform panel = introductions[i] as RectTransform;
-            SetTopLeft(panel, 1016f, 246f, 620f, 260f);
-            EnsurePanelLayers(panel, TerminalInfoFrame);
-            SetLocalTopLeft(FindText(panel, "Title"), 24f, 24f, 572f, 40f);
-            SetLocalTopLeft(FindText(panel, "Body"), 24f, 78f, 572f, 150f);
+            Rect introductionRect = ProfileRect(
+                HearthUiLayoutRegion.DoorwayIntroduction,
+                new Rect(1016f, 246f, 828f, 468f));
+            SetTopLeft(panel, introductionRect.x, introductionRect.y, introductionRect.width, introductionRect.height);
+            EnsureScalablePanelLayers(panel);
+            SetLocalTopLeft(FindText(panel, "Title"), 24f, 24f, introductionRect.width - 48f, 52f);
+            SetLocalTopLeft(FindText(panel, "Body"), 24f, 88f, introductionRect.width - 48f, introductionRect.height - 112f);
         }
 
         List<Transform> fieldPanels = FindNamedAll(content, "FieldUnitPanel");
         for (int i = 0; i < fieldPanels.Count; i++)
         {
             RectTransform panel = fieldPanels[i] as RectTransform;
-            SetTopLeft(panel, 1016f, 548f, 620f, 190f);
-            EnsurePanelLayers(panel, TerminalFieldFrame);
-            SetLocalTopLeft(FindText(panel, "Title"), 24f, 22f, 572f, 36f);
-            SetLocalTopLeft(FindText(panel, "Body"), 24f, 70f, 572f, 92f);
+            Rect fieldRect = ProfileRect(
+                HearthUiLayoutRegion.DoorwayFieldUnit,
+                new Rect(230f, 745f, 1460f, 248f));
+            SetTopLeft(panel, fieldRect.x, fieldRect.y, fieldRect.width, fieldRect.height);
+            EnsureScalablePanelLayers(panel);
+            ApplyTerminalDialogueTextLayout(panel, fieldRect.width, fieldRect.height);
+        }
+
+        List<Transform> dispositionPanels = FindNamedAll(content, "DispositionPanel");
+        for (int i = 0; i < dispositionPanels.Count; i++)
+        {
+            EnsureFullscreenDimmer(dispositionPanels[i].parent, dispositionPanels[i]);
         }
 
         ApplyPortraitSlot(content, "SON", 180f);
@@ -1004,7 +1068,12 @@ public static class HearthUiV2FinalVisualRepairEditor
         if (homePanel != null)
         {
             EnsurePlainPanel(homePanel, Amber);
-            SetLocalTopLeft(FindText(homePanel, "Title"), 64f, 32f, 780f, 48f);
+            TMP_Text homeTitle = FindText(homePanel, "Title");
+            if (homeTitle != null)
+            {
+                homeTitle.text = "WELCOME HOME";
+            }
+            SetLocalTopLeft(homeTitle, 64f, 32f, 780f, 48f);
             SetLocalTopLeft(FindText(homePanel, "Body"), 64f, 94f, 780f, 92f);
         }
 
@@ -1017,10 +1086,12 @@ public static class HearthUiV2FinalVisualRepairEditor
             // coordinates like the other V2 panels.
             field.SetParent(homePanel.parent, false);
         }
-        SetTopLeft(field, 650f, 520f, 620f, 190f);
-        EnsurePanelLayers(field, TerminalFieldFrame);
-        SetLocalTopLeft(FindText(field, "Title"), 24f, 22f, 572f, 36f);
-        SetLocalTopLeft(FindText(field, "Body"), 24f, 70f, 572f, 92f);
+        Rect fieldRect = ProfileRect(
+            HearthUiLayoutRegion.TerminalMessageLane,
+            new Rect(230f, 745f, 1460f, 248f));
+        SetTopLeft(field, fieldRect.x, fieldRect.y, fieldRect.width, fieldRect.height);
+        EnsureScalablePanelLayers(field);
+        ApplyTerminalDialogueTextLayout(field, fieldRect.width, fieldRect.height);
     }
 
     private static void EnsurePlainPanel(RectTransform panel, Color accent)
@@ -1068,6 +1139,132 @@ public static class HearthUiV2FinalVisualRepairEditor
         frame.transform.SetAsLastSibling();
     }
 
+    private static void EnsureScalablePanelLayers(RectTransform panel)
+    {
+        if (panel == null)
+        {
+            return;
+        }
+
+        Image rootImage = panel.GetComponent<Image>();
+        if (rootImage != null)
+        {
+            rootImage.color = Color.clear;
+            rootImage.sprite = null;
+        }
+        DestroyDirectChildren(panel, "PanelBackdrop");
+        DestroyDirectChildren(panel, "PanelFrame");
+        DestroyDirectChildren(panel, "ScalableFrame");
+        Image backdrop = CreateImage(panel, "PanelBackdrop", PanelBlueBlack);
+        SetStretch(backdrop.rectTransform, 6f, 6f, 6f, 6f);
+        backdrop.transform.SetAsFirstSibling();
+
+        GameObject frameObject = new GameObject(
+            "ScalableFrame",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(HearthV2FrameGraphic));
+        frameObject.layer = panel.gameObject.layer;
+        frameObject.transform.SetParent(panel, false);
+        RectTransform frameRect = frameObject.GetComponent<RectTransform>();
+        SetStretch(frameRect, 0f, 0f, 0f, 0f);
+        HearthV2FrameGraphic frame =
+            frameObject.GetComponent<HearthV2FrameGraphic>();
+        HearthUiThemeProfile theme = Theme;
+        frame.Configure(
+            AccentBlue,
+            theme != null ? theme.RuleLineThickness : 2f,
+            14f);
+        frame.transform.SetAsLastSibling();
+    }
+
+    private static void ApplyTerminalDialogueTextLayout(
+        RectTransform panel,
+        float width,
+        float height)
+    {
+        if (panel == null)
+        {
+            return;
+        }
+
+        HearthUiThemeProfile theme = Theme;
+        float titleSize = theme != null
+            ? theme.TerminalDialogueSpeakerFontSize
+            : 52f;
+        float bodySize = theme != null
+            ? theme.TerminalDialogueBodyFontSize
+            : 26f;
+        float hintSize = theme != null
+            ? theme.TerminalDialogueAdvanceFontSize
+            : 26f;
+
+        TMP_Text title = FindText(panel, "Title") ?? FindText(panel, "Speaker");
+        TMP_Text body = FindText(panel, "Body");
+        TMP_Text hint = FindText(panel, "DialogueAdvanceHint") ??
+            FindText(panel, "AdvanceHint");
+        SetLocalTopLeft(title, 42f, 20f, width - 84f, 68f);
+        SetLocalTopLeft(body, 42f, 92f, width - 84f, height - 138f);
+        SetLocalTopLeft(hint, width - 350f, height - 44f, 308f, 30f);
+        ConfigureText(title, titleSize, TextAlignmentOptions.TopLeft, ColdWhite, FontStyles.Bold);
+        ConfigureText(body, bodySize, TextAlignmentOptions.TopLeft, ColdWhite, FontStyles.Normal);
+        ConfigureText(hint, hintSize, TextAlignmentOptions.BottomRight, AccentBlue, FontStyles.Bold);
+    }
+
+    private static Rect ProfileRect(
+        HearthUiLayoutRegion region,
+        Rect fallback)
+    {
+        HearthUiLayoutProfile layout = Layout;
+        if (layout == null)
+        {
+            return fallback;
+        }
+
+        HearthUiReferenceRect profile = layout.GetRegion(region);
+        return new Rect(
+            profile.Left,
+            profile.Top,
+            profile.Width,
+            profile.Height);
+    }
+
+    private static void EnsureFullscreenDimmer(
+        Transform parent,
+        Transform contentAboveDimmer)
+    {
+        if (parent == null)
+        {
+            return;
+        }
+
+        Transform existing = parent.Find("FullscreenSelectionDimmer");
+        Image dimmer = existing != null ? existing.GetComponent<Image>() : null;
+        if (dimmer == null)
+        {
+            dimmer = CreateImage(parent, "FullscreenSelectionDimmer", Color.black);
+        }
+        Rect rect = ProfileRect(
+            HearthUiLayoutRegion.FullscreenSelectionDimmer,
+            new Rect(0f, 0f, 1920f, 1080f));
+        SetTopLeft(dimmer.rectTransform, rect.x, rect.y, rect.width, rect.height);
+        float alpha = Theme != null
+            ? Theme.FullscreenDecisionDimmerAlpha
+            : 0.82f;
+        dimmer.color = new Color(0f, 0f, 0f, alpha);
+        dimmer.raycastTarget = false;
+        dimmer.gameObject.SetActive(true);
+        if (contentAboveDimmer != null)
+        {
+            dimmer.transform.SetSiblingIndex(contentAboveDimmer.GetSiblingIndex());
+            contentAboveDimmer.SetAsLastSibling();
+        }
+        else
+        {
+            dimmer.transform.SetAsFirstSibling();
+        }
+    }
+
     private static void ValidateCompanion(List<string> issues)
     {
         ValidatePrefab(CompanionPrefab, root =>
@@ -1104,10 +1301,13 @@ public static class HearthUiV2FinalVisualRepairEditor
             {
                 issues.Add("Companion prefab still contains legacy exclusive-mode ownership.");
             }
-            TMP_Text task = FindText(root.transform, "V2_CurrentTask");
-            if (task == null || task.text.Trim() != "CURRENT TASK")
+            TMP_Text taskHeading = FindText(root.transform, "V2_TaskHeading");
+            TMP_Text taskBody = FindText(root.transform, "V2_TaskBody");
+            if (taskHeading == null ||
+                taskHeading.text.Trim() != "CURRENT TASK" ||
+                taskBody == null)
             {
-                issues.Add("Companion Current Task must contain the heading only.");
+                issues.Add("Companion Current Task must use separate heading/body TMP objects.");
             }
         });
     }
@@ -1518,6 +1718,61 @@ public static class HearthUiV2FinalVisualRepairEditor
         }
         text.text = value;
         return text;
+    }
+
+    private static TMP_Text EnsureText(
+        Transform parent,
+        string name,
+        string defaultValue)
+    {
+        if (parent == null)
+        {
+            return null;
+        }
+
+        Transform existing = FindNamed(parent, name);
+        TMP_Text text = existing != null
+            ? existing.GetComponent<TMP_Text>()
+            : null;
+        if (text == null)
+        {
+            text = CreateText(parent, name, defaultValue);
+        }
+        else if (string.IsNullOrEmpty(text.text))
+        {
+            text.text = defaultValue;
+        }
+        text.gameObject.SetActive(true);
+        return text;
+    }
+
+    private static void SetProfileRect(
+        TMP_Text text,
+        HearthUiLayoutRegion region,
+        Rect fallback)
+    {
+        if (text == null)
+        {
+            return;
+        }
+
+        Rect rect = fallback;
+        HearthUiLayoutProfile layout = Layout;
+        if (layout != null)
+        {
+            HearthUiReferenceRect profileRect = layout.GetRegion(region);
+            rect = new Rect(
+                profileRect.Left,
+                profileRect.Top,
+                profileRect.Width,
+                profileRect.Height);
+        }
+        SetTopLeft(
+            text.rectTransform,
+            rect.x,
+            rect.y,
+            rect.width,
+            rect.height);
     }
 
     private static void ConfigureRule(RectTransform rect, Color color)

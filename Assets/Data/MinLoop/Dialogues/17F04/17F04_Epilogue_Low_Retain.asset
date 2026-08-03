@@ -13,11 +13,26 @@ MonoBehaviour:
   m_Name: 17F04_Epilogue_Low_Retain
   m_EditorClassIdentifier: 
   sequenceId: 17F04_Epilogue_Low_Retain
-  notes: 'Centered black-screen ending: low trust plus retaining the unit.'
+  notes: '17F04 path B black-screen epilogue (negative trust compatibility variant).
+    Source: HEARTH_Full_Game_Script_No_Audio_Tags_Native_English.md, stable marker
+    17F04_Epilogue_Low_Retain. Text is synchronized by Tools/Hearth/Dialogue/Sync
+    All Dialogue From Final Script. Playback policy HEARTH_V2_DIALOGUE_POLICY_2026_08_01.'
   dialogueChannel: 0
   defaultSpeakerSide: 0
   advancePolicy: 0
   lines:
+  - lineId: 17F04_Epilogue_Retain_TimeCard_Kitchen
+    presentationKind: 1
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 2
+    startDelay: 0.15
+    speaker: 
+    text: "THE NEXT MORNING \u2014 KITCHEN"
+    holdSeconds: 1.5
+    voiceClip: {fileID: 0}
+    durationMode: 1
+    voiceTailSeconds: 0
   - lineId: 17F04_Epilogue_High_Retain_17F04_Epilogue_Low_Retain_MiasHomeUnit_001
     presentationKind: 2
     dialogueMode: 0
@@ -104,6 +119,18 @@ MonoBehaviour:
     voiceClip: {fileID: 8300000, guid: 4e59157adabcff34eaa8dfa1a5d45107, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
+  - lineId: 17F04_Epilogue_Retain_TimeCard_OpenHouse
+    presentationKind: 1
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 2
+    startDelay: 0.18
+    speaker: 
+    text: "THAT AFTERNOON \u2014 SCHOOL OPEN HOUSE"
+    holdSeconds: 1.5
+    voiceClip: {fileID: 0}
+    durationMode: 1
+    voiceTailSeconds: 0
   - lineId: 17F04_Epilogue_High_Retain_17F04_Epilogue_Low_Retain_MiasHomeUnit_004
     presentationKind: 2
     dialogueMode: 0
@@ -202,6 +229,18 @@ MonoBehaviour:
     voiceClip: {fileID: 8300000, guid: 263065102707dd445b90f056f218d1a0, type: 3}
     durationMode: 0
     voiceTailSeconds: 0.12
+  - lineId: 17F04_Epilogue_Retain_TimeCard_ThreeYearsLater
+    presentationKind: 1
+    dialogueMode: 0
+    speakerSide: 0
+    advancePolicy: 2
+    startDelay: 0.18
+    speaker: 
+    text: "THREE YEARS LATER \u2014 FRONT HALL"
+    holdSeconds: 1.5
+    voiceClip: {fileID: 0}
+    durationMode: 1
+    voiceTailSeconds: 0
   - lineId: 17F04_Epilogue_High_Retain_17F04_Epilogue_Low_Retain_Lily_008
     presentationKind: 2
     dialogueMode: 0

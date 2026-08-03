@@ -14,6 +14,7 @@ public class HearthDialogueSurface : MonoBehaviour
     [SerializeField] private TMP_Text advanceHintText;
     [SerializeField] private CanvasGroup canvasGroup;
     [SerializeField] private string manualAdvanceLabel = "SPACE  CONTINUE";
+    [SerializeField] private HearthDialogueSurface exclusivePeer;
 
     public bool IsVisible { get; private set; }
 
@@ -57,6 +58,42 @@ public class HearthDialogueSurface : MonoBehaviour
             root);
     }
 
+    public void SetExclusivePeer(HearthDialogueSurface peer)
+    {
+        exclusivePeer = peer != this ? peer : null;
+    }
+
+    public void ApplyTypography(
+        float speakerFontSize,
+        float bodyFontSize,
+        float advanceFontSize)
+    {
+        ResolveReferences();
+        ApplyFixedFontSize(speakerText, speakerFontSize);
+        ApplyFixedFontSize(bodyText, bodyFontSize);
+        ApplyFixedFontSize(advanceHintText, advanceFontSize);
+    }
+
+    public void ApplyTerminalInternalLayout()
+    {
+        ResolveReferences();
+        SetStretchRect(speakerText, 0.035f, 0.69f, 0.965f, 0.96f);
+        SetStretchRect(bodyText, 0.035f, 0.22f, 0.965f, 0.69f);
+        SetStretchRect(advanceHintText, 0.62f, 0.025f, 0.965f, 0.21f);
+        if (speakerText != null)
+        {
+            speakerText.alignment = TextAlignmentOptions.TopLeft;
+        }
+        if (bodyText != null)
+        {
+            bodyText.alignment = TextAlignmentOptions.TopLeft;
+        }
+        if (advanceHintText != null)
+        {
+            advanceHintText.alignment = TextAlignmentOptions.BottomRight;
+        }
+    }
+
     public void Show(
         string speaker,
         string text,
@@ -64,6 +101,11 @@ public class HearthDialogueSurface : MonoBehaviour
         bool showAdvanceHint)
     {
         ResolveReferences();
+
+        if (exclusivePeer != null && exclusivePeer.IsVisible)
+        {
+            exclusivePeer.HideImmediate();
+        }
 
         GameObject root = GetVisualRoot();
         if (root != null)
@@ -173,5 +215,39 @@ public class HearthDialogueSurface : MonoBehaviour
         }
 
         return null;
+    }
+
+    private static void ApplyFixedFontSize(TMP_Text text, float size)
+    {
+        if (text == null)
+        {
+            return;
+        }
+
+        float safeSize = Mathf.Max(1f, size);
+        text.enableAutoSizing = false;
+        text.fontSize = safeSize;
+        text.fontSizeMin = safeSize;
+        text.fontSizeMax = safeSize;
+    }
+
+
+    private static void SetStretchRect(
+        TMP_Text text,
+        float minX,
+        float minY,
+        float maxX,
+        float maxY)
+    {
+        if (text == null)
+        {
+            return;
+        }
+
+        RectTransform rect = text.rectTransform;
+        rect.anchorMin = new Vector2(minX, minY);
+        rect.anchorMax = new Vector2(maxX, maxY);
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
     }
 }

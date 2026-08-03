@@ -19,9 +19,16 @@ public static class HearthSubtitleV2VisualBuilder
     private const string SpeakerTabSpritePath =
         "Assets/UI/HEARTH/GeneratedParts/Common/HUD_Common_SpeakerTabFrame_9Slice.png";
 
-    [MenuItem("Tools/Hearth/UI V2/Subtitles/Apply Production Profile Defaults")]
+    [MenuItem(HearthLegacyToolGuard.MenuRoot + "Subtitle Builder/Apply Production Profile Defaults")]
     public static void ApplyProductionProfileDefaults()
     {
+        if (!HearthLegacyToolGuard.Confirm(
+                "Apply Subtitle Production Profile Defaults",
+                "the shared subtitle style asset"))
+        {
+            return;
+        }
+
         HearthSubtitleStyleProfile profile =
             HearthDialoguePresentationBinder.EnsureSharedProfile();
         Undo.RecordObject(profile, "Apply Hearth subtitle production defaults");
@@ -34,9 +41,16 @@ public static class HearthSubtitleV2VisualBuilder
             "or overwrite this profile operation.");
     }
 
-    [MenuItem("Tools/Hearth/UI V2/Subtitles/Build Visual Prefab")]
+    [MenuItem(HearthLegacyToolGuard.MenuRoot + "Subtitle Builder/Build Visual Prefab")]
     public static void BuildVisualPrefab()
     {
+        if (!HearthLegacyToolGuard.Confirm(
+                "Build Subtitle Visual Prefab",
+                "the canonical V2 subtitle Prefab"))
+        {
+            return;
+        }
+
         BuildVisualPrefabAsset();
         Debug.Log(
             "[HearthSubtitleV2VisualBuilder] Built explicit subtitle VisualRoot prefab at " +
@@ -44,9 +58,16 @@ public static class HearthSubtitleV2VisualBuilder
             ".");
     }
 
-    [MenuItem("Tools/Hearth/UI V2/Subtitles/Bind Open Scene Players")]
+    [MenuItem(HearthLegacyToolGuard.MenuRoot + "Subtitle Builder/Bind Open Scene Players")]
     public static void BindOpenScenePlayers()
     {
+        if (!HearthLegacyToolGuard.Confirm(
+                "Bind Open Scene Subtitle Players",
+                "all subtitle players in the active scene"))
+        {
+            return;
+        }
+
         GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
         if (prefab == null)
         {
@@ -60,9 +81,16 @@ public static class HearthSubtitleV2VisualBuilder
             " player(s). The open scene is dirty but was not auto-saved.");
     }
 
-    [MenuItem("Tools/Hearth/UI V2/Subtitles/Build And Bind Open Scene")]
+    [MenuItem(HearthLegacyToolGuard.MenuRoot + "Subtitle Builder/Build And Bind Open Scene")]
     public static void BuildAndBindOpenScene()
     {
+        if (!HearthLegacyToolGuard.Confirm(
+                "Build And Bind Subtitle Visuals",
+                "the canonical subtitle Prefab and all subtitle players in the active scene"))
+        {
+            return;
+        }
+
         GameObject prefab = BuildVisualPrefabAsset();
         int boundCount = BindPlayers(prefab);
         ValidateOpenScene();
@@ -72,7 +100,7 @@ public static class HearthSubtitleV2VisualBuilder
             " player(s). Review the Game view, then save the scene manually.");
     }
 
-    [MenuItem("Tools/Hearth/UI V2/Subtitles/Validate Open Scene")]
+    [MenuItem("Tools/Hearth/Production UI/Validate Subtitle View")]
     public static void ValidateOpenScene()
     {
         List<string> issues = new List<string>();

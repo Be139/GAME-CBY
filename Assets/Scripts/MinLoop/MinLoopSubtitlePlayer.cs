@@ -16,6 +16,7 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
         new HashSet<MinLoopSubtitlePlayer>();
 
     [Header("Shared Presentation")]
+    [SerializeField] private HearthSubtitleViewBindings authoredBindings;
     [SerializeField] private HearthSubtitleStyleProfile styleProfile;
     [SerializeField] private HearthUiThemeProfile uiThemeProfile;
     [SerializeField] private HearthUiLayoutProfile uiLayoutProfile;
@@ -131,6 +132,17 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
         get { return presentationMode; }
     }
 
+    public void SetAuthoredBindings(HearthSubtitleViewBindings bindings)
+    {
+        authoredBindings = bindings;
+        if (bindings != null && bindings.IsComplete)
+        {
+            createFallbackUI = false;
+        }
+        AdoptAuthoredBindings();
+        ApplyConfiguredStyle();
+    }
+
     public GameObject VisualRoot
     {
         get { return GetVisualRoot(); }
@@ -139,6 +151,16 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
     public HearthSubtitleContext ActiveContext
     {
         get { return activeContext; }
+    }
+
+    public bool UsesCanonicalAuthoredView
+    {
+        get { return authoredBindings != null && authoredBindings.IsComplete; }
+    }
+
+    public bool AllowsRuntimeFallback
+    {
+        get { return createFallbackUI; }
     }
 
     public DialogueChannel ActiveChannel
@@ -1209,6 +1231,7 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
     private void EnsureReferences()
     {
         EnsureDialogueChannelSource();
+        AdoptAuthoredBindings();
         AdoptLegacyVisualBindings();
 
         if (GetVisualRoot() != null && speakerText != null && bodyText != null)
@@ -1233,6 +1256,50 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
         ApplyConfiguredStyle();
         EnsureSubtitleCanvasSorting();
         EnsurePersistentSceneHeader();
+    }
+
+    private void AdoptAuthoredBindings()
+    {
+        if (authoredBindings == null)
+        {
+            authoredBindings = GetComponent<HearthSubtitleViewBindings>();
+        }
+
+        // The production subtitle prefab is a visual-only child referenced by
+        // this player. Resolve its binding directly through that authored
+        // hierarchy; never scan the scene or guess by Canvas name.
+        if (authoredBindings == null && visualRoot != null)
+        {
+            authoredBindings =
+                visualRoot.GetComponentInParent<HearthSubtitleViewBindings>(true);
+        }
+
+        if (authoredBindings == null)
+        {
+            return;
+        }
+
+        if (authoredBindings.IsComplete)
+        {
+            createFallbackUI = false;
+        }
+
+        visualRoot = authoredBindings.VisualRoot;
+        subtitlePanel = authoredBindings.VisualRoot;
+        layoutRoot = authoredBindings.LayoutRoot;
+        canvasGroup = authoredBindings.CanvasGroup;
+        backdropImage = authoredBindings.BackdropImage;
+        accentRuleImage = authoredBindings.AccentRuleImage;
+        speakerTabImage = authoredBindings.SpeakerTabImage;
+        formalFrameImage = authoredBindings.FormalFrameImage;
+        auxiliaryFrameImage = authoredBindings.AuxiliaryFrameImage;
+        leftSpeakerTabImage = authoredBindings.LeftSpeakerTabImage;
+        rightSpeakerTabImage = authoredBindings.RightSpeakerTabImage;
+        speakerText = authoredBindings.SpeakerText;
+        bodyText = authoredBindings.BodyText;
+        advanceHintText = authoredBindings.AdvanceHintText;
+        persistentSceneHeaderText = authoredBindings.PersistentSceneHeaderText;
+        persistentSceneHeaderGroup = authoredBindings.PersistentSceneHeaderGroup;
     }
 
     private void AdoptLegacyVisualBindings()

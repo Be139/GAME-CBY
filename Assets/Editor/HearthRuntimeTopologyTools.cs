@@ -19,9 +19,16 @@ public static class HearthRuntimeTopologyTools
         ValidateOpenSceneP0Topology(true);
     }
 
-    [MenuItem("Tools/Hearth/Repair/Repair P0 Runtime Topology")]
+    [MenuItem("Tools/Hearth/Legacy Unsafe/Repair P0 Runtime Topology")]
     public static void RepairRuntimeTopologyMenu()
     {
+        if (!HearthLegacyToolGuard.Confirm(
+                "Repair P0 Runtime Topology",
+                "ViewSwitch, Camera, Control Lock, terminal and story-flow references in the active scene"))
+        {
+            return;
+        }
+
         RepairOpenSceneP0Topology();
     }
 
@@ -157,19 +164,12 @@ public static class HearthRuntimeTopologyTools
             return false;
         }
 
-        if (!EditorSceneManager.SaveScene(scene))
-        {
-            Undo.FlushUndoRecordObjects();
-            Undo.RevertAllDownToGroup(undoGroup);
-            Debug.LogError(
-                "[HearthRuntimeTopologyTools] Repair could not save the scene and was rolled back.");
-            return false;
-        }
-
         Undo.FlushUndoRecordObjects();
         Undo.CollapseUndoOperations(undoGroup);
         Debug.Log(
-            "[HearthRuntimeTopologyTools] P0 topology repaired and saved: one canonical ViewSwitch, five owned terminal cameras, shared owner-based control lock.");
+            "[HearthRuntimeTopologyTools] P0 topology repaired: one canonical ViewSwitch, " +
+            "five owned terminal cameras, shared owner-based control lock. The scene was " +
+            "not saved automatically; review it and save manually.");
         return true;
     }
 

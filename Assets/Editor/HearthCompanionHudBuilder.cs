@@ -17,7 +17,7 @@ public static class HearthCompanionHudBuilder
     private const string RootPrefabPath = PrefabFolder + "/HearthCompanionHudRoot.prefab";
     private const string LayoutProfilePath = DataFolder + "/Hearth_CompanionHudLayout.asset";
 
-    [MenuItem("Tools/Hearth/HUD/Rebuild Companion Unit HUD Prefab")]
+    [MenuItem("Tools/Hearth/Legacy Unsafe/HUD/Rebuild Companion Unit HUD Prefab")]
     public static void RebuildCompanionHudPrefab()
     {
         EnsureFolders();
@@ -36,7 +36,7 @@ public static class HearthCompanionHudBuilder
         Debug.Log("[HearthCompanionHudBuilder] Rebuilt companion unit HUD prefab: " + RootPrefabPath);
     }
 
-    [MenuItem("Tools/Hearth/HUD/Rebuild And Apply Companion Unit HUD To Scene")]
+    [MenuItem("Tools/Hearth/Legacy Unsafe/HUD/Rebuild And Apply Companion Unit HUD To Scene")]
     public static void RebuildAndApplyToOpenScene()
     {
         RebuildCompanionHudPrefab();
@@ -70,7 +70,7 @@ public static class HearthCompanionHudBuilder
         Debug.Log("[HearthCompanionHudBuilder] Applied HearthCompanionHudRoot to the open scene.");
     }
 
-    [MenuItem("Tools/Hearth/HUD/Regenerate Companion Unit Scene Data Defaults")]
+    [MenuItem("Tools/Hearth/Legacy Unsafe/HUD/Regenerate Companion Unit Scene Data Defaults")]
     public static void RegenerateSceneDataDefaults()
     {
         EnsureFolders();
@@ -80,7 +80,7 @@ public static class HearthCompanionHudBuilder
         Debug.Log("[HearthCompanionHudBuilder] Regenerated default companion unit scene data.");
     }
 
-    [MenuItem("Tools/Hearth/HUD/Apply Companion Special Effect Alignment")]
+    [MenuItem("Tools/Hearth/Legacy Unsafe/HUD/Apply Companion Special Effect Alignment")]
     public static void ApplyCompanionSpecialEffectAlignment()
     {
         GameObject prefabContents = null;
@@ -116,7 +116,7 @@ public static class HearthCompanionHudBuilder
         Debug.Log("[HearthCompanionHudBuilder] Centered the companion shutdown, deep-sleep, and warning text in both the prefab and open scene.");
     }
 
-    [MenuItem("Tools/Hearth/HUD/Regenerate 17F03 Companion Scene Data Defaults")]
+    [MenuItem("Tools/Hearth/Legacy Unsafe/HUD/Regenerate 17F03 Companion Scene Data Defaults")]
     public static void Regenerate17F03SceneDataDefaults()
     {
         EnsureFolders();

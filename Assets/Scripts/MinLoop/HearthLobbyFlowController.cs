@@ -168,10 +168,7 @@ public class HearthLobbyFlowController : MonoBehaviour
 
     private void OnDisable()
     {
-        if (sfxCuePlayer != null)
-        {
-            sfxCuePlayer.StopAllCues();
-        }
+        HearthStoryCueService.StopAll(sfxCuePlayer);
 
         if (playerControlLock != null)
         {
@@ -582,26 +579,17 @@ public class HearthLobbyFlowController : MonoBehaviour
 
     private void PlaySfxCue(string cueId)
     {
-        if (sfxCuePlayer != null)
-        {
-            sfxCuePlayer.PlayCue(cueId);
-        }
+        HearthStoryCueService.Play(sfxCuePlayer, cueId);
     }
 
     private void StartSfxLoop(string cueId)
     {
-        if (sfxCuePlayer != null)
-        {
-            sfxCuePlayer.StartCueLoop(cueId);
-        }
+        HearthStoryCueService.StartLoop(sfxCuePlayer, cueId);
     }
 
     private void StopSfxCue(string cueId)
     {
-        if (sfxCuePlayer != null)
-        {
-            sfxCuePlayer.StopCue(cueId);
-        }
+        HearthStoryCueService.Stop(sfxCuePlayer, cueId);
     }
 
     private IEnumerator PlayDialogue(HearthDialogueSequence sequence)
@@ -867,12 +855,6 @@ public class HearthLobbyFlowController : MonoBehaviour
 
     private void ClearHumanVelocity()
     {
-        if (humanRigidbody == null || humanRigidbody.isKinematic)
-        {
-            return;
-        }
-
-        humanRigidbody.velocity = Vector3.zero;
-        humanRigidbody.angularVelocity = Vector3.zero;
+        HearthPlayerRigService.ClearVelocity(humanRigidbody);
     }
 }

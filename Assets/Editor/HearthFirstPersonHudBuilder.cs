@@ -14,7 +14,7 @@ public static class HearthFirstPersonHudBuilder
     private const string PagePrefabDir = "Assets/Prefabs/UI/HearthHud/FirstPersonPages";
     private const string RootPrefabPath = "Assets/Prefabs/UI/HearthHud/HearthHudRoot.prefab";
 
-    [MenuItem("Tools/Hearth/HUD/Rebuild First Person HUD Prefab")]
+    [MenuItem("Tools/Hearth/Legacy Unsafe/HUD/Rebuild First Person HUD Prefab")]
     public static void BuildFirstPersonHudPrefab()
     {
         EnsureAssetFolders();
@@ -111,7 +111,7 @@ public static class HearthFirstPersonHudBuilder
         Debug.Log("[HearthFirstPersonHudBuilder] Rebuilt vector first-person HUD prefab at " + RootPrefabPath);
     }
 
-    [MenuItem("Tools/Hearth/HUD/Rebuild And Apply First Person HUD To Scene")]
+    [MenuItem("Tools/Hearth/Legacy Unsafe/HUD/Rebuild And Apply First Person HUD To Scene")]
     public static void BuildAndApplyToOpenScene()
     {
         BuildFirstPersonHudPrefab();

@@ -8,6 +8,9 @@ using UnityEngine.UI;
 [DisallowMultipleComponent]
 public class HearthFirstPersonHudController : MonoBehaviour
 {
+    [Header("Authored V2 Bindings")]
+    [SerializeField] private HearthHumanHudBindings authoredBindings;
+
     [Header("Pages")]
     [SerializeField] private HearthFirstPersonHudPage[] pages;
     [SerializeField] private HearthFirstPersonHudPageId startingPage = HearthFirstPersonHudPageId.Slide01PersistentHud;
@@ -18,6 +21,8 @@ public class HearthFirstPersonHudController : MonoBehaviour
     [SerializeField] private Image statusDotImage;
     [SerializeField] private TMP_Text statusText;
     [SerializeField] private TMP_Text taskText;
+    [SerializeField] private TMP_Text currentTaskHeadingText;
+    [SerializeField] private TMP_Text currentTaskBodyText;
     [SerializeField] private string currentTaskLabel;
     [SerializeField] private TMP_Text clockText;
 
@@ -200,6 +205,13 @@ public class HearthFirstPersonHudController : MonoBehaviour
         BuildPageMap();
     }
 
+    public void SetAuthoredBindings(HearthHumanHudBindings bindings)
+    {
+        authoredBindings = bindings;
+        ResolvePersistentTextReferences();
+        RefreshCurrentTaskText();
+    }
+
     public void ShowPage(HearthFirstPersonHudPageId pageId)
     {
         BuildPageMap();
@@ -233,11 +245,14 @@ public class HearthFirstPersonHudController : MonoBehaviour
 
         page.Show();
         currentPageId = pageId;
-        if (IsFinalChoicePage(pageId))
+        bool needsLegacyVisualCompatibility =
+            authoredBindings == null || !authoredBindings.HasSelectionBindings;
+        if (IsFinalChoicePage(pageId) && needsLegacyVisualCompatibility)
         {
             ApplyFinalChoiceRuntimePolicy(page);
         }
-        else if (pageId == HearthFirstPersonHudPageId.Slide10ShutdownConfirm)
+        else if (pageId == HearthFirstPersonHudPageId.Slide10ShutdownConfirm &&
+                 needsLegacyVisualCompatibility)
         {
             ApplyShutdownConfirmationRuntimePolicy(page);
         }
@@ -857,6 +872,17 @@ public class HearthFirstPersonHudController : MonoBehaviour
     private void RefreshCurrentTaskText()
     {
         ResolvePersistentTextReferences();
+        if (currentTaskHeadingText != null)
+        {
+            currentTaskHeadingText.text = "CURRENT TASK";
+        }
+
+        if (currentTaskBodyText != null)
+        {
+            currentTaskBodyText.text = currentTaskLabel;
+            return;
+        }
+
         if (taskText == null)
         {
             return;
@@ -869,6 +895,32 @@ public class HearthFirstPersonHudController : MonoBehaviour
 
     private void ResolvePersistentTextReferences()
     {
+        if (authoredBindings == null)
+        {
+            authoredBindings = GetComponent<HearthHumanHudBindings>();
+        }
+
+        if (authoredBindings != null)
+        {
+            if (authoredBindings.PersistentRoot != null)
+            {
+                persistentHudRoot = authoredBindings.PersistentRoot;
+            }
+            if (authoredBindings.PersistentCanvasGroup != null)
+            {
+                persistentHudCanvasGroup = authoredBindings.PersistentCanvasGroup;
+            }
+
+            currentTaskHeadingText = authoredBindings.CurrentTaskHeadingText;
+            currentTaskBodyText = authoredBindings.CurrentTaskBodyText;
+            if (authoredBindings.HasCurrentTaskBinding)
+            {
+                // Layout, wrapping, margins and alignment belong to the prefab.
+                // The runtime controller updates content only.
+                return;
+            }
+        }
+
         if (taskText == null)
         {
             taskText = FindTextByName(transform, "Text_006_CURRENT_TASK");
@@ -884,17 +936,9 @@ public class HearthFirstPersonHudController : MonoBehaviour
             return;
         }
 
-        RectTransform taskRect = taskText.rectTransform;
-        if (taskRect != null && taskRect.sizeDelta.y < 88f)
-        {
-            taskRect.sizeDelta = new Vector2(
-                Mathf.Max(448f, taskRect.sizeDelta.x),
-                88f);
-        }
-
-        taskText.enableWordWrapping = true;
-        taskText.overflowMode = TextOverflowModes.Overflow;
-        taskText.alignment = TextAlignmentOptions.TopRight;
+        // Compatibility only. New V2 prefabs provide split, explicit bindings.
+        // Do not rewrite geometry here: that was the reason prefab edits did
+        // not match the Game view.
     }
 
     public void SetTrustScore(int value)
@@ -1226,6 +1270,27 @@ public class HearthFirstPersonHudController : MonoBehaviour
     {
         if (target == null)
         {
+            return null;
+        }
+
+        RectTransform authoredFill;
+        if (authoredBindings != null &&
+            authoredBindings.TryGetSelectionFill(target, out authoredFill))
+        {
+            Image authoredImage = authoredFill.GetComponent<Image>();
+            if (authoredImage != null)
+            {
+                authoredImage.raycastTarget = false;
+            }
+            return authoredFill;
+        }
+
+        if (authoredBindings != null && authoredBindings.HasSelectionBindings)
+        {
+            Debug.LogError(
+                "[HearthFirstPersonHudController] Selection target is not present in " +
+                "the canonical Human HUD binding. Runtime UI creation is disabled.",
+                target);
             return null;
         }
 

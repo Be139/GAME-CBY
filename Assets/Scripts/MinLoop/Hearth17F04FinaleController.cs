@@ -623,34 +623,22 @@ public class Hearth17F04FinaleController : MonoBehaviour
 
     private void PlayStorySfx(string cueId)
     {
-        if (sfxCuePlayer != null)
-        {
-            sfxCuePlayer.PlayCue(cueId);
-        }
+        HearthStoryCueService.Play(sfxCuePlayer, cueId);
     }
 
     private void StartStorySfxLoop(string cueId)
     {
-        if (sfxCuePlayer != null)
-        {
-            sfxCuePlayer.StartCueLoop(cueId);
-        }
+        HearthStoryCueService.StartLoop(sfxCuePlayer, cueId);
     }
 
     private void StopStorySfx(string cueId)
     {
-        if (sfxCuePlayer != null)
-        {
-            sfxCuePlayer.StopCue(cueId);
-        }
+        HearthStoryCueService.Stop(sfxCuePlayer, cueId);
     }
 
     private void StopAllStorySfx()
     {
-        if (sfxCuePlayer != null)
-        {
-            sfxCuePlayer.StopAllCues();
-        }
+        HearthStoryCueService.StopAll(sfxCuePlayer);
     }
 
     private void HandleShutdownChallengeCancelled()
@@ -936,10 +924,9 @@ public class Hearth17F04FinaleController : MonoBehaviour
             }
         }
 
-        if (!movement && humanRigidbody != null && !humanRigidbody.isKinematic)
+        if (!movement)
         {
-            humanRigidbody.velocity = Vector3.zero;
-            humanRigidbody.angularVelocity = Vector3.zero;
+            HearthPlayerRigService.ClearVelocity(humanRigidbody);
         }
     }
 
@@ -1002,11 +989,7 @@ public class Hearth17F04FinaleController : MonoBehaviour
             }
         }
 
-        if (humanRigidbody != null && !humanRigidbody.isKinematic)
-        {
-            humanRigidbody.velocity = Vector3.zero;
-            humanRigidbody.angularVelocity = Vector3.zero;
-        }
+        HearthPlayerRigService.ClearVelocity(humanRigidbody);
 
         // Set the Transform first. Rigidbody.position is not guaranteed to update child transforms
         // until the next physics step, which can otherwise create a large camera local offset.

@@ -30,7 +30,7 @@ public static class HearthTvTerminalPrefabBuilder
     private static readonly XNamespace P = "http://schemas.openxmlformats.org/presentationml/2006/main";
     private static readonly XNamespace A = "http://schemas.openxmlformats.org/drawingml/2006/main";
 
-    [MenuItem("Tools/Hearth HUD/Rebuild TV Terminal UI From Master PPT")]
+    [MenuItem("Tools/Hearth/Legacy Unsafe/Terminals/Rebuild TV Terminal UI From Master PPT")]
     public static void RebuildTvTerminalPrefabs()
     {
         string pptxPath = FindPptxPath();
@@ -363,19 +363,19 @@ public static class HearthTvTerminalPrefabBuilder
         return buttonObject;
     }
 
-    [MenuItem("Tools/Hearth HUD/TV Terminal/Apply 17F-01 To Selected TV")]
+    [MenuItem("Tools/Hearth/Legacy Unsafe/Terminals/Apply 17F-01 To Selected TV")]
     public static void Apply17F01ToSelectedTv()
     {
         StandardizeSelectedTv(Terminal17F01PrefabPath);
     }
 
-    [MenuItem("Tools/Hearth HUD/TV Terminal/Apply 17F-02 To Selected TV")]
+    [MenuItem("Tools/Hearth/Legacy Unsafe/Terminals/Apply 17F-02 To Selected TV")]
     public static void Apply17F02ToSelectedTv()
     {
         StandardizeSelectedTv(Terminal17F02PrefabPath);
     }
 
-    [MenuItem("Tools/Hearth HUD/TV Terminal/Apply 17F-03 Alert To Selected TV")]
+    [MenuItem("Tools/Hearth/Legacy Unsafe/Terminals/Apply 17F-03 Alert To Selected TV")]
     public static void Apply17F03AlertToSelectedTv()
     {
         StandardizeSelectedTv(Terminal17F03PrefabPath);

@@ -8,12 +8,21 @@ using UnityEngine.UI;
 public static class HearthRuntimeInterfaceBinder
 {
     private const string MenuRoot = "Tools/Hearth/Systems/";
+    private const string LegacyMenuRoot =
+        HearthLegacyToolGuard.MenuRoot + "Runtime Interface Binder/";
     private const string HudPrefabPath = "Assets/Prefabs/UI/HearthHud/HearthHudRoot.prefab";
     private const string CompanionHudPrefabPath = "Assets/Prefabs/UI/HearthHud/Companion/HearthCompanionHudRoot.prefab";
 
-    [MenuItem(MenuRoot + "Apply HUD Audio And English Prompt Fixes")]
+    [MenuItem(LegacyMenuRoot + "Apply HUD Audio And English Prompt Fixes")]
     public static void ApplyCurrentSceneSetup()
     {
+        if (!HearthLegacyToolGuard.Confirm(
+                "Apply HUD Audio And English Prompt Fixes",
+                "legacy Human/Companion HUD Prefabs and the active scene"))
+        {
+            return;
+        }
+
         if (!EditorSceneManager.GetActiveScene().IsValid())
         {
             Debug.LogError("[HearthRuntimeInterfaceBinder] No valid scene is open.");
@@ -41,10 +50,9 @@ public static class HearthRuntimeInterfaceBinder
         ApplyEnglishInteractionCopy();
 
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
-        EditorSceneManager.SaveOpenScenes();
         AssetDatabase.SaveAssets();
 
-        Debug.Log("[HearthRuntimeInterfaceBinder] HUD settings, audio channels, footstep profiles and English single-press prompts are applied.");
+        Debug.Log("[HearthRuntimeInterfaceBinder] HUD settings, audio channels, footstep profiles and English single-press prompts are applied. Review and save the scene manually.");
         ValidateCurrentSceneSetup();
     }
 
@@ -104,9 +112,16 @@ public static class HearthRuntimeInterfaceBinder
         }
     }
 
-    [MenuItem(MenuRoot + "Repair Interaction Prompt Bindings")]
+    [MenuItem(LegacyMenuRoot + "Repair Interaction Prompt Bindings")]
     public static void RepairInteractionPromptBindings()
     {
+        if (!HearthLegacyToolGuard.Confirm(
+                "Repair Interaction Prompt Bindings",
+                "legacy interaction prompt Prefabs and the active scene"))
+        {
+            return;
+        }
+
         if (!EditorSceneManager.GetActiveScene().IsValid())
         {
             Debug.LogError("[HearthRuntimeInterfaceBinder] No valid scene is open.");
@@ -116,10 +131,9 @@ public static class HearthRuntimeInterfaceBinder
         EnsureInteractionPromptPrefabs();
         BindFormalInteractionPromptsInOpenScene();
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
-        EditorSceneManager.SaveOpenScenes();
         AssetDatabase.SaveAssets();
 
-        Debug.Log("[HearthRuntimeInterfaceBinder] Restored the human and companion interaction prompt layers and bindings.");
+        Debug.Log("[HearthRuntimeInterfaceBinder] Restored the legacy human and companion interaction prompt layers and bindings. Review and save the scene manually.");
         ValidateCurrentSceneSetup();
     }
 

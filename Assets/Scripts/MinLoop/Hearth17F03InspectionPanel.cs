@@ -29,6 +29,8 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
 
     [Header("Second UI Visual")]
     [SerializeField] private bool useSecondUiVisual = true;
+    [Tooltip("Migration-only compatibility. Disable after the current panel appearance has been adopted into the canonical V2 Prefab.")]
+    [SerializeField] private bool applyRuntimeVisualCompatibility = true;
     [SerializeField] private HearthUiThemeProfile secondUiTheme;
     [SerializeField] private HearthUiStateCoordinator uiStateCoordinator;
 
@@ -65,10 +67,14 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
     public bool IsOpen { get; private set; }
     public bool RecallQueued { get { return recallQueued; } }
     public bool ChoiceInputEnabled { get { return choiceInputEnabled; } }
+    public bool UsesAuthoredVisualLayout { get { return !applyRuntimeVisualCompatibility; } }
 
     private void Awake()
     {
-        ApplySecondUiVisual();
+        if (applyRuntimeVisualCompatibility)
+        {
+            ApplySecondUiVisual();
+        }
         ApplyContent();
         Close();
     }
@@ -176,9 +182,14 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
         RefreshRecallVisual();
     }
 
+    public void UseAuthoredVisualLayout(bool authored)
+    {
+        applyRuntimeVisualCompatibility = !authored;
+    }
+
     public void ApplySecondUiVisual()
     {
-        if (!useSecondUiVisual)
+        if (!useSecondUiVisual || !applyRuntimeVisualCompatibility)
         {
             return;
         }
@@ -523,7 +534,7 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
         {
             return secondUiTheme != null
                 ? secondUiTheme.TerminalPanelBackground
-                : new Color32(9, 16, 28, 255);
+                : (Color)new Color32(9, 16, 28, 255);
         }
     }
 
@@ -533,7 +544,7 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
         {
             return secondUiTheme != null
                 ? secondUiTheme.Secondary
-                : new Color32(95, 120, 149, 255);
+                : (Color)new Color32(95, 120, 149, 255);
         }
     }
 
@@ -543,7 +554,7 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
         {
             return secondUiTheme != null
                 ? secondUiTheme.Primary
-                : new Color32(215, 230, 246, 255);
+                : (Color)new Color32(215, 230, 246, 255);
         }
     }
 
@@ -553,7 +564,7 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
         {
             return secondUiTheme != null
                 ? secondUiTheme.Information
-                : new Color32(120, 170, 220, 255);
+                : (Color)new Color32(120, 170, 220, 255);
         }
     }
 
@@ -563,7 +574,7 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
         {
             return secondUiTheme != null
                 ? secondUiTheme.Success
-                : new Color32(87, 184, 138, 255);
+                : (Color)new Color32(87, 184, 138, 255);
         }
     }
 

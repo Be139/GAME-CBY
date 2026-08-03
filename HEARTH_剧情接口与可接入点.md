@@ -636,6 +636,38 @@
 - 黑幕对白使用 `CenteredEpilogue`，有 Clip 取 `AudioClip.length`，无 Clip 取资产回退时长，不接收 Space。
 - 排序固定为 Blackout Canvas 9000、结局字幕/场景卡 9100 以上。
 
+## 2026-08-03 正式 UI、公共服务与 Legacy 隔离接口
+
+### 正式 UI 引用链
+
+- Human：`HearthFirstPersonHudController → HearthHumanHudBindings → HearthHudRoot_V2.prefab`。
+- Companion：`HearthCompanionHudController → HearthCompanionHudBindings → HearthCompanionHudRoot_V2.prefab`。
+- Subtitle：`MinLoopSubtitlePlayer → HearthSubtitleViewBindings → HearthSubtitleVisualCanvas_V2.prefab`。
+- Terminal：`HearthTvTerminalController → HearthTerminalViewBindings → Terminal_*_V2.prefab`。
+- TV4：`HearthPhotoArchiveWorldView → HearthPhotoArchiveViewBindings → HearthPhotoArchiveWorldView_V2.prefab`。
+- F03 Inspection：场景 Controller 指向 `Hearth17F03InspectionPanel_V2.prefab`；`UseAuthoredVisualLayout(true)` 后禁止运行时排版。
+
+正式 Controller 原公开方法和 UnityEvent 均保留。缺少 Binding 时只允许迁移期回退，Production Validator 必须报错；新内容不能依赖回退。
+
+### 公共机械服务
+
+- `HearthPlayerRigService`：只应用 Root/Camera Pose、清理 Rigidbody 速度和同步 FirstPersonLook；不决定剧情锚点。
+- `HearthScreenTransitionService`：只控制已有 CanvasGroup/HearthScreenFader 的 Alpha；不创建 Canvas。
+- `HearthStoryCueService`：只转发稳定 Cue ID 到 `HearthSfxCuePlayer`；不改 Catalog 或触发时序。
+- `HearthHouseholdFlowContext`：集中提供 HUD、Subtitle、ControlLock、ViewSwitch、Rig/Transition/SFX；不拥有流程状态。
+- `HearthTaskTextCatalog`：只把既有 `HearthCurrentTaskId` / Companion Scene ID 映射为可编辑文字；Router API 不变。
+
+### Editor 迁移接口
+
+- `HearthProductionUiTools.InstallProductionAuthoringFoundationBatch()`：批量安装 Prefab Bindings 和 Task Catalog；不保存场景。
+- `Bind Open Scene To Canonical Views`：场景级绑定入口；创建的是引用/服务组件，不改变剧情、Camera、音频或模型，完成后由用户手动保存。
+- `Adopt Approved Appearance`：白名单视觉属性反写；可 Undo。禁止用 `Overrides > Apply All` 替代。
+- `Validate Production UI`：进入 Legacy 物理删除前的硬门槛之一。
+
+### Legacy 删除门槛
+
+`MinLoopTerminalPresenter`、`TerminalUIController`、`ResidentTerminalFlow`、`ReplaySequenceController`、旧 Builder/Repair 和硬编码对白回退，在全项目零序列化引用、正式 Validator、完整 Play Mode 与两条结局全部通过前，只能隔离，不能删除。详见 `HEARTH_全项目保守重构基线与Legacy清理表.md`。
+
 ### E/Hold E 稳定路径
 
 - Human 与 Companion 都保留 `PlayerInteractionPrompt`、`HoldPrompt`、`HoldPromptText`、`HoldProgressFill`。

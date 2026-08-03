@@ -9,6 +9,7 @@ using UnityEngine.UI;
 
 public static class HearthUiV2ClosureEditor
 {
+    private static bool legacyBatchAuthorized;
     private const string HumanPrefab =
         "Assets/Prefabs/UI/HearthHud/V2/HearthHudRoot_V2.prefab";
     private const string CompanionPrefab =
@@ -64,9 +65,19 @@ public static class HearthUiV2ClosureEditor
     private static readonly Color Red =
         new Color32(228, 62, 54, 255);
 
-    [MenuItem("Tools/Hearth/UI V2/Apply Approved Closure")]
+    [MenuItem("Tools/Hearth/Legacy Unsafe/UI V2 Closure/Apply Approved Closure")]
     public static void ApplyAll()
     {
+        if (!HearthLegacyToolGuard.Confirm(
+                "Apply Approved V2 Closure",
+                "all canonical V2 Prefabs and selected active-scene UI bindings"))
+        {
+            return;
+        }
+
+        legacyBatchAuthorized = true;
+        try
+        {
         HearthUiV2VectorAssetEditor.PrepareImportedSprites();
         ApplySubtitle();
         ApplyHuman();
@@ -97,11 +108,24 @@ public static class HearthUiV2ClosureEditor
         Debug.Log(
             "[HearthUiV2ClosureEditor] Applied the approved second-UI closure " +
             "without rebuilding scene bindings or legacy prefabs.");
+        }
+        finally
+        {
+            legacyBatchAuthorized = false;
+        }
     }
 
-    [MenuItem("Tools/Hearth/UI V2/Closure/Apply Subtitle Visual Closure")]
+    [MenuItem("Tools/Hearth/Legacy Unsafe/UI V2 Closure/Apply Subtitle Visual Closure")]
     public static void ApplySubtitle()
     {
+        if (!legacyBatchAuthorized &&
+            !HearthLegacyToolGuard.Confirm(
+                "Apply Subtitle Visual Closure",
+                "the canonical V2 subtitle Prefab"))
+        {
+            return;
+        }
+
         EditPrefab(
             SubtitlePrefab,
             root =>
@@ -227,7 +251,7 @@ public static class HearthUiV2ClosureEditor
             });
     }
 
-    [MenuItem("Tools/Hearth/UI V2/Validate Approved Closure")]
+    [MenuItem("Tools/Hearth/Legacy Unsafe/UI V2 Closure/Validate Approved Closure")]
     public static void ValidateApprovedClosure()
     {
         List<string> issues = new List<string>();
@@ -277,9 +301,17 @@ public static class HearthUiV2ClosureEditor
             string.Join("\n- ", issues));
     }
 
-    [MenuItem("Tools/Hearth/UI V2/Closure/Apply Human Prefab Closure")]
+    [MenuItem("Tools/Hearth/Legacy Unsafe/UI V2 Closure/Apply Human Prefab Closure")]
     public static void ApplyHuman()
     {
+        if (!legacyBatchAuthorized &&
+            !HearthLegacyToolGuard.Confirm(
+                "Apply Human Prefab Closure",
+                "the canonical V2 Human HUD Prefab"))
+        {
+            return;
+        }
+
         EditPrefab(
             HumanPrefab,
             root =>
@@ -363,9 +395,17 @@ public static class HearthUiV2ClosureEditor
             });
     }
 
-    [MenuItem("Tools/Hearth/UI V2/Closure/Apply Companion Prefab Closure")]
+    [MenuItem("Tools/Hearth/Legacy Unsafe/UI V2 Closure/Apply Companion Prefab Closure")]
     public static void ApplyCompanion()
     {
+        if (!legacyBatchAuthorized &&
+            !HearthLegacyToolGuard.Confirm(
+                "Apply Companion Prefab Closure",
+                "the canonical V2 Companion HUD Prefab"))
+        {
+            return;
+        }
+
         EditPrefab(
             CompanionPrefab,
             root =>
@@ -642,7 +682,9 @@ public static class HearthUiV2ClosureEditor
 
         if (changed)
         {
-            EditorSceneManager.SaveOpenScenes();
+            Debug.Log(
+                "[HearthUiV2ClosureEditor] Companion scene visuals changed. " +
+                "Review the diff and save manually.");
         }
     }
 
@@ -722,7 +764,9 @@ public static class HearthUiV2ClosureEditor
 
         if (changed)
         {
-            EditorSceneManager.SaveOpenScenes();
+            Debug.Log(
+                "[HearthUiV2ClosureEditor] Photo scene bindings changed. " +
+                "Review the diff and save manually.");
         }
     }
 

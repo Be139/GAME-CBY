@@ -14,6 +14,8 @@ using UnityEngine.UI;
 public static class HearthUiV2Builder
 {
     private const string MenuRoot = "Tools/Hearth/UI V2/";
+    private const string LegacyUnsafeRoot =
+        "Tools/Hearth/Legacy Unsafe/UI V2 Builder/";
     private const string PartsRoot = "Assets/UI/HEARTH/GeneratedParts";
     private const string V2Root = "Assets/Prefabs/UI/HearthHud/V2";
     private const string ThemeProfilePath =
@@ -190,9 +192,16 @@ public static class HearthUiV2Builder
         "routeChoicesToMinLoop"
     };
 
-    [MenuItem(MenuRoot + "Rebuild All V2 UI Assets")]
+    [MenuItem(LegacyUnsafeRoot + "Rebuild All V2 UI Assets")]
     public static void RebuildAllV2Assets()
     {
+        if (!HearthLegacyToolGuard.Confirm(
+                "Rebuild All V2 UI Assets",
+                "all Human, Companion and terminal V2 Prefabs"))
+        {
+            return;
+        }
+
         EnsureFolder("Assets/Prefabs");
         EnsureFolder("Assets/Prefabs/UI");
         EnsureFolder("Assets/Prefabs/UI/HearthHud");
@@ -246,7 +255,19 @@ public static class HearthUiV2Builder
         Debug.Log("[HearthUiV2Builder] Rebuilt the independent HEARTH V2 human HUD, companion HUD and five terminal prefabs.");
     }
 
-    [MenuItem(MenuRoot + "Refresh Existing V2 Prefab Visuals")]
+    [MenuItem(LegacyUnsafeRoot + "Refresh Existing V2 Prefab Visuals")]
+    private static void RefreshExistingV2PrefabVisualsFromMenu()
+    {
+        if (!HearthLegacyToolGuard.Confirm(
+                "Refresh Existing V2 Prefab Visuals",
+                "all existing canonical V2 Prefabs"))
+        {
+            return;
+        }
+
+        RefreshExistingV2PrefabVisuals();
+    }
+
     public static void RefreshExistingV2PrefabVisuals()
     {
         if (!EnsureV2AssetsExist())
@@ -296,9 +317,15 @@ public static class HearthUiV2Builder
             "existing V2 prefabs. Functional roots and serialized gameplay bindings were retained.");
     }
 
-    [MenuItem(MenuRoot + "Apply Current Profiles")]
+    [MenuItem(LegacyUnsafeRoot + "Apply Current Profiles (Rebuilds Visuals)")]
     public static void ApplyCurrentProfiles()
     {
+        if (!HearthLegacyToolGuard.Confirm(
+                "Apply Current Profiles (Legacy)",
+                "all canonical V2 Prefab visual trees and selected open-scene compatibility fields"))
+        {
+            return;
+        }
         if (EditorApplication.isPlayingOrWillChangePlaymode)
         {
             Debug.LogError(
@@ -371,19 +398,26 @@ public static class HearthUiV2Builder
                 EditorUtility.SetDirty(doors[i]);
             }
             EditorSceneManager.MarkSceneDirty(scene);
-            EditorSceneManager.SaveScene(scene);
         }
 
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
         Debug.Log(
             "[HearthUiV2Builder] Current V2 profiles applied. Dialogue, voice, " +
-            "SFX, story events and model transforms were not reset.");
+            "SFX, story events and model transforms were not reset. The open " +
+            "scene was marked dirty but was not saved; review it and save manually.");
     }
 
-    [MenuItem(MenuRoot + "Use V2 UI In Open Scene")]
+    [MenuItem(LegacyUnsafeRoot + "Use V2 UI In Open Scene")]
     public static void UseV2InOpenScene()
     {
+        if (!HearthLegacyToolGuard.Confirm(
+                "Use V2 UI In Open Scene",
+                "the active scene HUD and terminal instances"))
+        {
+            return;
+        }
+
         if (!EnsureV2AssetsExist())
         {
             return;
@@ -392,9 +426,16 @@ public static class HearthUiV2Builder
         SwitchOpenScene(true);
     }
 
-    [MenuItem(MenuRoot + "Use Legacy UI In Open Scene")]
+    [MenuItem(LegacyUnsafeRoot + "Use Legacy UI In Open Scene")]
     public static void UseLegacyInOpenScene()
     {
+        if (!HearthLegacyToolGuard.Confirm(
+                "Use Legacy UI In Open Scene",
+                "the active scene HUD and terminal instances"))
+        {
+            return;
+        }
+
         SwitchOpenScene(false);
     }
 
@@ -1162,10 +1203,10 @@ public static class HearthUiV2Builder
                 : new Rect(390f, 150f, 1140f, 740f);
             Color pageFill =
                 id == 10 || id == 24
-                    ? new Color32(11, 16, 24, 244)
+                    ? (Color)new Color32(11, 16, 24, 244)
                     : id >= 11 && id <= 13
-                        ? new Color32(28, 19, 15, 244)
-                        : PanelFill;
+                        ? (Color)new Color32(28, 19, 15, 244)
+                        : (Color)PanelFill;
             Image panel = CreateImage(page.transform, "V2_PagePanel", panelRect, null, pageFill, false, false);
             panel.transform.SetAsFirstSibling();
             CreateImage(panel.transform, "V2_TopRule", new Rect(0f, 0f, panelRect.width, 2f), null,
@@ -2951,28 +2992,10 @@ public static class HearthUiV2Builder
             return;
         }
 
-        try
-        {
-            EditorSceneManager.MarkSceneDirty(scene);
-            if (!EditorSceneManager.SaveScene(scene))
-            {
-                throw new InvalidOperationException(
-                    "Unity returned false while saving the active scene.");
-            }
-        }
-        catch (Exception exception)
-        {
-            Undo.FlushUndoRecordObjects();
-            Undo.RevertAllDownToGroup(undoGroup);
-            Debug.LogError(
-                "[HearthUiV2Builder] UI switch could not save the active scene and was rolled back: " +
-                exception.Message);
-            return;
-        }
-
+        EditorSceneManager.MarkSceneDirty(scene);
         Undo.FlushUndoRecordObjects();
         Undo.CollapseUndoOperations(undoGroup);
-        Debug.Log("[HearthUiV2Builder] Open scene now uses " + (useV2 ? "HEARTH UI V2" : "Legacy HEARTH UI") + ". Runtime references were remapped.");
+        Debug.Log("[HearthUiV2Builder] Open scene now uses " + (useV2 ? "HEARTH UI V2" : "Legacy HEARTH UI") + ". Runtime references were remapped. Review the diff and save manually.");
         ValidateOpenSceneUiInternal(true, useV2);
     }
 

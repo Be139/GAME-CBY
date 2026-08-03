@@ -8,6 +8,8 @@ using UnityEngine.UI;
 public static class HearthUiV2SystemInstaller
 {
     private const string MenuRoot = "Tools/Hearth/UI V2/System/";
+    private const string LegacyMenuRoot =
+        HearthLegacyToolGuard.MenuRoot + "UI V2 System Installer/";
     private const string V2HumanPrefabPath =
         "Assets/Prefabs/UI/HearthHud/V2/HearthHudRoot_V2.prefab";
     private const string ProfilesFolder = "Assets/UI/HEARTH/V2/Profiles";
@@ -19,9 +21,16 @@ public static class HearthUiV2SystemInstaller
         "Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF.asset";
     private const string TutorialRootName = "V2_InitialTutorialRoot";
 
-    [MenuItem(MenuRoot + "Install Profiles And Human Tutorial")]
+    [MenuItem(LegacyMenuRoot + "Install Profiles And Human Tutorial")]
     public static void InstallProfilesAndHumanTutorial()
     {
+        if (!HearthLegacyToolGuard.Confirm(
+                "Install Profiles And Human Tutorial",
+                "the canonical Human HUD Prefab and shared UI profiles"))
+        {
+            return;
+        }
+
         if (EditorApplication.isPlayingOrWillChangePlaymode)
         {
             Debug.LogWarning(

@@ -10,9 +10,16 @@ public static class HearthDialoguePresentationBinder
 {
     public const string SharedProfilePath = "Assets/Data/MinLoop/UI/Hearth_SubtitleStyle.asset";
 
-    [MenuItem("Tools/Hearth/Dialogue/Apply Shared Subtitle Presentation")]
+    [MenuItem(HearthLegacyToolGuard.MenuRoot + "Dialogue/Apply Shared Subtitle Presentation")]
     public static void ApplySharedPresentation()
     {
+        if (!HearthLegacyToolGuard.Confirm(
+                "Apply Shared Subtitle Presentation",
+                "all subtitle player bindings in the active scene"))
+        {
+            return;
+        }
+
         if (Application.isPlaying)
         {
             Debug.LogError("[HearthDialoguePresentationBinder] Exit Play Mode before applying subtitle presentation.");
@@ -59,8 +66,7 @@ public static class HearthDialoguePresentationBinder
         AssetDatabase.SaveAssets();
         Scene scene = SceneManager.GetActiveScene();
         EditorSceneManager.MarkSceneDirty(scene);
-        EditorSceneManager.SaveScene(scene);
-        Debug.Log("[HearthDialoguePresentationBinder] All normal dialogue now uses one standard subtitle player and the shared subtitle style profile. Epilogue dialogue uses the centered mode of the same profile.");
+        Debug.Log("[HearthDialoguePresentationBinder] All normal dialogue now uses one standard subtitle player and the shared subtitle style profile. Epilogue dialogue uses the centered mode of the same profile. Review and save the scene manually.");
         ValidateSharedPresentation();
     }
 

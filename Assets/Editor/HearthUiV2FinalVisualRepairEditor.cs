@@ -14,7 +14,8 @@ using UnityEngine.UI;
 /// </summary>
 public static class HearthUiV2FinalVisualRepairEditor
 {
-    private const string MenuRoot = "Tools/Hearth/UI V2/Final Repair/";
+    private const string MenuRoot =
+        "Tools/Hearth/Legacy Unsafe/UI V2 Final Repair/";
     private const string HumanPrefab =
         "Assets/Prefabs/UI/HearthHud/V2/HearthHudRoot_V2.prefab";
     private const string CompanionPrefab =
@@ -97,6 +98,18 @@ public static class HearthUiV2FinalVisualRepairEditor
     }
 
     [MenuItem(MenuRoot + "Apply Visual and Structure Repair")]
+    private static void ApplyAllFromLegacyMenu()
+    {
+        if (!HearthLegacyToolGuard.Confirm(
+                "Apply V2 Visual And Structure Repair",
+                "all canonical Human, Companion, subtitle and terminal Prefabs"))
+        {
+            return;
+        }
+
+        ApplyAll();
+    }
+
     public static void ApplyAll()
     {
         if (EditorApplication.isPlayingOrWillChangePlaymode)

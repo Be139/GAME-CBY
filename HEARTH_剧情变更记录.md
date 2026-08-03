@@ -1129,3 +1129,13 @@ casual_Female_K (9) -> REF_Wife_17F02_ExitOutside
 - 黑幕后 TimeCard 先居中独立显示约 1.5 秒，再缩为对白上方持续场景标题。对白白字居中、按语音自动衔接、无姓名框、无 Space。
 - 正式稿新增稳定 `HEARTH:TIME_CARD` 元数据，英文正文及已有对白 Line ID 不变；逐句 SFX 触发键不变。
 - 本轮不重新导入、不改名现有 36 个正式音效素材，不改变中央 SFX Catalog；仅做 UI 后的 Cue 回归。
+
+## 2026-08-03 全项目保守式结构重构（剧情与流程无变化）
+
+- 本轮只调整代码职责、正式 UI 来源、显式引用和 Editor 工具安全性；不修改任何剧情台词、演出顺序、角色走位意图、按键规则、任务顺序、信任/处置条件或结局分支。
+- Lobby、17F01、17F02、17F03、17F04 各自的 Controller 和 Coroutine 继续保留，不合并成通用状态机。
+- F02/F03 的黑幕仍在原剧情节点、使用原持续时间；只把重复淡入淡出机械逻辑交给 `HearthScreenTransitionService`，并复用场景已有黑幕 CanvasGroup。
+- Human 菜单/Final 高亮、TV4 相册、17F03 Inspection、五终端 Surface 和字幕改为正式 Prefab/Bindings 接管；运行时只改内容、状态和显隐。
+- 正式缺失绑定时改为明确报错；旧运行时生成逻辑保留为 Legacy 隔离期回退，完整回放通过前不删除。
+- 36 个正式 SFX、330 个正式语音、Catalog、Cue ID、Dialogue Line ID 和逐句 SFX Track 保持不变。
+- 当前 Unity HTTP MCP 未发现活动实例，因此本记录只确认代码与离线编译完成；Prefab 安装、场景绑定和 Play Mode 结果必须在 Unity Reload 后另行补记，不能提前视为已验收。

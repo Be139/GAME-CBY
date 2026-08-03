@@ -71,6 +71,9 @@ public class HearthTvTerminalController : MonoBehaviour
     [SerializeField] private float zoom = 1f;
 
     [Header("Presentation")]
+    [SerializeField] private HearthTerminalViewBindings authoredViewBindings;
+    [Tooltip("Migration-only compatibility. Disable after every production terminal prefab has explicit HearthTerminalViewBindings.")]
+    [SerializeField] private bool allowRuntimeSurfaceFallback = true;
     [SerializeField] private HearthTerminalBootSequence bootSequence;
     [SerializeField] private HearthTerminalSelectionHighlighter selectionHighlighter;
     [SerializeField] private HearthUiPressFeedback submitFeedback;
@@ -251,6 +254,18 @@ public class HearthTvTerminalController : MonoBehaviour
     public HearthDialogueSurface ResolveDialogueSurface()
     {
         EnsureReferences();
+        if (authoredViewBindings != null)
+        {
+            HearthDialogueSurface authoredSurface =
+                authoredViewBindings.ResolveDialogueSurface(currentPage);
+            if (authoredSurface != null)
+            {
+                dialogueSurface = authoredSurface;
+                LinkExclusiveDialogueSurfaces();
+                return dialogueSurface;
+            }
+        }
+
         if (dialogueSurface != null)
         {
             HearthHudPage ownerPage =
@@ -309,6 +324,15 @@ public class HearthTvTerminalController : MonoBehaviour
             return dialogueSurface;
         }
 
+        if (!allowRuntimeSurfaceFallback)
+        {
+            Debug.LogError(
+                "[HearthTvTerminalController] Missing authored dialogue surface. " +
+                "Bind it on HearthTerminalViewBindings instead of generating UI at runtime.",
+                this);
+            return null;
+        }
+
         dialogueSurface = CreateRuntimeDialogueSurface();
         LinkExclusiveDialogueSurfaces();
         return dialogueSurface;
@@ -322,6 +346,14 @@ public class HearthTvTerminalController : MonoBehaviour
     public HearthDialogueSurface ResolveMessageSurface()
     {
         EnsureReferences();
+        if (authoredViewBindings != null &&
+            authoredViewBindings.TerminalMessageSurface != null)
+        {
+            messageSurface = authoredViewBindings.TerminalMessageSurface;
+            LinkExclusiveDialogueSurfaces();
+            return messageSurface;
+        }
+
         if (messageSurface != null)
         {
             HearthHudPage ownerPage =
@@ -366,6 +398,15 @@ public class HearthTvTerminalController : MonoBehaviour
             return messageSurface;
         }
 
+        if (!allowRuntimeSurfaceFallback)
+        {
+            Debug.LogError(
+                "[HearthTvTerminalController] Missing authored message surface. " +
+                "Bind it on HearthTerminalViewBindings instead of generating UI at runtime.",
+                this);
+            return null;
+        }
+
         messageSurface = CreateRuntimeMessageSurface();
         LinkExclusiveDialogueSurfaces();
         return messageSurface;
@@ -377,6 +418,14 @@ public class HearthTvTerminalController : MonoBehaviour
     {
         uiThemeProfile = themeProfile;
         uiLayoutProfile = layoutProfile;
+        if (authoredViewBindings != null &&
+            authoredViewBindings.HasDialogueSurface)
+        {
+            // Canonical Prefabs own all static geometry and typography. The
+            // profiles remain available to the quarantined Legacy fallback.
+            LinkExclusiveDialogueSurfaces();
+            return;
+        }
         ApplyDialogueSurfaceProfile(
             dialogueSurface,
             dialogueSurface != null ? dialogueSurface.transform as RectTransform : null,
@@ -386,6 +435,31 @@ public class HearthTvTerminalController : MonoBehaviour
             messageSurface != null ? messageSurface.transform as RectTransform : null,
             true);
         LinkExclusiveDialogueSurfaces();
+    }
+
+    public void SetViewBindings(HearthTerminalViewBindings bindings)
+    {
+        authoredViewBindings = bindings;
+        if (bindings != null && bindings.HasDialogueSurface)
+        {
+            allowRuntimeSurfaceFallback = false;
+        }
+        dialogueSurface = null;
+        messageSurface = null;
+    }
+
+    public bool UsesCanonicalAuthoredView
+    {
+        get
+        {
+            return authoredViewBindings != null &&
+                authoredViewBindings.HasDialogueSurface;
+        }
+    }
+
+    public bool AllowsRuntimeSurfaceFallback
+    {
+        get { return allowRuntimeSurfaceFallback; }
     }
 
     public bool IsCustomActionHandoffPending
@@ -1376,6 +1450,11 @@ public class HearthTvTerminalController : MonoBehaviour
 
     private void EnsureReferences()
     {
+        if (authoredViewBindings == null)
+        {
+            authoredViewBindings = GetComponent<HearthTerminalViewBindings>();
+        }
+
         if (canvas == null)
         {
             canvas = GetComponent<Canvas>();

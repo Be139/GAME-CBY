@@ -552,34 +552,22 @@ public class HearthCompanion17F01ReplayController : MonoBehaviour
 
     private void PlaySfxCue(string cueId)
     {
-        if (sfxCuePlayer != null)
-        {
-            sfxCuePlayer.PlayCue(cueId);
-        }
+        HearthStoryCueService.Play(sfxCuePlayer, cueId);
     }
 
     private void StartSfxLoop(string cueId)
     {
-        if (sfxCuePlayer != null)
-        {
-            sfxCuePlayer.StartCueLoop(cueId);
-        }
+        HearthStoryCueService.StartLoop(sfxCuePlayer, cueId);
     }
 
     private void StopSfxCue(string cueId)
     {
-        if (sfxCuePlayer != null)
-        {
-            sfxCuePlayer.StopCue(cueId);
-        }
+        HearthStoryCueService.Stop(sfxCuePlayer, cueId);
     }
 
     private void StopAllSfx()
     {
-        if (sfxCuePlayer != null)
-        {
-            sfxCuePlayer.StopAllCues();
-        }
+        HearthStoryCueService.StopAll(sfxCuePlayer);
     }
 
     private void TeleportRobot(Transform anchor)
@@ -689,13 +677,7 @@ public class HearthCompanion17F01ReplayController : MonoBehaviour
 
     private void ClearRobotVelocity()
     {
-        if (robotRigidbody == null)
-        {
-            return;
-        }
-
-        robotRigidbody.velocity = Vector3.zero;
-        robotRigidbody.angularVelocity = Vector3.zero;
+        HearthPlayerRigService.ClearVelocity(robotRigidbody);
     }
 
     private static void ApplyPose(HearthActorPosePreset preset, string poseId)

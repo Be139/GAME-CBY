@@ -2445,6 +2445,11 @@ PrefabInstance:
       propertyPath: m_TextStyleHashCode
       value: -1183493901
       objectReference: {fileID: 0}
+    - target: {fileID: 8021972454827582177, guid: 8345f193213e7234ab4b543062ca5b54,
+        type: 3}
+      propertyPath: m_AdditionalShaderChannelsFlag
+      value: 25
+      objectReference: {fileID: 0}
     - target: {fileID: 8192585767173648196, guid: 8345f193213e7234ab4b543062ca5b54,
         type: 3}
       propertyPath: m_OverrideSorting
@@ -2620,6 +2625,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c148958ec3a42334fab1d66cb6d0d03c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  authoredBindings: {fileID: 0}
   styleProfile: {fileID: 11400000, guid: bc32de37d1c1dec4b8eefb3650f73f91, type: 2}
   uiThemeProfile: {fileID: 0}
   uiLayoutProfile: {fileID: 0}
@@ -11888,6 +11894,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c148958ec3a42334fab1d66cb6d0d03c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  authoredBindings: {fileID: 0}
   styleProfile: {fileID: 11400000, guid: bc32de37d1c1dec4b8eefb3650f73f91, type: 2}
   uiThemeProfile: {fileID: 11400000, guid: 0b2a999c4ed4ddd40afcda0813b1bc96, type: 2}
   uiLayoutProfile: {fileID: 11400000, guid: 7ea4a3bf9b2f46a428a2103dcb59d58e, type: 2}
@@ -29650,6 +29657,7 @@ MonoBehaviour:
   deepSleepSeconds: 3.5
   deepSleepPowerOffDelaySeconds: 0.65
   useUnscaledTime: 0
+  transitionService: {fileID: 0}
   blackoutCanvasGroup: {fileID: 1286624571}
   blackoutImage: {fileID: 756283932}
   blackoutSortingOrder: 8000
@@ -39311,6 +39319,7 @@ MonoBehaviour:
   choiceBText: {fileID: 1440000396}
   recommendedText: {fileID: 2040714983}
   useSecondUiVisual: 1
+  applyRuntimeVisualCompatibility: 1
   secondUiTheme: {fileID: 11400000, guid: 0b2a999c4ed4ddd40afcda0813b1bc96, type: 2}
   uiStateCoordinator: {fileID: 0}
   title: ENTITY INSPECTION
@@ -52697,6 +52706,11 @@ PrefabInstance:
       propertyPath: m_AdditionalShaderChannelsFlag
       value: 25
       objectReference: {fileID: 0}
+    - target: {fileID: 2536257032669537007, guid: 93a2b4de7e34de941b6ce372a49214dc,
+        type: 3}
+      propertyPath: m_AdditionalShaderChannelsFlag
+      value: 25
+      objectReference: {fileID: 0}
     - target: {fileID: 2672802290223980338, guid: 93a2b4de7e34de941b6ce372a49214dc,
         type: 3}
       propertyPath: m_Volume
@@ -55128,6 +55142,11 @@ PrefabInstance:
       value: 25
       objectReference: {fileID: 0}
     - target: {fileID: 3586090389307442268, guid: 14528969c3e4c2e47ae32ff95f3f644d,
+        type: 3}
+      propertyPath: m_AdditionalShaderChannelsFlag
+      value: 25
+      objectReference: {fileID: 0}
+    - target: {fileID: 3712899724865653365, guid: 14528969c3e4c2e47ae32ff95f3f644d,
         type: 3}
       propertyPath: m_AdditionalShaderChannelsFlag
       value: 25
@@ -58293,6 +58312,7 @@ MonoBehaviour:
   findCameraIfMissing: 1
   uiInteraction: {fileID: 116433911}
   uiInteractionText: {fileID: 116433910}
+  promptPresenter: {fileID: 0}
   fallbackDescription: E  INTERACT
   refreshPromptEveryFrame: 0
   descriptionRefreshInterval: 0.1
@@ -60289,6 +60309,7 @@ MonoBehaviour:
   findCameraIfMissing: 1
   uiInteraction: {fileID: 0}
   uiInteractionText: {fileID: 0}
+  promptPresenter: {fileID: 0}
   fallbackDescription: E  INTERACT
   refreshPromptEveryFrame: 0
   descriptionRefreshInterval: 0.1
@@ -85737,6 +85758,7 @@ MonoBehaviour:
   findCameraIfMissing: 1
   uiInteraction: {fileID: 0}
   uiInteractionText: {fileID: 0}
+  promptPresenter: {fileID: 0}
   fallbackDescription: E  INTERACT
   refreshPromptEveryFrame: 0
   descriptionRefreshInterval: 0.1
@@ -92557,6 +92579,7 @@ MonoBehaviour:
   findCameraIfMissing: 1
   uiInteraction: {fileID: 0}
   uiInteractionText: {fileID: 0}
+  promptPresenter: {fileID: 0}
   fallbackDescription: E  INTERACT
   refreshPromptEveryFrame: 0
   descriptionRefreshInterval: 0.1
@@ -106724,6 +106747,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   worldCanvas: {fileID: 0}
+  authoredBindings: {fileID: 0}
+  allowRuntimeFallback: 1
   rootGroup: {fileID: 0}
   pageText: {fileID: 0}
   hintText: {fileID: 0}
@@ -114463,6 +114488,7 @@ MonoBehaviour:
   findCameraIfMissing: 1
   uiInteraction: {fileID: 0}
   uiInteractionText: {fileID: 0}
+  promptPresenter: {fileID: 0}
   fallbackDescription: E  INTERACT
   refreshPromptEveryFrame: 0
   descriptionRefreshInterval: 0.1
@@ -124634,6 +124660,7 @@ MonoBehaviour:
   findCameraIfMissing: 1
   uiInteraction: {fileID: 0}
   uiInteractionText: {fileID: 0}
+  promptPresenter: {fileID: 0}
   fallbackDescription: E  INTERACT
   refreshPromptEveryFrame: 0
   descriptionRefreshInterval: 0.1
@@ -129572,6 +129599,11 @@ PrefabInstance:
       propertyPath: DopplerLevel
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6141847917445287436, guid: 602d6008c76da654eac68afd21a6a5b8,
+        type: 3}
+      propertyPath: m_AdditionalShaderChannelsFlag
+      value: 25
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -131651,6 +131683,7 @@ MonoBehaviour:
   findCameraIfMissing: 1
   uiInteraction: {fileID: 0}
   uiInteractionText: {fileID: 0}
+  promptPresenter: {fileID: 0}
   fallbackDescription: E  INTERACT
   refreshPromptEveryFrame: 0
   descriptionRefreshInterval: 0.1
@@ -142074,6 +142107,7 @@ MonoBehaviour:
   findCameraIfMissing: 1
   uiInteraction: {fileID: 0}
   uiInteractionText: {fileID: 0}
+  promptPresenter: {fileID: 0}
   fallbackDescription: E  INTERACT
   refreshPromptEveryFrame: 0
   descriptionRefreshInterval: 0.1
@@ -153416,6 +153450,7 @@ MonoBehaviour:
   findCameraIfMissing: 1
   uiInteraction: {fileID: 0}
   uiInteractionText: {fileID: 0}
+  promptPresenter: {fileID: 0}
   fallbackDescription: E  INTERACT
   refreshPromptEveryFrame: 0
   descriptionRefreshInterval: 0.1
@@ -165954,6 +165989,7 @@ MonoBehaviour:
   terminalHusbandAnimation: {fileID: 535671923}
   terminalHusbandAnimationId: ButtonPushing
   createBlackoutOverlay: 1
+  transitionService: {fileID: 0}
   blackoutCanvasGroup: {fileID: 0}
   blackoutImage: {fileID: 0}
   blackoutColor: {r: 0, g: 0, b: 0, a: 1}
@@ -178308,6 +178344,7 @@ MonoBehaviour:
   findCameraIfMissing: 1
   uiInteraction: {fileID: 0}
   uiInteractionText: {fileID: 0}
+  promptPresenter: {fileID: 0}
   fallbackDescription: E  INTERACT
   refreshPromptEveryFrame: 0
   descriptionRefreshInterval: 0.1
@@ -184288,6 +184325,7 @@ MonoBehaviour:
   findCameraIfMissing: 1
   uiInteraction: {fileID: 416536563}
   uiInteractionText: {fileID: 416536562}
+  promptPresenter: {fileID: 0}
   fallbackDescription: E  INTERACT
   refreshPromptEveryFrame: 0
   descriptionRefreshInterval: 0.1
@@ -193734,6 +193772,7 @@ MonoBehaviour:
   findCameraIfMissing: 1
   uiInteraction: {fileID: 0}
   uiInteractionText: {fileID: 0}
+  promptPresenter: {fileID: 0}
   fallbackDescription: E  INTERACT
   refreshPromptEveryFrame: 0
   descriptionRefreshInterval: 0.1
@@ -201421,6 +201460,11 @@ PrefabInstance:
       propertyPath: m_AdditionalShaderChannelsFlag
       value: 25
       objectReference: {fileID: 0}
+    - target: {fileID: 2765849610854172344, guid: ca83bfff8621046459b6c72bbd689de5,
+        type: 3}
+      propertyPath: m_AdditionalShaderChannelsFlag
+      value: 25
+      objectReference: {fileID: 0}
     - target: {fileID: 3202878115222133948, guid: ca83bfff8621046459b6c72bbd689de5,
         type: 3}
       propertyPath: m_AdditionalShaderChannelsFlag
@@ -201870,6 +201914,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_TextStyleHashCode
       value: -1183493901
+      objectReference: {fileID: 0}
+    - target: {fileID: 7049200248866508952, guid: ca83bfff8621046459b6c72bbd689de5,
+        type: 3}
+      propertyPath: m_AdditionalShaderChannelsFlag
+      value: 25
       objectReference: {fileID: 0}
     - target: {fileID: 7182580616286501694, guid: ca83bfff8621046459b6c72bbd689de5,
         type: 3}

@@ -9,6 +9,7 @@ using UnityEngine.UI;
 
 public static class HearthTvTerminalSlideImageBuilder
 {
+    private static bool legacyBatchAuthorized;
     private const int ExpectedSlideCount = 24;
     private const int SlidesPerTerminal = 8;
     private const int PreChoiceSelectionPages = 6;
@@ -24,9 +25,17 @@ public static class HearthTvTerminalSlideImageBuilder
     private const string Terminal17F02PrefabPath = TerminalPrefabFolder + "/Terminal_17F02.prefab";
     private const string Terminal17F03PrefabPath = TerminalPrefabFolder + "/Terminal_17F03_Alert.prefab";
 
-    [MenuItem("Tools/Hearth HUD/Rebuild TV Terminal UI From PPT Images")]
+    [MenuItem("Tools/Hearth/Legacy Unsafe/Terminals/Rebuild TV Terminal UI From PPT Images")]
     public static void RebuildTvTerminalImagePrefabs()
     {
+        if (!legacyBatchAuthorized &&
+            !HearthLegacyToolGuard.Confirm(
+                "Rebuild TV Terminal UI From PPT Images",
+                "all legacy image-driven terminal Prefabs"))
+        {
+            return;
+        }
+
         string pptxPath = FindPptxPath();
         if (string.IsNullOrEmpty(pptxPath))
         {
@@ -97,10 +106,25 @@ public static class HearthTvTerminalSlideImageBuilder
         Debug.Log("[HearthTvTerminalSlideImageBuilder] Rebuilt PPT image-driven TV terminal prefabs from " + pptxPath + ".");
     }
 
-    [MenuItem("Tools/Hearth HUD/TV Terminal/Rebuild PPT Image Terminals And Apply Current Scene")]
+    [MenuItem("Tools/Hearth/Legacy Unsafe/Terminals/Rebuild PPT Image Terminals And Apply Current Scene")]
     public static void RebuildAndApplyCurrentScene()
     {
-        RebuildTvTerminalImagePrefabs();
+        if (!HearthLegacyToolGuard.Confirm(
+                "Rebuild And Apply PPT Image Terminals",
+                "legacy terminal Prefabs and the active scene"))
+        {
+            return;
+        }
+
+        legacyBatchAuthorized = true;
+        try
+        {
+            RebuildTvTerminalImagePrefabs();
+        }
+        finally
+        {
+            legacyBatchAuthorized = false;
+        }
 
         HearthTvTerminalPrefabBuilder.StandardizeTvByHierarchyPath("17F/ROOM1/TV (3)", Terminal17F01PrefabPath);
         HearthTvTerminalPrefabBuilder.StandardizeTvByHierarchyPath("17F/ROOM3/TV (2)", Terminal17F02PrefabPath);
@@ -110,8 +134,8 @@ public static class HearthTvTerminalSlideImageBuilder
         SetSceneTerminalResidentId("17F/ROOM3/TV (2)/MonitorCanvas/Terminal_17F02", "17F02");
         SetSceneTerminalResidentId("17F/ROOM2/TV (4)/MonitorCanvas/Terminal_17F03_Alert", "17F03");
 
-        EditorSceneManager.SaveOpenScenes();
-        Debug.Log("[HearthTvTerminalSlideImageBuilder] Applied PPT image terminals to current 17F scene TVs.");
+        EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+        Debug.Log("[HearthTvTerminalSlideImageBuilder] Applied PPT image terminals to current 17F scene TVs. Review the diff and save manually.");
     }
 
     private static void SetSceneTerminalResidentId(string hierarchyPath, string residentId)

@@ -139,6 +139,7 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
 
     [Header("Blackout Overlay")]
     [SerializeField] private bool createBlackoutOverlay = true;
+    [SerializeField] private HearthScreenTransitionService transitionService;
     [SerializeField] private CanvasGroup blackoutCanvasGroup;
     [SerializeField] private Image blackoutImage;
     [SerializeField] private Color blackoutColor = Color.black;
@@ -180,6 +181,20 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
     public ReplayStep CurrentStep
     {
         get { return currentStep; }
+    }
+
+    public bool UsesAuthoredTransitionService
+    {
+        get { return transitionService != null && transitionService.IsConfigured; }
+    }
+
+    public void SetTransitionService(HearthScreenTransitionService service)
+    {
+        transitionService = service;
+        if (UsesAuthoredTransitionService)
+        {
+            createBlackoutOverlay = false;
+        }
     }
 
     private void Awake()
@@ -597,24 +612,13 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
 
     private void TeleportRobot(Transform anchor, Transform cameraAnchor)
     {
-        if (robotRoot == null || anchor == null)
-        {
-            return;
-        }
-
-        robotRoot.SetPositionAndRotation(anchor.position, anchor.rotation);
-
-        if (robotCamera != null && cameraAnchor != null)
-        {
-            robotCamera.transform.SetPositionAndRotation(cameraAnchor.position, cameraAnchor.rotation);
-        }
-
-        if (robotLook != null)
-        {
-            robotLook.ForceLookFromCurrentTransforms();
-        }
-
-        ClearRobotVelocity();
+        HearthPlayerRigService.ApplyPose(
+            robotRoot,
+            robotCamera,
+            robotRigidbody,
+            robotLook,
+            anchor,
+            cameraAnchor);
     }
 
     private void SetRobotControl(bool allowMove, bool allowLook, bool allowInteraction)
@@ -642,18 +646,7 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
 
     private void ClearRobotVelocity()
     {
-        if (robotRigidbody == null)
-        {
-            return;
-        }
-
-        if (robotRigidbody.isKinematic)
-        {
-            return;
-        }
-
-        robotRigidbody.velocity = Vector3.zero;
-        robotRigidbody.angularVelocity = Vector3.zero;
+        HearthPlayerRigService.ClearVelocity(robotRigidbody);
     }
 
     private void SetStageActors(bool bedroom, bool dining, bool terminal)
@@ -793,34 +786,22 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
 
     private void PlayStorySfx(string cueId)
     {
-        if (sfxCuePlayer != null)
-        {
-            sfxCuePlayer.PlayCue(cueId);
-        }
+        HearthStoryCueService.Play(sfxCuePlayer, cueId);
     }
 
     private void StartStorySfxLoop(string cueId)
     {
-        if (sfxCuePlayer != null)
-        {
-            sfxCuePlayer.StartCueLoop(cueId);
-        }
+        HearthStoryCueService.StartLoop(sfxCuePlayer, cueId);
     }
 
     private void StopStorySfx(string cueId)
     {
-        if (sfxCuePlayer != null)
-        {
-            sfxCuePlayer.StopCue(cueId);
-        }
+        HearthStoryCueService.Stop(sfxCuePlayer, cueId);
     }
 
     private void StopAllStorySfx()
     {
-        if (sfxCuePlayer != null)
-        {
-            sfxCuePlayer.StopAllCues();
-        }
+        HearthStoryCueService.StopAll(sfxCuePlayer);
     }
 
     private IEnumerator PlayOpenDoorAnimationAndTriggerDoor()
@@ -1347,6 +1328,10 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
 
     private void EnsureBlackoutOverlay()
     {
+        if (UsesAuthoredTransitionService)
+        {
+            return;
+        }
         if (blackoutCanvasGroup != null)
         {
             if (blackoutImage != null)
@@ -1395,6 +1380,11 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
 
     private IEnumerator FadeBlackTo(float targetAlpha, float seconds)
     {
+        if (UsesAuthoredTransitionService)
+        {
+            yield return transitionService.FadeTo(targetAlpha, seconds);
+            yield break;
+        }
         EnsureBlackoutOverlay();
         if (blackoutCanvasGroup == null)
         {
@@ -1421,6 +1411,11 @@ public class HearthCompanion17F02ReplayController : MonoBehaviour
 
     private void SetBlackoutAlpha(float alpha)
     {
+        if (UsesAuthoredTransitionService)
+        {
+            transitionService.SetImmediate(alpha);
+            return;
+        }
         if (blackoutCanvasGroup == null)
         {
             return;

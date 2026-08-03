@@ -4,12 +4,20 @@ using UnityEngine;
 
 public static class HearthCompanionHoldInteractionRepair
 {
-    private const string MenuRoot = "Tools/Hearth/HUD/";
+    private const string MenuRoot =
+        HearthLegacyToolGuard.MenuRoot + "Companion Hold/";
     private const string CompanionHudPrefabPath = "Assets/Prefabs/UI/HearthHud/Companion/HearthCompanionHudRoot.prefab";
 
     [MenuItem(MenuRoot + "Repair Companion Hold Interactions")]
     public static void RepairOpenScene()
     {
+        if (!HearthLegacyToolGuard.Confirm(
+                "Repair Companion Hold Interactions",
+                "the legacy Companion HUD Prefab and active scene bindings"))
+        {
+            return;
+        }
+
         HearthCompanionHudController hud = FindSceneObject<HearthCompanionHudController>();
         if (hud == null)
         {
@@ -76,9 +84,8 @@ public static class HearthCompanionHoldInteractionRepair
         RepairPrefabDefaults();
 
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
-        EditorSceneManager.SaveOpenScenes();
         AssetDatabase.SaveAssets();
-        Debug.Log("[HearthCompanionHoldInteractionRepair] Rebound the shared HoldPrompt and the formal ViewSwitchController to 17F01/02/03.");
+        Debug.Log("[HearthCompanionHoldInteractionRepair] Rebound the legacy shared HoldPrompt and the formal ViewSwitchController to 17F01/02/03. Review and save the scene manually.");
         ValidateOpenScene();
     }
 

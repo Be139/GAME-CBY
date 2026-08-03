@@ -6,6 +6,9 @@ using UnityEngine.Events;
 [DisallowMultipleComponent]
 public class HearthCompanionHudController : MonoBehaviour
 {
+    [Header("Authored V2 Bindings")]
+    [SerializeField] private HearthCompanionHudBindings authoredBindings;
+
     [Header("Scenes")]
     [SerializeField] private HearthCompanionHudSceneData[] scenes;
     [SerializeField] private string startingSceneId = "17F01_01";
@@ -154,6 +157,12 @@ public class HearthCompanionHudController : MonoBehaviour
     public void SetViewSwitchController(ViewSwitchController controller)
     {
         viewSwitchController = controller;
+    }
+
+    public void SetAuthoredBindings(HearthCompanionHudBindings bindings)
+    {
+        authoredBindings = bindings;
+        ResolveReferences();
     }
 
     public void ShowScene(string sceneId)
@@ -655,6 +664,23 @@ public class HearthCompanionHudController : MonoBehaviour
 
     private void ResolveReferences()
     {
+        if (authoredBindings == null)
+        {
+            authoredBindings = GetComponent<HearthCompanionHudBindings>();
+        }
+
+        if (authoredBindings != null)
+        {
+            identityHeadingText = authoredBindings.IdentityHeadingText;
+            identityValueText = authoredBindings.IdentityValueText;
+            currentTaskHeadingText = authoredBindings.CurrentTaskHeadingText;
+            currentTaskBodyText = authoredBindings.CurrentTaskBodyText;
+            if (authoredBindings.HoldPrompt != null)
+            {
+                holdPrompt = authoredBindings.HoldPrompt;
+            }
+        }
+
         if (rootCanvasGroup == null)
         {
             rootCanvasGroup = GetComponent<CanvasGroup>();

@@ -9,11 +9,18 @@ using UnityEngine.SceneManagement;
 public static class HearthUiV2CriticalBindingRepair
 {
     private const string MenuPath =
-        "Tools/Hearth/UI V2/Repair 17F01-02 Critical Bindings";
+        HearthLegacyToolGuard.MenuRoot + "Repair 17F01-02 Critical Bindings";
 
     [MenuItem(MenuPath)]
     public static void RepairOpenScene()
     {
+        if (!HearthLegacyToolGuard.Confirm(
+                "Repair 17F01-02 Critical Bindings",
+                "the active scene terminal references"))
+        {
+            return;
+        }
+
         if (EditorApplication.isPlayingOrWillChangePlaymode)
         {
             Debug.LogWarning(
@@ -68,20 +75,12 @@ public static class HearthUiV2CriticalBindingRepair
         RepairTerminal(terminal17F02, flow, interaction, playerCamera);
 
         EditorSceneManager.MarkSceneDirty(scene);
-        if (!EditorSceneManager.SaveScene(scene))
-        {
-            Undo.FlushUndoRecordObjects();
-            Undo.RevertAllDownToGroup(undoGroup);
-            Debug.LogError(
-                "[HearthUiV2CriticalBindingRepair] Scene save failed; repair was rolled back.");
-            return;
-        }
-
         Undo.FlushUndoRecordObjects();
         Undo.CollapseUndoOperations(undoGroup);
         Debug.Log(
             "[HearthUiV2CriticalBindingRepair] Repaired only the six critical 17F01/02 " +
-            "terminal references: flow controller, Human camera and PlayerInteraction.");
+            "terminal references: flow controller, Human camera and PlayerInteraction. " +
+            "Review the diff and save the scene manually.");
     }
 
     private static void RepairTerminal(

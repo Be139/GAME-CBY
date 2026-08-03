@@ -1033,14 +1033,17 @@ Codex 已继续完成动态层、终端和矢量组件接入。用户现在若�
 
 ### 修改后只做预览检查
 
-## 25. 统一 Profile 接管流程（2026-08-03）
+## 25. 历史 Profile 接管流程（2026-08-03，已停用）
 
-本节覆盖前文中“直接改 Prefab 数值”的旧做法。以下两份资产现在是 Builder、Final Visual Repair 和运行时动态 UI 的共同来源：
+> 本节仅保留用于解释旧项目结构。它已经被第 26 节“正式 Prefab 唯一入口”取代。
+> 日常调整不要运行 `Apply Current Profiles`，也不要再把 Layout Profile 当成静态 UI 的主要编辑入口。
+
+历史版本曾让以下两份资产同时驱动 Builder、Final Visual Repair 和运行时动态 UI：
 
 - 字体、颜色、线宽与遮罩：`Assets/UI/HEARTH/V2/Profiles/Hearth_UiV2Theme.asset`
 - 1920×1080 位置与尺寸：`Assets/UI/HEARTH/V2/Profiles/Hearth_UiV2Layout_1920x1080.asset`
 
-修改完资产后运行 `Tools > Hearth > UI V2 > Apply Current Profiles`。该菜单只重建视觉层和位置，不重置对白资产、AudioClip、SFX Catalog、剧情引用、Camera、TV、人物、终端模型或用户锚点。
+该旧流程会重建视觉层，容易覆盖正式 Prefab 中的手动调整，因此入口已迁移到 `Tools > Hearth > Legacy / Unsafe`。只有排查旧版兼容问题时才允许使用，并且使用前必须备份当前 Prefab 外观。
 
 ### 25.1 字号字段对照
 
@@ -1084,7 +1087,7 @@ Layout Profile 全部采用“左上角为原点”的 `Left / Top / Width / Hei
 
 ### 25.3 直接微调 TMP 的方法
 
-1. 先在对应 Profile 修改字体或 Region；只有 Profile 没有该细项时才进入 Prefab Mode。
+1. 以下步骤属于历史参考；正式静态 UI 应按第 26 节直接在对应 Prefab Mode 中修改。
 2. TMP 的 `Alignment` 决定文字锚向；Field Unit 名称与正文都使用左上，操作提示使用右下。
 3. `Line Spacing` 只调正文的行距；建议每次改 2–4，避免一次跨太大。
 4. 内边距由 TMP Rect 相对外框 Rect 决定。名称、正文左边缘必须共线；不要拉伸外框图片来制造边距。
@@ -1093,8 +1096,8 @@ Layout Profile 全部采用“左上角为原点”的 `Left / Top / Width / Hei
 
 ### 25.4 哪些可以直接改，哪些不能改名
 
-- 可以直接改 Prefab：纯装饰图片、颜色、9-slice Border、不会被 Builder 重新生成的固定 TMP 对齐细节。
-- 应通过 Profile 改：所有上表列出的字号和 Rect；终端 Field Unit、Companion 顶部、选择遮罩、TV4 底部区和黑幕场景卡。
+- 正式规则见第 26 节：静态 UI 的 Rect、单项字号、边距和对齐直接改权威 Prefab。
+- Theme Profile 只管全局字体、颜色和公共视觉参数；Layout Profile 只保留动态安全区、TimeCard 等少量运行时区域。
 - 运行时生成：缺失时补建的 `TerminalDialogueSurface_V2`、`TerminalMessageSurface_V2`、`PhotoArchiveCanvas_V2`、黑幕持续标题。不要只改 Scene 中临时实例。
 - 绝对不能改名：`PlayerInteractionPrompt`、`HoldPrompt`、`HoldPromptText`、`HoldProgressFill`、`FieldUnitPanel`、`LilyMessagePanel`、上方四个 Companion 分离 TMP 名，以及终端 Before/After/Review 功能节点。
 - 不允许在普通木门上恢复玩家直接 E 开关门；剧情仍可调用 `SmartDoorController.Open()`、`Close()`。
@@ -1108,7 +1111,7 @@ Layout Profile 全部采用“左上角为原点”的 `Left / Top / Width / Hei
 - Play Mode 预览：`Tools > Hearth > UI V2 > Runtime Preview`
 - 1920×1080：Runtime Preview 下 `QA/Resolution/1920x1080`
 
-每次重新运行 Builder 后，应再执行 `Apply Current Profiles`；不要手工修改 Builder 生成的 `V2_*` 视觉子节点后期待它永久保留。需要长期保留的调节必须回写 Profile 或 Builder。
+不要为了日常手调重新运行旧 Builder 或 `Apply Current Profiles`。需要长期保留的静态视觉必须写入第 26 节列出的权威 Prefab。
 1. 退出 Play Mode 修改 Prefab。
 2. 保存后进入 Play Mode。
 3. 使用 `Tools > Hearth > UI V2 > Runtime Preview` 选择状态。
@@ -1120,3 +1123,81 @@ Layout Profile 全部采用“左上角为原点”的 `Left / Top / Width / Hei
 
 - `HEARTH_UI_V2_Baselines/MCP_Final/HEARTH_UI_V2_MCP_Final_ContactSheet.png`
 - `HEARTH_UI_V2_Baselines/MCP_Responsive/HEARTH_UI_V2_MCP_Responsive_ContactSheet.png`
+
+## 26. 正式 Prefab 唯一入口（2026-08-03，覆盖第 24–25 节旧流程）
+
+### 26.1 为什么以前改了 Prefab，游戏里却没变化
+
+旧结构同时存在五层控制：Prefab、SampleScene 覆盖、Layout/Theme Profile、Builder/Repair、运行时生成代码。场景中的 Human HUD 曾有大量视觉覆盖，所以 Scene 值会压过 Prefab；之后 Builder 或运行时代码又会再次压过两者。
+
+现在的规则是：**位置、尺寸、单项字号和边距直接改正式 Prefab；运行时只写文字、显隐、焦点和进度。** `Apply Current Profiles` 因为会重建视觉，已移入 `Tools > Hearth > Legacy / Unsafe`，日常不要运行。
+
+### 26.2 人类视角从哪里改
+
+- 正式 Prefab：`Assets/Prefabs/UI/HearthHud/V2/HearthHudRoot_V2.prefab`
+- 左上身份、右上任务、左下 Location：`PersistentHud`
+- Current Task：标题 `Text_006_CURRENT_TASK`，正文 `V2_CurrentTaskBody`。改字体大小必须分别改两个 TMP。
+- Tab 页面：各 `HearthFirstPersonHudPage` 子物体。按钮位置、可见图片、TMP 和 Button/焦点目标必须一起移动。
+- 菜单/Final 选中底色：每个目标下的 `SelectionFill`。运行时只开关这个子物体，不再创建。
+- Shutdown：正式 Prefab 中 Cancel 对象必须保持关闭；不要恢复 Esc 取消。
+- 动态 E：`InteractionPromptLayer/PlayerInteractionPrompt`；由 `HearthInteractionPromptPresenter` 绑定。
+- 正式/自然/黑幕字幕不在 Human Prefab，见 26.4。
+
+### 26.3 陪伴单元视角从哪里改
+
+- 正式 Prefab：`Assets/Prefabs/UI/HearthHud/V2/Companion/HearthCompanionHudRoot_V2.prefab`
+- 左上：`V2_IdentityHeading`、`V2_IdentityValue`。
+- 右上：`V2_TaskHeading`、`V2_TaskBody`。
+- 短按 E：`PlayerInteractionPrompt`；Hold E：`HoldPrompt`、`HoldPromptText`、`HoldProgressFill`。
+- 状态、Decision、TriggerCard 仍在同一个 Companion Prefab 内。可以调 Rect/TMP/Image，但不能另造第二个 HUD。
+- 正式 Synth/Field Unit 出现时旧 DecisionPanel 会临时隐藏；不要用复制一套面板解决重叠。
+
+### 26.4 字幕从哪里改
+
+- 正式 Prefab：`Assets/Prefabs/UI/HearthSubtitle/V2/HearthSubtitleVisualCanvas_V2.prefab`
+- `VisualRoot`：总布局；`Speaker` / `Body` / `AdvanceHint`：人物名、正文、Space。
+- `FormalFrame`、`AuxiliaryFrame`、左右 Speaker Tab：正式框。
+- `Backdrop`：自然字幕黑底。
+- `PersistentSceneHeader`：黑幕对白上方持续场景标题。
+- 播放器会根据正式/自然/终端/黑幕模式切换显隐和响应式高度，但禁止创建第二个 Subtitle Canvas。对白内容和 Line ID 不在 Prefab 中修改。
+
+### 26.5 五个终端从哪里改
+
+- 目录：`Assets/Prefabs/UI/HearthHud/V2/Terminals/`。
+- 每台终端只改自己的正式 Prefab；不要在 SampleScene 临时改完就结束。
+- Field Unit：`FieldUnitPanel`；17F04 Lily：`LilyMessagePanel` 或 `TerminalMessageSurface_V2`。
+- 17F04 必须同时有 Field Surface 和 Lily Surface，二者互斥。
+- 正式绑定后 Controller 不再用 Layout Profile 改 Rect/字号，也不再创建缺失面板。
+- 如果你先在 Game View 对应 Scene 实例调出了目标外观，使用 Production UI 的 Adopt/Clear 流程反写，不要使用 `Apply All Overrides`。
+
+### 26.6 TV4、17F03 和黑幕
+
+- TV4 相册正式 Prefab：`Assets/Prefabs/UI/HearthHud/V2/PhotoArchive/HearthPhotoArchiveWorldView_V2.prefab`；只在首次安装时创建。改页码、Field 框和字体都在此 Prefab；Photo Camera/Renderer 仍留在场景。
+- 17F03 检查正式 Prefab：`Assets/Prefabs/UI/HearthHud/V2/Inspection/Hearth17F03InspectionPanel_V2.prefab`；首次 Bind 会采用当前场景认可外观，此后不再由运行时布局代码覆盖。
+- F02/F03 黑幕继续使用场景中已有 CanvasGroup，Production Scene Bind 会加统一 `HearthScreenTransitionService`。不要在 Controller 下再建黑幕 Canvas。
+
+### 26.7 Theme、Layout 和任务文案各管什么
+
+- `Hearth_UiV2Theme.asset`：全局字体、颜色和公共视觉参数；不要把单个面板位置放进去。
+- `Hearth_UiV2Layout_1920x1080.asset`：只保留动态安全区、结局场景卡等确实必须在运行时计算的少量区域；不再作为 Human/Terminal/TV4 静态排版的覆盖源。
+- `HearthTaskTextCatalog.asset`：Current Task 和 Companion Scene 任务文案。改任务文字在这里，不改 Controller switch；旧 switch 只是 Catalog 缺失时的回退。
+
+### 26.8 推荐的手调与应用流程
+
+1. 退出 Play Mode。
+2. 首次迁移运行 `Tools > Hearth > Production UI > Install or Refresh Explicit Bindings`。
+3. 打开 SampleScene，运行 `Bind Open Scene To Canonical Views`；检查变化后手动保存。
+4. 直接进入上方指定的正式 Prefab 调 RectTransform、TMP、Image。
+5. 若要保留当前 Scene 外观：先 `Compare Scene vs Prefab`，选中正式 Prefab 实例，执行 `Adopt Approved Appearance`，再 `Clear Visual Overrides`。
+6. 运行 `Validate Production UI`。目标是所有正式绑定完整、Runtime Fallback 关闭、静态视觉覆盖为 0。
+7. 进入 Play Mode，在 1920×1080 回放。Prefab 修改只有在退出 Play Mode 保存后才会永久生效。
+
+### 26.9 绝对不要做
+
+- 不运行 `Legacy / Unsafe` 下的 Builder/Repair，除非明确要做兼容恢复并已备份。
+- 不对 Human/Companion/Terminal 使用 `Overrides > Apply All`。
+- 不复制第二个 Human HUD、Companion HUD、Subtitle Canvas 或终端 Surface。
+- 不改正式绑定对象名，不删除 Binding/Presenter，不把示例文字烘焙进图片。
+- 不为了改 UI 保存整个 SampleScene 的无关 Camera、模型、锚点或剧情引用变化。
+
+完整结构、Legacy 引用数和删除门槛见 `HEARTH_全项目保守重构基线与Legacy清理表.md`。

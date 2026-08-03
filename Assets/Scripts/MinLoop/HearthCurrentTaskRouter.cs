@@ -1,3 +1,5 @@
+using UnityEngine;
+
 public enum HearthCurrentTaskId
 {
     None,
@@ -30,6 +32,11 @@ public enum HearthCurrentTaskId
 /// </summary>
 public static class HearthCurrentTaskRouter
 {
+    private const string CatalogResourcePath =
+        "HEARTH/HearthTaskTextCatalog";
+    private static HearthTaskTextCatalog cachedCatalog;
+    private static bool catalogLoadAttempted;
+
     public static void ApplyHuman(
         HearthFirstPersonHudController hud,
         HearthCurrentTaskId taskId,
@@ -57,6 +64,14 @@ public static class HearthCurrentTaskRouter
         string residentId = null)
     {
         string resident = FormatResidentId(residentId);
+        HearthTaskTextCatalog catalog = GetCatalog();
+        string catalogText;
+        if (catalog != null &&
+            catalog.TryResolveTask(taskId, resident, out catalogText))
+        {
+            return NormalizeTaskText(catalogText);
+        }
+
         switch (taskId)
         {
             case HearthCurrentTaskId.ListenToFieldUnit:
@@ -159,6 +174,14 @@ public static class HearthCurrentTaskRouter
         string sceneId,
         string fallback)
     {
+        HearthTaskTextCatalog catalog = GetCatalog();
+        string catalogText;
+        if (catalog != null &&
+            catalog.TryResolveCompanionScene(sceneId, out catalogText))
+        {
+            return NormalizeTaskText(catalogText);
+        }
+
         switch ((sceneId ?? string.Empty).Trim().ToUpperInvariant())
         {
             case "17F01_01":
@@ -239,5 +262,17 @@ public static class HearthCurrentTaskRouter
         if (normalized.Contains("17F03") || normalized.Contains("ROOM3")) return "17F03";
         if (normalized.Contains("17F02") || normalized.Contains("ROOM2")) return "17F02";
         return "17F01";
+    }
+
+    private static HearthTaskTextCatalog GetCatalog()
+    {
+        if (!catalogLoadAttempted)
+        {
+            catalogLoadAttempted = true;
+            cachedCatalog = Resources.Load<HearthTaskTextCatalog>(
+                CatalogResourcePath);
+        }
+
+        return cachedCatalog;
     }
 }

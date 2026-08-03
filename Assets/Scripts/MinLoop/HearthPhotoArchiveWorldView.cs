@@ -16,6 +16,9 @@ public sealed class HearthPhotoArchiveWorldView : MonoBehaviour
     private static readonly Color DarkPanel = new Color32(8, 12, 24, 226);
 
     [SerializeField] private Canvas worldCanvas;
+    [SerializeField] private HearthPhotoArchiveViewBindings authoredBindings;
+    [Tooltip("Migration-only compatibility. Disable after TV4 uses the canonical photo archive Prefab.")]
+    [SerializeField] private bool allowRuntimeFallback = true;
     [SerializeField] private CanvasGroup rootGroup;
     [SerializeField] private TMP_Text pageText;
     [SerializeField] private TMP_Text hintText;
@@ -35,8 +38,21 @@ public sealed class HearthPhotoArchiveWorldView : MonoBehaviour
     public HearthDialogueSurface ResolveDialogueSurface()
     {
         EnsureBuilt();
-        ApplyProfileToBuiltUi();
+        if (allowRuntimeFallback)
+        {
+            ApplyProfileToBuiltUi();
+        }
         return dialogueSurface;
+    }
+
+    public void SetAuthoredBindings(HearthPhotoArchiveViewBindings bindings)
+    {
+        authoredBindings = bindings;
+        AdoptAuthoredBindings();
+        if (bindings != null && bindings.IsComplete)
+        {
+            allowRuntimeFallback = false;
+        }
     }
 
     public void SetUiProfiles(
@@ -45,7 +61,10 @@ public sealed class HearthPhotoArchiveWorldView : MonoBehaviour
     {
         uiThemeProfile = themeProfile;
         uiLayoutProfile = layoutProfile;
-        ApplyProfileToBuiltUi();
+        if (allowRuntimeFallback)
+        {
+            ApplyProfileToBuiltUi();
+        }
     }
 
     public void Show(
@@ -127,9 +146,22 @@ public sealed class HearthPhotoArchiveWorldView : MonoBehaviour
 
     private void EnsureBuilt()
     {
+        AdoptAuthoredBindings();
         if (worldCanvas != null && dialogueSurface != null)
         {
-            ApplyProfileToBuiltUi();
+            if (allowRuntimeFallback)
+            {
+                ApplyProfileToBuiltUi();
+            }
+            return;
+        }
+
+        if (!allowRuntimeFallback)
+        {
+            Debug.LogError(
+                "[HearthPhotoArchiveWorldView] Missing canonical photo archive view. " +
+                "Bind HearthPhotoArchiveViewBindings on TV4 instead of generating UI at runtime.",
+                this);
             return;
         }
 
@@ -266,6 +298,39 @@ public sealed class HearthPhotoArchiveWorldView : MonoBehaviour
         }
         dialogueSurface.Configure(panelGroup, speaker, body, advance);
         ApplyProfileToBuiltUi();
+    }
+
+    public bool UsesCanonicalAuthoredView
+    {
+        get { return authoredBindings != null && authoredBindings.IsComplete; }
+    }
+
+    public bool AllowsRuntimeFallback
+    {
+        get { return allowRuntimeFallback; }
+    }
+
+    private void AdoptAuthoredBindings()
+    {
+        if (authoredBindings == null)
+        {
+            authoredBindings =
+                GetComponentInChildren<HearthPhotoArchiveViewBindings>(true);
+        }
+        if (authoredBindings == null || !authoredBindings.IsComplete)
+        {
+            return;
+        }
+
+        worldCanvas = authoredBindings.WorldCanvas;
+        rootGroup = authoredBindings.RootGroup;
+        pageText = authoredBindings.PageText;
+        hintText = authoredBindings.HintText;
+        dialogueSurface = authoredBindings.DialogueSurface;
+        canvasRect = worldCanvas != null
+            ? worldCanvas.GetComponent<RectTransform>()
+            : null;
+        allowRuntimeFallback = false;
     }
 
     private void UpdatePose()

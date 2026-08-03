@@ -24,7 +24,7 @@ public static class HearthHudPrefabBuilder
     private static readonly XNamespace P = "http://schemas.openxmlformats.org/presentationml/2006/main";
     private static readonly XNamespace A = "http://schemas.openxmlformats.org/drawingml/2006/main";
 
-    [MenuItem("Tools/Hearth HUD/Rebuild Formal HUD Prefabs")]
+    [MenuItem("Tools/Hearth/Legacy Unsafe/HUD/Rebuild Formal HUD Prefabs")]
     public static void RebuildFormalHudPrefabs()
     {
         string pptxPath = FindPptxPath();

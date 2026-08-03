@@ -15,6 +15,7 @@ public class PlayerInteraction : MonoBehaviour
     [Header("Prompt UI")]
     public GameObject uiInteraction;
     public TMP_Text uiInteractionText;
+    [SerializeField] private HearthInteractionPromptPresenter promptPresenter;
     [SerializeField] private string fallbackDescription = "E  INTERACT";
     [SerializeField] private bool refreshPromptEveryFrame;
     [SerializeField] private float descriptionRefreshInterval = 0.1f;
@@ -171,6 +172,9 @@ public class PlayerInteraction : MonoBehaviour
         uiInteractionText = label != null
             ? label
             : prompt != null ? prompt.GetComponentInChildren<TMP_Text>(true) : null;
+        promptPresenter = prompt != null
+            ? prompt.GetComponent<HearthInteractionPromptPresenter>()
+            : null;
         promptVisible = false;
         currentDescription = null;
 
@@ -185,10 +189,27 @@ public class PlayerInteraction : MonoBehaviour
         }
     }
 
+    public void BindPromptPresenter(HearthInteractionPromptPresenter presenter)
+    {
+        promptPresenter = presenter;
+        BindPromptUi(
+            presenter != null ? presenter.Root : null,
+            presenter != null ? presenter.Label : null);
+    }
+
     public bool ResolvePromptUiNow()
     {
+        if (promptPresenter != null)
+        {
+            uiInteraction = promptPresenter.Root;
+            uiInteractionText = promptPresenter.Label;
+            return uiInteraction != null && uiInteractionText != null;
+        }
+
         if (uiInteraction != null && uiInteractionText != null)
         {
+            promptPresenter =
+                uiInteraction.GetComponent<HearthInteractionPromptPresenter>();
             return true;
         }
 
@@ -401,7 +422,20 @@ public class PlayerInteraction : MonoBehaviour
             currentDescription = message;
         }
 
-        if (uiInteraction != null && (force || promptVisible != isActive))
+        if (promptPresenter != null && (force || promptVisible != isActive))
+        {
+            if (isActive)
+            {
+                promptPresenter.Show(message ?? currentDescription);
+            }
+            else
+            {
+                promptPresenter.Hide();
+            }
+
+            promptVisible = isActive;
+        }
+        else if (uiInteraction != null && (force || promptVisible != isActive))
         {
             uiInteraction.SetActive(isActive);
             promptVisible = isActive;

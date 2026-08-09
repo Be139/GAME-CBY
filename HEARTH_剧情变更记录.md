@@ -1139,3 +1139,23 @@ casual_Female_K (9) -> REF_Wife_17F02_ExitOutside
 - 正式缺失绑定时改为明确报错；旧运行时生成逻辑保留为 Legacy 隔离期回退，完整回放通过前不删除。
 - 36 个正式 SFX、330 个正式语音、Catalog、Cue ID、Dialogue Line ID 和逐句 SFX Track 保持不变。
 - 当前 Unity HTTP MCP 未发现活动实例，因此本记录只确认代码与离线编译完成；Prefab 安装、场景绑定和 Play Mode 结果必须在 Unity Reload 后另行补记，不能提前视为已验收。
+
+## 2026-08-09 UI 显示与 F03 终端流程修复（流程顺序不变）
+
+### 终端与第三户
+
+- F01、F02、F03、F04 终端打开后的黑屏，确认为正式 Prefab 的 `TerminalVisualRoot` 被保存为关闭；现已恢复，并增加运行时打开前自检。
+- F03 “ENTER UNIT”无响应，确认为该场景终端丢失 `MinLoopFlowController` 引用；已重新绑定唯一正式 Flow。Play Mode 中请求已推进到 `Entering Resident Unit`。
+- 本轮不改变 F01→F02→F03→F04 顺序，不改变按钮开放条件、住户演出、Camera Anchor、处置或信任结算。
+- F01–F04 选择页的旧 `KeyboardNavigationRoot` 不再参与显示，避免旧焦点字与新选择页形成两套 A/B、两套操作提示；Lobby 的独立关闭提示保留。
+
+### 字幕与大厅信息
+
+- Mia 的 `NaturalCaption` 取消黑色横向衬底，只保留白色居中文字；自动播放与音频/回退时长不变。
+- 大厅 Lily 信息仍按原流程先完整弹出；收起后不再保留右上角 `READ / 4:42 PM / ASSIGNMENT NOT LOADED` 小卡。
+- Companion 视角的 Noah、住户角色、Field Unit、Synth Voice 等正式框式对白出现时，旧 DecisionPanel 临时隐藏；对白结束后按原状态恢复。
+
+### V2 外框
+
+- 对有 `PanelBackdrop`、但既无 `ScalableFrame` 也无 `PanelFrame` 的正式终端面板补可缩放 V2 外框。
+- 只补视觉边框，不改变面板 RectTransform、文本、按钮、Surface、Camera、音效或剧情事件。

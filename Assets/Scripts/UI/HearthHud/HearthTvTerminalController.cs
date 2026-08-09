@@ -211,6 +211,11 @@ public class HearthTvTerminalController : MonoBehaviour
         get { return contentRoot; }
     }
 
+    public bool HasMinLoopFlowController
+    {
+        get { return minLoopFlowController != null; }
+    }
+
     public float Zoom
     {
         get { return zoom; }
@@ -544,6 +549,7 @@ public class HearthTvTerminalController : MonoBehaviour
     private void Awake()
     {
         EnsureReferences();
+        EnsureTerminalVisualHierarchyActive();
         ApplyTerminalModeDefaults();
 
         if (refreshPagesFromChildrenOnAwake || pages == null || pages.Length == 0)
@@ -757,6 +763,7 @@ public class HearthTvTerminalController : MonoBehaviour
     public void OpenTerminal()
     {
         EnsureReferences();
+        EnsureTerminalVisualHierarchyActive();
         EnsureEventSystem();
         ResolveRuntimePlayerReferences();
 
@@ -1550,6 +1557,31 @@ public class HearthTvTerminalController : MonoBehaviour
         }
 
         ConfigureActiveLoopSource();
+    }
+
+    /// <summary>
+    /// Canonical terminal visibility is controlled by the Canvas, not by
+    /// disabling the authored visual/content roots. Older scene and Prefab
+    /// revisions stored those roots inactive, which left the terminal camera
+    /// and navigation visible over an otherwise empty black screen.
+    /// </summary>
+    private void EnsureTerminalVisualHierarchyActive()
+    {
+        Transform visualRoot = transform.Find("TerminalVisualRoot");
+        if (visualRoot == null)
+        {
+            visualRoot = FindDescendantByName(transform, "TerminalVisualRoot");
+        }
+
+        if (visualRoot != null && !visualRoot.gameObject.activeSelf)
+        {
+            visualRoot.gameObject.SetActive(true);
+        }
+
+        if (contentRoot != null && !contentRoot.gameObject.activeSelf)
+        {
+            contentRoot.gameObject.SetActive(true);
+        }
     }
 
     private void RefreshEmbeddedDialogueNavigationChrome()

@@ -774,6 +774,7 @@ public static class HearthUiV2FinalVisualRepairEditor
             typeof(RectTransform));
         visualObject.layer = root.layer;
         visualObject.transform.SetParent(root.transform, false);
+        visualObject.SetActive(true);
         RectTransform visual = visualObject.GetComponent<RectTransform>();
         SetStretch(visual, 0f, 0f, 0f, 0f);
 
@@ -1080,7 +1081,7 @@ public static class HearthUiV2FinalVisualRepairEditor
         SetTopLeft(homePanel, 516f, 266f, 888f, 220f);
         if (homePanel != null)
         {
-            EnsurePlainPanel(homePanel, Amber);
+            EnsureScalablePanelLayers(homePanel);
             TMP_Text homeTitle = FindText(homePanel, "Title");
             if (homeTitle != null)
             {
@@ -1105,22 +1106,6 @@ public static class HearthUiV2FinalVisualRepairEditor
         SetTopLeft(field, fieldRect.x, fieldRect.y, fieldRect.width, fieldRect.height);
         EnsureScalablePanelLayers(field);
         ApplyTerminalDialogueTextLayout(field, fieldRect.width, fieldRect.height);
-    }
-
-    private static void EnsurePlainPanel(RectTransform panel, Color accent)
-    {
-        if (panel == null)
-        {
-            return;
-        }
-        DestroyDirectChildren(panel, "PanelBackdrop");
-        DestroyDirectChildren(panel, "PanelAccent");
-        Image backdrop = CreateImage(panel, "PanelBackdrop", PanelBlueBlack);
-        SetStretch(backdrop.rectTransform, 6f, 6f, 6f, 6f);
-        backdrop.transform.SetAsFirstSibling();
-        Image rule = CreateImage(panel, "PanelAccent", accent);
-        SetTopLeft(rule.rectTransform, 6f, 6f, 3f, panel.rect.height - 12f);
-        rule.transform.SetAsLastSibling();
     }
 
     private static void EnsurePanelLayers(RectTransform panel, string framePath)

@@ -71,7 +71,11 @@ public class HearthLobbyHudOverlay : MonoBehaviour
         }
 
         SetGroup(expandedMessageGroup, false);
-        SetGroup(pinnedMessageGroup, true);
+        // The expanded incoming-message card is the only persistent visual
+        // required by the approved lobby flow. After it closes, dialogue may
+        // continue but the old compact READ / assignment status card must not
+        // remain in the top-right corner.
+        SetGroup(pinnedMessageGroup, false);
     }
 
     public void DismissVoiceMessage()

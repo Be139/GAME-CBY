@@ -1075,10 +1075,13 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
         // Synth/Field lines can be routed through the auxiliary audio channel
         // while still being the only formal visual message on Companion HUD.
         // Do not use the audio channel as the visibility gate.
-        string normalized = NormalizeSpeaker(speaker);
-        return normalized.Contains("FIELD UNIT") ||
-               normalized.Contains("SYNTH VOICE") ||
-               normalized.Contains("HOME UNIT");
+        // Any authored framed dialogue is the foreground message while the
+        // Companion HUD is presented. Restricting this to Synth/Field names
+        // left the old DecisionPanel visible behind character lines such as
+        // Noah's dialogue. Natural captions and epilogue cards were excluded
+        // above and therefore keep the persistent HUD unchanged.
+        return presentation == HearthSubtitlePresentationMode.StandardDialogue ||
+               presentation == HearthSubtitlePresentationMode.TerminalLowerThird;
     }
 
     private void SetCompanionDialogueExclusive(bool exclusive)
@@ -1591,7 +1594,9 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
             }
             else if (mode == HearthSubtitlePresentationMode.NaturalCaption)
             {
-                backdropImage.color = new Color(0f, 0f, 0f, 0.78f);
+                // Mia's automatic inner/response captions are intentionally
+                // plain white text without the old full-width black strip.
+                backdropImage.color = Color.clear;
             }
             else if (mode == HearthSubtitlePresentationMode.TerminalLowerThird)
             {

@@ -1283,3 +1283,56 @@ RectTransform、TMP、Image 和层级。日常美术修改先使用 Production U
 - 不为了改 UI 保存整个 SampleScene 的无关 Camera、模型、锚点或剧情引用变化。
 
 完整结构、Legacy 引用数和删除门槛见 `HEARTH_全项目保守重构基线与Legacy清理表.md`。
+
+## 28. `Subtitle`、`V2_TaskUnderline` 与终端 `ScalableFrame`（2026-08-09）
+
+### 28.1 `Subtitle` 是什么
+
+`Subtitle` 不是一个单独关卡，也不是某一句台词。它是全游戏共用的字幕视觉系统，正式
+Prefab 位于：
+
+`Assets/Prefabs/UI/HearthSubtitle/V2/HearthSubtitleVisualCanvas_V2.prefab`
+
+`MinLoopSubtitlePlayer` 把同一套视觉切换成不同模式：
+
+- `StandardDialogue`：人物名称、特殊对白框、Space 推进。
+- `NaturalCaption`：Mia 等自动短句；现在是纯白字、无黑色衬底。
+- `TerminalLowerThird`：终端内部下方 Field Unit / Home Unit 对白。
+- `TimeCard`：黑幕场景说明。
+- `CenteredEpilogue`：黑幕正中自动对白。
+
+改字幕框、Speaker、Body、Hint 的位置和单项字号，应进入该正式 Subtitle Prefab 修改；
+不要复制第二套 Subtitle Canvas，也不要在运行时生成物上修改。
+
+### 28.2 `V2_TaskUnderline` 是什么
+
+`V2_TaskUnderline` 只是 `CURRENT TASK` 区域下面的装饰线，不保存任务文字，也不控制任务
+变化。Human 和 Companion 各自 Prefab 都可以有一条：
+
+- Human：`HearthHudRoot_V2/PersistentHudLayer/PersistentHud/V2_TaskUnderline`
+- Companion：`HearthCompanionHudRoot_V2/.../V2_TaskUnderline`
+
+调整它只改 `RectTransform` 的位置/宽度/高度和 `Image` 颜色。任务标题、任务正文仍分别改
+对应 TMP；实时文字由 `SetCurrentTask()` 写入。
+
+### 28.3 `ScalableFrame` 是什么、怎么补
+
+`ScalableFrame` 挂 `HearthV2FrameGraphic`，它不是一张被拉伸的 PNG，而是按当前矩形实时
+绘制等宽线条和切角。因此扩大终端框时不会把四角拉变形。
+
+正式终端可以运行：
+
+`Tools > Hearth > Production UI > Apply Missing Scalable Frames To Terminals`
+
+它只处理同时满足以下条件的面板：有直接子物体 `PanelBackdrop`，但没有
+`ScalableFrame`，也没有 `PanelFrame`。已有特殊框不会叠加第二层；执行两次结果相同。
+
+手调时可直接选择面板下的 `ScalableFrame`：颜色、线宽、切角由
+`HearthV2FrameGraphic` / Theme 公共参数控制；面板的位置和大小仍改父级 RectTransform。
+
+### 28.4 终端选择页不要重新启用旧提示根
+
+F01–F04 的 `KeyboardNavigationRoot` 是迁移期旧显示层。正式 V2 已由
+`HearthTerminalCompactChromeView` 和选择页自身显示焦点与操作提示，所以住户终端中该
+旧根必须保持 inactive；否则会出现两组 A/B、两组 Footer 和信息相互渗透。Lobby 仍保留
+它自己的关闭提示。

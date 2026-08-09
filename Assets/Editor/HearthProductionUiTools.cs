@@ -30,6 +30,8 @@ public static class HearthProductionUiTools
         "Assets/Prefabs/UI/HearthHud/V2/Terminals/";
     private const string TaskCatalogPath =
         "Assets/Resources/HEARTH/HearthTaskTextCatalog.asset";
+    private const string ThemeProfilePath =
+        "Assets/UI/HEARTH/V2/Profiles/Hearth_UiV2Theme.asset";
     private const int FirstTerminalIndex = 5;
     private static string pendingAuthoringPrefabPath;
     private static double authoringFrameDeadline;
@@ -404,13 +406,34 @@ public static class HearthProductionUiTools
 
         HearthTvTerminalController[] terminals =
             FindSceneComponents<HearthTvTerminalController>(scene);
+        MinLoopFlowController[] flowControllers =
+            FindSceneComponents<MinLoopFlowController>(scene);
+        MinLoopFlowController sharedFlow = flowControllers.Length == 1
+            ? flowControllers[0]
+            : null;
         for (int i = 0; i < terminals.Length; i++)
         {
             HearthTerminalViewBindings bindings =
                 terminals[i].GetComponent<HearthTerminalViewBindings>();
-            if (bindings == null) continue;
-            RecordAndBind(terminals[i], () => terminals[i].SetViewBindings(bindings));
-            bound++;
+            if (bindings != null)
+            {
+                RecordAndBind(terminals[i], () => terminals[i].SetViewBindings(bindings));
+                bound++;
+            }
+
+            if (RepairTerminalSceneVisibility(terminals[i]))
+            {
+                bound++;
+            }
+
+            if (sharedFlow != null &&
+                terminals[i].TerminalMode == HearthTerminalMode.Doorway)
+            {
+                RecordAndBind(
+                    terminals[i],
+                    () => terminals[i].SetMinLoopFlowController(sharedFlow));
+                bound++;
+            }
         }
 
         MinLoopSubtitlePlayer[] subtitlePlayers =
@@ -704,6 +727,31 @@ public static class HearthProductionUiTools
                         terminals[i]);
                     issues++;
                 }
+
+                Transform terminalVisual =
+                    FindNamed(terminals[i].transform, "TerminalVisualRoot");
+                if (terminalVisual == null || !terminalVisual.gameObject.activeSelf ||
+                    terminals[i].ContentRoot == null ||
+                    !terminals[i].ContentRoot.gameObject.activeSelf)
+                {
+                    Debug.LogError(
+                        "[Production UI] Terminal visual/content root is inactive and will " +
+                        "open as a blank screen: " +
+                        GetHierarchyPath(terminals[i].transform),
+                        terminals[i]);
+                    issues++;
+                }
+
+                if (terminals[i].TerminalMode == HearthTerminalMode.Doorway &&
+                    !terminals[i].HasMinLoopFlowController)
+                {
+                    Debug.LogError(
+                        "[Production UI] Doorway terminal lacks MinLoopFlowController and " +
+                        "its replay/enter action cannot continue the household flow: " +
+                        GetHierarchyPath(terminals[i].transform),
+                        terminals[i]);
+                    issues++;
+                }
             }
 
             for (int i = 0; i < archiveViews.Length; i++)
@@ -930,6 +978,7 @@ public static class HearthProductionUiTools
         {
             RetireNestedTerminalNavigation(root);
             EnsureRequiredTerminalSurfaces(root, path);
+            EnsureScalableTerminalFrames(root);
             HearthTerminalViewBindings bindings =
                 GetOrAdd<HearthTerminalViewBindings>(root);
             List<HearthDialogueSurface> pageSurfaces =
@@ -969,20 +1018,143 @@ public static class HearthProductionUiTools
         });
     }
 
-    private static void RetireNestedTerminalNavigation(GameObject root)
+    [MenuItem(MenuRoot + "Apply Missing Scalable Frames To Terminals")]
+    public static void ApplyMissingScalableFramesToTerminals()
     {
-        if (root == null || root.transform.Find("KeyboardNavigationRoot") == null)
+        if (!EditorUtility.DisplayDialog(
+                "Apply missing scalable terminal frames",
+                "This adds the V2 scalable frame only to terminal panels that " +
+                "currently have a backdrop but no frame. It does not move panels, " +
+                "change text, story bindings, cameras or audio.",
+                "Apply",
+                "Cancel"))
         {
             return;
         }
 
-        // The V2 wrapper already owns the canonical navigation and runtime
-        // prompt. Earlier generated terminal visuals carried a second copy
-        // under TerminalVisualRoot, which rendered duplicate focus/prompt
-        // text over the authored dialogue surface.
+        ApplyMissingScalableFramesToTerminalsBatch();
+    }
+
+    public static void ApplyMissingScalableFramesToTerminalsBatch()
+    {
+        for (int i = FirstTerminalIndex; i < CanonicalPrefabs.Length; i++)
+        {
+            string path = CanonicalPrefabs[i];
+            EditPrefab(path, EnsureScalableTerminalFrames);
+        }
+
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
+        Debug.Log(
+            "[Production UI] Missing scalable terminal frames applied without " +
+            "changing terminal layout or flow bindings.");
+    }
+
+    private static void EnsureScalableTerminalFrames(GameObject root)
+    {
+        if (root == null)
+        {
+            return;
+        }
+
+        HearthUiThemeProfile theme =
+            AssetDatabase.LoadAssetAtPath<HearthUiThemeProfile>(ThemeProfilePath);
+        Color frameColor = theme != null
+            ? theme.Information
+            : new Color32(120, 170, 220, 255);
+        float thickness = theme != null ? theme.RuleLineThickness : 2f;
+
+        Transform[] items = root.GetComponentsInChildren<Transform>(true);
+        for (int i = 0; i < items.Length; i++)
+        {
+            Transform panel = items[i];
+            if (panel == null || panel.Find("PanelBackdrop") == null ||
+                panel.Find("ScalableFrame") != null ||
+                panel.Find("PanelFrame") != null)
+            {
+                continue;
+            }
+
+            GameObject frameObject = new GameObject(
+                "ScalableFrame",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(HearthV2FrameGraphic));
+            frameObject.layer = panel.gameObject.layer;
+            frameObject.transform.SetParent(panel, false);
+            RectTransform frameRect = frameObject.GetComponent<RectTransform>();
+            frameRect.anchorMin = Vector2.zero;
+            frameRect.anchorMax = Vector2.one;
+            frameRect.offsetMin = Vector2.zero;
+            frameRect.offsetMax = Vector2.zero;
+            frameRect.localScale = Vector3.one;
+            HearthV2FrameGraphic frame =
+                frameObject.GetComponent<HearthV2FrameGraphic>();
+            frame.Configure(frameColor, thickness, 14f);
+            frameObject.transform.SetAsLastSibling();
+        }
+    }
+
+    private static bool RepairTerminalSceneVisibility(
+        HearthTvTerminalController terminal)
+    {
+        if (terminal == null)
+        {
+            return false;
+        }
+
+        bool changed = false;
+        Transform visual = FindNamed(terminal.transform, "TerminalVisualRoot");
+        if (visual != null && !visual.gameObject.activeSelf)
+        {
+            Undo.RecordObject(visual.gameObject, "Repair terminal visual visibility");
+            visual.gameObject.SetActive(true);
+            PrefabUtility.RecordPrefabInstancePropertyModifications(visual.gameObject);
+            EditorUtility.SetDirty(visual.gameObject);
+            changed = true;
+        }
+
+        RectTransform content = terminal.ContentRoot;
+        if (content != null && !content.gameObject.activeSelf)
+        {
+            Undo.RecordObject(content.gameObject, "Repair terminal content visibility");
+            content.gameObject.SetActive(true);
+            PrefabUtility.RecordPrefabInstancePropertyModifications(content.gameObject);
+            EditorUtility.SetDirty(content.gameObject);
+            changed = true;
+        }
+
+        return changed;
+    }
+
+    private static void RetireNestedTerminalNavigation(GameObject root)
+    {
+        if (root == null)
+        {
+            return;
+        }
+
+        HearthTvTerminalController terminal =
+            root.GetComponent<HearthTvTerminalController>();
+        if (terminal == null || terminal.TerminalMode == HearthTerminalMode.LobbySync)
+        {
+            return;
+        }
+
+        // Doorway/Home terminals now use HearthTerminalCompactChromeView for
+        // their focus, status and footer. Preserve the legacy prompt object so
+        // existing serialized TMP references remain valid, but keep it
+        // inactive; otherwise it draws a second A/B key and a second footer
+        // over the V2 choice page. A genuinely nested duplicate can be removed.
+        Transform canonicalLegacy = root.transform.Find("KeyboardNavigationRoot");
+        if (canonicalLegacy != null)
+        {
+            canonicalLegacy.gameObject.SetActive(false);
+        }
+
         Transform nested = root.transform.Find(
             "TerminalVisualRoot/KeyboardNavigationRoot");
-        if (nested != null)
+        if (nested != null && nested != canonicalLegacy)
         {
             UnityEngine.Object.DestroyImmediate(nested.gameObject);
         }
@@ -1730,6 +1902,11 @@ public static class HearthProductionUiTools
             }
 
             Transform contentRoot = FindNamed(root.transform, "TerminalContentRoot");
+            Transform visualRoot = FindNamed(root.transform, "TerminalVisualRoot");
+            if (visualRoot != null)
+            {
+                visualRoot.gameObject.SetActive(true);
+            }
             if (contentRoot != null)
             {
                 contentRoot.gameObject.SetActive(true);
@@ -1738,6 +1915,8 @@ public static class HearthProductionUiTools
                     1f);
             }
 
+            RetireNestedTerminalNavigation(root);
+            EnsureScalableTerminalFrames(root);
             ShowStartingTerminalPageForAuthoring(controller);
         }
     }

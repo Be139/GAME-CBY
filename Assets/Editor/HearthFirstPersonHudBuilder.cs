@@ -162,6 +162,7 @@ public static class HearthFirstPersonHudBuilder
             typeof(HearthFirstPersonHudFlowBinder));
 
         RectTransform rect = root.GetComponent<RectTransform>();
+        rect.localScale = Vector3.one;
         rect.sizeDelta = new Vector2(ReferenceWidth, ReferenceHeight);
         rect.anchoredPosition = new Vector2(ReferenceWidth * 0.5f, ReferenceHeight * 0.5f);
 

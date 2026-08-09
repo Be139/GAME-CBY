@@ -798,6 +798,7 @@ public static class HearthUiV2Builder
         GameObject root = PrefabUtility.LoadPrefabContents(sourcePath);
         try
         {
+            root.transform.localScale = Vector3.one;
             RemoveExistingV2Objects(root);
             styleAction(root);
             HearthUiThemeMarker marker = root.GetComponent<HearthUiThemeMarker>();
@@ -826,6 +827,7 @@ public static class HearthUiV2Builder
         GameObject root = PrefabUtility.LoadPrefabContents(prefabPath);
         try
         {
+            root.transform.localScale = Vector3.one;
             RemoveExistingV2Objects(root);
             styleAction(root);
 

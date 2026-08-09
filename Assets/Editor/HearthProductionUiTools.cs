@@ -31,6 +31,9 @@ public static class HearthProductionUiTools
     private const string TaskCatalogPath =
         "Assets/Resources/HEARTH/HearthTaskTextCatalog.asset";
     private const int FirstTerminalIndex = 5;
+    private static string pendingAuthoringPrefabPath;
+    private static double authoringFrameDeadline;
+    private static double authoringFrameNotBefore;
 
     private static readonly string[] CanonicalPrefabs =
     {
@@ -146,19 +149,91 @@ public static class HearthProductionUiTools
     [MenuItem(MenuRoot + "Preview Canonical Prefab")]
     public static void PreviewCanonicalPrefab()
     {
-        GameObject selected = Selection.activeGameObject;
-        string path = selected != null
-            ? GetSourcePrefabPath(PrefabUtility.GetNearestPrefabInstanceRoot(selected))
-            : string.Empty;
-        if (!CanonicalPrefabs.Contains(path))
+        string selectedPath = ResolveSelectedCanonicalPrefabPath();
+        OpenCanonicalPrefabForAuthoring(
+            !string.IsNullOrEmpty(selectedPath) ? selectedPath : HumanPrefab);
+    }
+
+    [MenuItem(MenuRoot + "Preview/Human HUD")]
+    private static void PreviewHumanHud()
+    {
+        OpenCanonicalPrefabForAuthoring(HumanPrefab);
+    }
+
+    [MenuItem(MenuRoot + "Preview/Companion HUD")]
+    private static void PreviewCompanionHud()
+    {
+        OpenCanonicalPrefabForAuthoring(CompanionPrefab);
+    }
+
+    [MenuItem(MenuRoot + "Preview/Subtitle")]
+    private static void PreviewSubtitle()
+    {
+        OpenCanonicalPrefabForAuthoring(SubtitlePrefab);
+    }
+
+    [MenuItem(MenuRoot + "Preview/17F03 Inspection")]
+    private static void PreviewInspection()
+    {
+        OpenCanonicalPrefabForAuthoring(InspectionPrefab);
+    }
+
+    [MenuItem(MenuRoot + "Preview/Photo Archive")]
+    private static void PreviewPhotoArchive()
+    {
+        OpenCanonicalPrefabForAuthoring(PhotoArchivePrefab);
+    }
+
+    [MenuItem(MenuRoot + "Preview/Terminal - Lobby")]
+    private static void PreviewLobbyTerminal()
+    {
+        OpenCanonicalPrefabForAuthoring(
+            TerminalFolder + "Terminal_Lobby_Assignment_V2.prefab");
+    }
+
+    [MenuItem(MenuRoot + "Preview/Terminal - 17F01")]
+    private static void Preview17F01Terminal()
+    {
+        OpenCanonicalPrefabForAuthoring(
+            TerminalFolder + "Terminal_17F01_V2.prefab");
+    }
+
+    [MenuItem(MenuRoot + "Preview/Terminal - 17F02")]
+    private static void Preview17F02Terminal()
+    {
+        OpenCanonicalPrefabForAuthoring(
+            TerminalFolder + "Terminal_17F02_V2.prefab");
+    }
+
+    [MenuItem(MenuRoot + "Preview/Terminal - 17F03")]
+    private static void Preview17F03Terminal()
+    {
+        OpenCanonicalPrefabForAuthoring(
+            TerminalFolder + "Terminal_17F03_Alert_V2.prefab");
+    }
+
+    [MenuItem(MenuRoot + "Preview/Terminal - 17F04")]
+    private static void Preview17F04Terminal()
+    {
+        OpenCanonicalPrefabForAuthoring(
+            TerminalFolder + "Terminal_17F04_Home_V2.prefab");
+    }
+
+    [MenuItem(MenuRoot + "Repair Prefab Authoring Visibility")]
+    public static void RepairPrefabAuthoringVisibility()
+    {
+        if (!EditorUtility.DisplayDialog(
+                "Repair HEARTH Prefab authoring visibility",
+                "This normalizes only the canonical V2 Prefab roots and their " +
+                "edit-mode visibility. Runtime controllers still own all actual " +
+                "show/hide timing. No open scene is saved.",
+                "Repair",
+                "Cancel"))
         {
-            path = HumanPrefab;
+            return;
         }
 
-        GameObject asset = AssetDatabase.LoadAssetAtPath<GameObject>(path);
-        Selection.activeObject = asset;
-        EditorGUIUtility.PingObject(asset);
-        AssetDatabase.OpenAsset(asset);
+        RepairPrefabAuthoringVisibilityBatch();
     }
 
     [MenuItem(MenuRoot + "Adopt Approved Appearance")]
@@ -241,12 +316,41 @@ public static class HearthProductionUiTools
         {
             InstallTerminalBindings(CanonicalPrefabs[i]);
         }
+        RepairPrefabAuthoringVisibilityBatch(false);
         CreateOrRefreshTaskCatalog();
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
         Debug.Log(
             "[Production UI] Explicit bindings and task catalog installed. " +
             "No open scene was saved.");
+    }
+
+    public static void RepairPrefabAuthoringVisibilityBatch()
+    {
+        RepairPrefabAuthoringVisibilityBatch(true);
+    }
+
+    private static void RepairPrefabAuthoringVisibilityBatch(bool saveAndRefresh)
+    {
+        for (int i = 0; i < CanonicalPrefabs.Length; i++)
+        {
+            string path = CanonicalPrefabs[i];
+            if (AssetDatabase.LoadAssetAtPath<GameObject>(path) == null)
+            {
+                continue;
+            }
+
+            EditPrefab(path, root => ApplyAuthoringDefaults(root, path));
+        }
+
+        if (saveAndRefresh)
+        {
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            Debug.Log(
+                "[Production UI] Canonical V2 Prefab authoring visibility repaired. " +
+                "Play Mode visibility remains controlled by the existing runtime controllers.");
+        }
     }
 
     [MenuItem(MenuRoot + "Bind Open Scene To Canonical Views")]
@@ -264,6 +368,8 @@ public static class HearthProductionUiTools
                 "This assigns explicit binding components to the existing Human HUD, " +
                 "Companion HUD, subtitle players, terminals and formal PlayerInteraction " +
                 "components. Story, audio, camera and active-state values are not changed. " +
+                "A stale zero-scale override on a canonical subtitle instance is repaired " +
+                "so the authored Prefab can render at runtime. " +
                 "If the canonical F03 inspection Prefab does not exist yet, the current " +
                 "approved scene panel is adopted once without changing its child layout. " +
                 "The scene will not be saved automatically.",
@@ -311,6 +417,7 @@ public static class HearthProductionUiTools
             FindSceneComponents<MinLoopSubtitlePlayer>(scene);
         for (int i = 0; i < subtitlePlayers.Length; i++)
         {
+            NormalizeSubtitleInstanceRoot(subtitlePlayers[i]);
             GameObject visualRoot = subtitlePlayers[i].VisualRoot;
             HearthSubtitleViewBindings bindings = visualRoot != null
                 ? visualRoot.GetComponentInParent<HearthSubtitleViewBindings>(true)
@@ -442,6 +549,37 @@ public static class HearthProductionUiTools
             " scene component(s) to canonical views. Review the diff and save manually.");
     }
 
+    private static void NormalizeSubtitleInstanceRoot(MinLoopSubtitlePlayer player)
+    {
+        if (player == null || player.VisualRoot == null)
+        {
+            return;
+        }
+
+        Transform instanceRoot = player.VisualRoot.transform.parent;
+        if (instanceRoot == null || instanceRoot.localScale.sqrMagnitude > 0.0001f)
+        {
+            return;
+        }
+
+        SerializedObject serialized = new SerializedObject(instanceRoot);
+        SerializedProperty localScale = serialized.FindProperty("m_LocalScale");
+        if (localScale != null && localScale.prefabOverride)
+        {
+            PrefabUtility.RevertPropertyOverride(
+                localScale,
+                InteractionMode.UserAction);
+        }
+
+        if (instanceRoot.localScale.sqrMagnitude <= 0.0001f)
+        {
+            Undo.RecordObject(instanceRoot, "Repair subtitle instance scale");
+            instanceRoot.localScale = Vector3.one;
+            PrefabUtility.RecordPrefabInstancePropertyModifications(instanceRoot);
+            EditorUtility.SetDirty(instanceRoot);
+        }
+    }
+
     [MenuItem(MenuRoot + "Validate Production UI")]
     public static void ValidateProductionUi()
     {
@@ -468,6 +606,7 @@ public static class HearthProductionUiTools
         for (int i = FirstTerminalIndex; i < CanonicalPrefabs.Length; i++)
         {
             issues += ValidatePrefabBinding<HearthTerminalViewBindings>(CanonicalPrefabs[i]);
+            issues += ValidateSingleTerminalNavigationRoot(CanonicalPrefabs[i]);
         }
         GameObject homeTerminal = AssetDatabase.LoadAssetAtPath<GameObject>(
             TerminalFolder + "Terminal_17F04_Home_V2.prefab");
@@ -789,6 +928,8 @@ public static class HearthProductionUiTools
     {
         EditPrefab(path, root =>
         {
+            RetireNestedTerminalNavigation(root);
+            EnsureRequiredTerminalSurfaces(root, path);
             HearthTerminalViewBindings bindings =
                 GetOrAdd<HearthTerminalViewBindings>(root);
             List<HearthDialogueSurface> pageSurfaces =
@@ -826,6 +967,134 @@ public static class HearthProductionUiTools
                 controller.SetViewBindings(bindings);
             }
         });
+    }
+
+    private static void RetireNestedTerminalNavigation(GameObject root)
+    {
+        if (root == null || root.transform.Find("KeyboardNavigationRoot") == null)
+        {
+            return;
+        }
+
+        // The V2 wrapper already owns the canonical navigation and runtime
+        // prompt. Earlier generated terminal visuals carried a second copy
+        // under TerminalVisualRoot, which rendered duplicate focus/prompt
+        // text over the authored dialogue surface.
+        Transform nested = root.transform.Find(
+            "TerminalVisualRoot/KeyboardNavigationRoot");
+        if (nested != null)
+        {
+            UnityEngine.Object.DestroyImmediate(nested.gameObject);
+        }
+    }
+
+    private static int ValidateSingleTerminalNavigationRoot(string prefabPath)
+    {
+        GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+        if (prefab == null)
+        {
+            return 0;
+        }
+
+        int count = 0;
+        RectTransform[] rects = prefab.GetComponentsInChildren<RectTransform>(true);
+        for (int i = 0; i < rects.Length; i++)
+        {
+            if (rects[i] != null && rects[i].name == "KeyboardNavigationRoot")
+            {
+                count++;
+            }
+        }
+
+        if (count == 1)
+        {
+            return 0;
+        }
+
+        Debug.LogError(
+            "[Production UI] " + prefabPath + " has " + count +
+            " KeyboardNavigationRoot objects; exactly one canonical prompt root is required.");
+        return 1;
+    }
+
+    private static void EnsureRequiredTerminalSurfaces(GameObject root, string path)
+    {
+        if (root == null) return;
+
+        string lobbyPath = TerminalFolder + "Terminal_Lobby_Assignment_V2.prefab";
+        string homePath = TerminalFolder + "Terminal_17F04_Home_V2.prefab";
+        if (string.Equals(path, lobbyPath, StringComparison.Ordinal) &&
+            FindNamed(root.transform, "FieldUnitPanel") == null)
+        {
+            GameObject templateRoot = AssetDatabase.LoadAssetAtPath<GameObject>(
+                TerminalFolder + "Terminal_17F01_V2.prefab");
+            Transform template = templateRoot != null
+                ? FindNamed(templateRoot.transform, "FieldUnitPanel")
+                : null;
+            Transform pageVisual = FindNamed(root.transform, "V2_PageVisual");
+            if (template == null || pageVisual == null)
+            {
+                Debug.LogError(
+                    "[Production UI] Cannot author the Lobby Field Unit surface: " +
+                    "the shared terminal template or Lobby page visual is missing.");
+            }
+            else
+            {
+                GameObject panel = UnityEngine.Object.Instantiate(template.gameObject);
+                panel.name = "FieldUnitPanel";
+                panel.transform.SetParent(pageVisual, false);
+                panel.transform.SetAsLastSibling();
+                EnsureDialogueSurface(panel.transform);
+            }
+        }
+
+        if (string.Equals(path, homePath, StringComparison.Ordinal) &&
+            FindNamed(root.transform, "LilyMessagePanel") == null &&
+            FindNamed(root.transform, "TerminalMessageSurface_V2") == null)
+        {
+            Transform homePanel = FindNamed(root.transform, "HomePanel");
+            if (homePanel == null || homePanel.parent == null)
+            {
+                Debug.LogError(
+                    "[Production UI] Cannot author the Lily message surface: " +
+                    "the 17F04 HomePanel is missing.");
+                return;
+            }
+
+            GameObject messagePanel = UnityEngine.Object.Instantiate(
+                homePanel.gameObject);
+            messagePanel.name = "LilyMessagePanel";
+            messagePanel.transform.SetParent(homePanel.parent, false);
+            messagePanel.transform.SetSiblingIndex(homePanel.GetSiblingIndex() + 1);
+
+            Transform nestedField = FindNamed(messagePanel.transform, "FieldUnitPanel");
+            if (nestedField != null)
+            {
+                UnityEngine.Object.DestroyImmediate(nestedField.gameObject);
+            }
+
+            TMP_Text speaker = FindText(messagePanel.transform, "Title");
+            TMP_Text body = FindText(messagePanel.transform, "Welcome");
+            TMP_Text hint = FindText(messagePanel.transform, "ActionHint");
+            if (speaker != null)
+            {
+                speaker.name = "Speaker";
+                speaker.text = "Lily";
+            }
+            if (body != null)
+            {
+                body.name = "Body";
+                body.text = string.Empty;
+            }
+            if (hint != null)
+            {
+                hint.name = "AdvanceHint";
+                hint.text = "SPACE  CONTINUE";
+            }
+
+            EnsureDialogueSurface(messagePanel.transform);
+            messagePanel.transform.SetAsLastSibling();
+        }
     }
 
     private static HearthDialogueSurface EnsureDialogueSurface(Transform panel)
@@ -1060,8 +1329,24 @@ public static class HearthProductionUiTools
     private static bool IsVisualModification(PropertyModification modification)
     {
         if (modification == null || modification.target == null) return false;
-        if (modification.target is RectTransform)
+        if (modification.target is RectTransform rectTransform)
+        {
+            // Unity always serializes a Prefab instance root's placement as a
+            // scene override, even when every value is zero and the property
+            // cannot be applied/reverted like an authored child UI override.
+            // Treating that engine-owned placement as a production UI drift
+            // produces permanent false positives for every canonical canvas.
+            // PropertyModification.target points at the corresponding object
+            // in the Prefab asset (not the scene instance), so the canonical
+            // asset root is identified by its persistent, parentless RectTransform.
+            if (PrefabUtility.IsPartOfPrefabAsset(rectTransform) &&
+                rectTransform.parent == null)
+            {
+                return false;
+            }
+
             return RectProperties.Contains(modification.propertyPath);
+        }
         if (modification.target is TMP_Text)
             return TmpProperties.Contains(modification.propertyPath);
         if (modification.target is Image)
@@ -1375,6 +1660,304 @@ public static class HearthProductionUiTools
         target.sizeDelta = new Vector2(rect.width, rect.height);
     }
 
+    private static void ApplyAuthoringDefaults(GameObject root, string path)
+    {
+        if (root == null)
+        {
+            return;
+        }
+
+        // A top-level RectTransform created without a parent can serialize a
+        // zero scale. Scene instances happened to override that value to one,
+        // which made the game work while the canonical Prefab stayed blank and
+        // made Scene View framing (F) impossible.
+        RectTransform rootRect = root.transform as RectTransform;
+        if (rootRect != null)
+        {
+            rootRect.localScale = Vector3.one;
+        }
+
+        if (string.Equals(path, HumanPrefab, StringComparison.Ordinal))
+        {
+            SetNamedCanvasGroupForAuthoring(root.transform, "PersistentHud", 1f);
+            return;
+        }
+
+        if (string.Equals(path, CompanionPrefab, StringComparison.Ordinal))
+        {
+            SetCanvasGroupForAuthoring(root.GetComponent<CanvasGroup>(), 1f);
+            return;
+        }
+
+        if (string.Equals(path, SubtitlePrefab, StringComparison.Ordinal))
+        {
+            SetScreenReferenceRect(rootRect);
+            Transform visual = FindNamed(root.transform, "VisualRoot");
+            if (visual != null)
+            {
+                visual.gameObject.SetActive(true);
+                SetCanvasGroupForAuthoring(visual.GetComponent<CanvasGroup>(), 1f);
+            }
+            return;
+        }
+
+        if (string.Equals(path, InspectionPrefab, StringComparison.Ordinal))
+        {
+            SetCanvasGroupForAuthoring(root.GetComponent<CanvasGroup>(), 1f);
+            return;
+        }
+
+        if (path.StartsWith(TerminalFolder, StringComparison.Ordinal))
+        {
+            Canvas canvas = root.GetComponent<Canvas>();
+            if (canvas != null)
+            {
+                canvas.enabled = true;
+            }
+
+            HearthTvTerminalController controller =
+                root.GetComponent<HearthTvTerminalController>();
+            if (controller != null)
+            {
+                SerializedObject serialized = new SerializedObject(controller);
+                SerializedProperty showInEditMode =
+                    serialized.FindProperty("showCanvasInEditMode");
+                if (showInEditMode != null)
+                {
+                    showInEditMode.boolValue = true;
+                    serialized.ApplyModifiedPropertiesWithoutUndo();
+                }
+            }
+
+            Transform contentRoot = FindNamed(root.transform, "TerminalContentRoot");
+            if (contentRoot != null)
+            {
+                contentRoot.gameObject.SetActive(true);
+                SetCanvasGroupForAuthoring(
+                    contentRoot.GetComponent<CanvasGroup>(),
+                    1f);
+            }
+
+            ShowStartingTerminalPageForAuthoring(controller);
+        }
+    }
+
+    private static void SetScreenReferenceRect(RectTransform rect)
+    {
+        if (rect == null)
+        {
+            return;
+        }
+
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.zero;
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = new Vector2(960f, 540f);
+        rect.sizeDelta = new Vector2(1920f, 1080f);
+        rect.localScale = Vector3.one;
+    }
+
+    private static void ShowStartingTerminalPageForAuthoring(
+        HearthTvTerminalController controller)
+    {
+        if (controller == null)
+        {
+            return;
+        }
+
+        SerializedObject serialized = new SerializedObject(controller);
+        SerializedProperty startingPageProperty =
+            serialized.FindProperty("startingPage");
+        HearthHudPageId startingPage = startingPageProperty != null
+            ? (HearthHudPageId)startingPageProperty.intValue
+            : HearthHudPageId.Slide01PersistentActive;
+        HearthHudPage[] pages =
+            controller.GetComponentsInChildren<HearthHudPage>(true);
+        HearthHudPage firstPage = null;
+        for (int i = 0; i < pages.Length; i++)
+        {
+            if (pages[i] == null)
+            {
+                continue;
+            }
+
+            if (firstPage == null)
+            {
+                firstPage = pages[i];
+            }
+
+            SetPageForAuthoring(pages[i], pages[i].PageId == startingPage);
+        }
+
+        bool hasVisibleStartingPage = pages.Any(
+            page => page != null &&
+                    page.PageId == startingPage &&
+                    page.gameObject.activeSelf);
+        if (!hasVisibleStartingPage && firstPage != null)
+        {
+            SetPageForAuthoring(firstPage, true);
+        }
+    }
+
+    private static void SetPageForAuthoring(HearthHudPage page, bool visible)
+    {
+        if (page == null)
+        {
+            return;
+        }
+
+        page.gameObject.SetActive(visible);
+        SetCanvasGroupForAuthoring(page.GetComponent<CanvasGroup>(), visible ? 1f : 0f);
+    }
+
+    private static void SetNamedCanvasGroupForAuthoring(
+        Transform root,
+        string objectName,
+        float alpha)
+    {
+        Transform target = FindNamed(root, objectName);
+        if (target != null)
+        {
+            target.gameObject.SetActive(true);
+            SetCanvasGroupForAuthoring(target.GetComponent<CanvasGroup>(), alpha);
+        }
+    }
+
+    private static void SetCanvasGroupForAuthoring(CanvasGroup group, float alpha)
+    {
+        if (group == null)
+        {
+            return;
+        }
+
+        group.alpha = Mathf.Clamp01(alpha);
+        group.interactable = false;
+        group.blocksRaycasts = false;
+    }
+
+    private static string ResolveSelectedCanonicalPrefabPath()
+    {
+        UnityEngine.Object selectedObject = Selection.activeObject;
+        string assetPath = selectedObject != null
+            ? AssetDatabase.GetAssetPath(selectedObject)
+            : string.Empty;
+        if (CanonicalPrefabs.Contains(assetPath))
+        {
+            return assetPath;
+        }
+
+        GameObject selected = Selection.activeGameObject;
+        if (selected == null)
+        {
+            return string.Empty;
+        }
+
+        if (PrefabUtility.IsPartOfPrefabAsset(selected))
+        {
+            assetPath = AssetDatabase.GetAssetPath(selected);
+            return CanonicalPrefabs.Contains(assetPath)
+                ? assetPath
+                : string.Empty;
+        }
+
+        GameObject instanceRoot = PrefabUtility.GetNearestPrefabInstanceRoot(selected);
+        string sourcePath = GetSourcePrefabPath(instanceRoot);
+        return CanonicalPrefabs.Contains(sourcePath)
+            ? sourcePath
+            : string.Empty;
+    }
+
+    private static void OpenCanonicalPrefabForAuthoring(string path)
+    {
+        GameObject asset = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+        if (asset == null)
+        {
+            Debug.LogError("[Production UI] Canonical Prefab is missing: " + path);
+            return;
+        }
+
+        Selection.activeObject = asset;
+        EditorGUIUtility.PingObject(asset);
+        QueueFramePrefabStage(path);
+        AssetDatabase.OpenAsset(asset);
+    }
+
+    private static void QueueFramePrefabStage(string path)
+    {
+        pendingAuthoringPrefabPath = path;
+        authoringFrameNotBefore = EditorApplication.timeSinceStartup + 0.15d;
+        authoringFrameDeadline = EditorApplication.timeSinceStartup + 5d;
+        EditorApplication.update -= TryFramePendingPrefabStage;
+        EditorApplication.update += TryFramePendingPrefabStage;
+    }
+
+    private static void TryFramePendingPrefabStage()
+    {
+        if (string.IsNullOrEmpty(pendingAuthoringPrefabPath) ||
+            EditorApplication.timeSinceStartup > authoringFrameDeadline)
+        {
+            EditorApplication.update -= TryFramePendingPrefabStage;
+            pendingAuthoringPrefabPath = string.Empty;
+            return;
+        }
+
+        if (EditorApplication.timeSinceStartup < authoringFrameNotBefore)
+        {
+            return;
+        }
+
+        PrefabStage stage = PrefabStageUtility.GetCurrentPrefabStage();
+        if (stage == null ||
+            !string.Equals(
+                stage.assetPath,
+                pendingAuthoringPrefabPath,
+                StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        GameObject root = stage.prefabContentsRoot;
+        Transform focus = ResolveAuthoringFocus(root, pendingAuthoringPrefabPath);
+        Selection.activeGameObject = focus != null
+            ? focus.gameObject
+            : root;
+
+        SceneView sceneView = SceneView.lastActiveSceneView;
+        if (sceneView != null)
+        {
+            sceneView.in2DMode = true;
+            sceneView.FrameSelected();
+            sceneView.Repaint();
+        }
+
+        EditorApplication.update -= TryFramePendingPrefabStage;
+        pendingAuthoringPrefabPath = string.Empty;
+    }
+
+    private static Transform ResolveAuthoringFocus(GameObject root, string path)
+    {
+        if (root == null)
+        {
+            return null;
+        }
+
+        string focusName = string.Equals(path, HumanPrefab, StringComparison.Ordinal)
+            ? "PersistentHud"
+            : string.Equals(path, CompanionPrefab, StringComparison.Ordinal)
+                ? "PersistentInfoLayer"
+                : string.Equals(path, SubtitlePrefab, StringComparison.Ordinal)
+                    ? "VisualRoot"
+                    : string.Equals(path, InspectionPrefab, StringComparison.Ordinal)
+                        ? "InspectionPanel"
+                        : path.StartsWith(TerminalFolder, StringComparison.Ordinal)
+                            ? "TerminalContentRoot"
+                            : string.Empty;
+        Transform focus = !string.IsNullOrEmpty(focusName)
+            ? FindNamed(root.transform, focusName)
+            : null;
+        return focus != null ? focus : root.transform;
+    }
+
     private static void EditPrefab(string path, Action<GameObject> edit)
     {
         if (AssetDatabase.LoadAssetAtPath<GameObject>(path) == null)
@@ -1498,6 +2081,13 @@ public static class HearthProductionUiTools
         CanvasGroup group = groupProperty != null
             ? groupProperty.objectReferenceValue as CanvasGroup
             : null;
+        if (group == null && groupProperty != null)
+        {
+            group = CreateAuthoredBlackoutOverlay(
+                owner,
+                serialized,
+                groupProperty);
+        }
         if (group == null)
         {
             Debug.LogError(
@@ -1521,6 +2111,73 @@ public static class HearthProductionUiTools
         EditorUtility.SetDirty(service);
         RecordAndBind(owner, () => bind(service));
         return true;
+    }
+
+    private static CanvasGroup CreateAuthoredBlackoutOverlay(
+        MonoBehaviour owner,
+        SerializedObject serialized,
+        SerializedProperty groupProperty)
+    {
+        string overlayName = owner is HearthCompanion17F02ReplayController
+            ? "Hearth17F02ReplayBlackout"
+            : "Hearth17F03Blackout";
+        GameObject overlay = new GameObject(
+            overlayName,
+            typeof(RectTransform),
+            typeof(Canvas),
+            typeof(CanvasScaler),
+            typeof(GraphicRaycaster),
+            typeof(CanvasGroup),
+            typeof(Image));
+        Undo.RegisterCreatedObjectUndo(
+            overlay,
+            "Create authored HEARTH blackout overlay");
+        overlay.transform.SetParent(owner.transform, false);
+
+        RectTransform rect = overlay.GetComponent<RectTransform>();
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
+
+        Canvas canvas = overlay.GetComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        SerializedProperty sortingProperty =
+            serialized.FindProperty("blackoutSortingOrder");
+        canvas.sortingOrder = sortingProperty != null
+            ? sortingProperty.intValue
+            : 7000;
+
+        CanvasScaler scaler = overlay.GetComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920f, 1080f);
+
+        CanvasGroup group = overlay.GetComponent<CanvasGroup>();
+        group.alpha = 0f;
+        group.interactable = false;
+        group.blocksRaycasts = false;
+
+        Image image = overlay.GetComponent<Image>();
+        SerializedProperty colorProperty = serialized.FindProperty("blackoutColor");
+        image.color = colorProperty != null
+            ? colorProperty.colorValue
+            : Color.black;
+        image.raycastTarget = false;
+
+        groupProperty.objectReferenceValue = group;
+        SerializedProperty imageProperty = serialized.FindProperty("blackoutImage");
+        if (imageProperty != null)
+        {
+            imageProperty.objectReferenceValue = image;
+        }
+        serialized.ApplyModifiedProperties();
+        PrefabUtility.RecordPrefabInstancePropertyModifications(owner);
+        EditorUtility.SetDirty(owner);
+        Debug.Log(
+            "[Production UI] Created authored blackout overlay for " +
+            GetHierarchyPath(owner.transform) + ".",
+            owner);
+        return group;
     }
 
     private static bool IsHumanInteraction(PlayerInteraction interaction)

@@ -187,6 +187,8 @@ public class HearthTvTerminalController : MonoBehaviour
     private bool gameplayLockHeld;
     private int compactFocusIndex;
     private bool postReplayAnalysisMode;
+    private GameObject navigationFooterRule;
+    private bool dialogueNavigationChromeVisible = true;
     private readonly HearthTerminalViewState terminalViewState = new HearthTerminalViewState();
 #if UNITY_EDITOR
     [NonSerialized] private bool editorCanvasRefreshQueued;
@@ -609,6 +611,8 @@ public class HearthTvTerminalController : MonoBehaviour
         {
             return;
         }
+
+        RefreshEmbeddedDialogueNavigationChrome();
 
         HearthTerminalMode resolvedMode = ResolveTerminalMode();
         if (closeInputEnabled &&
@@ -1506,6 +1510,12 @@ public class HearthTvTerminalController : MonoBehaviour
             runtimePromptText = foundPrompt != null ? foundPrompt.GetComponent<TMP_Text>() : null;
         }
 
+        if (navigationFooterRule == null)
+        {
+            Transform foundFooter = transform.Find("KeyboardNavigationRoot/V2_FooterRule");
+            navigationFooterRule = foundFooter != null ? foundFooter.gameObject : null;
+        }
+
         EnsureKeyboardNavigationCanvasSorting();
 
         if (canvasGroup == null)
@@ -1540,6 +1550,35 @@ public class HearthTvTerminalController : MonoBehaviour
         }
 
         ConfigureActiveLoopSource();
+    }
+
+    private void RefreshEmbeddedDialogueNavigationChrome()
+    {
+        bool dialogueVisible =
+            (dialogueSurface != null && dialogueSurface.IsVisible) ||
+            (messageSurface != null && messageSurface.IsVisible);
+        bool shouldShow = !dialogueVisible;
+        if (dialogueNavigationChromeVisible == shouldShow)
+        {
+            return;
+        }
+
+        dialogueNavigationChromeVisible = shouldShow;
+        SetActiveIfNeeded(navigationFooterRule, shouldShow);
+        SetActiveIfNeeded(
+            keyboardHintText != null ? keyboardHintText.gameObject : null,
+            shouldShow);
+        SetActiveIfNeeded(
+            keyboardFocusText != null ? keyboardFocusText.gameObject : null,
+            shouldShow);
+    }
+
+    private static void SetActiveIfNeeded(GameObject target, bool active)
+    {
+        if (target != null && target.activeSelf != active)
+        {
+            target.SetActive(active);
+        }
     }
 
     private HearthDialogueSurface CreateRuntimeDialogueSurface()
@@ -2783,9 +2822,15 @@ public class HearthTvTerminalController : MonoBehaviour
 
         if (keyboardHintText != null)
         {
+            // Lobby Sync owns its current action label through
+            // RuntimePromptText. Keeping the generic keyboard hint active as
+            // well produces a second "SPACE CLOSE TERMINAL" label and can
+            // overlap an embedded Field Unit surface while dialogue is
+            // playing. Doorway/Home terminals still use the authored compact
+            // navigation hint below.
             keyboardHintText.text = ResolveTerminalMode() ==
                 HearthTerminalMode.LobbySync
-                ? "SPACE CLOSE TERMINAL"
+                ? string.Empty
                 : "LEFT/RIGHT SELECT     SPACE CONFIRM     ESC EXIT";
         }
 

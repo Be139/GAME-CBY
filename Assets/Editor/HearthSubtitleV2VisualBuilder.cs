@@ -153,7 +153,7 @@ public static class HearthSubtitleV2VisualBuilder
         try
         {
             RectTransform canvasRect = canvasObject.GetComponent<RectTransform>();
-            Stretch(canvasRect);
+            SetScreenReferenceRect(canvasRect);
 
             Canvas canvas = canvasObject.GetComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
@@ -182,7 +182,10 @@ public static class HearthSubtitleV2VisualBuilder
             rootImage.raycastTarget = false;
 
             CanvasGroup group = visualObject.GetComponent<CanvasGroup>();
-            group.alpha = 0f;
+            // Keep the canonical Prefab visible in Prefab Mode. The subtitle
+            // player calls HideImmediate in Awake, so runtime timing is still
+            // owned entirely by MinLoopSubtitlePlayer.
+            group.alpha = 1f;
             group.interactable = false;
             group.blocksRaycasts = false;
             group.ignoreParentGroups = false;
@@ -269,6 +272,7 @@ public static class HearthSubtitleV2VisualBuilder
 
             instance.name = CanvasName;
             Undo.RegisterCreatedObjectUndo(instance, "Bind Hearth subtitle VisualRoot");
+            instance.transform.localScale = Vector3.one;
             Transform visual = instance.transform.Find(VisualRootName);
             if (visual == null)
             {
@@ -419,6 +423,16 @@ public static class HearthSubtitleV2VisualBuilder
         rect.pivot = new Vector2(0.5f, 0.5f);
         rect.anchoredPosition = Vector2.zero;
         rect.sizeDelta = Vector2.zero;
+    }
+
+    private static void SetScreenReferenceRect(RectTransform rect)
+    {
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.zero;
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = new Vector2(960f, 540f);
+        rect.sizeDelta = new Vector2(1920f, 1080f);
+        rect.localScale = Vector3.one;
     }
 
     private static void EnsureFolder(string path)

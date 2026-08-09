@@ -1,9 +1,9 @@
 # HEARTH 第二套 UI 手工调整与接管手册
 
-> 更新日期：2026-07-30  
-> 适用项目：`D:\UGit\GAME-CBY`  
-> 适用场景：`Assets/Scenes/SampleScene.unity`  
-> 设计参考分辨率：1920 × 1080  
+> 更新日期：2026-08-08
+> 适用项目：`D:\UGit\GAME-CBY`
+> 适用场景：`Assets/Scenes/SampleScene.unity`
+> 设计参考分辨率：1920 × 1080
 > 本文目的：让用户可以先接管固定 UI 的位置与图片摆放，并把结果安全地交还给 Codex 继续完成动态绑定、颜色统一和全流程收口。
 
 ## 1. 先说结论
@@ -171,7 +171,7 @@ Scene 根：
 对象路径：
 
 - `PersistentHudLayer/PersistentHud/Text_006_CURRENT_TASK`
-- `PersistentHudLayer/PersistentHud/Text_007_NIGHT_ROUNDS___BLOCK_A___17F`
+- `PersistentHudLayer/PersistentHud/V2_CurrentTaskBody`
 - `PersistentHudLayer/PersistentHud/V2_TaskUnderline`
 
 这三个对象应一起调整。
@@ -184,6 +184,9 @@ Scene 根：
 - Field Unit 区域从它下方开始，不能与 Lily 消息或 Field Unit 框重叠。
 
 这部分没有点击功能，文字由运行时更新。
+
+旧对象 `Text_007_NIGHT_ROUNDS___BLOCK_A___17F` 不再是正式正文入口；不要用它判断
+Game View 中 Current Task 的字号或位置。
 
 ### 6.3 左下 Location
 
@@ -1197,6 +1200,85 @@ Layout Profile 全部采用“左上角为原点”的 `Left / Top / Width / Hei
 - 不运行 `Legacy / Unsafe` 下的 Builder/Repair，除非明确要做兼容恢复并已备份。
 - 不对 Human/Companion/Terminal 使用 `Overrides > Apply All`。
 - 不复制第二个 Human HUD、Companion HUD、Subtitle Canvas 或终端 Surface。
+
+## 27. Prefab 打开后空白、F 无法定位的修复与新入口（2026-08-08）
+
+### 27.1 这次空白的真实原因
+
+这不是对象被删掉，也不是用户不会操作。旧 Builder 在创建顶层 UI 时，曾把部分正式
+Prefab 的根 `RectTransform` 保存为 `Scale = 0,0,0`；部分场景实例恰好用 Override 补成
+`1,1,1`，主字幕实例却还保留了旧的零缩放 Override。结果就是：
+
+- 游戏中的场景实例还能显示；
+- 双击正式 Prefab 后，内容全部压缩到零尺寸；
+- Scene View 没有可计算的包围盒，所以选中后按 `F` 也没有反应；
+- Companion、字幕、17F03 检查面板和终端还有 CanvasGroup/页面默认隐藏，进一步造成空白。
+
+目前正式 Human、Companion、Subtitle、17F03 Inspection 和五台 Terminal Prefab 的根
+缩放已经统一为 `1,1,1`，主场景字幕实例的旧零缩放 Override 也已撤销。字幕根补回了
+明确的 `1920 × 1080` 编辑参考尺寸；终端在
+Prefab Mode 中会显示一张起始页。进入 Play Mode 后，原控制器仍会在 `Awake/Start`
+重新执行正式显隐，因此这项修复不改变剧情流程或对话时机。
+
+### 27.2 最稳定的打开方式
+
+退出 Play Mode 后，使用：
+
+`Tools > Hearth > Production UI > Preview`
+
+该菜单下可以直接打开：
+
+- `Human HUD`
+- `Companion HUD`
+- `Subtitle`
+- `17F03 Inspection`
+- `Photo Archive`
+- `Terminal - Lobby / 17F01 / 17F02 / 17F03 / 17F04`
+
+菜单会进入真正的正式 Prefab，并自动选中主要编辑根、切换到 2D、执行 Frame Selected。
+例如 Human 会选中 `PersistentHud`，Companion 会选中 `PersistentInfoLayer`，终端会选中
+`TerminalContentRoot`。因此不需要先在巨大层级中猜哪个对象生效。
+
+如果旧 Prefab 曾被其他 Builder 再次写成空白，运行：
+
+`Tools > Hearth > Production UI > Repair Prefab Authoring Visibility`
+
+这个命令只修正式 Prefab 的编辑缩放、编辑显隐和终端起始预览页，不保存场景、不修改
+对白、音效、Camera、剧情引用、UnityEvent 或玩家控制。
+
+### 27.3 Project 窗口双击仍然可以使用
+
+也可以直接双击正式 Prefab。现在选中任意有 RectTransform 的可见子对象后按 `F` 应能
+定位。若要调 Human Current Task，实际对象是：
+
+- 标题：`PersistentHudLayer/PersistentHud/Text_006_CURRENT_TASK`
+- 正文：`PersistentHudLayer/PersistentHud/V2_CurrentTaskBody`
+- 下划线：`PersistentHudLayer/PersistentHud/V2_TaskUnderline`
+
+`Text_007_NIGHT_ROUNDS___BLOCK_A___17F` 是迁移期旧文字，不再作为正式 Current Task
+正文入口，不要继续修改它。
+
+### 27.4 Runtime Preview 与 Prefab Preview 不同
+
+`Tools > Hearth > UI V2 > Runtime Preview` 只在 Play Mode 中启用，用来验证真实控制器、
+页面切换和输入逻辑；退出 Play Mode 时菜单呈灰色是正常的。
+
+`Tools > Hearth > Production UI > Preview` 可在 Edit Mode 使用，用来调整正式 Prefab 的
+RectTransform、TMP、Image 和层级。日常美术修改先使用 Production UI Preview，完成后
+再进入 Play Mode 使用 Runtime Preview 或完整流程验收。
+
+### 27.5 修改后如何让游戏看到结果
+
+1. 退出 Play Mode。
+2. 从 `Production UI > Preview` 打开目标正式 Prefab。
+3. 修改并保存 Prefab；不要只改 `Canvas (Environment)`，它只是 Prefab Mode 的临时环境。
+4. 返回 SampleScene。若该场景实例仍有旧视觉 Override，运行
+   `Compare Scene vs Prefab`，确认后只清理视觉覆盖。若是旧字幕实例的 Scale 0，运行
+   `Bind Open Scene To Canonical Views` 会只撤销这条零缩放覆盖。
+5. 运行 `Validate Production UI`。
+6. 进入 Play Mode，在 1920×1080 下检查对应流程。
+
+不要使用 `Overrides > Apply All`，也不要通过缩放整个 Scene 根来修正一个文字的位置。
 - 不改正式绑定对象名，不删除 Binding/Presenter，不把示例文字烘焙进图片。
 - 不为了改 UI 保存整个 SampleScene 的无关 Camera、模型、锚点或剧情引用变化。
 

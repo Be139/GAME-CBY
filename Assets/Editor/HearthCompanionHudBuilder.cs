@@ -165,6 +165,7 @@ public static class HearthCompanionHudBuilder
             typeof(HearthCompanionHudLayoutController));
 
         RectTransform rootRect = root.GetComponent<RectTransform>();
+        rootRect.localScale = Vector3.one;
         rootRect.sizeDelta = new Vector2(ReferenceWidth, ReferenceHeight);
         rootRect.anchoredPosition = new Vector2(ReferenceWidth * 0.5f, ReferenceHeight * 0.5f);
 
@@ -179,6 +180,9 @@ public static class HearthCompanionHudBuilder
         scaler.matchWidthOrHeight = 0.5f;
 
         CanvasGroup rootGroup = root.GetComponent<CanvasGroup>();
+        rootGroup.alpha = 1f;
+        rootGroup.interactable = false;
+        rootGroup.blocksRaycasts = false;
         AudioSource audioSource = root.GetComponent<AudioSource>();
 
         Transform frameLayer = CreateLayer(root.transform, "FrameLayer");

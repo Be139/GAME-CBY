@@ -1,6 +1,6 @@
 # HEARTH 全项目保守重构基线与 Legacy 清理表
 
-更新日期：2026-08-03
+更新日期：2026-08-08
 
 本文件记录本轮“保持现有流程不变、逐步消除重复来源”的结构基线。它不是剧情策划案，也不授权删除当前仍被场景引用的旧组件。
 
@@ -82,12 +82,18 @@ Photo Archive、17F03 Inspection 和 Task Catalog 在首次运行 Production UI 
 
 任何 Legacy 项都不能只因为“看起来没显示”就删除。必须同时满足：场景/Prefab/资产零 GUID 引用、正式 Validator 通过、完整 Play Mode 通过、关闭回退后 Console 无新错误。
 
-## 7. 本轮静态检查结果
+## 7. 本轮应用与检查结果
 
-- 运行时 HEARTH 脚本和 39 个 HEARTH Editor 脚本已使用当前 Unity 2022.3.61f1c1 自带编译器离线编译通过。
+- Unity HTTP MCP 已连接到 `GAME-CBY`（Unity 2022.3.61f1c1）；本轮通过当前编辑器实际读取 Console、Prefab、场景绑定和 Play Mode，而不是只做离线推断。
+- 运行时 HEARTH 脚本和 HEARTH Editor 脚本在 Unity 内重新编译完成，Console 无 C# 编译错误。
 - 36 个正式 SFX 位于 `Assets/Audio/HEARTH/Imported`；330 个正式对白语音位于 Dialogue 目录。本轮没有重导入、改名或改 GUID。
-- Unity HTTP MCP 服务可初始化，但当前返回 `instance_count: 0`。因此尚未声称完成 Unity Console、Prefab 安装、场景绑定、截图和 Play Mode 验收。
-- 首次 Unity 应用前仍待生成：Photo Archive 正式 Prefab、17F03 Inspection 正式 Prefab、Task Text Catalog。
+- Photo Archive 正式 Prefab、17F03 Inspection 正式 Prefab和 Task Text Catalog 已生成并绑定；开放场景共有 25 个正式组件完成显式绑定。
+- Human、Companion、Subtitle、Photo Archive、17F03 Inspection 与五个终端的静态视觉覆盖均为 0；Prefab 根 RectTransform 的 Unity 引擎固有放置记录不再误报为视觉漂移。
+- 五个正式终端均已从两套 `KeyboardNavigationRoot` 收敛到唯一一套。安装工具连续执行两次后，V2 Prefab 汇总 SHA-256 仍为 `e73a2e66e8aed6149a0fd18f0fdd4408f9bcb1237535809f32d4a2fe9096fae3`，确认二次执行不漂移。
+- `Validate Production UI`、Runtime Topology、Final Script Coverage（336 个正式对白片段）、V2 Playback Policy、Lobby/F01/F02/F03/F04 Validator 和 Production Story SFX（57 个槽位全部解析）已通过。
+- 1920×1080 Play Mode 已回放一楼大堂开场到同步终端：Field Unit 使用 `ManualSpace`，自动对白按音频完成推进；终端打开期间 Field Unit 直接显示在终端内部；对白期间底部旧导航互斥隐藏，对白结束后恢复 `SPACE CLOSE TERMINAL`。
+- 当前仍保留 3 个已启用 Legacy 组件作为隔离期兼容项。F01–F04 两条结局的完整人工长流程尚未作为“物理删除 Legacy”的放行依据，因此本轮没有删除它们。
+- Play Mode 中另有 14 条既有环境模型 `BoxCollider does not support negative scale or size` 报错，位置集中在 17F/ROOM2 与 ROOM3 家具；它们与本轮 UI、对白、输入和音效重构无关，未在本轮越权修改。
 
 ## 8. 进入物理清理阶段的硬门槛
 
@@ -96,4 +102,3 @@ Photo Archive、17F03 Inspection 和 Task Catalog 在首次运行 Production UI 
 - F02/F03 使用场景中已有黑幕 + `HearthScreenTransitionService`，不再创建临时 Canvas。
 - 1920×1080 完整回放两条结局；E/Hold E、Space/自动推进、任务、Camera、Control Lock 和 36 个 Cue 无回归。
 - Legacy 四项的序列化资产引用均为 0。
-

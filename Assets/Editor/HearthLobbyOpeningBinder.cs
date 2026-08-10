@@ -1115,7 +1115,9 @@ public static class HearthLobbyOpeningBinder
             }
 
             Image back = EnsureImage(expanded, "MessageBack");
-            SetTopLeft(back.rectTransform, new Rect(0f, 0f, 540f, 300f));
+            // Keep the rectangular fill inside the chamfered frame. At full size
+            // its square corners visibly extended beyond the approved V2 border.
+            SetTopLeft(back.rectTransform, new Rect(9f, 9f, 522f, 282f));
             back.sprite = null;
             back.color = new Color(0.015f, 0.04f, 0.062f, 0.78f);
             back.transform.SetAsFirstSibling();

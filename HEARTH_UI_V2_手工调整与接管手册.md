@@ -1336,3 +1336,88 @@ F01–F04 的 `KeyboardNavigationRoot` 是迁移期旧显示层。正式 V2 已�
 `HearthTerminalCompactChromeView` 和选择页自身显示焦点与操作提示，所以住户终端中该
 旧根必须保持 inactive；否则会出现两组 A/B、两组 Footer 和信息相互渗透。Lobby 仍保留
 它自己的关闭提示。
+
+## 29. 当前六页终端、大厅留言与 F03/F04 的准确手调入口（2026-08-09）
+
+### 29.1 大厅右上 `INCOMING VOICE MESSAGE` 在哪里改
+
+它不是 Human HUD Prefab 的 `CURRENT TASK`，而是 `SampleScene` 中独立的大厅叙事 Overlay：
+
+`LobbyNarrativeCanvas/HearthLobbyHudOverlay/ExpandedLilyMessage`
+
+主要子物体：
+
+- `MessageBack`：黑色衬底；现在相对特殊框四边内缩 9px。
+- `ScalableFrame` / 边框对象：倒角特殊框。
+- `MessageHeader`：`INCOMING VOICE MESSAGE`。
+- `MessageMeta`：`FROM LILY / TIME 4:42 PM`。
+- `MessageTranscript`：留言正文。
+- `MessageAdvanceHint`：右下 `SPACE SKIP MESSAGE`。
+
+调位置时选 `ExpandedLilyMessage`；只调黑底边距时选 `MessageBack`。不要修改右上
+`CURRENT TASK`，两者属于不同 Canvas。若以后运行大厅 Binder，默认展开卡仍是
+1920×1080 左上坐标 `(1280,72)`、尺寸 `550×292`，黑底为 `(9,9,522,282)`。
+
+### 29.2 为什么 Before 改了而 After 没变
+
+每台门口终端的 Before 和 After 是两个独立 `HearthHudPage`。这样做是为了让两页能保留
+不同文字、照片、对白和事件，所以 Unity 不会自动把一页的 RectTransform 修改传给另一页。
+
+当前正式入口：
+
+- F01：`Assets/Prefabs/UI/HearthHud/V2/Terminals/Terminal_17F01_V2.prefab`
+- F02：`Assets/Prefabs/UI/HearthHud/V2/Terminals/Terminal_17F02_V2.prefab`
+- F03：`Assets/Prefabs/UI/HearthHud/V2/Terminals/Terminal_17F03_Alert_V2.prefab`
+
+完成 F01 Before 手调后，退出 Play Mode，运行：
+
+`Tools > Hearth > Production UI > Sync Six Doorway Pages From 17F01 Before`
+
+它会同步 F01–F03 的 Before/After 六页视觉。不会复制或覆盖：文字内容、住户照片 Sprite、
+Page ID、故事/音频引用、UnityEvent、终端 Camera 或进入住户流程。F01 Before 作为源不会被
+该同步步骤反写。以后若只想改某户内容，不要再运行同步；直接改该页的 TMP 文本或内容资产。
+
+### 29.3 F03 处置页
+
+正式 Prefab：
+
+`Assets/Prefabs/UI/HearthHud/V2/Inspection/Hearth17F03InspectionPanel_V2.prefab`
+
+关键层级：
+
+- `FullscreenSelectionDimmer`：全屏半透明黑幕，必须在选择/操作内容下方。
+- `InspectionPanel/DispositionChoiceRoot`：A/B 选项区域。
+- `InspectionPanel/FieldUnitDialogueSurface`：固定 Field Unit 字幕区。
+- `FieldUnitDialogueSurface/ScalableFrame`：特殊框线。
+- `Speaker` / `Body` / `AdvanceHint`：名称、正文与 Space 提示。
+
+运行时只写内容和显隐，不再重新计算这些 RectTransform。需要调布局时改上述正式 Prefab，
+不要在 Play Mode 生成物上修改。
+
+### 29.4 F04 Home Terminal 与 TV4
+
+F04 Home Terminal：
+
+`Assets/Prefabs/UI/HearthHud/V2/Terminals/Terminal_17F04_Home_V2.prefab`
+
+- `HomePanel`：初次 `WELCOME HOME`。
+- `LilyMessagePanel` / `TerminalMessageSurface_V2`：Lily 留言。
+- Field Unit Surface：底部正式对白区。
+- `BeforeTab`、`AfterTab` 在 Home 模式必须保持 inactive；它们只是门口终端兼容结构，不能在 F04 编辑预览显示。
+
+TV4 相册：
+
+`Assets/Prefabs/UI/HearthHud/V2/PhotoArchive/HearthPhotoArchiveWorldView_V2.prefab`
+
+Field Unit 外观改 `FieldUnitPanel` 及其 `ScalableFrame`；照片、Photo Camera 和世界空间挂点不在该框里修改。
+
+### 29.5 本轮安全应用与验证顺序
+
+1. 退出 Play Mode，并保存你批准的 F01 Before。
+2. 运行 `Sync Six Doorway Pages From 17F01 Before`。
+3. 需要一次性补本轮正式修复时，运行 `Apply Current Approved Repairs`；它不自动保存场景，必须先检查 Scene diff。
+4. 运行 `Validate Production UI`。
+5. 再运行 Lobby、F01、F02、F03、F04、Runtime Topology、Final Script Coverage、V2 Playback Policy 和 Production Story SFX 校验。
+6. 1920×1080 Play Mode 检查六页、F01 转场、F03 处置和 F04 Welcome/Lily/TV4。
+
+不要运行 `Legacy / Unsafe` Builder，不要 `Overrides > Apply All`，不要把 F03/F04 再复制成第二套 Canvas。

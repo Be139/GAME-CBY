@@ -1159,3 +1159,29 @@ casual_Female_K (9) -> REF_Wife_17F02_ExitOutside
 
 - 对有 `PanelBackdrop`、但既无 `ScalableFrame` 也无 `PanelFrame` 的正式终端面板补可缩放 V2 外框。
 - 只补视觉边框，不改变面板 RectTransform、文本、按钮、Surface、Camera、音效或剧情事件。
+
+## 2026-08-09 住户终端六页统一及 01/03/04 表现修正（已实现）
+
+### 门口终端
+
+- 用户手调后的 `Terminal_17F01_V2` Before Acquisition 作为六页视觉基线。
+- F01 After、F02 Before/After、F03 Before/After 只同步相同元素的布局、字号、边距、颜色和框线；每户自己的文字、照片 Sprite、对白、音频、UnityEvent 和 Page 引用保持不变。
+- 01–03 的处置选择面板统一居中并稍微上移；选择结束或 Field Unit 对白接管后不再残留 `UP / DOWN SELECT  SPACE CONFIRM`。
+- F03 处置页使用与 01/02 相同的全屏 0.82 半透明黑幕，并在面板下方提供固定 Field Unit 特殊框和字幕，不再只有声音。
+
+### 17F01
+
+- 小男孩入睡段完成后，到客厅观察段之间新增短暂 Fade Out → 场景切换/传送 → Fade In。
+- 连续 Space 推进正式框式对白时，旧 Synth Voice Decision 不再闪现一帧；正式对白结束后仍按原状态恢复 HUD。
+- 移除各户 `STANDBY OBSERVATION` / `STANDBY - OBSERVE` 旧信息卡，但不删除对应剧情阶段或任务推进。
+
+### 大厅与 17F04
+
+- 大厅 `INCOMING VOICE MESSAGE` 展开卡的黑色衬底内缩到特殊框内部；信息内容和出现时机不变。
+- 17F04 `WELCOME HOME` 只显示初始一次；Lily 留言开始后关闭 Welcome 内容，二者不再半透明重叠。
+- TV4 相册的 Field Unit 区增加可缩放 V2 特殊框，不改变照片、Photo Camera 和相册世界空间挂点。
+- F04 Prefab 编辑预览隐藏不属于本户的 Before/After；这只修编辑视图，正式游戏的 Enter Home 与剧情流程不变。
+
+### 明确未改变
+
+- 不改 Lobby→F01→F02→F03→F04 顺序，不改 E/Hold E/Space 规则，不改住户选择结果、信任、结局条件、Camera Anchor、模型站位、正式台词、Line ID 或音频素材。

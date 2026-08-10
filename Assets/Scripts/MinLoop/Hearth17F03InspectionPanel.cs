@@ -26,6 +26,8 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
     [SerializeField] private TMP_Text choiceAText;
     [SerializeField] private TMP_Text choiceBText;
     [SerializeField] private TMP_Text recommendedText;
+    [SerializeField] private Image fullscreenSelectionDimmer;
+    [SerializeField] private HearthDialogueSurface fieldUnitDialogueSurface;
 
     [Header("Second UI Visual")]
     [SerializeField] private bool useSecondUiVisual = true;
@@ -68,6 +70,10 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
     public bool RecallQueued { get { return recallQueued; } }
     public bool ChoiceInputEnabled { get { return choiceInputEnabled; } }
     public bool UsesAuthoredVisualLayout { get { return !applyRuntimeVisualCompatibility; } }
+    public bool IsDispositionChoiceOpen
+    {
+        get { return IsOpen && panelMode == PanelMode.DispositionChoice; }
+    }
 
     private void Awake()
     {
@@ -170,6 +176,20 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
         choiceBText = newChoiceBText;
         recommendedText = newRecommendedText;
         RefreshModeVisuals();
+    }
+
+    public void ConfigureDispositionPresentation(
+        Image dimmer,
+        HearthDialogueSurface dialogueSurface)
+    {
+        fullscreenSelectionDimmer = dimmer;
+        fieldUnitDialogueSurface = dialogueSurface;
+        RefreshModeVisuals();
+    }
+
+    public HearthDialogueSurface ResolveDialogueSurface()
+    {
+        return fieldUnitDialogueSurface;
     }
 
     public void ConfigureSecondUiVisual(HearthUiThemeProfile themeProfile, bool enabled)
@@ -451,6 +471,11 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
     private void RefreshModeVisuals()
     {
         bool recallMode = panelMode == PanelMode.Recall;
+        if (fullscreenSelectionDimmer != null)
+        {
+            fullscreenSelectionDimmer.gameObject.SetActive(
+                IsOpen && !recallMode);
+        }
         if (recallHighlight != null)
         {
             recallHighlight.gameObject.SetActive(recallMode);
@@ -459,6 +484,11 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
         if (choiceRoot != null)
         {
             choiceRoot.SetActive(!recallMode);
+        }
+
+        if (recallMode && fieldUnitDialogueSurface != null)
+        {
+            fieldUnitDialogueSurface.HideImmediate();
         }
     }
 

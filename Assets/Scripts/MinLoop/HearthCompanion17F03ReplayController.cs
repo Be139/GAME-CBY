@@ -850,6 +850,18 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
             yield break;
         }
 
+        if (inspectionPanel != null &&
+            inspectionPanel.IsDispositionChoiceOpen &&
+            inspectionPanel.ResolveDialogueSurface() != null)
+        {
+            yield return subtitlePlayer.PlaySequenceAsset(
+                sequence,
+                HearthDialoguePlaybackContext.Embedded(
+                    inspectionPanel.ResolveDialogueSurface(),
+                    HearthSubtitleContext.Terminal));
+            yield break;
+        }
+
         yield return subtitlePlayer.PlaySequenceAsset(sequence);
     }
 

@@ -269,6 +269,7 @@ public class HearthTvTerminalController : MonoBehaviour
             {
                 dialogueSurface = authoredSurface;
                 LinkExclusiveDialogueSurfaces();
+                SuppressRuntimePromptForDialogue();
                 return dialogueSurface;
             }
         }
@@ -279,6 +280,7 @@ public class HearthTvTerminalController : MonoBehaviour
                 dialogueSurface.GetComponentInParent<HearthHudPage>(true);
             if (ownerPage == null || ownerPage == currentPage)
             {
+                SuppressRuntimePromptForDialogue();
                 return dialogueSurface;
             }
 
@@ -328,6 +330,7 @@ public class HearthTvTerminalController : MonoBehaviour
             ApplyDialogueSurfaceProfile(dialogueSurface, existingPanel as RectTransform, false);
             LinkExclusiveDialogueSurfaces();
             dialogueSurface.HideImmediate();
+            SuppressRuntimePromptForDialogue();
             return dialogueSurface;
         }
 
@@ -342,6 +345,7 @@ public class HearthTvTerminalController : MonoBehaviour
 
         dialogueSurface = CreateRuntimeDialogueSurface();
         LinkExclusiveDialogueSurfaces();
+        SuppressRuntimePromptForDialogue();
         return dialogueSurface;
     }
 
@@ -353,11 +357,13 @@ public class HearthTvTerminalController : MonoBehaviour
     public HearthDialogueSurface ResolveMessageSurface()
     {
         EnsureReferences();
+        HideHomeWelcomePanelOnce();
         if (authoredViewBindings != null &&
             authoredViewBindings.TerminalMessageSurface != null)
         {
             messageSurface = authoredViewBindings.TerminalMessageSurface;
             LinkExclusiveDialogueSurfaces();
+            SuppressRuntimePromptForDialogue();
             return messageSurface;
         }
 
@@ -367,6 +373,7 @@ public class HearthTvTerminalController : MonoBehaviour
                 messageSurface.GetComponentInParent<HearthHudPage>(true);
             if (ownerPage == null || ownerPage == currentPage)
             {
+                SuppressRuntimePromptForDialogue();
                 return messageSurface;
             }
 
@@ -402,6 +409,7 @@ public class HearthTvTerminalController : MonoBehaviour
             ApplyDialogueSurfaceProfile(messageSurface, existingPanel as RectTransform, true);
             LinkExclusiveDialogueSurfaces();
             messageSurface.HideImmediate();
+            SuppressRuntimePromptForDialogue();
             return messageSurface;
         }
 
@@ -416,7 +424,30 @@ public class HearthTvTerminalController : MonoBehaviour
 
         messageSurface = CreateRuntimeMessageSurface();
         LinkExclusiveDialogueSurfaces();
+        SuppressRuntimePromptForDialogue();
         return messageSurface;
+    }
+
+    private void SuppressRuntimePromptForDialogue()
+    {
+        if (runtimePromptText != null)
+        {
+            runtimePromptText.gameObject.SetActive(false);
+        }
+    }
+
+    private void HideHomeWelcomePanelOnce()
+    {
+        if (ResolveTerminalMode() != HearthTerminalMode.Home || contentRoot == null)
+        {
+            return;
+        }
+
+        Transform homePanel = FindDescendantByName(contentRoot, "HomePanel");
+        if (homePanel != null && homePanel.gameObject.activeSelf)
+        {
+            homePanel.gameObject.SetActive(false);
+        }
     }
 
     public void SetUiProfiles(
@@ -3423,8 +3454,12 @@ public class HearthTvTerminalController : MonoBehaviour
         runtimePromptText.color = string.Equals(prompt, "PLEASE WAIT", System.StringComparison.Ordinal)
             ? runtimePromptWaitingColor
             : runtimePromptReadyColor;
+        bool dialogueOwnsPrompt =
+            (dialogueSurface != null && dialogueSurface.IsVisible) ||
+            (messageSurface != null && messageSurface.IsVisible);
         runtimePromptText.gameObject.SetActive(
-            IsOpen && terminalPresentationReady && !string.IsNullOrEmpty(prompt));
+            IsOpen && terminalPresentationReady &&
+            !dialogueOwnsPrompt && !string.IsNullOrEmpty(prompt));
     }
 
     private void RefreshTerminalViewState()

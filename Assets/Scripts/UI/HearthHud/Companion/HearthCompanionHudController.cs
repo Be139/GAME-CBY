@@ -547,14 +547,29 @@ public class HearthCompanionHudController : MonoBehaviour
 
         if (statusPanelView != null)
         {
-            statusPanelView.Apply(scene);
-            SetStatusPanelVisible(HasStatusContent(scene));
+            bool hideStandbyObservation = IsStandbyObservation(scene.StatusTitle);
+            if (!hideStandbyObservation)
+            {
+                statusPanelView.Apply(scene);
+            }
+            SetStatusPanelVisible(
+                !hideStandbyObservation && HasStatusContent(scene));
         }
 
         if (decisionPanelView != null)
         {
-            decisionPanelView.Apply(scene);
-            StartDecisionVisibilityTimer(scene);
+            bool hideStandbyDecision =
+                IsStandbyObservation(scene.DecisionTitle) ||
+                IsStandbyObservation(scene.DecisionKicker);
+            if (hideStandbyDecision)
+            {
+                decisionPanelView.HideImmediate();
+            }
+            else
+            {
+                decisionPanelView.Apply(scene);
+                StartDecisionVisibilityTimer(scene);
+            }
         }
 
         if (dataStreamView != null)
@@ -660,6 +675,18 @@ public class HearthCompanionHudController : MonoBehaviour
         {
             sceneShown.Invoke(scene.SceneId);
         }
+    }
+
+    private static bool IsStandbyObservation(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        string normalized = value.Trim().ToUpperInvariant();
+        return normalized.Contains("STANDBY OBSERVATION") ||
+               normalized.Contains("STANDBY - OBSERVE");
     }
 
     private void ResolveReferences()

@@ -28,6 +28,14 @@ public static class HearthProductionUiTools
         "Assets/Prefabs/UI/HearthHud/V2/Inspection/Hearth17F03InspectionPanel_V2.prefab";
     private const string TerminalFolder =
         "Assets/Prefabs/UI/HearthHud/V2/Terminals/";
+    private const string Doorway01Prefab =
+        "Assets/Prefabs/UI/HearthHud/V2/Terminals/Terminal_17F01_V2.prefab";
+    private const string Doorway02Prefab =
+        "Assets/Prefabs/UI/HearthHud/V2/Terminals/Terminal_17F02_V2.prefab";
+    private const string Doorway03Prefab =
+        "Assets/Prefabs/UI/HearthHud/V2/Terminals/Terminal_17F03_Alert_V2.prefab";
+    private const string Home04Prefab =
+        "Assets/Prefabs/UI/HearthHud/V2/Terminals/Terminal_17F04_Home_V2.prefab";
     private const string TaskCatalogPath =
         "Assets/Resources/HEARTH/HearthTaskTextCatalog.asset";
     private const string ThemeProfilePath =
@@ -314,6 +322,7 @@ public static class HearthProductionUiTools
         InstallCompanionBindings();
         InstallSubtitleBindings();
         InstallPhotoArchiveBindings();
+        InstallF03InspectionPresentation();
         for (int i = FirstTerminalIndex; i < CanonicalPrefabs.Length; i++)
         {
             InstallTerminalBindings(CanonicalPrefabs[i]);
@@ -325,6 +334,181 @@ public static class HearthProductionUiTools
         Debug.Log(
             "[Production UI] Explicit bindings and task catalog installed. " +
             "No open scene was saved.");
+    }
+
+    [MenuItem(MenuRoot + "Sync Six Doorway Pages From 17F01 Before")]
+    public static void SyncSixDoorwayPagesFrom17F01Before()
+    {
+        if (!EditorUtility.DisplayDialog(
+                "Sync six doorway pages",
+                "The approved 17F01 Before Acquisition page will become the visual " +
+                "template for 17F01-03 Before and After pages. Text, photos, page IDs, " +
+                "events, story and audio references are preserved.",
+                "Sync visual layout",
+                "Cancel"))
+        {
+            return;
+        }
+
+        SyncSixDoorwayPagesFrom17F01BeforeBatch();
+    }
+
+    public static void SyncSixDoorwayPagesFrom17F01BeforeBatch()
+    {
+        GameObject sourceRoot = PrefabUtility.LoadPrefabContents(Doorway01Prefab);
+        try
+        {
+            HearthHudPage[] sourcePages = GetSerializedTerminalPages(sourceRoot);
+            HearthHudPage sourcePage = sourcePages.Length > 0
+                ? sourcePages[0]
+                : null;
+            if (sourcePage == null)
+            {
+                Debug.LogError(
+                    "[Production UI] 17F01 Before Acquisition page is missing; " +
+                    "the six-page sync was cancelled.");
+                return;
+            }
+
+            string[] paths = { Doorway01Prefab, Doorway02Prefab, Doorway03Prefab };
+            for (int i = 0; i < paths.Length; i++)
+            {
+                string path = paths[i];
+                EditPrefab(path, targetRoot =>
+                {
+                    HearthHudPage[] targetPages =
+                        GetSerializedTerminalPages(targetRoot);
+                    int count = Mathf.Min(2, targetPages.Length);
+                    for (int j = 0; j < count; j++)
+                    {
+                        // The approved source itself must remain byte-for-byte as authored.
+                        if (string.Equals(path, Doorway01Prefab, StringComparison.Ordinal) &&
+                            j == 0)
+                        {
+                            continue;
+                        }
+
+                        HearthHudPage targetPage = targetPages[j];
+                        if (targetPage == null)
+                        {
+                            Debug.LogError(
+                                "[Production UI] Missing serialized doorway page index " + j +
+                                " in " + path + ".");
+                            continue;
+                        }
+
+                        CopyDoorwayPageVisuals(sourcePage.transform, targetPage.transform);
+                    }
+                });
+            }
+        }
+        finally
+        {
+            PrefabUtility.UnloadPrefabContents(sourceRoot);
+        }
+
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
+        Debug.Log(
+            "[Production UI] 17F01-03 Before/After visual layout synchronized " +
+            "from the approved 17F01 Before page. Content and flow data were preserved.");
+    }
+
+    [MenuItem(MenuRoot + "Apply Current Approved Repairs")]
+    public static void ApplyCurrentApprovedRepairs()
+    {
+        SyncSixDoorwayPagesFrom17F01BeforeBatch();
+        AlignDoorwayDispositionPanelsBatch();
+        InstallProductionAuthoringFoundationBatch();
+        RepairOpenSceneLobbyMessageBacking();
+        BindOpenSceneF01Transition();
+        AssetDatabase.SaveAssets();
+        Debug.Log(
+            "[Production UI] Current approved repairs applied. The open scene was " +
+            "marked dirty but was not saved automatically.");
+    }
+
+    private static void AlignDoorwayDispositionPanelsBatch()
+    {
+        string[] paths = { Doorway01Prefab, Doorway02Prefab, Doorway03Prefab };
+        for (int i = 0; i < paths.Length; i++)
+        {
+            EditPrefab(paths[i], root =>
+            {
+                Transform[] items = root.GetComponentsInChildren<Transform>(true);
+                for (int j = 0; j < items.Length; j++)
+                {
+                    if (items[j] == null || items[j].name != "DispositionPanel")
+                    {
+                        continue;
+                    }
+
+                    RectTransform rect = items[j] as RectTransform;
+                    if (rect == null)
+                    {
+                        continue;
+                    }
+
+                    // 1110 px keeps the choice block centered at 1920 while the
+                    // raised top edge leaves a clearer lower terminal message lane.
+                    ApplyTopLeft(rect, new Rect(405f, 210f, 1110f, 520f));
+                }
+            });
+        }
+    }
+
+    private static void RepairOpenSceneLobbyMessageBacking()
+    {
+        Scene scene = EditorSceneManager.GetActiveScene();
+        if (!scene.IsValid() || !scene.isLoaded)
+        {
+            return;
+        }
+
+        HearthLobbyHudOverlay[] overlays =
+            FindSceneComponents<HearthLobbyHudOverlay>(scene);
+        for (int i = 0; i < overlays.Length; i++)
+        {
+            Transform expanded = FindNamed(
+                overlays[i].transform,
+                "ExpandedLilyMessage");
+            Transform backing = expanded != null
+                ? FindNamed(expanded, "MessageBack")
+                : null;
+            RectTransform rect = backing as RectTransform;
+            if (rect == null)
+            {
+                continue;
+            }
+
+            Undo.RecordObject(rect, "Inset Lobby message backing");
+            ApplyTopLeft(rect, new Rect(9f, 9f, 522f, 282f));
+            PrefabUtility.RecordPrefabInstancePropertyModifications(rect);
+            EditorUtility.SetDirty(rect);
+            EditorSceneManager.MarkSceneDirty(scene);
+        }
+    }
+
+    private static void BindOpenSceneF01Transition()
+    {
+        Scene scene = EditorSceneManager.GetActiveScene();
+        if (!scene.IsValid() || !scene.isLoaded)
+        {
+            return;
+        }
+
+        HearthCompanion17F01ReplayController[] controllers =
+            FindSceneComponents<HearthCompanion17F01ReplayController>(scene);
+        for (int i = 0; i < controllers.Length; i++)
+        {
+            if (BindSharedSceneTransition(
+                    scene,
+                    controllers[i],
+                    controllers[i].SetTransitionService))
+            {
+                EditorSceneManager.MarkSceneDirty(scene);
+            }
+        }
     }
 
     public static void RepairPrefabAuthoringVisibilityBatch()
@@ -536,6 +720,19 @@ public static class HearthProductionUiTools
                     "blackoutCanvasGroup",
                     true,
                     f03Controllers[i].SetTransitionService))
+            {
+                bound++;
+            }
+        }
+
+        HearthCompanion17F01ReplayController[] f01Controllers =
+            FindSceneComponents<HearthCompanion17F01ReplayController>(scene);
+        for (int i = 0; i < f01Controllers.Length; i++)
+        {
+            if (BindSharedSceneTransition(
+                    scene,
+                    f01Controllers[i],
+                    f01Controllers[i].SetTransitionService))
             {
                 bound++;
             }
@@ -960,6 +1157,7 @@ public static class HearthProductionUiTools
             HearthPhotoArchiveViewBindings bindings =
                 GetOrAdd<HearthPhotoArchiveViewBindings>(root);
             Transform panel = FindNamed(root.transform, "FieldUnitPanel");
+            EnsureScalableFrame(panel);
             HearthDialogueSurface surface = panel != null
                 ? EnsureDialogueSurface(panel)
                 : null;
@@ -970,6 +1168,166 @@ public static class HearthProductionUiTools
                 FindText(root.transform, "ArchiveReturnHint"),
                 surface);
         });
+    }
+
+    private static void InstallF03InspectionPresentation()
+    {
+        EditPrefab(InspectionPrefab, root =>
+        {
+            Hearth17F03InspectionPanel controller =
+                root.GetComponent<Hearth17F03InspectionPanel>();
+            Transform inspectionPanel = FindNamed(root.transform, "InspectionPanel");
+            if (controller == null || inspectionPanel == null)
+            {
+                Debug.LogError(
+                    "[Production UI] F03 inspection controller or InspectionPanel is missing.");
+                return;
+            }
+
+            Image dimmer = EnsureFullscreenDimmer(root.transform);
+            HearthDialogueSurface surface = EnsureF03DialogueSurface(inspectionPanel);
+            controller.ConfigureDispositionPresentation(dimmer, surface);
+
+            Transform choiceRoot = FindNamed(inspectionPanel, "DispositionChoiceRoot");
+            if (choiceRoot is RectTransform choiceRect)
+            {
+                ApplyTopLeft(choiceRect, new Rect(180f, 505f, 960f, 176f));
+            }
+        });
+    }
+
+    private static Image EnsureFullscreenDimmer(Transform root)
+    {
+        Transform existing = FindNamed(root, "FullscreenSelectionDimmer");
+        GameObject dimmerObject = existing != null
+            ? existing.gameObject
+            : new GameObject(
+                "FullscreenSelectionDimmer",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image));
+        if (existing == null)
+        {
+            dimmerObject.layer = root.gameObject.layer;
+            dimmerObject.transform.SetParent(root, false);
+        }
+
+        RectTransform rect = dimmerObject.GetComponent<RectTransform>();
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
+        rect.localScale = Vector3.one;
+        Image image = dimmerObject.GetComponent<Image>();
+        image.sprite = null;
+        image.type = Image.Type.Simple;
+        image.color = new Color(0f, 0f, 0f, 0.82f);
+        image.raycastTarget = false;
+        dimmerObject.transform.SetAsFirstSibling();
+        dimmerObject.SetActive(false);
+        return image;
+    }
+
+    private static HearthDialogueSurface EnsureF03DialogueSurface(
+        Transform inspectionPanel)
+    {
+        Transform existing = FindNamed(inspectionPanel, "FieldUnitDialogueSurface");
+        GameObject panelObject = existing != null
+            ? existing.gameObject
+            : new GameObject(
+                "FieldUnitDialogueSurface",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image),
+                typeof(CanvasGroup));
+        if (existing == null)
+        {
+            panelObject.layer = inspectionPanel.gameObject.layer;
+            panelObject.transform.SetParent(inspectionPanel, false);
+        }
+
+        RectTransform panelRect = panelObject.GetComponent<RectTransform>();
+        ApplyTopLeft(panelRect, new Rect(180f, 640f, 960f, 170f));
+        Image background = panelObject.GetComponent<Image>();
+        background.sprite = null;
+        background.type = Image.Type.Simple;
+        background.color = new Color32(8, 12, 24, 242);
+        background.raycastTarget = false;
+        EnsureScalableFrame(panelObject.transform);
+
+        TMP_Text speaker = EnsureDialogueText(
+            panelObject.transform,
+            "Speaker",
+            new Rect(30f, 18f, 700f, 40f),
+            "Field Unit",
+            32f,
+            new Color32(116, 190, 232, 255),
+            FontStyles.Bold,
+            TextAlignmentOptions.TopLeft);
+        TMP_Text body = EnsureDialogueText(
+            panelObject.transform,
+            "Body",
+            new Rect(30f, 64f, 900f, 70f),
+            string.Empty,
+            24f,
+            new Color32(230, 237, 244, 255),
+            FontStyles.Normal,
+            TextAlignmentOptions.TopLeft);
+        TMP_Text hint = EnsureDialogueText(
+            panelObject.transform,
+            "AdvanceHint",
+            new Rect(710f, 132f, 220f, 26f),
+            "SPACE  CONTINUE",
+            18f,
+            new Color32(116, 190, 232, 255),
+            FontStyles.Bold,
+            TextAlignmentOptions.TopRight);
+
+        HearthDialogueSurface surface = GetOrAdd<HearthDialogueSurface>(panelObject);
+        surface.Configure(
+            GetOrAdd<CanvasGroup>(panelObject),
+            speaker,
+            body,
+            hint);
+        surface.HideImmediate();
+        panelObject.transform.SetAsLastSibling();
+        return surface;
+    }
+
+    private static TMP_Text EnsureDialogueText(
+        Transform parent,
+        string objectName,
+        Rect rect,
+        string initialText,
+        float fontSize,
+        Color color,
+        FontStyles style,
+        TextAlignmentOptions alignment)
+    {
+        Transform existing = FindNamed(parent, objectName);
+        TMP_Text text = existing != null ? existing.GetComponent<TMP_Text>() : null;
+        if (text == null)
+        {
+            GameObject textObject = new GameObject(
+                objectName,
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(TextMeshProUGUI));
+            textObject.layer = parent.gameObject.layer;
+            textObject.transform.SetParent(parent, false);
+            text = textObject.GetComponent<TMP_Text>();
+            text.text = initialText;
+        }
+
+        ApplyTopLeft(text.rectTransform, rect);
+        text.fontSize = fontSize;
+        text.color = color;
+        text.fontStyle = style;
+        text.alignment = alignment;
+        text.enableWordWrapping = true;
+        text.overflowMode = TextOverflowModes.Ellipsis;
+        text.raycastTarget = false;
+        return text;
     }
 
     private static void InstallTerminalBindings(string path)
@@ -1075,24 +1433,56 @@ public static class HearthProductionUiTools
                 continue;
             }
 
-            GameObject frameObject = new GameObject(
+            EnsureScalableFrame(panel, frameColor, thickness);
+        }
+    }
+
+    private static HearthV2FrameGraphic EnsureScalableFrame(Transform panel)
+    {
+        HearthUiThemeProfile theme =
+            AssetDatabase.LoadAssetAtPath<HearthUiThemeProfile>(ThemeProfilePath);
+        Color frameColor = theme != null
+            ? theme.Information
+            : new Color32(120, 170, 220, 255);
+        float thickness = theme != null ? theme.RuleLineThickness : 2f;
+        return EnsureScalableFrame(panel, frameColor, thickness);
+    }
+
+    private static HearthV2FrameGraphic EnsureScalableFrame(
+        Transform panel,
+        Color frameColor,
+        float thickness)
+    {
+        if (panel == null)
+        {
+            return null;
+        }
+
+        Transform existing = panel.Find("ScalableFrame");
+        GameObject frameObject = existing != null
+            ? existing.gameObject
+            : new GameObject(
                 "ScalableFrame",
                 typeof(RectTransform),
                 typeof(CanvasRenderer),
                 typeof(HearthV2FrameGraphic));
+        if (existing == null)
+        {
             frameObject.layer = panel.gameObject.layer;
             frameObject.transform.SetParent(panel, false);
-            RectTransform frameRect = frameObject.GetComponent<RectTransform>();
-            frameRect.anchorMin = Vector2.zero;
-            frameRect.anchorMax = Vector2.one;
-            frameRect.offsetMin = Vector2.zero;
-            frameRect.offsetMax = Vector2.zero;
-            frameRect.localScale = Vector3.one;
-            HearthV2FrameGraphic frame =
-                frameObject.GetComponent<HearthV2FrameGraphic>();
-            frame.Configure(frameColor, thickness, 14f);
-            frameObject.transform.SetAsLastSibling();
         }
+
+        RectTransform frameRect = frameObject.GetComponent<RectTransform>();
+        frameRect.anchorMin = Vector2.zero;
+        frameRect.anchorMax = Vector2.one;
+        frameRect.offsetMin = Vector2.zero;
+        frameRect.offsetMax = Vector2.zero;
+        frameRect.localScale = Vector3.one;
+        HearthV2FrameGraphic frame =
+            GetOrAdd<HearthV2FrameGraphic>(frameObject);
+        frame.Configure(frameColor, thickness, 14f);
+        frameObject.transform.SetAsLastSibling();
+        return frame;
     }
 
     private static bool RepairTerminalSceneVisibility(
@@ -1278,6 +1668,215 @@ public static class HearthProductionUiTools
         TMP_Text hint = FindFirstText(panel, "DialogueAdvanceHint", "AdvanceHint");
         surface.Configure(group, speaker, body, hint);
         return surface;
+    }
+
+    private static HearthHudPage FindDoorwayPage(
+        GameObject root,
+        HearthHudPageId pageId)
+    {
+        if (root == null)
+        {
+            return null;
+        }
+
+        HearthHudPage[] pages = root.GetComponentsInChildren<HearthHudPage>(true);
+        for (int i = 0; i < pages.Length; i++)
+        {
+            if (pages[i] != null && pages[i].PageId == pageId)
+            {
+                return pages[i];
+            }
+        }
+
+        return null;
+    }
+
+    private static HearthHudPage[] GetSerializedTerminalPages(GameObject root)
+    {
+        HearthTvTerminalController controller = root != null
+            ? root.GetComponent<HearthTvTerminalController>()
+            : null;
+        if (controller == null)
+        {
+            return Array.Empty<HearthHudPage>();
+        }
+
+        SerializedObject serialized = new SerializedObject(controller);
+        SerializedProperty pages = serialized.FindProperty("pages");
+        if (pages == null || !pages.isArray)
+        {
+            return Array.Empty<HearthHudPage>();
+        }
+
+        List<HearthHudPage> results = new List<HearthHudPage>();
+        for (int i = 0; i < pages.arraySize; i++)
+        {
+            HearthHudPage page = pages.GetArrayElementAtIndex(i).objectReferenceValue
+                as HearthHudPage;
+            if (page != null)
+            {
+                results.Add(page);
+            }
+        }
+        return results.ToArray();
+    }
+
+    private static void CopyDoorwayPageVisuals(
+        Transform sourcePage,
+        Transform targetPage)
+    {
+        Transform sourceVisual = FindNamed(sourcePage, "V2_PageVisual") ?? sourcePage;
+        Transform targetVisual = FindNamed(targetPage, "V2_PageVisual") ?? targetPage;
+        Dictionary<string, Queue<Transform>> targetsByName =
+            BuildTransformQueues(targetVisual);
+        Transform[] sources = sourceVisual.GetComponentsInChildren<Transform>(true);
+        HashSet<Transform> matchedTargets = new HashSet<Transform>();
+        for (int i = 0; i < sources.Length; i++)
+        {
+            Transform source = sources[i];
+            Queue<Transform> matches;
+            if (!targetsByName.TryGetValue(source.name, out matches) ||
+                matches.Count == 0)
+            {
+                continue;
+            }
+
+            Transform target = matches.Dequeue();
+            matchedTargets.Add(target);
+            CopyRectTransformVisual(source as RectTransform, target as RectTransform);
+            CopyTmpVisual(
+                source.GetComponent<TMP_Text>(),
+                target.GetComponent<TMP_Text>());
+            CopyImageVisual(
+                source.GetComponent<Image>(),
+                target.GetComponent<Image>());
+            CopyFrameVisual(
+                source.GetComponent<HearthV2FrameGraphic>(),
+                target.GetComponent<HearthV2FrameGraphic>());
+
+            if (IsDoorwayDecorativeObject(source.name))
+            {
+                target.gameObject.SetActive(source.gameObject.activeSelf);
+            }
+        }
+
+        // These are decorative remnants only. Semantic labels, photos, page data,
+        // buttons and dialogue surfaces are never removed or disabled by this pass.
+        Transform[] targets = targetVisual.GetComponentsInChildren<Transform>(true);
+        for (int i = 0; i < targets.Length; i++)
+        {
+            if (!matchedTargets.Contains(targets[i]) &&
+                IsDoorwayDecorativeObject(targets[i].name))
+            {
+                targets[i].gameObject.SetActive(false);
+            }
+        }
+    }
+
+    private static Dictionary<string, Queue<Transform>> BuildTransformQueues(
+        Transform root)
+    {
+        Dictionary<string, Queue<Transform>> result =
+            new Dictionary<string, Queue<Transform>>(StringComparer.Ordinal);
+        Transform[] items = root.GetComponentsInChildren<Transform>(true);
+        for (int i = 0; i < items.Length; i++)
+        {
+            Queue<Transform> queue;
+            if (!result.TryGetValue(items[i].name, out queue))
+            {
+                queue = new Queue<Transform>();
+                result.Add(items[i].name, queue);
+            }
+            queue.Enqueue(items[i]);
+        }
+        return result;
+    }
+
+    private static bool IsDoorwayDecorativeObject(string objectName)
+    {
+        if (string.IsNullOrEmpty(objectName))
+        {
+            return false;
+        }
+
+        return objectName.IndexOf("Rule", StringComparison.OrdinalIgnoreCase) >= 0 ||
+               objectName.IndexOf("Border", StringComparison.OrdinalIgnoreCase) >= 0 ||
+               objectName.IndexOf("Divider", StringComparison.OrdinalIgnoreCase) >= 0 ||
+               objectName.IndexOf("Underline", StringComparison.OrdinalIgnoreCase) >= 0;
+    }
+
+    private static void CopyRectTransformVisual(
+        RectTransform source,
+        RectTransform target)
+    {
+        if (source == null || target == null)
+        {
+            return;
+        }
+
+        target.anchorMin = source.anchorMin;
+        target.anchorMax = source.anchorMax;
+        target.pivot = source.pivot;
+        target.anchoredPosition3D = source.anchoredPosition3D;
+        target.sizeDelta = source.sizeDelta;
+        target.localRotation = source.localRotation;
+        target.localScale = source.localScale;
+    }
+
+    private static void CopyTmpVisual(TMP_Text source, TMP_Text target)
+    {
+        if (source == null || target == null)
+        {
+            return;
+        }
+
+        target.font = source.font;
+        target.fontSharedMaterial = source.fontSharedMaterial;
+        target.color = source.color;
+        target.fontSize = source.fontSize;
+        target.enableAutoSizing = source.enableAutoSizing;
+        target.fontSizeMin = source.fontSizeMin;
+        target.fontSizeMax = source.fontSizeMax;
+        target.fontStyle = source.fontStyle;
+        target.alignment = source.alignment;
+        target.lineSpacing = source.lineSpacing;
+        target.paragraphSpacing = source.paragraphSpacing;
+        target.characterSpacing = source.characterSpacing;
+        target.wordSpacing = source.wordSpacing;
+        target.margin = source.margin;
+        target.enableWordWrapping = source.enableWordWrapping;
+        target.overflowMode = source.overflowMode;
+    }
+
+    private static void CopyImageVisual(Image source, Image target)
+    {
+        if (source == null || target == null)
+        {
+            return;
+        }
+
+        // Sprite references can be resident photos or content art, so the sync
+        // deliberately copies only presentation values.
+        target.color = source.color;
+        target.type = source.type;
+        target.preserveAspect = source.preserveAspect;
+        target.fillCenter = source.fillCenter;
+        target.fillMethod = source.fillMethod;
+        target.fillAmount = source.fillAmount;
+        target.fillClockwise = source.fillClockwise;
+        target.fillOrigin = source.fillOrigin;
+    }
+
+    private static void CopyFrameVisual(
+        HearthV2FrameGraphic source,
+        HearthV2FrameGraphic target)
+    {
+        if (source == null || target == null)
+        {
+            return;
+        }
+
+        EditorUtility.CopySerialized(source, target);
     }
 
     private static HearthInteractionPromptPresenter EnsurePromptPresenter(Transform root)
@@ -1918,6 +2517,34 @@ public static class HearthProductionUiTools
             RetireNestedTerminalNavigation(root);
             EnsureScalableTerminalFrames(root);
             ShowStartingTerminalPageForAuthoring(controller);
+            if (string.Equals(path, Home04Prefab, StringComparison.Ordinal))
+            {
+                ApplyHomeTerminalAuthoringDefaults(root);
+            }
+        }
+    }
+
+    private static void ApplyHomeTerminalAuthoringDefaults(GameObject root)
+    {
+        Transform before = FindNamed(root.transform, "BeforeTab");
+        Transform after = FindNamed(root.transform, "AfterTab");
+        Transform homePanel = FindNamed(root.transform, "HomePanel");
+        Transform lilyPanel = FindNamed(root.transform, "LilyMessagePanel") ??
+                              FindNamed(root.transform, "TerminalMessageSurface_V2");
+        if (before != null) before.gameObject.SetActive(false);
+        if (after != null) after.gameObject.SetActive(false);
+        if (homePanel != null) homePanel.gameObject.SetActive(true);
+        if (lilyPanel != null)
+        {
+            HearthDialogueSurface surface = lilyPanel.GetComponent<HearthDialogueSurface>();
+            if (surface != null)
+            {
+                surface.HideImmediate();
+            }
+            else
+            {
+                lilyPanel.gameObject.SetActive(false);
+            }
         }
     }
 
@@ -2287,6 +2914,65 @@ public static class HearthProductionUiTools
             group.GetComponent<HearthScreenFader>(),
             group,
             useUnscaledTime);
+        EditorUtility.SetDirty(service);
+        RecordAndBind(owner, () => bind(service));
+        return true;
+    }
+
+    private static bool BindSharedSceneTransition(
+        Scene scene,
+        MonoBehaviour owner,
+        Action<HearthScreenTransitionService> bind)
+    {
+        HearthScreenFader[] faders = FindSceneComponents<HearthScreenFader>(scene);
+        HearthScreenFader selected = null;
+        for (int i = 0; i < faders.Length; i++)
+        {
+            if (faders[i] == null)
+            {
+                continue;
+            }
+
+            if (selected == null)
+            {
+                selected = faders[i];
+            }
+            string path = GetHierarchyPath(faders[i].transform);
+            if (path.IndexOf("LobbyBlackout", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                selected = faders[i];
+                break;
+            }
+        }
+
+        if (selected == null)
+        {
+            Debug.LogError(
+                "[Production UI] F01 room transition could not be bound because " +
+                "the scene has no authored HearthScreenFader.",
+                owner);
+            return false;
+        }
+
+        CanvasGroup group = selected.GetComponent<CanvasGroup>();
+        if (group == null)
+        {
+            Debug.LogError(
+                "[Production UI] The shared scene fader has no CanvasGroup: " +
+                GetHierarchyPath(selected.transform),
+                selected);
+            return false;
+        }
+
+        HearthScreenTransitionService service =
+            selected.GetComponent<HearthScreenTransitionService>();
+        if (service == null)
+        {
+            service = Undo.AddComponent<HearthScreenTransitionService>(
+                selected.gameObject);
+        }
+        Undo.RecordObject(service, "Configure shared HEARTH transition service");
+        service.Configure(selected, group, true);
         EditorUtility.SetDirty(service);
         RecordAndBind(owner, () => bind(service));
         return true;

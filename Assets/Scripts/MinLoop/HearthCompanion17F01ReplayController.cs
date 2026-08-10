@@ -20,6 +20,7 @@ public class HearthCompanion17F01ReplayController : MonoBehaviour
     [SerializeField] private ViewSwitchController viewSwitchController;
     [SerializeField] private HearthCompanionHudController companionHud;
     [SerializeField] private MinLoopSubtitlePlayer subtitlePlayer;
+    [SerializeField] private HearthScreenTransitionService transitionService;
     [SerializeField] private bool autoFindReferences = true;
 
     [Header("Robot")]
@@ -88,6 +89,8 @@ public class HearthCompanion17F01ReplayController : MonoBehaviour
     [SerializeField] private float bedroomPreludeDelay = 0.8f;
     [SerializeField] private float waitAfterSoothingLines = 0.5f;
     [SerializeField] private float waitBeforeLivingRoomLines = 0.6f;
+    [SerializeField] private float roomTransitionFadeOutSeconds = 0.35f;
+    [SerializeField] private float roomTransitionFadeInSeconds = 0.35f;
 
     [Header("Runtime")]
     [SerializeField] private ReplayStep currentStep = ReplayStep.Inactive;
@@ -147,6 +150,13 @@ public class HearthCompanion17F01ReplayController : MonoBehaviour
         bedroomPreludeDelay = Mathf.Max(0f, bedroomPreludeDelay);
         waitAfterSoothingLines = Mathf.Max(0f, waitAfterSoothingLines);
         waitBeforeLivingRoomLines = Mathf.Max(0f, waitBeforeLivingRoomLines);
+        roomTransitionFadeOutSeconds = Mathf.Max(0f, roomTransitionFadeOutSeconds);
+        roomTransitionFadeInSeconds = Mathf.Max(0f, roomTransitionFadeInSeconds);
+    }
+
+    public void SetTransitionService(HearthScreenTransitionService service)
+    {
+        transitionService = service;
     }
 
     public void BeginReplay()
@@ -428,6 +438,12 @@ public class HearthCompanion17F01ReplayController : MonoBehaviour
     private IEnumerator LivingRoomObservationRoutine()
     {
         SetStep(ReplayStep.LivingRoomObservation);
+        SetRobotControl(false, false, false);
+        if (transitionService != null && transitionService.IsConfigured)
+        {
+            yield return transitionService.FadeOut(roomTransitionFadeOutSeconds);
+        }
+
         StopSfxCue("Bedroom.RoomTone");
         PlaySfxCue("Replay.SceneTransition");
         StartSfxLoop("LivingRoom.RoomTone");
@@ -443,6 +459,11 @@ public class HearthCompanion17F01ReplayController : MonoBehaviour
         {
             companionHud.ShowScene(livingRoomSceneId);
             companionHud.SetHoldPromptVisible(false);
+        }
+
+        if (transitionService != null && transitionService.IsConfigured)
+        {
+            yield return transitionService.FadeIn(roomTransitionFadeInSeconds);
         }
 
         if (waitBeforeLivingRoomLines > 0f)

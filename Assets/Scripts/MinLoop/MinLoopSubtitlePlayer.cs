@@ -719,7 +719,6 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
                 }
             }
 
-            RestoreCompanionDialogueLayers();
         }
 
         if (playbackToken != playbackGeneration)
@@ -1086,8 +1085,16 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
 
     private void SetCompanionDialogueExclusive(bool exclusive)
     {
-        RestoreCompanionDialogueLayers();
         if (!exclusive || !Application.isPlaying)
+        {
+            RestoreCompanionDialogueLayers();
+            return;
+        }
+
+        // Keep ownership across adjacent framed lines. Restoring the authored
+        // DecisionPanel and hiding it again for every Space press made the old
+        // Synth Voice card flash for one frame between dialogue lines.
+        if (suppressedCompanionHuds.Count > 0)
         {
             return;
         }

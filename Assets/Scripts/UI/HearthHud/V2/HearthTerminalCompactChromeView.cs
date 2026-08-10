@@ -51,6 +51,24 @@ public sealed class HearthTerminalCompactChromeView : MonoBehaviour
         Unsubscribe();
     }
 
+#if UNITY_EDITOR
+    private void OnValidate()
+    {
+        ResolveTerminal();
+        if (terminal == null || terminal.TerminalMode != HearthTerminalMode.Home)
+        {
+            return;
+        }
+
+        // Prefab Mode does not run the normal play-mode state event. Keep the
+        // F04 authoring view truthful without executing or changing gameplay.
+        SetVisible(beforeBackground, false);
+        SetVisible(afterBackground, false);
+        SetText(terminalLabel, "HOME TERMINAL");
+        SetText(residentLabel, string.Empty);
+    }
+#endif
+
     public void Configure(
         HearthTvTerminalController newTerminal,
         GameObject newVisualRoot,

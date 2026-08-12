@@ -102,6 +102,24 @@ public class HearthDialogueSurface : MonoBehaviour
     {
         ResolveReferences();
 
+        if (showSpeaker &&
+            !string.IsNullOrWhiteSpace(speaker) &&
+            speakerText == null)
+        {
+            Debug.LogError(
+                "[HearthDialogueSurface] A formal dialogue line for '" +
+                speaker +
+                "' cannot be shown because the Speaker binding is missing.",
+                this);
+        }
+
+        if (bodyText == null)
+        {
+            Debug.LogError(
+                "[HearthDialogueSurface] Dialogue cannot be shown because the Body binding is missing.",
+                this);
+        }
+
         if (exclusivePeer != null && exclusivePeer.IsVisible)
         {
             exclusivePeer.HideImmediate();
@@ -137,6 +155,28 @@ public class HearthDialogueSurface : MonoBehaviour
             canvasGroup.alpha = 1f;
             canvasGroup.interactable = false;
             canvasGroup.blocksRaycasts = false;
+        }
+
+        // Authored dialogue surfaces are normally inactive in their Prefabs.
+        // Their first SetActive(true) invokes Awake(), whose defensive initial
+        // HideImmediate() can turn the same root off again. Reasserting the
+        // final visible state after text/canvas setup makes the very first
+        // line visible as well as every subsequent line. This is especially
+        // important for the 17F03 inspection prompt and Lily's 17F04 message.
+        if (root != null && !root.activeSelf)
+        {
+            root.SetActive(true);
+        }
+
+        if (showSpeaker &&
+            !string.IsNullOrWhiteSpace(speaker) &&
+            speakerText != null &&
+            !speakerText.gameObject.activeInHierarchy)
+        {
+            Debug.LogError(
+                "[HearthDialogueSurface] Speaker text was populated but is not active in the final hierarchy: " +
+                speaker + ".",
+                this);
         }
 
         IsVisible = true;

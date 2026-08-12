@@ -1383,9 +1383,41 @@ Page ID、故事/音频引用、UnityEvent、终端 Camera 或进入住户流程
 
 `Assets/Prefabs/UI/HearthHud/V2/Inspection/Hearth17F03InspectionPanel_V2.prefab`
 
+### 17F02 Family Log 在哪里改
+
+- 改日志文字：打开 `Assets/Data/HearthHud/Companion/CompanionScene_07_17F02_04.asset`，调整 `Projection Title` 与 `Projection Body`。
+- 改显示位置和字号：打开 `Assets/Prefabs/UI/HearthHud/V2/Companion/HearthCompanionHudRoot_V2.prefab`，展开：
+  - `ProjectionLayer/ProjectionPanel/ProjectionTitleText`
+  - `ProjectionLayer/ProjectionPanel/ProjectionBodyText`
+- `ProjectionPanel` 是整块 Family Log 的父级；需要整体平移时移动它，需要只改变标题/正文时分别改两个 TMP。
+- 不要在 Play Mode 中调整，也不要改场景里临时生成出来的文字；正式运行会从上述 Prefab 和 Scene 数据资产重新写入。
+
+### 17F03 Entity Inspection 在哪里改
+
+- 唯一视觉入口：`Assets/Prefabs/UI/HearthHud/V2/Inspection/Hearth17F03InspectionPanel_V2.prefab`。
+- 四项状态：`InspectionPanel/V2_PowerState`、`V2_MemoryArchive`、`V2_MotorResponse`、`V2_LastEvent`。
+- 回忆入口：`InspectionPanel/RecallHighlight` 与 `RecallAction`。
+- A/B：`InspectionPanel/DispositionChoiceRoot`。
+- Field Unit：`InspectionPanel/FieldUnitDialogueSurface`；其字号统一来自 `Assets/UI/HEARTH/V2/Profiles/Hearth_UiV2Theme.asset` 的 Terminal Dialogue 三项设置。
+- 标准布局恢复菜单：`Tools > Hearth > Production UI > Repair 17F03 Inspection Layout`。该菜单只写正式 Prefab，不保存当前场景。
+
 关键层级：
 
 - `FullscreenSelectionDimmer`：全屏半透明黑幕，必须在选择/操作内容下方。
+- 本项目当前正式层级为：`InspectionPanel` 基础内容 → `FieldUnitDialogueSurface` → `FullscreenSelectionDimmer` → `DispositionChoiceRoot`。解释阶段只显示 Field Unit；解释结束后先隐藏它，再显示遮罩和 A/B。不要把 Dimmer 放到 Choice 之后，否则选项会被遮挡；也不要把 Field Unit 移到 Dimmer 之后，否则选择阶段会再次透出对白框。
+- `RecallAction` 是 `RecallHighlight` 的子级，因此位置应使用父级内部的局部坐标；标准值为 Pos `(0,0)`、Size `(480,72)`。若把这里误填为屏幕绝对坐标，蓝框会留在中央而 Space 文案跑到屏幕底部。
+
+### 17F04 Lily 留言的正式层级
+
+- 正式入口：`Assets/Prefabs/UI/HearthHud/V2/Terminals/Terminal_17F04_Home_V2.prefab`。
+- `WELCOME HOME` 与 Lily 留言是互斥状态；Lily 使用 `LilyMessagePanel` 上的 `HearthDialogueSurface`，不是全局字幕框。
+- 位置、字号和切角框直接改 `LilyMessagePanel` 及其 Speaker/Body/AdvanceHint 子级。不要在 Play Mode 中复制一套新的 Lily 框，也不要移除根上的 `HearthTerminalViewBindings`。
+- `HearthDialogueSurface` 已处理“首次激活时 Awake 再隐藏”的情况；如果以后替换该 Prefab，必须继续让 Lily Surface 由 `HearthTerminalViewBindings.TerminalMessageSurface` 显式绑定。
+
+### TV4 相册底部 Field Unit 框
+
+- 正式入口：`Assets/Prefabs/UI/HearthHud/V2/PhotoArchive/HearthPhotoArchiveWorldView_V2.prefab`。
+- `FieldUnitPanel` 自身只提供半透明衬底，边框由子级 `ScalableFrame` 提供。不要再给 `FieldUnitPanel` 添加 `Outline`，否则会同时出现矩形框和切角框。
 - `InspectionPanel/DispositionChoiceRoot`：A/B 选项区域。
 - `InspectionPanel/FieldUnitDialogueSurface`：固定 Field Unit 字幕区。
 - `FieldUnitDialogueSurface/ScalableFrame`：特殊框线。
@@ -1421,3 +1453,150 @@ Field Unit 外观改 `FieldUnitPanel` 及其 `ScalableFrame`；照片、Photo Ca
 6. 1920×1080 Play Mode 检查六页、F01 转场、F03 处置和 F04 Welcome/Lily/TV4。
 
 不要运行 `Legacy / Unsafe` Builder，不要 `Overrides > Apply All`，不要把 F03/F04 再复制成第二套 Canvas。
+
+## 30. 门口导航、17F03 Field Unit/选择与 Hold E 正式入口（2026-08-11）
+
+### 30.1 F01 是导航唯一排版基准
+
+正式基准位于：
+
+`Assets/Prefabs/UI/HearthHud/V2/Terminals/Terminal_17F01_V2.prefab`
+
+进入 Prefab 后展开 `TerminalVisualRoot/ChromeRoot`，真正运行时使用的导航对象是：
+
+- `BeforeTab`
+- `AfterTab`
+- `PrimaryActionTab`（F01/F02 显示 Review，F03 显示 Enter Unit；只同步视觉，不改文字或事件）
+- `ChromeHeaderRule`
+
+修改 F01 后，退出 Play Mode，运行：
+
+1. `Tools > Hearth > Production UI > Apply Approved Terminal And F03 Repairs`
+2. `Tools > Hearth > Production UI > Validate Doorway Navigation Alignment`
+
+同步会检查按钮内部 TMP 等子级，不只是检查父物体坐标。F02/F03 的户号、人物、按钮文字、UnityEvent 和进入流程不会被 F01 覆盖。Before/After 六页的内容区仍使用
+`Sync Six Doorway Pages From 17F01 Before`；导航同步和六页内容同步是两个不同操作。
+
+### 30.2 17F03 Field Unit 与选择层
+
+正式入口：
+
+`Assets/Prefabs/UI/HearthHud/V2/Inspection/Hearth17F03InspectionPanel_V2.prefab`
+
+Field Unit 固定区为 `FieldUnitDialogueSurface`：
+
+- Rect：`X=230, Y=745, W=1460, H=248`（1920×1080 左上坐标语义）。
+- Speaker `52`，Body `26`，AdvanceHint `26`。
+- Speaker 必须显示 `Field Unit`；Body 与 Hint 左右边距跟 F01 终端 Surface 一致。
+- 只改这个正式 Prefab；不要在 Play Mode 的实例中再造一套框。
+
+显示顺序固定为：Field Unit 解释 → Space 完全松开 → 再等待一帧 → 全屏 0.82 黑幕 → A/B 与操作提示。A 可以默认高亮，但遮罩和 A/B 出现前没有确认输入。验证入口：
+
+`Tools > Hearth > Production UI > Validate Approved F03 And Hold E Presentation`
+
+### 30.3 Hold E 框怎么改
+
+- 矢量源：`Assets/UI/HEARTH/V2/VectorParts/Interaction/HUD_HoldPromptFrame_V2.svg`。
+- Unity PNG：同目录 `HUD_HoldPromptFrame_V2.png`，1360×300。
+- Prefab 实例：`Assets/Prefabs/UI/HearthHud/V2/Companion/HearthCompanionHudRoot_V2.prefab` 下的 `HoldPrompt/HoldPromptFrameV2`。
+- 外框 Image 必须保持 `Sliced`；不要改成 Simple 后直接拉宽，否则切角和线宽会变形。
+- 文字、E、百分比和进度条都是实时组件，不允许烘焙进 SVG/PNG。只换框时运行 `Apply Hold E V2 Frame`，不会改 1.5 秒时长、取消、完成或音效。
+
+## 31. 简化框正式入口与手调流程（2026-08-11）
+
+本节覆盖 30.3 中旧 Hold E 文件位置。现在短按 E 与 Hold E 共用一套更简洁的框体语言：单层蓝青细线、少量切角、无左侧半圆或多棱装饰；Hold E 的琥珀进度仍是独立实时组件。
+
+### 31.1 17F03 Entity Inspection
+
+正式 Prefab：
+
+`Assets/Prefabs/UI/HearthHud/V2/Inspection/Hearth17F03InspectionPanel_V2.prefab`
+
+- `InspectionBackdropFrameV2`：1600×932 外衬底及简化线框；只在这里调外框整体位置和大小。
+- `InspectionPanel`：标题、2×2 数据、Recall 和选择内容；外框加宽时不要移动这个根，信息会继续保持居中。
+- `FieldUnitDialogueSurface`：底部 1460×248 Field Unit 正式对白区。
+- `FieldUnitDialogueSurface/Speaker`、`Body`、`AdvanceHint`：名称、正文和 Space。
+- `DispositionChoiceRoot`：A/B 选项与操作提示；其层级必须保持在选择 Dimmer 之上。
+
+矢量源：
+
+`Assets/UI/HEARTH/V2/VectorSource/Frames/Inspection/HUD_Inspection_EntityPanelFrame_1600x932.svg`
+
+Unity 图片：
+
+`Assets/UI/HEARTH/V2/VectorParts/Inspection/HUD_Inspection_EntityPanelFrame_1600x932.png`
+
+### 31.2 Lobby Field Unit 终端框
+
+正式 Prefab：
+
+`Assets/Prefabs/UI/HearthHud/V2/Terminals/Terminal_Lobby_Assignment_V2.prefab`
+
+正式层级：
+
+`TerminalVisualRoot/TerminalContentRoot/TerminalSlide01_LobbyAssignment/V2_PageVisual/FieldUnitPanel`
+
+- `FieldUnitPanel`：X=230、Y=745、W=1460、H=248。
+- `SpeakerText`、`BodyText`、`AdvanceHint`：分别修改 Field Unit 名称、正文和 Space 的 RectTransform/TMP。
+- 框体由 `HUD_Terminal_LobbyDialogueFrame_1460x248.png` 提供；不要再给面板增加第二个 `HearthV2FrameGraphic` 或 Outline。
+
+矢量源：
+
+`Assets/UI/HEARTH/V2/VectorSource/Frames/Terminal/HUD_Terminal_LobbyDialogueFrame_1460x248.svg`
+
+### 31.3 短按 E 与 Hold E
+
+共用矢量源：
+
+`Assets/UI/HEARTH/V2/VectorSource/Frames/Interaction/HUD_Interaction_PromptFrame_680x150.svg`
+
+共用 Unity 图片：
+
+`Assets/UI/HEARTH/V2/VectorParts/Interaction/HUD_Interaction_PromptFrame_680x150.png`
+
+Companion Hold E：
+
+`Assets/Prefabs/UI/HearthHud/V2/Companion/HearthCompanionHudRoot_V2.prefab`
+
+- `HoldPrompt/HoldPromptFrameV2`：只负责框。
+- `HoldPromptText`、`HoldPromptKeyText`：实时主提示、E 和百分比。
+- `HoldProgressTrack`、`HoldProgressFill`：进度底轨和琥珀进度。
+
+Human 短按 E：
+
+`Assets/Prefabs/UI/HearthHud/V2/HearthHudRoot_V2.prefab`
+
+- `InteractionPromptLayer/PlayerInteractionPrompt/InteractionPromptFrameV2`：正式简化框。
+- `InteractionText`：实时短按提示。
+
+Companion 短按 E 使用相同 `InteractionPromptLayer/PlayerInteractionPrompt` 结构。不要改 `HearthCompanionHoldPrompt` 的持续时间、输入或音效字段来调整美术。
+
+### 31.4 F04 Lily 与 Final Response
+
+F04 Lily：
+
+`Assets/Prefabs/UI/HearthHud/V2/Terminals/Terminal_17F04_Home_V2.prefab`
+
+- 进入 `LilyMessagePanel/AdvanceHint` 调位置、字号与颜色。
+- 正式基准是 X=1110、Y=334、W=300、H=36，右对齐，字号 26，琥珀色。
+
+Final Response：
+
+`Assets/Prefabs/UI/HearthHud/V2/HearthHudRoot_V2.prefab`
+
+- `Slide09_FinalChoice/V2_PagePanel`。
+- `Slide14_FinalChoiceReturn/V2_PagePanel`。
+- 两页各自的 `FinalChoiceInputHint`。
+
+两页正式内容区使用 X=360、Y=180、W=1200、H=620；提示使用 X=650、Y=830、W=620、H=38。需要微调时两页一起改，避免首次选择与返回选择位置不一致。
+
+### 31.5 修改、生成和确认顺序
+
+1. 退出 Play Mode，用 `Production UI > Preview` 打开正式 Prefab；不要改 SampleScene 中的运行实例。
+2. 只改对应 RectTransform、TMP 或 SVG。SVG 必须保持透明背景、无嵌入位图、无烘焙文字。
+3. SVG 修改后运行 `Tools/UI/render_simplified_ui_frames.py` 生成 2× PNG。
+4. 回到 Unity 等待导入，运行 `Tools > Hearth > Production UI > Apply Current Approved Repairs`。
+5. 运行 `Validate Doorway Navigation Alignment` 与 `Validate Approved F03 And Hold E Presentation`。
+6. 用 Unity MCP 截取 1920×1080 的 Prefab/Game View，目视确认框体、文字和提示没有越界、重叠或双层边框。
+
+`Apply Current Approved Repairs` 会恢复本节记录的正式基准坐标。如果你已经手调出新的批准版本，先更新正式 Prefab/配置或工具中的基准，再运行 Apply；不要只改 Play Mode 实例，否则退出 Play Mode 后会丢失。

@@ -7,10 +7,13 @@ using UnityEngine.UI;
 [DisallowMultipleComponent]
 public class Hearth17F03InspectionPanel : MonoBehaviour
 {
-    private enum PanelMode
+    private enum PresentationPhase
     {
         Recall,
-        DispositionChoice
+        FieldUnitExplanation,
+        AwaitSpaceRelease,
+        DispositionChoice,
+        Submitted
     }
 
     [Header("UI")]
@@ -32,7 +35,7 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
     [Header("Second UI Visual")]
     [SerializeField] private bool useSecondUiVisual = true;
     [Tooltip("Migration-only compatibility. Disable after the current panel appearance has been adopted into the canonical V2 Prefab.")]
-    [SerializeField] private bool applyRuntimeVisualCompatibility = true;
+    [SerializeField] private bool applyRuntimeVisualCompatibility;
     [SerializeField] private HearthUiThemeProfile secondUiTheme;
     [SerializeField] private HearthUiStateCoordinator uiStateCoordinator;
 
@@ -57,10 +60,12 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
     private bool recallAvailable = true;
     private bool recallSubmitted;
     private bool recallQueued;
-    private PanelMode panelMode;
+    private PresentationPhase presentationPhase;
     private int choiceIndex;
     private bool choiceSubmitted;
     private bool choiceInputEnabled;
+    private bool choiceInputRequested;
+    private int choiceSpaceReleasedFrame = -1;
 
     public event Action RecallRequested;
     public event Action CloseRequested;
@@ -72,7 +77,10 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
     public bool UsesAuthoredVisualLayout { get { return !applyRuntimeVisualCompatibility; } }
     public bool IsDispositionChoiceOpen
     {
-        get { return IsOpen && panelMode == PanelMode.DispositionChoice; }
+        get
+        {
+            return IsOpen && presentationPhase != PresentationPhase.Recall;
+        }
     }
 
     private void Awake()
@@ -81,6 +89,7 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
         {
             ApplySecondUiVisual();
         }
+        DisableDeprecatedAuthoredVisuals();
         ApplyContent();
         Close();
     }
@@ -103,13 +112,44 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
             return;
         }
 
-        if (Input.GetKeyDown(closeKey) && panelMode == PanelMode.Recall)
+        if (Input.GetKeyDown(closeKey) &&
+            presentationPhase == PresentationPhase.Recall)
         {
             RequestClose();
             return;
         }
 
-        if (panelMode == PanelMode.DispositionChoice)
+        if (presentationPhase == PresentationPhase.AwaitSpaceRelease)
+        {
+            if (!choiceInputRequested)
+            {
+                return;
+            }
+
+            if (Input.GetKey(confirmKey))
+            {
+                choiceSpaceReleasedFrame = -1;
+                return;
+            }
+
+            if (choiceSpaceReleasedFrame < 0)
+            {
+                // Record the first frame on which the final dialogue Space is
+                // fully released. Choice input is deliberately not exposed on
+                // this frame.
+                choiceSpaceReleasedFrame = Time.frameCount;
+                return;
+            }
+
+            if (Time.frameCount > choiceSpaceReleasedFrame)
+            {
+                ActivateDispositionChoice();
+            }
+
+            return;
+        }
+
+        if (presentationPhase == PresentationPhase.DispositionChoice)
         {
             if (choiceSubmitted || !choiceInputEnabled)
             {
@@ -129,6 +169,13 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
                 SubmitChoice();
             }
 
+            return;
+        }
+
+        if (presentationPhase != PresentationPhase.Recall)
+        {
+            // Field Unit dialogue input is owned by MinLoopSubtitlePlayer.
+            // Never allow the same Space press to leak into the recall action.
             return;
         }
 
@@ -205,6 +252,17 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
     public void UseAuthoredVisualLayout(bool authored)
     {
         applyRuntimeVisualCompatibility = !authored;
+        if (authored)
+        {
+            DisableDeprecatedAuthoredVisuals();
+        }
+    }
+
+    public void ConfigureAuthoredHeader(string newTitle, string newStatus)
+    {
+        title = string.IsNullOrWhiteSpace(newTitle) ? title : newTitle;
+        status = string.IsNullOrWhiteSpace(newStatus) ? status : newStatus;
+        ApplyContent();
     }
 
     public void ApplySecondUiVisual()
@@ -295,10 +353,14 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
 
     public void Open()
     {
-        panelMode = PanelMode.Recall;
+        presentationPhase = PresentationPhase.Recall;
         ApplyContent();
         recallSubmitted = false;
         recallQueued = false;
+        if (fieldUnitDialogueSurface != null)
+        {
+            fieldUnitDialogueSurface.HideImmediate();
+        }
         IsOpen = true;
         SetCoordinatorModalRequest(true);
         SetCanvasVisible(true);
@@ -313,10 +375,12 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
 
     public void OpenDispositionChoice(bool inputEnabled)
     {
-        panelMode = PanelMode.DispositionChoice;
+        presentationPhase = PresentationPhase.FieldUnitExplanation;
         choiceIndex = 0;
         choiceSubmitted = false;
-        choiceInputEnabled = inputEnabled;
+        choiceInputEnabled = false;
+        choiceInputRequested = false;
+        choiceSpaceReleasedFrame = -1;
         IsOpen = true;
         SetCoordinatorModalRequest(true);
 
@@ -329,11 +393,48 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
         RefreshModeVisuals();
         RefreshChoiceInstruction();
         RefreshChoiceVisuals();
+
+        if (inputEnabled)
+        {
+            SetChoiceInputEnabled(true);
+        }
     }
 
     public void SetChoiceInputEnabled(bool value)
     {
-        choiceInputEnabled = value && !choiceSubmitted;
+        if (!IsOpen || choiceSubmitted)
+        {
+            choiceInputEnabled = false;
+            choiceInputRequested = false;
+            RefreshModeVisuals();
+            return;
+        }
+
+        if (!value)
+        {
+            presentationPhase = PresentationPhase.FieldUnitExplanation;
+            choiceInputEnabled = false;
+            choiceInputRequested = false;
+            choiceSpaceReleasedFrame = -1;
+            RefreshModeVisuals();
+            RefreshChoiceInstruction();
+            RefreshChoiceVisuals();
+            return;
+        }
+
+        // The last manual dialogue advance can still be held on this frame.
+        // Keep the choices and their input disabled until Space has been fully
+        // released, then wait one additional frame before exposing the layer.
+        if (fieldUnitDialogueSurface != null)
+        {
+            fieldUnitDialogueSurface.HideImmediate();
+        }
+
+        presentationPhase = PresentationPhase.AwaitSpaceRelease;
+        choiceInputEnabled = false;
+        choiceInputRequested = true;
+        choiceSpaceReleasedFrame = -1;
+        RefreshModeVisuals();
         RefreshChoiceInstruction();
         RefreshChoiceVisuals();
     }
@@ -345,6 +446,9 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
         recallQueued = false;
         choiceSubmitted = false;
         choiceInputEnabled = false;
+        choiceInputRequested = false;
+        choiceSpaceReleasedFrame = -1;
+        presentationPhase = PresentationPhase.Recall;
         SetCoordinatorModalRequest(false);
         SetCanvasVisible(false);
     }
@@ -413,7 +517,10 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
 
     public void MoveChoice(int direction)
     {
-        if (!IsOpen || panelMode != PanelMode.DispositionChoice || choiceSubmitted || !choiceInputEnabled)
+        if (!IsOpen ||
+            presentationPhase != PresentationPhase.DispositionChoice ||
+            choiceSubmitted ||
+            !choiceInputEnabled)
         {
             return;
         }
@@ -424,21 +531,50 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
 
     public void SubmitChoice()
     {
-        if (!IsOpen || panelMode != PanelMode.DispositionChoice || choiceSubmitted || !choiceInputEnabled)
+        if (!IsOpen ||
+            presentationPhase != PresentationPhase.DispositionChoice ||
+            choiceSubmitted ||
+            !choiceInputEnabled)
         {
             return;
         }
 
         choiceSubmitted = true;
         choiceInputEnabled = false;
+        choiceInputRequested = false;
+        choiceSpaceReleasedFrame = -1;
+        presentationPhase = PresentationPhase.Submitted;
         RefreshChoiceInstruction();
         RefreshChoiceVisuals();
+        RefreshModeVisuals();
         if (ChoiceSubmitted != null)
         {
             ChoiceSubmitted.Invoke(choiceIndex == 0
                 ? MinLoopDispositionChoice.SystemRecommendedA
                 : MinLoopDispositionChoice.LowInterventionB);
         }
+    }
+
+    /// <summary>
+    /// Re-enables the authored choice UI when the owning story controller
+    /// rejects a submission. This prevents the panel from remaining frozen
+    /// after a recoverable flow/state mismatch.
+    /// </summary>
+    public void RestoreChoiceInputAfterRejectedSubmission()
+    {
+        if (!IsOpen || presentationPhase == PresentationPhase.Recall)
+        {
+            return;
+        }
+
+        choiceSubmitted = false;
+        choiceInputEnabled = true;
+        choiceInputRequested = false;
+        choiceSpaceReleasedFrame = -1;
+        presentationPhase = PresentationPhase.DispositionChoice;
+        RefreshModeVisuals();
+        RefreshChoiceInstruction();
+        RefreshChoiceVisuals();
     }
 
     private void ApplyContent()
@@ -470,11 +606,15 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
 
     private void RefreshModeVisuals()
     {
-        bool recallMode = panelMode == PanelMode.Recall;
+        bool recallMode = presentationPhase == PresentationPhase.Recall;
+        bool explanationMode =
+            presentationPhase == PresentationPhase.FieldUnitExplanation;
+        bool choiceMode =
+            presentationPhase == PresentationPhase.DispositionChoice;
         if (fullscreenSelectionDimmer != null)
         {
             fullscreenSelectionDimmer.gameObject.SetActive(
-                IsOpen && !recallMode);
+                IsOpen && choiceMode);
         }
         if (recallHighlight != null)
         {
@@ -483,12 +623,47 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
 
         if (choiceRoot != null)
         {
-            choiceRoot.SetActive(!recallMode);
+            // Do not expose the choices while the Field Unit is still
+            // explaining the disposition. The choice layer appears only
+            // when input is genuinely enabled, above the disposition dimmer.
+            choiceRoot.SetActive(
+                IsOpen && choiceMode && !choiceSubmitted && choiceInputEnabled);
         }
 
-        if (recallMode && fieldUnitDialogueSurface != null)
+        if (detailText != null)
         {
-            fieldUnitDialogueSurface.HideImmediate();
+            // The authored choice rows already contain their own instruction
+            // treatment. Retire the old PLEASE WAIT / UP-DOWN overlay that
+            // used to intersect the data rows and dialogue surface.
+            detailText.gameObject.SetActive(false);
+        }
+
+        if (fieldUnitDialogueSurface != null)
+        {
+            if (!explanationMode && fieldUnitDialogueSurface.IsVisible)
+            {
+                fieldUnitDialogueSurface.HideImmediate();
+            }
+
+            if (explanationMode)
+            {
+                fieldUnitDialogueSurface.transform.SetAsLastSibling();
+            }
+        }
+
+        // Authored hierarchy contract: base inspection content, dialogue,
+        // selection dimmer, then AB choices. Reassert only the active phase so
+        // a hidden layer can never cover the visible one.
+        if (choiceMode)
+        {
+            if (fullscreenSelectionDimmer != null)
+            {
+                fullscreenSelectionDimmer.transform.SetAsLastSibling();
+            }
+            if (choiceRoot != null)
+            {
+                choiceRoot.transform.SetAsLastSibling();
+            }
         }
     }
 
@@ -509,7 +684,7 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
 
     private void RefreshChoiceInstruction()
     {
-        if (panelMode != PanelMode.DispositionChoice)
+        if (presentationPhase == PresentationPhase.Recall)
         {
             return;
         }
@@ -517,11 +692,16 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
         if (choiceSubmitted)
         {
             if (statusText != null) statusText.text = "STATUS: DISPOSITION SUBMITTED";
-            if (detailText != null) detailText.text = "PLEASE WAIT";
+            if (detailText != null)
+            {
+                detailText.text = string.Empty;
+                detailText.gameObject.SetActive(false);
+            }
             return;
         }
 
-        if (choiceInputEnabled)
+        if (presentationPhase == PresentationPhase.DispositionChoice &&
+            choiceInputEnabled)
         {
             if (statusText != null) statusText.text = "STATUS: INPUT ENABLED";
             if (detailText != null) detailText.text = "UP / DOWN  SELECT     SPACE  CONFIRM";
@@ -530,6 +710,50 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
         {
             if (statusText != null) statusText.text = "STATUS: INPUT LOCKED - FIELD REVIEW IN PROGRESS";
             if (detailText != null) detailText.text = "PLEASE WAIT";
+        }
+    }
+
+    private void ActivateDispositionChoice()
+    {
+        if (!IsOpen || choiceSubmitted || !choiceInputRequested)
+        {
+            return;
+        }
+
+        presentationPhase = PresentationPhase.DispositionChoice;
+        choiceInputRequested = false;
+        choiceInputEnabled = true;
+        choiceSpaceReleasedFrame = -1;
+        RefreshModeVisuals();
+        RefreshChoiceInstruction();
+        RefreshChoiceVisuals();
+    }
+
+    private void DisableDeprecatedAuthoredVisuals()
+    {
+        string[] retiredNames =
+        {
+            "V2_PhysicalFeedLabel",
+            "V2_PhysicalFeedRule",
+            "V2_CrosshairHorizontal",
+            "V2_CrosshairVertical",
+            "V2_FieldUnitLabel",
+            "V2_FieldUnitRule",
+            "V2_InspectionFooter",
+            "V2_LeftRule"
+        };
+
+        Transform[] descendants = GetComponentsInChildren<Transform>(true);
+        for (int nameIndex = 0; nameIndex < retiredNames.Length; nameIndex++)
+        {
+            for (int transformIndex = 0; transformIndex < descendants.Length; transformIndex++)
+            {
+                Transform candidate = descendants[transformIndex];
+                if (candidate != null && candidate.name == retiredNames[nameIndex])
+                {
+                    candidate.gameObject.SetActive(false);
+                }
+            }
         }
     }
 

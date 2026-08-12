@@ -44,7 +44,10 @@ public class HearthLobbyHudOverlay : MonoBehaviour
 
     public void ShowActivation()
     {
-        SetGroup(activationGroup, true);
+        // The former FIELD COMPANION UNIT / ACTIVATED card is no longer part
+        // of the approved lobby presentation. Keep the public method for old
+        // scene events, but make it deterministically remain hidden.
+        SetGroup(activationGroup, false);
     }
 
     public void HideActivation()

@@ -40,6 +40,18 @@ public static class HearthProductionUiTools
         "Assets/Resources/HEARTH/HearthTaskTextCatalog.asset";
     private const string ThemeProfilePath =
         "Assets/UI/HEARTH/V2/Profiles/Hearth_UiV2Theme.asset";
+    private const string InspectionFrameSvg =
+        "Assets/UI/HEARTH/V2/VectorSource/Frames/Inspection/HUD_Inspection_EntityPanelFrame_1600x932.svg";
+    private const string InspectionFramePng =
+        "Assets/UI/HEARTH/V2/VectorParts/Inspection/HUD_Inspection_EntityPanelFrame_1600x932.png";
+    private const string LobbyDialogueFrameSvg =
+        "Assets/UI/HEARTH/V2/VectorSource/Frames/Terminal/HUD_Terminal_LobbyDialogueFrame_1460x248.svg";
+    private const string LobbyDialogueFramePng =
+        "Assets/UI/HEARTH/V2/VectorParts/Terminal/HUD_Terminal_LobbyDialogueFrame_1460x248.png";
+    private const string InteractionPromptFrameSvg =
+        "Assets/UI/HEARTH/V2/VectorSource/Frames/Interaction/HUD_Interaction_PromptFrame_680x150.svg";
+    private const string InteractionPromptFramePng =
+        "Assets/UI/HEARTH/V2/VectorParts/Interaction/HUD_Interaction_PromptFrame_680x150.png";
     private const int FirstTerminalIndex = 5;
     private static string pendingAuthoringPrefabPath;
     private static double authoringFrameDeadline;
@@ -327,6 +339,8 @@ public static class HearthProductionUiTools
         {
             InstallTerminalBindings(CanonicalPrefabs[i]);
         }
+        AlignFinalChoicePanelsBatch();
+        ApplyHoldPromptFrameBatch();
         RepairPrefabAuthoringVisibilityBatch(false);
         CreateOrRefreshTaskCatalog();
         AssetDatabase.SaveAssets();
@@ -334,6 +348,32 @@ public static class HearthProductionUiTools
         Debug.Log(
             "[Production UI] Explicit bindings and task catalog installed. " +
             "No open scene was saved.");
+    }
+
+    [MenuItem(MenuRoot + "Repair 17F03 Inspection Layout")]
+    public static void RepairF03InspectionLayout()
+    {
+        if (!EditorUtility.DisplayDialog(
+                "Repair 17F03 inspection layout",
+                "This updates only the canonical 17F03 inspection Prefab. " +
+                "Story flow, dialogue, audio and the open scene are not modified.",
+                "Repair layout",
+                "Cancel"))
+        {
+            return;
+        }
+
+        RepairF03InspectionLayoutBatch();
+    }
+
+    public static void RepairF03InspectionLayoutBatch()
+    {
+        InstallF03InspectionPresentation();
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
+        Debug.Log(
+            "[Production UI] 17F03 inspection layout repaired. " +
+            "Deprecated feed/Field Unit blocks were retired and the open scene was not saved.");
     }
 
     [MenuItem(MenuRoot + "Sync Six Doorway Pages From 17F01 Before")]
@@ -376,6 +416,13 @@ public static class HearthProductionUiTools
                 string path = paths[i];
                 EditPrefab(path, targetRoot =>
                 {
+                    if (!string.Equals(path, Doorway01Prefab, StringComparison.Ordinal))
+                    {
+                        CopyDoorwayChromeVisuals(
+                            sourceRoot.transform,
+                            targetRoot.transform);
+                    }
+
                     HearthHudPage[] targetPages =
                         GetSerializedTerminalPages(targetRoot);
                     int count = Mathf.Min(2, targetPages.Length);
@@ -412,6 +459,284 @@ public static class HearthProductionUiTools
         Debug.Log(
             "[Production UI] 17F01-03 Before/After visual layout synchronized " +
             "from the approved 17F01 Before page. Content and flow data were preserved.");
+    }
+
+    [MenuItem(MenuRoot + "Apply Approved Terminal And F03 Repairs")]
+    public static void ApplyApprovedTerminalAndF03Repairs()
+    {
+        SyncSixDoorwayPagesFrom17F01BeforeBatch();
+        RepairF03InspectionLayoutBatch();
+        ApplyHoldPromptFrameBatch();
+        ValidateDoorwayNavigationAlignment();
+        ValidateApprovedF03AndHoldPresentation();
+        Debug.Log(
+            "[Production UI] Approved terminal navigation, 17F03 presentation and " +
+            "Hold E frame repairs were applied. No open scene was saved.");
+    }
+
+    [MenuItem(MenuRoot + "Validate Doorway Navigation Alignment")]
+    public static void ValidateDoorwayNavigationAlignment()
+    {
+        int issues = 0;
+        GameObject sourceRoot = PrefabUtility.LoadPrefabContents(Doorway01Prefab);
+        try
+        {
+            Transform sourceChrome = ResolveDoorwayChromeRoot(sourceRoot.transform);
+            if (sourceChrome == null)
+            {
+                Debug.LogError(
+                    "[Production UI] Canonical 17F01 TerminalVisualRoot/ChromeRoot is missing.");
+                return;
+            }
+
+            string[] targets = { Doorway02Prefab, Doorway03Prefab };
+            for (int i = 0; i < targets.Length; i++)
+            {
+                GameObject targetRoot = PrefabUtility.LoadPrefabContents(targets[i]);
+                try
+                {
+                    Transform targetChrome = ResolveDoorwayChromeRoot(targetRoot.transform);
+                    issues += CountDoorwayChromeDifferences(
+                        sourceChrome,
+                        targetChrome,
+                        targets[i]);
+                }
+                finally
+                {
+                    PrefabUtility.UnloadPrefabContents(targetRoot);
+                }
+            }
+        }
+        finally
+        {
+            PrefabUtility.UnloadPrefabContents(sourceRoot);
+        }
+
+        if (issues == 0)
+        {
+            Debug.Log(
+                "[Production UI] 17F01, 17F02 and 17F03 active doorway navigation " +
+                "RectTransforms and typography are aligned.");
+        }
+        else
+        {
+            Debug.LogError(
+                "[Production UI] Doorway navigation validation found " + issues +
+                " visual difference(s). Run Apply Approved Terminal And F03 Repairs.");
+        }
+    }
+
+    [MenuItem(MenuRoot + "Validate Approved F03 And Hold E Presentation")]
+    public static void ValidateApprovedF03AndHoldPresentation()
+    {
+        int issues = ValidateF03InspectionPresentation();
+        issues += ValidateHoldPromptPresentation();
+        issues += ValidateApprovedSimplifiedTerminalPresentation();
+        if (issues == 0)
+        {
+            Debug.Log(
+                "[Production UI] 17F03 Field Unit, full-screen selection hierarchy, " +
+                "shared E/Hold E frame, Lobby terminal frame, Lily advance hint and " +
+                "Final Response layout passed the approved presentation validation.");
+        }
+        else
+        {
+            Debug.LogError(
+                "[Production UI] Approved F03/Hold E validation found " + issues +
+                " issue(s). Run Apply Approved Terminal And F03 Repairs.");
+        }
+    }
+
+    [MenuItem(MenuRoot + "Apply Hold E V2 Frame")]
+    public static void ApplyHoldPromptFrame()
+    {
+        if (!EditorUtility.DisplayDialog(
+                "Apply HEARTH V2 Hold E frame",
+                "This imports the approved transparent 2x frame and updates only " +
+                "the visual children of the canonical Companion HoldPrompt. Hold " +
+                "duration, input, cancellation, completion and audio are preserved.",
+                "Apply frame",
+                "Cancel"))
+        {
+            return;
+        }
+
+        ApplyHoldPromptFrameBatch();
+    }
+
+    public static void ApplyHoldPromptFrameBatch()
+    {
+        Sprite frameSprite = ImportUiSprite(
+            InteractionPromptFrameSvg,
+            InteractionPromptFramePng,
+            new Vector4(48f, 48f, 48f, 48f),
+            200f);
+        if (frameSprite == null)
+        {
+            return;
+        }
+
+        EditPrefab(CompanionPrefab, root =>
+        {
+            Transform holdPrompt = FindNamed(root.transform, "HoldPrompt");
+            if (holdPrompt == null)
+            {
+                Debug.LogError(
+                    "[Production UI] Companion Prefab lacks HoldPrompt; visual apply stopped.");
+                return;
+            }
+
+            EnsurePromptFrame(
+                holdPrompt,
+                "HoldPromptFrameV2",
+                frameSprite);
+
+            // This was the old heavy rectangular backing. It caused the new
+            // frame to look doubled and covered the upper half of the prompt.
+            Transform legacyBox = holdPrompt.Find("HoldPromptBox");
+            if (legacyBox != null)
+            {
+                legacyBox.gameObject.SetActive(false);
+            }
+
+            Image progress = FindImage(holdPrompt, "HoldProgressFill");
+            if (progress != null)
+            {
+                progress.color = new Color32(242, 163, 66, 242);
+            }
+
+            ApplyShortInteractionPromptFrame(root.transform, frameSprite);
+        });
+
+        EditPrefab(HumanPrefab, root =>
+            ApplyShortInteractionPromptFrame(root.transform, frameSprite));
+
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
+        Debug.Log(
+            "[Production UI] The simplified shared E/Hold E frame was applied. " +
+            "Runtime text, key, percentage, progress logic and audio were preserved.");
+    }
+
+    private static Sprite ImportUiSprite(
+        string svgPath,
+        string pngPath,
+        Vector4 border,
+        float pixelsPerUnit)
+    {
+        if (!System.IO.File.Exists(svgPath) || !System.IO.File.Exists(pngPath))
+        {
+            Debug.LogError(
+                "[Production UI] Simplified UI frame source is missing. Expected: " +
+                svgPath + " and " + pngPath + ".");
+            return null;
+        }
+
+        AssetDatabase.ImportAsset(
+            pngPath,
+            ImportAssetOptions.ForceSynchronousImport |
+            ImportAssetOptions.ForceUpdate);
+        TextureImporter importer = AssetImporter.GetAtPath(pngPath) as TextureImporter;
+        if (importer == null)
+        {
+            Debug.LogError(
+                "[Production UI] PNG did not import as a texture: " + pngPath + ".");
+            return null;
+        }
+
+        importer.textureType = TextureImporterType.Sprite;
+        importer.spriteImportMode = SpriteImportMode.Single;
+        importer.alphaIsTransparency = true;
+        importer.mipmapEnabled = false;
+        importer.sRGBTexture = true;
+        importer.spritePixelsPerUnit = pixelsPerUnit;
+        importer.spriteBorder = border;
+        TextureImporterSettings settings = new TextureImporterSettings();
+        importer.ReadTextureSettings(settings);
+        settings.spriteMeshType = SpriteMeshType.FullRect;
+        importer.SetTextureSettings(settings);
+        importer.SaveAndReimport();
+
+        Sprite sprite = AssetDatabase.LoadAssetAtPath<Sprite>(pngPath);
+        if (sprite == null)
+        {
+            Debug.LogError(
+                "[Production UI] Imported UI frame Sprite could not be loaded: " +
+                pngPath + ".");
+        }
+        return sprite;
+    }
+
+    private static Image EnsurePromptFrame(
+        Transform prompt,
+        string objectName,
+        Sprite sprite)
+    {
+        Transform existing = prompt.Find(objectName);
+        GameObject frameObject = existing != null
+            ? existing.gameObject
+            : new GameObject(
+                objectName,
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image));
+        if (existing == null)
+        {
+            frameObject.layer = prompt.gameObject.layer;
+            frameObject.transform.SetParent(prompt, false);
+        }
+
+        RectTransform rect = frameObject.GetComponent<RectTransform>();
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
+        rect.localRotation = Quaternion.identity;
+        rect.localScale = Vector3.one;
+
+        Image image = frameObject.GetComponent<Image>();
+        image.sprite = sprite;
+        image.type = Image.Type.Sliced;
+        image.preserveAspect = false;
+        image.fillCenter = true;
+        image.color = Color.white;
+        image.raycastTarget = false;
+        frameObject.transform.SetAsFirstSibling();
+        frameObject.SetActive(true);
+        return image;
+    }
+
+    private static void ApplyShortInteractionPromptFrame(
+        Transform root,
+        Sprite sprite)
+    {
+        Transform prompt = FindNamed(root, "PlayerInteractionPrompt");
+        if (prompt == null)
+        {
+            return;
+        }
+
+        EnsurePromptFrame(prompt, "InteractionPromptFrameV2", sprite);
+        Image legacyBacking = prompt.GetComponent<Image>();
+        if (legacyBacking != null)
+        {
+            Color clear = legacyBacking.color;
+            clear.a = 0f;
+            legacyBacking.color = clear;
+        }
+
+        string[] legacyBorders =
+        {
+            "Border_Top", "Border_Bottom", "Border_Left", "Border_Right"
+        };
+        for (int i = 0; i < legacyBorders.Length; i++)
+        {
+            Transform border = prompt.Find(legacyBorders[i]);
+            if (border != null)
+            {
+                border.gameObject.SetActive(false);
+            }
+        }
     }
 
     [MenuItem(MenuRoot + "Apply Current Approved Repairs")]
@@ -455,6 +780,45 @@ public static class HearthProductionUiTools
                 }
             });
         }
+    }
+
+    private static void AlignFinalChoicePanelsBatch()
+    {
+        EditPrefab(HumanPrefab, root =>
+        {
+            string[] pageNames =
+            {
+                "Slide09_FinalChoice",
+                "Slide14_FinalChoiceReturn"
+            };
+            for (int i = 0; i < pageNames.Length; i++)
+            {
+                Transform page = FindNamed(root.transform, pageNames[i]);
+                if (page == null)
+                {
+                    continue;
+                }
+
+                Transform panel = FindNamed(page, "V2_PagePanel");
+                if (panel is RectTransform panelRect)
+                {
+                    // The option rows are already horizontally centred. This
+                    // centres their backing as a complete 1200x620 block and
+                    // gives equal breathing room above and below the choices.
+                    ApplyTopLeft(panelRect, new Rect(360f, 180f, 1200f, 620f));
+                }
+            }
+
+            TMP_Text hint = FindText(root.transform, "FinalChoiceInputHint");
+            if (hint != null)
+            {
+                ApplyTopLeft(
+                    hint.rectTransform,
+                    new Rect(650f, 830f, 620f, 38f));
+                hint.alignment = TextAlignmentOptions.Center;
+                hint.enableWordWrapping = false;
+            }
+        });
     }
 
     private static void RepairOpenSceneLobbyMessageBacking()
@@ -1172,28 +1536,173 @@ public static class HearthProductionUiTools
 
     private static void InstallF03InspectionPresentation()
     {
-        EditPrefab(InspectionPrefab, root =>
+        Sprite inspectionFrame = ImportUiSprite(
+            InspectionFrameSvg,
+            InspectionFramePng,
+            Vector4.zero,
+            200f);
+        if (inspectionFrame == null)
         {
-            Hearth17F03InspectionPanel controller =
-                root.GetComponent<Hearth17F03InspectionPanel>();
-            Transform inspectionPanel = FindNamed(root.transform, "InspectionPanel");
-            if (controller == null || inspectionPanel == null)
-            {
-                Debug.LogError(
-                    "[Production UI] F03 inspection controller or InspectionPanel is missing.");
-                return;
-            }
+            return;
+        }
 
-            Image dimmer = EnsureFullscreenDimmer(root.transform);
-            HearthDialogueSurface surface = EnsureF03DialogueSurface(inspectionPanel);
-            controller.ConfigureDispositionPresentation(dimmer, surface);
+        GameObject doorwaySource = PrefabUtility.LoadPrefabContents(Doorway01Prefab);
+        try
+        {
+            HearthHudPage[] sourcePages = GetSerializedTerminalPages(doorwaySource);
+            Transform sourceFieldUnitPanel = sourcePages.Length > 0 && sourcePages[0] != null
+                ? FindNamed(sourcePages[0].transform, "FieldUnitPanel")
+                : null;
 
-            Transform choiceRoot = FindNamed(inspectionPanel, "DispositionChoiceRoot");
-            if (choiceRoot is RectTransform choiceRect)
+            EditPrefab(InspectionPrefab, root =>
             {
-                ApplyTopLeft(choiceRect, new Rect(180f, 505f, 960f, 176f));
-            }
-        });
+                Hearth17F03InspectionPanel controller =
+                    root.GetComponent<Hearth17F03InspectionPanel>();
+                Transform inspectionPanel = FindNamed(root.transform, "InspectionPanel");
+                if (controller == null || inspectionPanel == null)
+                {
+                    Debug.LogError(
+                        "[Production UI] F03 inspection controller or InspectionPanel is missing.");
+                    return;
+                }
+
+                Image backdrop = EnsureF03BackdropFrame(
+                    root.transform,
+                    inspectionFrame);
+                Image oldInspectionBacking = inspectionPanel.GetComponent<Image>();
+                if (oldInspectionBacking != null)
+                {
+                    Color clearBacking = oldInspectionBacking.color;
+                    clearBacking.a = 0f;
+                    oldInspectionBacking.color = clearBacking;
+                }
+
+                Transform existingDimmer =
+                    FindNamed(root.transform, "FullscreenSelectionDimmer");
+                if (existingDimmer != null && existingDimmer.parent != root.transform)
+                {
+                    existingDimmer.SetParent(root.transform, false);
+                }
+
+                Transform existingSurface =
+                    FindNamed(root.transform, "FieldUnitDialogueSurface");
+                if (existingSurface != null && existingSurface.parent != root.transform)
+                {
+                    existingSurface.SetParent(root.transform, false);
+                }
+
+                Transform choiceRoot = FindNamed(inspectionPanel, "DispositionChoiceRoot") ??
+                                       FindNamed(root.transform, "DispositionChoiceRoot");
+                if (choiceRoot != null && choiceRoot.parent != root.transform)
+                {
+                    choiceRoot.SetParent(root.transform, false);
+                }
+
+                Image dimmer = EnsureFullscreenDimmer(root.transform);
+                HearthDialogueSurface surface = EnsureF03DialogueSurface(
+                    root.transform,
+                    sourceFieldUnitPanel);
+                controller.ConfigureDispositionPresentation(dimmer, surface);
+                controller.UseAuthoredVisualLayout(true);
+                controller.ConfigureAuthoredHeader(
+                    "ENTITY INSPECTION",
+                    "COMPANION UNIT 17F-03  ·  LOCAL INSPECTION");
+
+                string[] retiredNames =
+                {
+                    "V2_PhysicalFeedLabel",
+                    "V2_PhysicalFeedRule",
+                    "V2_CrosshairHorizontal",
+                    "V2_CrosshairVertical",
+                    "V2_FieldUnitLabel",
+                    "V2_FieldUnitRule",
+                    "V2_InspectionFooter",
+                    "V2_LeftRule"
+                };
+                for (int i = 0; i < retiredNames.Length; i++)
+                {
+                    Transform retired = FindNamed(inspectionPanel, retiredNames[i]);
+                    if (retired != null)
+                    {
+                        retired.gameObject.SetActive(false);
+                    }
+                }
+
+                ApplyNamedRect(inspectionPanel, "Title", new Rect(160f, 42f, 1000f, 48f));
+                ApplyNamedRect(inspectionPanel, "Status", new Rect(160f, 96f, 1000f, 36f));
+                ApplyNamedRect(inspectionPanel, "V2_TopRule", new Rect(160f, 142f, 1000f, 2f));
+
+                ApplyNamedRect(inspectionPanel, "V2_PowerState", new Rect(160f, 180f, 480f, 72f));
+                ApplyNamedRect(inspectionPanel, "V2_MemoryArchive", new Rect(680f, 180f, 480f, 72f));
+                ApplyNamedRect(inspectionPanel, "V2_MotorResponse", new Rect(160f, 270f, 480f, 72f));
+                ApplyNamedRect(inspectionPanel, "V2_LastEvent", new Rect(680f, 270f, 480f, 72f));
+
+                ApplyNamedRect(inspectionPanel, "RecallHighlight", new Rect(420f, 440f, 480f, 72f));
+                // RecallAction is a child of RecallHighlight. Use local geometry;
+                // the previous absolute panel coordinates placed its text outside
+                // the blue action box.
+                ApplyNamedRect(inspectionPanel, "RecallAction", new Rect(0f, 0f, 480f, 72f));
+                ApplyNamedRect(inspectionPanel, "Detail", new Rect(310f, 515f, 700f, 36f));
+
+                if (choiceRoot is RectTransform choiceRect)
+                {
+                    ApplyTopLeft(choiceRect, new Rect(480f, 386f, 960f, 190f));
+                }
+
+                // Stable authored layer contract:
+                // wide frame < base inspection < Field Unit dialogue < dimmer < choices.
+                backdrop.transform.SetAsFirstSibling();
+                surface.transform.SetAsLastSibling();
+                dimmer.transform.SetAsLastSibling();
+                if (choiceRoot != null)
+                {
+                    choiceRoot.SetAsLastSibling();
+                }
+            });
+        }
+        finally
+        {
+            PrefabUtility.UnloadPrefabContents(doorwaySource);
+        }
+    }
+
+    private static Image EnsureF03BackdropFrame(Transform root, Sprite sprite)
+    {
+        Transform existing = root.Find("InspectionBackdropFrameV2");
+        GameObject frameObject = existing != null
+            ? existing.gameObject
+            : new GameObject(
+                "InspectionBackdropFrameV2",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image));
+        if (existing == null)
+        {
+            frameObject.layer = root.gameObject.layer;
+            frameObject.transform.SetParent(root, false);
+        }
+
+        ApplyTopLeft(
+            frameObject.GetComponent<RectTransform>(),
+            new Rect(160f, 74f, 1600f, 932f));
+        Image image = frameObject.GetComponent<Image>();
+        image.sprite = sprite;
+        image.type = Image.Type.Simple;
+        image.preserveAspect = false;
+        image.color = Color.white;
+        image.raycastTarget = false;
+        frameObject.SetActive(true);
+        frameObject.transform.SetAsFirstSibling();
+        return image;
+    }
+
+    private static void ApplyNamedRect(Transform root, string objectName, Rect rect)
+    {
+        Transform target = FindNamed(root, objectName);
+        if (target is RectTransform targetRect)
+        {
+            ApplyTopLeft(targetRect, rect);
+        }
     }
 
     private static Image EnsureFullscreenDimmer(Transform root)
@@ -1223,15 +1732,18 @@ public static class HearthProductionUiTools
         image.type = Image.Type.Simple;
         image.color = new Color(0f, 0f, 0f, 0.82f);
         image.raycastTarget = false;
-        dimmerObject.transform.SetAsFirstSibling();
+        // The dimmer belongs inside the total disposition frame. It must sit
+        // above the inspection data but below the choice and dialogue layers.
+        dimmerObject.transform.SetAsLastSibling();
         dimmerObject.SetActive(false);
         return image;
     }
 
     private static HearthDialogueSurface EnsureF03DialogueSurface(
-        Transform inspectionPanel)
+        Transform visualRoot,
+        Transform sourceFieldUnitPanel)
     {
-        Transform existing = FindNamed(inspectionPanel, "FieldUnitDialogueSurface");
+        Transform existing = FindNamed(visualRoot, "FieldUnitDialogueSurface");
         GameObject panelObject = existing != null
             ? existing.gameObject
             : new GameObject(
@@ -1242,46 +1754,91 @@ public static class HearthProductionUiTools
                 typeof(CanvasGroup));
         if (existing == null)
         {
-            panelObject.layer = inspectionPanel.gameObject.layer;
-            panelObject.transform.SetParent(inspectionPanel, false);
+            panelObject.layer = visualRoot.gameObject.layer;
+            panelObject.transform.SetParent(visualRoot, false);
+        }
+        else if (panelObject.transform.parent != visualRoot)
+        {
+            panelObject.transform.SetParent(visualRoot, false);
         }
 
         RectTransform panelRect = panelObject.GetComponent<RectTransform>();
-        ApplyTopLeft(panelRect, new Rect(180f, 640f, 960f, 170f));
+        ApplyTopLeft(panelRect, new Rect(230f, 745f, 1460f, 248f));
         Image background = panelObject.GetComponent<Image>();
         background.sprite = null;
         background.type = Image.Type.Simple;
         background.color = new Color32(8, 12, 24, 242);
         background.raycastTarget = false;
-        EnsureScalableFrame(panelObject.transform);
+        HearthV2FrameGraphic targetFrame = EnsureScalableFrame(panelObject.transform);
+
+        if (sourceFieldUnitPanel != null)
+        {
+            CopyImageVisual(
+                sourceFieldUnitPanel.GetComponent<Image>(),
+                background);
+            CopyFrameVisual(
+                sourceFieldUnitPanel.GetComponentInChildren<HearthV2FrameGraphic>(true),
+                targetFrame);
+        }
 
         TMP_Text speaker = EnsureDialogueText(
             panelObject.transform,
             "Speaker",
-            new Rect(30f, 18f, 700f, 40f),
+            new Rect(42f, 20f, 1376f, 68f),
             "Field Unit",
-            32f,
+            52f,
             new Color32(116, 190, 232, 255),
             FontStyles.Bold,
             TextAlignmentOptions.TopLeft);
         TMP_Text body = EnsureDialogueText(
             panelObject.transform,
             "Body",
-            new Rect(30f, 64f, 900f, 70f),
+            new Rect(42f, 92f, 1376f, 110f),
             string.Empty,
-            24f,
+            26f,
             new Color32(230, 237, 244, 255),
             FontStyles.Normal,
             TextAlignmentOptions.TopLeft);
         TMP_Text hint = EnsureDialogueText(
             panelObject.transform,
             "AdvanceHint",
-            new Rect(710f, 132f, 220f, 26f),
+            new Rect(1110f, 204f, 308f, 30f),
             "SPACE  CONTINUE",
-            18f,
+            26f,
             new Color32(116, 190, 232, 255),
             FontStyles.Bold,
             TextAlignmentOptions.TopRight);
+
+        if (sourceFieldUnitPanel != null)
+        {
+            TMP_Text sourceSpeaker = FindFirstText(
+                sourceFieldUnitPanel,
+                "Speaker",
+                "SpeakerName",
+                "FieldUnitTitle",
+                "Title");
+            TMP_Text sourceBody = FindFirstText(
+                sourceFieldUnitPanel,
+                "Body",
+                "DialogueText",
+                "MessageText");
+            TMP_Text sourceHint = FindFirstText(
+                sourceFieldUnitPanel,
+                "AdvanceHint",
+                "ActionHint");
+            CopyRectTransformVisual(
+                sourceSpeaker != null ? sourceSpeaker.rectTransform : null,
+                speaker.rectTransform);
+            CopyRectTransformVisual(
+                sourceBody != null ? sourceBody.rectTransform : null,
+                body.rectTransform);
+            CopyRectTransformVisual(
+                sourceHint != null ? sourceHint.rectTransform : null,
+                hint.rectTransform);
+            CopyTmpVisual(sourceSpeaker, speaker);
+            CopyTmpVisual(sourceBody, body);
+            CopyTmpVisual(sourceHint, hint);
+        }
 
         HearthDialogueSurface surface = GetOrAdd<HearthDialogueSurface>(panelObject);
         surface.Configure(
@@ -1289,6 +1846,12 @@ public static class HearthProductionUiTools
             speaker,
             body,
             hint);
+        HearthUiThemeProfile theme =
+            AssetDatabase.LoadAssetAtPath<HearthUiThemeProfile>(ThemeProfilePath);
+        surface.ApplyTypography(
+            theme != null ? theme.TerminalDialogueSpeakerFontSize : 52f,
+            theme != null ? theme.TerminalDialogueBodyFontSize : 26f,
+            theme != null ? theme.TerminalDialogueAdvanceFontSize : 26f);
         surface.HideImmediate();
         panelObject.transform.SetAsLastSibling();
         return surface;
@@ -1585,28 +2148,60 @@ public static class HearthProductionUiTools
 
         string lobbyPath = TerminalFolder + "Terminal_Lobby_Assignment_V2.prefab";
         string homePath = TerminalFolder + "Terminal_17F04_Home_V2.prefab";
-        if (string.Equals(path, lobbyPath, StringComparison.Ordinal) &&
-            FindNamed(root.transform, "FieldUnitPanel") == null)
+        if (string.Equals(path, lobbyPath, StringComparison.Ordinal))
         {
-            GameObject templateRoot = AssetDatabase.LoadAssetAtPath<GameObject>(
-                TerminalFolder + "Terminal_17F01_V2.prefab");
-            Transform template = templateRoot != null
-                ? FindNamed(templateRoot.transform, "FieldUnitPanel")
-                : null;
-            Transform pageVisual = FindNamed(root.transform, "V2_PageVisual");
-            if (template == null || pageVisual == null)
+            Transform lobbyPanel = FindNamed(root.transform, "FieldUnitPanel");
+            if (lobbyPanel == null)
             {
-                Debug.LogError(
-                    "[Production UI] Cannot author the Lobby Field Unit surface: " +
-                    "the shared terminal template or Lobby page visual is missing.");
+                GameObject templateRoot = AssetDatabase.LoadAssetAtPath<GameObject>(
+                    TerminalFolder + "Terminal_17F01_V2.prefab");
+                Transform template = templateRoot != null
+                    ? FindNamed(templateRoot.transform, "FieldUnitPanel")
+                    : null;
+                Transform pageVisual = FindNamed(root.transform, "V2_PageVisual");
+                if (template == null || pageVisual == null)
+                {
+                    Debug.LogError(
+                        "[Production UI] Cannot author the Lobby Field Unit surface: " +
+                        "the shared terminal template or Lobby page visual is missing.");
+                }
+                else
+                {
+                    GameObject panel = UnityEngine.Object.Instantiate(template.gameObject);
+                    panel.name = "FieldUnitPanel";
+                    panel.transform.SetParent(pageVisual, false);
+                    panel.transform.SetAsLastSibling();
+                    lobbyPanel = panel.transform;
+                }
             }
-            else
+
+            if (lobbyPanel != null)
             {
-                GameObject panel = UnityEngine.Object.Instantiate(template.gameObject);
-                panel.name = "FieldUnitPanel";
-                panel.transform.SetParent(pageVisual, false);
-                panel.transform.SetAsLastSibling();
-                EnsureDialogueSurface(panel.transform);
+                Sprite lobbyFrame = ImportUiSprite(
+                    LobbyDialogueFrameSvg,
+                    LobbyDialogueFramePng,
+                    Vector4.zero,
+                    200f);
+                if (lobbyFrame != null)
+                {
+                    if (lobbyPanel is RectTransform panelRect)
+                    {
+                        ApplyTopLeft(panelRect, new Rect(230f, 745f, 1460f, 248f));
+                    }
+                    Image background = GetOrAdd<Image>(lobbyPanel.gameObject);
+                    background.sprite = lobbyFrame;
+                    background.type = Image.Type.Simple;
+                    background.preserveAspect = false;
+                    background.color = Color.white;
+                    background.raycastTarget = false;
+                    HearthV2FrameGraphic[] oldFrames =
+                        lobbyPanel.GetComponentsInChildren<HearthV2FrameGraphic>(true);
+                    for (int i = 0; i < oldFrames.Length; i++)
+                    {
+                        oldFrames[i].enabled = false;
+                    }
+                    EnsureDialogueSurface(lobbyPanel);
+                }
             }
         }
 
@@ -1656,6 +2251,33 @@ public static class HearthProductionUiTools
 
             EnsureDialogueSurface(messagePanel.transform);
             messagePanel.transform.SetAsLastSibling();
+        }
+
+        if (string.Equals(path, homePath, StringComparison.Ordinal))
+        {
+            Transform lilyPanel = FindNamed(root.transform, "LilyMessagePanel") ??
+                                  FindNamed(root.transform, "TerminalMessageSurface_V2");
+            if (lilyPanel != null)
+            {
+                TMP_Text hint = FindFirstText(
+                    lilyPanel,
+                    "AdvanceHint",
+                    "DialogueAdvanceHint",
+                    "ActionHint");
+                if (hint != null)
+                {
+                    ApplyTopLeft(
+                        hint.rectTransform,
+                        new Rect(1110f, 334f, 300f, 36f));
+                    hint.text = "SPACE  CONTINUE";
+                    hint.fontSize = 26f;
+                    hint.enableAutoSizing = false;
+                    hint.fontStyle = FontStyles.Bold;
+                    hint.alignment = TextAlignmentOptions.TopRight;
+                    hint.color = new Color32(242, 163, 66, 255);
+                }
+                EnsureDialogueSurface(lilyPanel);
+            }
         }
     }
 
@@ -1771,6 +2393,566 @@ public static class HearthProductionUiTools
                 targets[i].gameObject.SetActive(false);
             }
         }
+    }
+
+    private static void CopyDoorwayChromeVisuals(
+        Transform sourceRoot,
+        Transform targetRoot)
+    {
+        Transform sourceChrome = ResolveDoorwayChromeRoot(sourceRoot);
+        Transform targetChrome = ResolveDoorwayChromeRoot(targetRoot);
+        if (sourceChrome == null || targetChrome == null)
+        {
+            Debug.LogError(
+                "[Production UI] Doorway navigation sync requires the explicit " +
+                "TerminalVisualRoot/ChromeRoot hierarchy. No global name fallback was used.");
+            return;
+        }
+
+        // The navigation chrome is outside the Before/After HearthHudPage
+        // objects, so page synchronization alone never aligned it. Resolve the
+        // active runtime ChromeRoot explicitly; hidden page copies can have the
+        // same child names and must never be selected by a global search.
+        string[] chromeNames =
+        {
+            "TerminalLabel",
+            "ResidentId",
+            "BeforeTab",
+            "AfterTab",
+            "PrimaryActionTab",
+            "ChromeHeaderRule"
+        };
+
+        for (int i = 0; i < chromeNames.Length; i++)
+        {
+            Transform source = FindNamed(sourceChrome, chromeNames[i]);
+            Transform target = FindNamed(targetChrome, chromeNames[i]);
+            CopyVisualSubtree(source, target);
+        }
+    }
+
+    private static Transform ResolveDoorwayChromeRoot(Transform prefabRoot)
+    {
+        Transform terminalVisual = FindNamed(prefabRoot, "TerminalVisualRoot");
+        return terminalVisual != null
+            ? FindNamed(terminalVisual, "ChromeRoot")
+            : null;
+    }
+
+    private static void CopyVisualSubtree(Transform source, Transform target)
+    {
+        if (source == null || target == null)
+        {
+            return;
+        }
+
+        Dictionary<string, Queue<Transform>> targetsByName =
+            BuildTransformQueues(target);
+        Transform[] sources = source.GetComponentsInChildren<Transform>(true);
+        for (int i = 0; i < sources.Length; i++)
+        {
+            Queue<Transform> candidates;
+            if (!targetsByName.TryGetValue(sources[i].name, out candidates) ||
+                candidates.Count == 0)
+            {
+                continue;
+            }
+
+            Transform matched = candidates.Dequeue();
+            CopyRectTransformVisual(
+                sources[i] as RectTransform,
+                matched as RectTransform);
+            CopyTmpVisual(
+                sources[i].GetComponent<TMP_Text>(),
+                matched.GetComponent<TMP_Text>());
+            CopyImageVisual(
+                sources[i].GetComponent<Image>(),
+                matched.GetComponent<Image>());
+            CopyFrameVisual(
+                sources[i].GetComponent<HearthV2FrameGraphic>(),
+                matched.GetComponent<HearthV2FrameGraphic>());
+        }
+    }
+
+    private static int CountDoorwayChromeDifferences(
+        Transform sourceChrome,
+        Transform targetChrome,
+        string targetPath)
+    {
+        if (targetChrome == null)
+        {
+            Debug.LogError(
+                "[Production UI] Missing active TerminalVisualRoot/ChromeRoot in " +
+                targetPath + ".");
+            return 1;
+        }
+
+        string[] chromeNames =
+        {
+            "TerminalLabel",
+            "ResidentId",
+            "BeforeTab",
+            "AfterTab",
+            "PrimaryActionTab",
+            "ChromeHeaderRule"
+        };
+        int issues = 0;
+        for (int i = 0; i < chromeNames.Length; i++)
+        {
+            Transform source = FindNamed(sourceChrome, chromeNames[i]);
+            Transform target = FindNamed(targetChrome, chromeNames[i]);
+            if (source == null || target == null)
+            {
+                Debug.LogError(
+                    "[Production UI] Missing navigation element '" +
+                    chromeNames[i] + "' in " + targetPath + ".");
+                issues++;
+                continue;
+            }
+
+            issues += CountVisualSubtreeDifferences(
+                source,
+                target,
+                chromeNames[i],
+                targetPath);
+        }
+
+        return issues;
+    }
+
+    private static int ValidateApprovedSimplifiedTerminalPresentation()
+    {
+        int issues = 0;
+        string lobbyPath = TerminalFolder + "Terminal_Lobby_Assignment_V2.prefab";
+        Sprite expectedLobbyFrame = AssetDatabase.LoadAssetAtPath<Sprite>(
+            LobbyDialogueFramePng);
+        GameObject lobbyRoot = PrefabUtility.LoadPrefabContents(lobbyPath);
+        try
+        {
+            Transform panel = FindNamed(lobbyRoot.transform, "FieldUnitPanel");
+            Image background = panel != null ? panel.GetComponent<Image>() : null;
+            if (panel == null || background == null ||
+                background.sprite != expectedLobbyFrame ||
+                !TopLeftRectMatches(
+                    panel as RectTransform,
+                    new Rect(230f, 745f, 1460f, 248f)))
+            {
+                Debug.LogError(
+                    "[Production UI] Lobby Field Unit surface is not using the " +
+                    "approved simplified 1460x248 frame.");
+                issues++;
+            }
+
+            if (panel != null)
+            {
+                HearthV2FrameGraphic[] legacyFrames =
+                    panel.GetComponentsInChildren<HearthV2FrameGraphic>(true);
+                if (legacyFrames.Any(frame => frame != null && frame.enabled))
+                {
+                    Debug.LogError(
+                        "[Production UI] Lobby Field Unit surface still has an " +
+                        "enabled legacy frame layered over the simplified Sprite.");
+                    issues++;
+                }
+            }
+        }
+        finally
+        {
+            PrefabUtility.UnloadPrefabContents(lobbyRoot);
+        }
+
+        GameObject homeRoot = PrefabUtility.LoadPrefabContents(Home04Prefab);
+        try
+        {
+            Transform lilyPanel = FindNamed(homeRoot.transform, "LilyMessagePanel") ??
+                                  FindNamed(homeRoot.transform, "TerminalMessageSurface_V2");
+            TMP_Text hint = lilyPanel != null
+                ? FindFirstText(
+                    lilyPanel,
+                    "AdvanceHint",
+                    "DialogueAdvanceHint",
+                    "ActionHint")
+                : null;
+            Color32 expectedOrange = new Color32(242, 163, 66, 255);
+            if (hint == null ||
+                !TopLeftRectMatches(
+                    hint.rectTransform,
+                    new Rect(1110f, 334f, 300f, 36f)) ||
+                !TextHasFixedSize(hint, 26f) ||
+                hint.alignment != TextAlignmentOptions.TopRight ||
+                ColorDistance(hint.color, expectedOrange) > 0.01f)
+            {
+                Debug.LogError(
+                    "[Production UI] Lily SPACE CONTINUE must remain orange at " +
+                    "the bottom-right of the authored message surface.");
+                issues++;
+            }
+        }
+        finally
+        {
+            PrefabUtility.UnloadPrefabContents(homeRoot);
+        }
+
+        GameObject humanRoot = PrefabUtility.LoadPrefabContents(HumanPrefab);
+        try
+        {
+            string[] pageNames =
+            {
+                "Slide09_FinalChoice",
+                "Slide14_FinalChoiceReturn"
+            };
+            for (int i = 0; i < pageNames.Length; i++)
+            {
+                Transform page = FindNamed(humanRoot.transform, pageNames[i]);
+                Transform panel = page != null
+                    ? FindNamed(page, "V2_PagePanel")
+                    : null;
+                if (!TopLeftRectMatches(
+                        panel as RectTransform,
+                        new Rect(360f, 180f, 1200f, 620f)))
+                {
+                    Debug.LogError(
+                        "[Production UI] " + pageNames[i] +
+                        " is not using the centred 1200x620 Final Response panel.");
+                    issues++;
+                }
+            }
+
+            TMP_Text finalHint = FindText(humanRoot.transform, "FinalChoiceInputHint");
+            if (finalHint == null ||
+                !TopLeftRectMatches(
+                    finalHint.rectTransform,
+                    new Rect(650f, 830f, 620f, 38f)) ||
+                finalHint.alignment != TextAlignmentOptions.Center)
+            {
+                Debug.LogError(
+                    "[Production UI] Final Response input hint is not centred " +
+                    "beneath the approved choice panel.");
+                issues++;
+            }
+        }
+        finally
+        {
+            PrefabUtility.UnloadPrefabContents(humanRoot);
+        }
+
+        return issues;
+    }
+
+    private static int CountVisualSubtreeDifferences(
+        Transform source,
+        Transform target,
+        string role,
+        string targetPath)
+    {
+        int issues = 0;
+        Dictionary<string, Queue<Transform>> targetsByName =
+            BuildTransformQueues(target);
+        Transform[] sources = source.GetComponentsInChildren<Transform>(true);
+        for (int i = 0; i < sources.Length; i++)
+        {
+            Queue<Transform> candidates;
+            if (!targetsByName.TryGetValue(sources[i].name, out candidates) ||
+                candidates.Count == 0)
+            {
+                Debug.LogError(
+                    "[Production UI] Navigation subtree '" + role +
+                    "' is missing visual child '" + sources[i].name +
+                    "' in " + targetPath + ".");
+                issues++;
+                continue;
+            }
+
+            Transform matched = candidates.Dequeue();
+            if (!RectTransformsMatch(
+                    sources[i] as RectTransform,
+                    matched as RectTransform))
+            {
+                Debug.LogError(
+                    "[Production UI] Navigation RectTransform differs for '" +
+                    role + "/" + sources[i].name + "' in " + targetPath + ".");
+                issues++;
+            }
+
+            TMP_Text sourceText = sources[i].GetComponent<TMP_Text>();
+            TMP_Text targetText = matched.GetComponent<TMP_Text>();
+            if (!TmpTypographyMatches(sourceText, targetText))
+            {
+                Debug.LogError(
+                    "[Production UI] Navigation typography differs for '" +
+                    role + "/" + sources[i].name + "' in " + targetPath + ".");
+                issues++;
+            }
+        }
+
+        return issues;
+    }
+
+    private static bool TmpTypographyMatches(TMP_Text source, TMP_Text target)
+    {
+        if (source == null || target == null)
+        {
+            return source == target;
+        }
+
+        const float epsilon = 0.01f;
+        return Mathf.Abs(source.fontSize - target.fontSize) <= epsilon &&
+               source.enableAutoSizing == target.enableAutoSizing &&
+               Mathf.Abs(source.fontSizeMin - target.fontSizeMin) <= epsilon &&
+               Mathf.Abs(source.fontSizeMax - target.fontSizeMax) <= epsilon &&
+               source.alignment == target.alignment &&
+               source.fontStyle == target.fontStyle &&
+               Vector4.Distance(source.margin, target.margin) <= epsilon;
+    }
+
+    private static int ValidateF03InspectionPresentation()
+    {
+        int issues = 0;
+        GameObject root = PrefabUtility.LoadPrefabContents(InspectionPrefab);
+        try
+        {
+            Hearth17F03InspectionPanel controller =
+                root.GetComponent<Hearth17F03InspectionPanel>();
+            Transform surfaceTransform =
+                FindNamed(root.transform, "FieldUnitDialogueSurface");
+            Transform dimmerTransform =
+                FindNamed(root.transform, "FullscreenSelectionDimmer");
+            Transform choiceTransform =
+                FindNamed(root.transform, "DispositionChoiceRoot");
+            Transform backdropTransform =
+                FindNamed(root.transform, "InspectionBackdropFrameV2");
+
+            if (controller == null || surfaceTransform == null ||
+                dimmerTransform == null || choiceTransform == null ||
+                backdropTransform == null)
+            {
+                Debug.LogError(
+                    "[Production UI] F03 inspection presentation is missing its " +
+                    "controller, wide frame, dialogue, dimmer or choice binding.");
+                return 1;
+            }
+
+            Image backdrop = backdropTransform.GetComponent<Image>();
+            Sprite expectedBackdrop = AssetDatabase.LoadAssetAtPath<Sprite>(
+                InspectionFramePng);
+            if (backdrop == null || backdrop.sprite != expectedBackdrop ||
+                !TopLeftRectMatches(
+                    backdropTransform as RectTransform,
+                    new Rect(160f, 74f, 1600f, 932f)))
+            {
+                Debug.LogError(
+                    "[Production UI] F03 wide inspection frame is not the approved " +
+                    "1600x932 centred substrate.");
+                issues++;
+            }
+
+            if (surfaceTransform.parent != root.transform ||
+                dimmerTransform.parent != root.transform ||
+                choiceTransform.parent != root.transform)
+            {
+                Debug.LogError(
+                    "[Production UI] F03 dialogue, dimmer and choices must be direct " +
+                    "children of the authored inspection root.");
+                issues++;
+            }
+
+            if (!TopLeftRectMatches(
+                    surfaceTransform as RectTransform,
+                    new Rect(230f, 745f, 1460f, 248f)))
+            {
+                Debug.LogError(
+                    "[Production UI] F03 Field Unit surface is not the approved " +
+                    "1460x248 terminal message region.");
+                issues++;
+            }
+
+            HearthDialogueSurface dialogueSurface =
+                surfaceTransform.GetComponent<HearthDialogueSurface>();
+            if (dialogueSurface == null ||
+                controller.ResolveDialogueSurface() != dialogueSurface)
+            {
+                Debug.LogError(
+                    "[Production UI] F03 Field Unit dialogue surface is not explicitly bound.");
+                issues++;
+            }
+
+            TMP_Text speaker = FindText(surfaceTransform, "Speaker");
+            TMP_Text body = FindText(surfaceTransform, "Body");
+            TMP_Text hint = FindText(surfaceTransform, "AdvanceHint");
+            if (!TextHasFixedSize(speaker, 52f) ||
+                !TextHasFixedSize(body, 26f) ||
+                !TextHasFixedSize(hint, 26f))
+            {
+                Debug.LogError(
+                    "[Production UI] F03 Field Unit typography must be 52/26/26.");
+                issues++;
+            }
+            if (speaker == null || speaker.text != "Field Unit" ||
+                hint == null || hint.text != "SPACE  CONTINUE")
+            {
+                Debug.LogError(
+                    "[Production UI] F03 Field Unit speaker or advance label is missing.");
+                issues++;
+            }
+
+            Image dimmer = dimmerTransform.GetComponent<Image>();
+            RectTransform dimmerRect = dimmerTransform as RectTransform;
+            if (dimmer == null || dimmerRect == null ||
+                Vector2.Distance(dimmerRect.anchorMin, Vector2.zero) > 0.01f ||
+                Vector2.Distance(dimmerRect.anchorMax, Vector2.one) > 0.01f ||
+                dimmerRect.offsetMin.sqrMagnitude > 0.01f ||
+                dimmerRect.offsetMax.sqrMagnitude > 0.01f ||
+                Mathf.Abs(dimmer.color.a - 0.82f) > 0.01f)
+            {
+                Debug.LogError(
+                    "[Production UI] F03 selection dimmer is not full-screen at alpha 0.82.");
+                issues++;
+            }
+
+            if (!(surfaceTransform.GetSiblingIndex() < dimmerTransform.GetSiblingIndex() &&
+                  dimmerTransform.GetSiblingIndex() < choiceTransform.GetSiblingIndex()))
+            {
+                Debug.LogError(
+                    "[Production UI] F03 authored order must be dialogue < dimmer < choices.");
+                issues++;
+            }
+        }
+        finally
+        {
+            PrefabUtility.UnloadPrefabContents(root);
+        }
+
+        return issues;
+    }
+
+    private static int ValidateHoldPromptPresentation()
+    {
+        int issues = 0;
+        Sprite expectedSprite = AssetDatabase.LoadAssetAtPath<Sprite>(
+            InteractionPromptFramePng);
+        GameObject root = PrefabUtility.LoadPrefabContents(CompanionPrefab);
+        try
+        {
+            Transform holdPrompt = FindNamed(root.transform, "HoldPrompt");
+            Transform frameTransform = holdPrompt != null
+                ? holdPrompt.Find("HoldPromptFrameV2")
+                : null;
+            HearthCompanionHoldPrompt holdController = holdPrompt != null
+                ? holdPrompt.GetComponent<HearthCompanionHoldPrompt>()
+                : null;
+            Image frame = frameTransform != null
+                ? frameTransform.GetComponent<Image>()
+                : null;
+            RectTransform frameRect = frameTransform as RectTransform;
+            if (holdPrompt == null || holdController == null || frame == null ||
+                frameRect == null)
+            {
+                Debug.LogError(
+                    "[Production UI] Canonical Companion HoldPrompt lacks its " +
+                    "runtime controller or HoldPromptFrameV2 image.");
+                return 1;
+            }
+
+            if (frame.sprite != expectedSprite || frame.type != Image.Type.Sliced ||
+                frameTransform.GetSiblingIndex() != 0 ||
+                Vector2.Distance(frameRect.anchorMin, Vector2.zero) > 0.01f ||
+                Vector2.Distance(frameRect.anchorMax, Vector2.one) > 0.01f ||
+                frameRect.offsetMin.sqrMagnitude > 0.01f ||
+                frameRect.offsetMax.sqrMagnitude > 0.01f)
+            {
+                Debug.LogError(
+                    "[Production UI] HoldPromptFrameV2 is not the full-stretch " +
+                    "9-sliced approved Sprite.");
+                issues++;
+            }
+
+            if (expectedSprite == null ||
+                Vector4.Distance(
+                    expectedSprite.border,
+                    new Vector4(48f, 48f, 48f, 48f)) > 0.01f)
+            {
+                Debug.LogError(
+                    "[Production UI] Shared E/Hold E Sprite border must remain " +
+                    "48 px on the 2x PNG.");
+                issues++;
+            }
+
+            Transform legacyBox = holdPrompt.Find("HoldPromptBox");
+            if (legacyBox != null && legacyBox.gameObject.activeSelf)
+            {
+                Debug.LogError(
+                    "[Production UI] Legacy HoldPromptBox must stay retired to " +
+                    "avoid a doubled backing.");
+                issues++;
+            }
+
+            Image progress = FindImage(holdPrompt, "HoldProgressFill");
+            Color32 expectedAmber = new Color32(242, 163, 66, 242);
+            if (progress == null ||
+                ColorDistance(progress.color, expectedAmber) > 0.01f)
+            {
+                Debug.LogError(
+                    "[Production UI] Hold E progress fill is missing or not amber.");
+                issues++;
+            }
+        }
+        finally
+        {
+            PrefabUtility.UnloadPrefabContents(root);
+        }
+
+        return issues;
+    }
+
+    private static bool TopLeftRectMatches(RectTransform target, Rect expected)
+    {
+        if (target == null)
+        {
+            return false;
+        }
+
+        const float epsilon = 0.01f;
+        return Vector2.Distance(target.anchorMin, new Vector2(0f, 1f)) <= epsilon &&
+               Vector2.Distance(target.anchorMax, new Vector2(0f, 1f)) <= epsilon &&
+               Vector2.Distance(target.pivot, new Vector2(0f, 1f)) <= epsilon &&
+               Vector2.Distance(
+                   target.anchoredPosition,
+                   new Vector2(expected.x, -expected.y)) <= epsilon &&
+               Vector2.Distance(
+                   target.sizeDelta,
+                   new Vector2(expected.width, expected.height)) <= epsilon;
+    }
+
+    private static bool TextHasFixedSize(TMP_Text text, float expected)
+    {
+        return text != null &&
+               !text.enableAutoSizing &&
+               Mathf.Abs(text.fontSize - expected) <= 0.01f;
+    }
+
+    private static float ColorDistance(Color first, Color second)
+    {
+        Vector4 delta = (Vector4)first - (Vector4)second;
+        return delta.magnitude;
+    }
+
+    private static bool RectTransformsMatch(
+        RectTransform source,
+        RectTransform target)
+    {
+        if (source == null || target == null)
+        {
+            return source == target;
+        }
+
+        const float epsilon = 0.01f;
+        return Vector2.Distance(source.anchorMin, target.anchorMin) <= epsilon &&
+               Vector2.Distance(source.anchorMax, target.anchorMax) <= epsilon &&
+               Vector2.Distance(source.pivot, target.pivot) <= epsilon &&
+               Vector3.Distance(source.anchoredPosition3D, target.anchoredPosition3D) <= epsilon &&
+               Vector2.Distance(source.sizeDelta, target.sizeDelta) <= epsilon &&
+               Quaternion.Angle(source.localRotation, target.localRotation) <= epsilon &&
+               Vector3.Distance(source.localScale, target.localScale) <= epsilon;
     }
 
     private static Dictionary<string, Queue<Transform>> BuildTransformQueues(

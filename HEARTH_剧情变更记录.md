@@ -1185,3 +1185,55 @@ casual_Female_K (9) -> REF_Wife_17F02_ExitOutside
 ### 明确未改变
 
 - 不改 Lobby→F01→F02→F03→F04 顺序，不改 E/Hold E/Space 规则，不改住户选择结果、信任、结局条件、Camera Anchor、模型站位、正式台词、Line ID 或音频素材。
+
+## 2026-08-10 17F03 检查界面与回放防卡死修复
+
+### 17F03
+
+- Entity Inspection 删除没有信息的 `PHYSICAL UNIT FEED`、旧右下角 Field Unit、旧准星与页脚，只保留有效状态数据。
+- `POWER STATE / MEMORY ARCHIVE / MOTOR RESPONSE / LAST EVENT` 改成 2×2 数据区；Recall 模式只保留 Space 调取回忆入口。
+- 处置选择继续使用全屏 0.82 黑色半透明遮罩；A/B 与操作提示只在可选状态显示，提交后立即隐藏。
+- 正式 Field Unit 字幕使用终端同一 Theme 字号和 ScalableFrame，位于检查面板底部固定区域，不再覆盖右下角数据；第一次打开 Entity Inspection 时，首句语音、Field Unit 框和 Space 提示必须同时出现，不能等玩家再按一次 Space 才补出框。
+- Recall 蓝色按钮内部固定显示 `RECALL TODAY'S EVENT [SPACE]`；不再把提示文字放到总面板外侧。
+- 选择遮罩属于 `17F-03 DISPOSITION` 总面板内部层级：基础数据、标题和已结束的 Field Unit 解释层在遮罩下，A/B 选项在遮罩上；进入选择时 Field Unit 框已经隐藏。
+- 从回忆开始到安全返回人类视角并恢复实体检查前，手动 R 视角切换被剧情 Owner 临时锁定；正常完成、取消或对象停用都会释放。该修复只防止回放中途切走造成 Space/E 无效，不改变自动切换、对白、锚点或关卡顺序。
+
+### F01 / F02 门口终端与 F04 Home Terminal
+
+- A/B 选择一经提交，旧的 `UP / DOWN SELECT`、`SPACE CONFIRM`、焦点文字和高亮一并关闭。
+- F04 保持 `WELCOME HOME` 只出现一次；Lily 正式留言开始时确保留言 Surface 所在页面处于可见层级，修复“能听到女儿声音但没有文字/对话框”。
+- 本次不改正式英文文本、Line ID、AudioClip、任务顺序、信任结算或两条结局条件。
+
+### Lobby 与相册
+
+- Lobby 左侧 `FIELD COMPANION UNIT / ACTIVATED` 信息卡停止显示；这只删除重复说明，不影响 Field Unit 正式开场对白、任务或 Lily 消息。
+- TV4 相册底部 Field Unit 区只保留切角 `ScalableFrame`，删除重叠的普通矩形 Outline；对白内容、Space 规则和照片页顺序不变。
+
+## 2026-08-11 终端导航、17F03 说明/选择时序与 Hold E 视觉修复（已实现）
+
+### F01–F03 门口终端
+
+- 用户当前手调完成的 `Terminal_17F01_V2` 顶部导航作为唯一视觉基准；F02/F03 的 Before、After、主操作按钮和分隔线只同步位置、尺寸、间距和字号。
+- F02/F03 的户号、人物名称、Review/Enter Unit 文字、UnityEvent、页面状态和进入关卡条件保持不变。
+
+### 17F03 Entity Inspection
+
+- Field Unit 说明框使用 F01 终端完整规格：1460×248，Speaker 52、正文 26、Space 26，并保留相同切角框与内边距。
+- 流程明确分为：Recall → Field Unit Explanation → 等待 Space 完全松开并额外跨一帧 → A/B Choice → Submitted。
+- Field Unit 讲话时没有选择黑幕和 A/B；最后一句结束后先隐藏对白框，再用全屏 0.82 黑幕覆盖检查内容，最后把 A/B 和 `UP / DOWN SELECT · SPACE CONFIRM` 放在黑幕之上。
+- 上一句对白的 Space 不再自动提交默认 A；A/B 提交后遮罩、选项和提示一起关闭。
+- 本轮不改变英文对白、Line ID、AudioClip、信任结算、处置结果、任务顺序、Camera Anchor 或住户流程。
+
+### Hold E
+
+- 只替换为蓝青切角框和琥珀进度反馈；E 键、1.5 秒持续、松开取消、完成条件与现有音效逻辑不变。
+- 装饰框由可编辑 SVG 和 2× 透明 PNG 提供，文字、百分比和进度条继续由运行时组件显示。
+
+## 2026-08-11 简化 UI 框、17F03 宽版衬底与提示位置确认（已实现）
+
+- 用户否决上一版偏花哨的框体；正式视觉改为单层细线、少量切角、无左侧半圆/多棱装饰、无额外内框。SVG 不包含文字、按键或进度条。
+- 17F03 `Entity Inspection` 外衬底扩展为 1600×932，仍以 1920×1080 居中；2×2 状态数据、Recall 按钮和标题保持居中，1460×248 的 Field Unit 区完整落在衬底内。
+- 17F03 Field Unit、Lobby Field Unit 与 E/Hold E 分别使用可编辑简化 SVG 和 2× PNG；旧直接矩形/折线边框在正式层级中停用，避免双层框。
+- 17F04 Lily 的 `SPACE CONTINUE` 固定在留言框右下角，字号 26、琥珀色；不改变 Lily 留言文字、音频、Surface 显隐或 Space 推进。
+- Human Final Response 的两个正式页面都使用相同居中内容区，A/B 与 `UP / DOWN SELECT  SPACE CONFIRM` 位于选择层内部；只改视觉坐标，不改默认焦点、选择结果或结局条件。
+- 本次没有改变 Lobby→F01→F02→F03→F04 流程、任何 Line ID、AudioClip、任务条件、Camera Anchor、E/Hold E/Space 规则或 36 个正式 SFX Cue。

@@ -462,6 +462,7 @@
 - 负信任与完成通知继续使用 `17F03_NegativeTrustSupervisorWarning`、`17F03_AllInspectionsComplete`。
 - 回放返回房内时只播放 `Post Replay Question Sequence`；玩家再次按 E 进入固定检查视角后，调用 `Hearth17F03InspectionPanel.OpenDispositionChoice(false)`，播放 `Post Replay Explanation Sequence`，最后调用 `SetChoiceInputEnabled(true)`。
 - 这些槽都由 `Apply 17F03 Minimal Loop Setup` 自动绑定；公开运行入口保持 `BeginHumanEntry/OpenUnitInspection/BeginRecordedReplay/CancelFlow`。
+- 2026-08-11 展示保护：`OpenDispositionChoice(false)` 只进入 Field Unit 说明阶段；说明播放完成后仍由原调用方执行 `BeginExternalDispositionChoice("17F03")` 和 `SetChoiceInputEnabled(true)`。面板内部会等待 Space 完全松开并额外跨过一帧，才显示并开放 A/B。`OpenDispositionChoice()`、`SetChoiceInputEnabled(bool)`、`SubmitChoice()`、`BeginExternalDispositionChoice(string)` 的公开签名和职责均未改变。
 
 ### 17F04 两张照片与最终选择
 

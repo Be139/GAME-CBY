@@ -362,6 +362,7 @@ public class HearthTvTerminalController : MonoBehaviour
             authoredViewBindings.TerminalMessageSurface != null)
         {
             messageSurface = authoredViewBindings.TerminalMessageSurface;
+            EnsureAuthoredSurfaceHierarchyVisible(messageSurface);
             LinkExclusiveDialogueSurfaces();
             SuppressRuntimePromptForDialogue();
             return messageSurface;
@@ -373,6 +374,7 @@ public class HearthTvTerminalController : MonoBehaviour
                 messageSurface.GetComponentInParent<HearthHudPage>(true);
             if (ownerPage == null || ownerPage == currentPage)
             {
+                EnsureAuthoredSurfaceHierarchyVisible(messageSurface);
                 SuppressRuntimePromptForDialogue();
                 return messageSurface;
             }
@@ -407,6 +409,7 @@ public class HearthTvTerminalController : MonoBehaviour
 
             messageSurface.Configure(group, speaker, body, hint);
             ApplyDialogueSurfaceProfile(messageSurface, existingPanel as RectTransform, true);
+            EnsureAuthoredSurfaceHierarchyVisible(messageSurface);
             LinkExclusiveDialogueSurfaces();
             messageSurface.HideImmediate();
             SuppressRuntimePromptForDialogue();
@@ -426,6 +429,25 @@ public class HearthTvTerminalController : MonoBehaviour
         LinkExclusiveDialogueSurfaces();
         SuppressRuntimePromptForDialogue();
         return messageSurface;
+    }
+
+    private void EnsureAuthoredSurfaceHierarchyVisible(HearthDialogueSurface surface)
+    {
+        if (!IsOpen || surface == null)
+        {
+            return;
+        }
+
+        Transform cursor = surface.transform.parent;
+        while (cursor != null && cursor != contentRoot)
+        {
+            if (!cursor.gameObject.activeSelf)
+            {
+                cursor.gameObject.SetActive(true);
+            }
+
+            cursor = cursor.parent;
+        }
     }
 
     private void SuppressRuntimePromptForDialogue()
@@ -3048,6 +3070,27 @@ public class HearthTvTerminalController : MonoBehaviour
 
     private void RefreshKeyboardHint()
     {
+        if (choiceSubmitted)
+        {
+            if (keyboardHintText != null)
+            {
+                keyboardHintText.text = string.Empty;
+            }
+
+            if (keyboardFocusText != null)
+            {
+                keyboardFocusText.text = string.Empty;
+            }
+
+            if (selectionHighlighter != null)
+            {
+                selectionHighlighter.SetVisible(false);
+            }
+
+            RefreshRuntimePrompt();
+            return;
+        }
+
         HearthTerminalMode resolvedMode = ResolveTerminalMode();
         if (resolvedMode == HearthTerminalMode.LobbySync ||
             resolvedMode == HearthTerminalMode.Doorway ||
@@ -3251,6 +3294,8 @@ public class HearthTvTerminalController : MonoBehaviour
         choiceSubmitted = true;
         terminalInputReady = false;
         SetTerminalInputEnabled(false);
+        RefreshKeyboardHint();
+        RefreshRuntimePrompt();
         PlayClip(submitClip);
 
         if (localIndex == 0)
@@ -3372,6 +3417,26 @@ public class HearthTvTerminalController : MonoBehaviour
 
     private void RefreshPageDrivenKeyboardHint()
     {
+        if (choiceSubmitted)
+        {
+            if (keyboardHintText != null)
+            {
+                keyboardHintText.text = string.Empty;
+            }
+
+            if (keyboardFocusText != null)
+            {
+                keyboardFocusText.text = string.Empty;
+            }
+
+            if (selectionHighlighter != null)
+            {
+                selectionHighlighter.SetVisible(false);
+            }
+
+            return;
+        }
+
         if (keyboardHintText != null)
         {
             keyboardHintText.text = keyboardHintLabel;
@@ -3405,7 +3470,11 @@ public class HearthTvTerminalController : MonoBehaviour
         }
 
         string prompt = string.Empty;
-        if (runtimePromptOverrideActive)
+        if (choiceSubmitted)
+        {
+            prompt = string.Empty;
+        }
+        else if (runtimePromptOverrideActive)
         {
             prompt = runtimePromptOverride;
         }

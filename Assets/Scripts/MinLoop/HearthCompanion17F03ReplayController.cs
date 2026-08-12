@@ -202,6 +202,7 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
     private int pendingDispositionTrust;
     private bool dispositionResultReceived;
     private bool householdCompletionInvoked;
+    private bool manualViewSwitchBlockedByReplay;
 
     public ReplayStep CurrentStep { get { return currentStep; } }
     public bool UsesAuthoredTransitionService
@@ -249,6 +250,7 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
         UnsubscribeFlow();
         UnsubscribeHud();
         StopAllStorySfx();
+        SetManualViewSwitchBlocked(false);
     }
 
     private void OnValidate()
@@ -336,6 +338,7 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
     {
         StopActiveRoutine();
         StopAllStorySfx();
+        SetManualViewSwitchBlocked(false);
         currentStep = ReplayStep.Inactive;
         daughterConfirmed = false;
         motherConfirmed = false;
@@ -557,6 +560,7 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
 
     private IEnumerator RecordedReplayRoutine()
     {
+        SetManualViewSwitchBlocked(true);
         currentStep = ReplayStep.SwitchingToMidday;
         if (inspectionPanel != null)
         {
@@ -700,6 +704,7 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
         currentStep = ReplayStep.AwaitingPostReplayDisposition;
         if (physicalUnitInteractable != null) physicalUnitInteractable.SetAvailable(true);
         SetHumanControl(true, true, true);
+        SetManualViewSwitchBlocked(false);
         activeRoutine = null;
     }
 
@@ -851,7 +856,7 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
         }
 
         if (inspectionPanel != null &&
-            inspectionPanel.IsDispositionChoiceOpen &&
+            inspectionPanel.IsOpen &&
             inspectionPanel.ResolveDialogueSurface() != null)
         {
             yield return subtitlePlayer.PlaySequenceAsset(
@@ -1377,10 +1382,25 @@ public class HearthCompanion17F03ReplayController : MonoBehaviour
         if (flowController == null || !flowController.SubmitDisposition(choice))
         {
             Debug.LogWarning("[HearthCompanion17F03ReplayController] The 17F03 disposition could not be submitted.", this);
+            if (inspectionPanel != null)
+            {
+                inspectionPanel.RestoreChoiceInputAfterRejectedSubmission();
+            }
             return;
         }
 
         StartFlow(CompletePostReplayDispositionRoutine(choice));
+    }
+
+    private void SetManualViewSwitchBlocked(bool blocked)
+    {
+        if (viewSwitchController == null || manualViewSwitchBlockedByReplay == blocked)
+        {
+            return;
+        }
+
+        viewSwitchController.SetManualSwitchBlocked(this, blocked);
+        manualViewSwitchBlockedByReplay = blocked;
     }
 
     private void SubscribeFlow()

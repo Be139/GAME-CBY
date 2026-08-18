@@ -231,6 +231,10 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
     {
         fullscreenSelectionDimmer = dimmer;
         fieldUnitDialogueSurface = dialogueSurface;
+        if (fieldUnitDialogueSurface != null)
+        {
+            fieldUnitDialogueSurface.ApplyFonts(secondUiTheme);
+        }
         RefreshModeVisuals();
     }
 
@@ -243,6 +247,10 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
     {
         secondUiTheme = themeProfile;
         useSecondUiVisual = enabled;
+        if (fieldUnitDialogueSurface != null)
+        {
+            fieldUnitDialogueSurface.ApplyFonts(secondUiTheme);
+        }
         ApplySecondUiVisual();
         ApplyContent();
         RefreshModeVisuals();

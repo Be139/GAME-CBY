@@ -7,8 +7,10 @@ using UnityEngine;
 public sealed class HearthUiThemeProfile : ScriptableObject
 {
     [Header("Typography")]
-    [Tooltip("Assign the project's Liberation Sans TMP font asset here.")]
+    [Tooltip("Primary UI font: headings, labels, buttons, speaker names and operation hints.")]
     [SerializeField] private TMP_FontAsset primaryFontAsset;
+    [Tooltip("Dialogue body font: spoken subtitle sentences and terminal dialogue bodies.")]
+    [SerializeField] private TMP_FontAsset dialogueFontAsset;
 
     [Header("Terminal Palette")]
     [SerializeField] private Color terminalBackground = new Color32(11, 16, 24, 255);
@@ -54,6 +56,11 @@ public sealed class HearthUiThemeProfile : ScriptableObject
     [SerializeField, Range(0f, 1f)] private float fullscreenDecisionDimmerAlpha = 0.82f;
 
     public TMP_FontAsset PrimaryFontAsset { get { return primaryFontAsset; } }
+    public TMP_FontAsset UiFontAsset { get { return primaryFontAsset; } }
+    public TMP_FontAsset DialogueFontAsset
+    {
+        get { return dialogueFontAsset != null ? dialogueFontAsset : primaryFontAsset; }
+    }
     public Color TerminalBackground { get { return terminalBackground; } }
     public Color TerminalPanelBackground { get { return terminalPanelBackground; } }
     public Color Secondary { get { return secondary; } }

@@ -432,6 +432,7 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
 
             activeExternalSurface = externalSurface;
             HideGlobalVisualImmediate();
+            activeExternalSurface.ApplyFonts(uiThemeProfile);
             activeExternalSurface.Show(
                 speaker,
                 text,
@@ -494,6 +495,7 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
         uiLayoutProfile = layoutProfile;
         EnsurePersistentSceneHeader();
         ApplyPersistentSceneHeaderStyle();
+        ApplyTypographyFonts();
     }
 
     public void SetSubtitleContext(HearthSubtitleContext context)
@@ -1591,6 +1593,7 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
             lineSpacing,
             textColor,
             FontStyles.Normal);
+        ApplyTypographyFonts();
 
         if (backdropImage != null)
         {
@@ -1682,6 +1685,31 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
         activePresentationMode = mode;
         adaptiveLayoutDirty = true;
         ApplyAdaptiveLayout(mode, activeContext);
+    }
+
+    public void ApplyTypographyFonts()
+    {
+        if (uiThemeProfile == null)
+        {
+            return;
+        }
+
+        ApplyFont(speakerText, uiThemeProfile.UiFontAsset);
+        ApplyFont(advanceHintText, uiThemeProfile.UiFontAsset);
+        ApplyFont(persistentSceneHeaderText, uiThemeProfile.UiFontAsset);
+        ApplyFont(bodyText, uiThemeProfile.DialogueFontAsset);
+        if (activeExternalSurface != null)
+        {
+            activeExternalSurface.ApplyFonts(uiThemeProfile);
+        }
+    }
+
+    private static void ApplyFont(TMP_Text text, TMP_FontAsset font)
+    {
+        if (text != null && font != null && text.font != font)
+        {
+            text.font = font;
+        }
     }
 
     private void EnsurePersistentSceneHeader()

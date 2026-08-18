@@ -268,6 +268,7 @@ public class HearthTvTerminalController : MonoBehaviour
             if (authoredSurface != null)
             {
                 dialogueSurface = authoredSurface;
+                dialogueSurface.ApplyFonts(uiThemeProfile);
                 LinkExclusiveDialogueSurfaces();
                 SuppressRuntimePromptForDialogue();
                 return dialogueSurface;
@@ -280,6 +281,7 @@ public class HearthTvTerminalController : MonoBehaviour
                 dialogueSurface.GetComponentInParent<HearthHudPage>(true);
             if (ownerPage == null || ownerPage == currentPage)
             {
+                dialogueSurface.ApplyFonts(uiThemeProfile);
                 SuppressRuntimePromptForDialogue();
                 return dialogueSurface;
             }
@@ -362,6 +364,7 @@ public class HearthTvTerminalController : MonoBehaviour
             authoredViewBindings.TerminalMessageSurface != null)
         {
             messageSurface = authoredViewBindings.TerminalMessageSurface;
+            messageSurface.ApplyFonts(uiThemeProfile);
             EnsureAuthoredSurfaceHierarchyVisible(messageSurface);
             LinkExclusiveDialogueSurfaces();
             SuppressRuntimePromptForDialogue();
@@ -374,6 +377,7 @@ public class HearthTvTerminalController : MonoBehaviour
                 messageSurface.GetComponentInParent<HearthHudPage>(true);
             if (ownerPage == null || ownerPage == currentPage)
             {
+                messageSurface.ApplyFonts(uiThemeProfile);
                 EnsureAuthoredSurfaceHierarchyVisible(messageSurface);
                 SuppressRuntimePromptForDialogue();
                 return messageSurface;
@@ -483,6 +487,7 @@ public class HearthTvTerminalController : MonoBehaviour
         {
             // Canonical Prefabs own all static geometry and typography. The
             // profiles remain available to the quarantined Legacy fallback.
+            ApplyFontsToAuthoredSurfaces();
             LinkExclusiveDialogueSurfaces();
             return;
         }
@@ -495,6 +500,16 @@ public class HearthTvTerminalController : MonoBehaviour
             messageSurface != null ? messageSurface.transform as RectTransform : null,
             true);
         LinkExclusiveDialogueSurfaces();
+    }
+
+    private void ApplyFontsToAuthoredSurfaces()
+    {
+        HearthDialogueSurface[] surfaces =
+            GetComponentsInChildren<HearthDialogueSurface>(true);
+        for (int i = 0; i < surfaces.Length; i++)
+        {
+            surfaces[i].ApplyFonts(uiThemeProfile);
+        }
     }
 
     public void SetViewBindings(HearthTerminalViewBindings bindings)
@@ -1729,6 +1744,7 @@ public class HearthTvTerminalController : MonoBehaviour
             ResolveTerminalSpeakerSize(),
             ResolveTerminalBodySize(),
             ResolveTerminalAdvanceSize());
+        surface.ApplyFonts(uiThemeProfile);
         surface.ApplyTerminalInternalLayout();
         surface.HideImmediate();
         return surface;
@@ -1797,6 +1813,7 @@ public class HearthTvTerminalController : MonoBehaviour
             ResolveTerminalSpeakerSize(),
             ResolveTerminalBodySize(),
             ResolveTerminalAdvanceSize());
+        surface.ApplyFonts(uiThemeProfile);
         surface.ApplyTerminalInternalLayout();
         surface.HideImmediate();
         return surface;
@@ -1821,6 +1838,7 @@ public class HearthTvTerminalController : MonoBehaviour
             ResolveTerminalSpeakerSize(),
             ResolveTerminalBodySize(),
             ResolveTerminalAdvanceSize());
+        surface.ApplyFonts(uiThemeProfile);
         surface.ApplyTerminalInternalLayout();
     }
 

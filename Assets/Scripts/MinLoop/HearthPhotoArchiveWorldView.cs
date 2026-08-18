@@ -407,6 +407,7 @@ public sealed class HearthPhotoArchiveWorldView : MonoBehaviour
 
         if (dialogueSurface != null)
         {
+            dialogueSurface.ApplyFonts(uiThemeProfile);
             dialogueSurface.ApplyTypography(
                 uiThemeProfile != null
                     ? uiThemeProfile.TerminalDialogueSpeakerFontSize
@@ -418,6 +419,17 @@ public sealed class HearthPhotoArchiveWorldView : MonoBehaviour
                     ? uiThemeProfile.TerminalDialogueAdvanceFontSize
                     : 26f);
             dialogueSurface.ApplyTerminalInternalLayout();
+        }
+
+        ApplyFont(pageText, uiThemeProfile != null ? uiThemeProfile.UiFontAsset : null);
+        ApplyFont(hintText, uiThemeProfile != null ? uiThemeProfile.UiFontAsset : null);
+    }
+
+    private static void ApplyFont(TMP_Text text, TMP_FontAsset font)
+    {
+        if (text != null && font != null && text.font != font)
+        {
+            text.font = font;
         }
     }
 

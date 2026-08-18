@@ -1600,3 +1600,54 @@ Final Response：
 6. 用 Unity MCP 截取 1920×1080 的 Prefab/Game View，目视确认框体、文字和提示没有越界、重叠或双层边框。
 
 `Apply Current Approved Repairs` 会恢复本节记录的正式基准坐标。如果你已经手调出新的批准版本，先更新正式 Prefab/配置或工具中的基准，再运行 Apply；不要只改 Play Mode 实例，否则退出 Play Mode 后会丢失。
+
+## 32. Oxanium / Chakra Petch 双字体系统
+
+### 32.1 唯一正式修改入口
+
+打开：
+
+`Assets/UI/HEARTH/V2/Profiles/Hearth_UiV2Theme.asset`
+
+- `Primary Font Asset`：UI 字体，当前为 `Oxanium_UI SDF`。
+- `Dialogue Font Asset`：对白正文字体，当前为 `ChakraPetch_Dialogue SDF`。
+
+不要逐个修改 Play Mode 中的 TMP 实例。运行时对白、终端、相册和 17F03 检查界面会重新读取 Theme；只改临时实例，退出 Play Mode 后一定会丢失。
+
+### 32.2 当前分配规则
+
+- Oxanium：所有 HUD/终端/检查/相册 UI、标题、数据、按钮、任务、人物名称、字幕说话人、场景卡、页码、`SPACE CONTINUE`、`SPACE CONFIRM`、E/Hold E 提示。
+- Chakra Petch：玩家实际阅读的对白句子，包括框式对白正文、自然字幕、黑幕对白、Field Unit/Lily 留言正文。
+- 字号、位置、边距和对齐仍由各正式 Prefab 的 TMP/RectTransform 控制；换字体工具不会重排这些属性。
+
+### 32.3 字体文件位置
+
+- `Assets/UI/HEARTH/V2/Fonts/Oxanium/Oxanium-VariableFont_wght.ttf`
+- `Assets/UI/HEARTH/V2/Fonts/Oxanium/Oxanium_UI SDF.asset`
+- `Assets/UI/HEARTH/V2/Fonts/ChakraPetch/ChakraPetch-Regular.ttf`
+- `Assets/UI/HEARTH/V2/Fonts/ChakraPetch/ChakraPetch_Dialogue SDF.asset`
+
+两份 TMP 资产使用 Dynamic Atlas，新增常用字符时由 TMP 补入图集。两个字体目录中的 `OFL.txt` 不要删除。
+
+### 32.4 一键安装、重应用和校验
+
+Unity 菜单：
+
+`Tools > Hearth > Production UI > Typography`
+
+1. `Install And Apply Production Fonts`：首次安装或源 TTF 更换后使用；创建 TMP 字体资产、写入 Theme、应用 10 个正式 V2 Prefab。
+2. `Apply Production Fonts`：Prefab 新增文字或 Builder 重建界面后使用；重新按字体角色分配。
+3. `Validate Production Fonts`：只读检查，确认正式 Prefab 和当前打开场景没有角色混用。
+
+Apply 会保存正式 Prefab 和 Theme，但不会自动保存打开的 Scene。这样可以避免把场景中其他尚未确认的模型、Camera 或剧情手调一并写入磁盘；如果 Unity 场景标签出现 `*`，请确认当前场景修改都需要保留后再按 `Ctrl+S`。
+
+### 32.5 以后替换字体的方法
+
+1. 把新 TTF/OTF 放入 `Assets/UI/HEARTH/V2/Fonts/`。
+2. 在 Unity 中创建 TMP Font Asset，或修改 `HearthTypographyTools.cs` 的字体源路径后运行 Install。
+3. 把 UI 字体拖入 Theme 的 `Primary Font Asset`，把对白字体拖入 `Dialogue Font Asset`。
+4. 运行 `Apply Production Fonts`。
+5. 运行 `Validate Production Fonts`。
+6. 在 1920×1080 Play Mode 检查 Human HUD、Companion HUD、Field Unit、Lily、自然字幕、黑幕和 Space/E 提示。
+
+不要改名正式 `SpeakerText`、`BodyText`、`AdvanceHint` 或字幕 Bindings 对象；这些显式绑定是区分“说话人/提示”和“对白正文”的依据。

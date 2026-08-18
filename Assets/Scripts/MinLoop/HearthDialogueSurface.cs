@@ -17,6 +17,9 @@ public class HearthDialogueSurface : MonoBehaviour
     [SerializeField] private HearthDialogueSurface exclusivePeer;
 
     public bool IsVisible { get; private set; }
+    public TMP_Text SpeakerText { get { return speakerText; } }
+    public TMP_Text BodyText { get { return bodyText; } }
+    public TMP_Text AdvanceHintText { get { return advanceHintText; } }
 
     private void Awake()
     {
@@ -72,6 +75,19 @@ public class HearthDialogueSurface : MonoBehaviour
         ApplyFixedFontSize(speakerText, speakerFontSize);
         ApplyFixedFontSize(bodyText, bodyFontSize);
         ApplyFixedFontSize(advanceHintText, advanceFontSize);
+    }
+
+    public void ApplyFonts(HearthUiThemeProfile themeProfile)
+    {
+        if (themeProfile == null)
+        {
+            return;
+        }
+
+        ResolveReferences();
+        ApplyFont(speakerText, themeProfile.UiFontAsset);
+        ApplyFont(advanceHintText, themeProfile.UiFontAsset);
+        ApplyFont(bodyText, themeProfile.DialogueFontAsset);
     }
 
     public void ApplyTerminalInternalLayout()
@@ -255,6 +271,14 @@ public class HearthDialogueSurface : MonoBehaviour
         }
 
         return null;
+    }
+
+    private static void ApplyFont(TMP_Text text, TMP_FontAsset font)
+    {
+        if (text != null && font != null && text.font != font)
+        {
+            text.font = font;
+        }
     }
 
     private static void ApplyFixedFontSize(TMP_Text text, float size)

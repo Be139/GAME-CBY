@@ -1237,3 +1237,10 @@ casual_Female_K (9) -> REF_Wife_17F02_ExitOutside
 - 17F04 Lily 的 `SPACE CONTINUE` 固定在留言框右下角，字号 26、琥珀色；不改变 Lily 留言文字、音频、Surface 显隐或 Space 推进。
 - Human Final Response 的两个正式页面都使用相同居中内容区，A/B 与 `UP / DOWN SELECT  SPACE CONFIRM` 位于选择层内部；只改视觉坐标，不改默认焦点、选择结果或结局条件。
 - 本次没有改变 Lobby→F01→F02→F03→F04 流程、任何 Line ID、AudioClip、任务条件、Camera Anchor、E/Hold E/Space 规则或 36 个正式 SFX Cue。
+
+## 2026-08-13 全项目双字体视觉规则（已实现）
+
+- 所有 Human/Companion HUD、终端、检查、相册、按钮、任务、操作提示、字幕说话人名称和 `SPACE CONTINUE/CONFIRM` 统一使用 Oxanium。
+- 所有真正表达的对白句子统一使用 Chakra Petch，包括框式对白正文、自然字幕、黑幕对白、Field Unit 与 Lily 留言正文。
+- 正式字体由 `Hearth_UiV2Theme.asset` 的 UI/Dialogue 两个独立字段控制；运行时动态 Surface 也遵循同一规则。
+- 本次只调整字体角色，不改变任何英文台词、Line ID、AudioClip、对白顺序、Space/自动推进策略、任务、信任、处置、Camera、E/Hold E、关卡顺序或结局条件。

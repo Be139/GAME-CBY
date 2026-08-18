@@ -5,6 +5,7 @@ using UnityEngine.Video;
 using UnityEditor;
 #endif
 
+[ExecuteAlways]
 [DisallowMultipleComponent]
 [RequireComponent(typeof(Renderer))]
 public class CityBillboardContentController : MonoBehaviour
@@ -70,14 +71,40 @@ public class CityBillboardContentController : MonoBehaviour
     private void Awake()
     {
         ResolveRenderer();
-        ApplyAssignedContent();
+        if (Application.isPlaying)
+        {
+            ApplyAssignedContent();
+        }
+        else
+        {
+            ApplyEditorPreview();
+        }
     }
 
     private void OnEnable()
     {
-        if (Application.isPlaying && contentKind == BillboardContentKind.Video && playOnAwake)
+        ResolveRenderer();
+        if (!Application.isPlaying)
+        {
+            ApplyEditorPreview();
+            return;
+        }
+
+        if (contentKind == BillboardContentKind.Video && playOnAwake)
         {
             Play();
+        }
+    }
+
+    private void OnValidate()
+    {
+        imageBrightness = Mathf.Max(0f, imageBrightness);
+        videoBrightness = Mathf.Max(0f, videoBrightness);
+
+        if (!Application.isPlaying)
+        {
+            ResolveRenderer();
+            ApplyEditorPreview();
         }
     }
 
@@ -211,6 +238,18 @@ public class CityBillboardContentController : MonoBehaviour
         }
 
         ClearRendererContent();
+    }
+
+    private void ApplyEditorPreview()
+    {
+        if (contentKind == BillboardContentKind.Image)
+        {
+            ApplyImageTexture(imageTexture);
+        }
+        else if (contentKind == BillboardContentKind.None)
+        {
+            ClearRendererContent();
+        }
     }
 
     private void ResolveRenderer()

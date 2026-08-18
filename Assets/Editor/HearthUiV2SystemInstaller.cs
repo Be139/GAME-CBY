@@ -17,8 +17,10 @@ public static class HearthUiV2SystemInstaller
         ProfilesFolder + "/Hearth_UiV2Theme.asset";
     private const string LayoutProfilePath =
         ProfilesFolder + "/Hearth_UiV2Layout_1920x1080.asset";
-    private const string LiberationFontPath =
-        "Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF.asset";
+    private const string UiFontPath =
+        "Assets/UI/HEARTH/V2/Fonts/Oxanium/Oxanium_UI SDF.asset";
+    private const string DialogueFontPath =
+        "Assets/UI/HEARTH/V2/Fonts/ChakraPetch/ChakraPetch_Dialogue SDF.asset";
     private const string TutorialRootName = "V2_InitialTutorialRoot";
 
     [MenuItem(LegacyMenuRoot + "Install Profiles And Human Tutorial")]
@@ -125,9 +127,9 @@ public static class HearthUiV2SystemInstaller
         {
             issues.Add("Theme profile is missing.");
         }
-        else if (theme.PrimaryFontAsset == null)
+        else if (theme.UiFontAsset == null || theme.DialogueFontAsset == null)
         {
-            issues.Add("Theme profile has no Liberation Sans TMP font.");
+            issues.Add("Theme profile is missing the Oxanium UI font or Chakra Petch dialogue font.");
         }
 
         if (layout == null)
@@ -252,9 +254,12 @@ public static class HearthUiV2SystemInstaller
         }
 
         TMP_FontAsset font =
-            AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(LiberationFontPath);
+            AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(UiFontPath);
+        TMP_FontAsset dialogueFont =
+            AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(DialogueFontPath);
         SerializedObject serialized = new SerializedObject(profile);
         serialized.FindProperty("primaryFontAsset").objectReferenceValue = font;
+        serialized.FindProperty("dialogueFontAsset").objectReferenceValue = dialogueFont;
         serialized.ApplyModifiedPropertiesWithoutUndo();
         EditorUtility.SetDirty(profile);
         return profile;

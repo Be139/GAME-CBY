@@ -1,0 +1,19 @@
+model_provider = "custom"
+model = "gpt-5.5"
+model_reasoning_effort = "high"
+disable_response_storage = true
+
+[model_providers.custom]
+name = "卡扣AI"
+base_url = "https://api.kakouai.com"
+wire_api = "responses"
+requires_openai_auth = true
+
+[mcp_servers]
+
+[mcp_servers.mineru]
+type = "stdio"
+command = "uvx"
+args = ["mineru-open-mcp"]
+startup_timeout_sec = 60
+tool_timeout_sec = 300

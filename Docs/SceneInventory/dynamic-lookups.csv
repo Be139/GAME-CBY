@@ -1,0 +1,284 @@
+script,line,code
+Assets/Editor/CityBillboardContentDistributorEditor.cs,61,UnityEngine.Object.FindObjectOfType<CityBillboardContentDistributor>(true);
+Assets/Editor/HearthEarlyHouseholdValidationTools.cs,374,return Object.FindObjectsOfType<T>(true)
+Assets/Editor/HearthEarlyHouseholdValidationTools.cs,386,current = current.Find(parts[i]);
+Assets/Editor/HearthP0StabilityTools.cs,104,foreach (Transform item in root.GetComponentsInChildren<Transform>(true))
+Assets/Editor/HearthP0StabilityTools.cs,122,MonoBehaviour[] behaviours = Object.FindObjectsOfType<MonoBehaviour>(true);
+Assets/Editor/HearthP0StabilityTools.cs,147,Animation[] legacy = gameObject.GetComponentsInChildren<Animation>(true);
+Assets/Editor/HearthP0StabilityTools.cs,165,Transform[] transforms = roots[i].GetComponentsInChildren<Transform>(true);
+Assets/Editor/HearthProductionUiTools.Audit.cs,19,var sources = UnityEngine.Object.FindObjectsOfType<Canvas>(true).Where(c => c.gameObject.scene.IsValid() &&
+Assets/Editor/HearthProductionUiTools.Audit.cs,28,foreach (var behaviour in copy.GetComponentsInChildren<MonoBehaviour>(true))
+Assets/Editor/HearthProductionUiTools.Audit.cs,30,foreach (var group in copy.GetComponentsInChildren<CanvasGroup>(true)) { group.gameObject.SetActive(true); group.alpha = 1; }
+Assets/Editor/HearthProductionUiTools.Audit.cs,32,foreach (Transform t in copy.GetComponentsInChildren<Transform>(true))
+Assets/Editor/HearthProductionUiTools.Audit.cs,35,foreach (var typography in copy.GetComponentsInChildren<HearthUiTypography>(true)) typography.Apply();
+Assets/Editor/HearthProductionUiTools.Audit.cs,61,var pages = root.GetComponentsInChildren<HearthHudPage>(true).Select(p => p.gameObject)
+Assets/Editor/HearthProductionUiTools.Audit.cs,62,.Concat(root.GetComponentsInChildren<HearthFirstPersonHudPage>(true).Select(p => p.gameObject)).ToArray();
+Assets/Editor/HearthProductionUiTools.Audit.cs,63,"var active = root.GetComponentsInChildren<Transform>(true).ToDictionary(t => t.gameObject, t => t.gameObject.activeSelf);"
+Assets/Editor/HearthProductionUiTools.Audit.cs,70,foreach (CanvasGroup group in root.GetComponentsInChildren<CanvasGroup>(true)) group.alpha = 1;
+Assets/Editor/HearthProductionUiTools.Audit.cs,94,foreach (var scaler in canvas.GetComponentsInChildren<CanvasScaler>(true)) scaler.enabled = false;
+Assets/Editor/HearthProductionUiTools.Audit.cs,116,foreach (TMP_Text text in canvas.GetComponentsInChildren<TMP_Text>())
+Assets/Editor/HearthProductionUiTools.cs,121,Transform[] transforms = roots[i].GetComponentsInChildren<Transform>(true);
+Assets/Editor/HearthProductionUiTools.cs,525,RectTransform[] rects = prefab.GetComponentsInChildren<RectTransform>(true);
+Assets/Editor/HearthProductionUiTools.cs,625,panel.GetComponentsInChildren<HearthV2FrameGraphic>(true);
+Assets/Editor/HearthProductionUiTools.cs,727,Transform[] sources = source.GetComponentsInChildren<Transform>(true);
+Assets/Editor/HearthProductionUiTools.cs,914,"? holdPrompt.Find(""HoldPromptFrameV2"")"
+Assets/Editor/HearthProductionUiTools.cs,956,"Transform legacyBox = holdPrompt.Find(""HoldPromptBox"");"
+Assets/Editor/HearthProductionUiTools.cs,1039,Transform[] items = root.GetComponentsInChildren<Transform>(true);
+Assets/Editor/HearthProductionUiTools.cs,1121,player.VisualRoot.GetComponentInParent<HearthSubtitleViewBindings>(true);
+Assets/Editor/HearthProductionUiTools.cs,1189,Transform[] all = root.GetComponentsInChildren<Transform>(true);
+Assets/Editor/HearthProductionUiTools.cs,1222,results.AddRange(roots[i].GetComponentsInChildren<T>(true));
+Assets/Editor/HearthRuntimeTopologyTools.cs,131,terminalCanvas = terminals[i].GetComponentInParent<Canvas>();
+Assets/Editor/HearthRuntimeTopologyTools.cs,211,controller.GetComponentsInChildren<HearthFirstPersonHudPage>(true);
+Assets/Editor/HearthRuntimeTopologyTools.cs,251,controller.GetComponentsInChildren<HearthHudPage>(true);
+Assets/Editor/HearthRuntimeTopologyTools.cs,545,Camera[] cameras = hardwareRoot.GetComponentsInChildren<Camera>(true);
+Assets/Editor/HearthRuntimeTopologyTools.cs,552,camera.GetComponentInParent<FirstPersonMovement>() != null ||
+Assets/Editor/HearthRuntimeTopologyTools.cs,553,camera.GetComponentInParent<PlayerInteraction>() != null)
+Assets/Editor/HearthRuntimeTopologyTools.cs,577,result.AddRange(roots[i].GetComponentsInChildren<T>(true));
+Assets/Editor/HearthStorySfxValidator.cs,65,HearthLobbyFlowController lobby = UnityEngine.Object.FindObjectOfType<HearthLobbyFlowController>(true);
+Assets/Editor/HearthStorySfxValidator.cs,66,HearthCompanion17F01ReplayController replay17F01 = UnityEngine.Object.FindObjectOfType<HearthCompanion17F01ReplayController>(true);
+Assets/Editor/HearthStorySfxValidator.cs,67,HearthCompanion17F02ReplayController replay17F02 = UnityEngine.Object.FindObjectOfType<HearthCompanion17F02ReplayController>(true);
+Assets/Editor/HearthStorySfxValidator.cs,68,HearthCompanion17F03ReplayController replay17F03 = UnityEngine.Object.FindObjectOfType<HearthCompanion17F03ReplayController>(true);
+Assets/Editor/HearthStorySfxValidator.cs,69,Hearth17F04FinaleController finale17F04 = UnityEngine.Object.FindObjectOfType<Hearth17F04FinaleController>(true);
+Assets/Editor/HearthStorySfxValidator.cs,173,current = current.Find(parts[i]);
+Assets/Editor/HearthTypographyTools.cs,114,foreach (HearthDialogueSurface surface in root.GetComponentsInChildren<HearthDialogueSurface>(true))
+Assets/Editor/HearthTypographyTools.cs,122,foreach (HearthSubtitleViewBindings bindings in root.GetComponentsInChildren<HearthSubtitleViewBindings>(true))
+Assets/Editor/HearthTypographyTools.cs,130,foreach (TMP_Text text in root.GetComponentsInChildren<TMP_Text>(true))
+Assets/Editor/HearthUiLibraryWindow.cs,46,var pages=asset.GetComponentsInChildren<HearthFirstPersonHudPage>(true).Select(p=>p.PageId.ToString())
+Assets/Editor/HearthUiLibraryWindow.cs,47,.Concat(asset.GetComponentsInChildren<HearthHudPage>(true).Select(p=>p.PageId.ToString()));
+Assets/Scripts/Audio/HearthAudioSettingsController.cs,209,Instance = FindObjectOfType<HearthAudioSettingsController>();
+Assets/Scripts/Audio/HearthFootstepAudioProfile.cs,109,firstPersonAudio = GetComponentInParent<FirstPersonAudio>();
+Assets/Scripts/Environment/City/CityBillboardContentDistributor.cs,85,GameObject found = GameObject.Find(billboardRootName);
+Assets/Scripts/Environment/City/CityBillboardContentDistributor.cs,315,CityBillboardPlacementSlot[] slots = billboardRoot.GetComponentsInChildren<CityBillboardPlacementSlot>(includeInactiveBillboards);
+Assets/Scripts/Environment/City/CityBillboardContentDistributor.cs,434,Renderer[] renderers = billboardRoot.GetComponentsInChildren<Renderer>(true);
+Assets/Scripts/Environment/City/CityBillboardContentDistributor.cs,445,"Shader shader = Shader.Find(""Universal Render Pipeline/Lit"");"
+Assets/Scripts/Environment/City/CityBillboardContentDistributor.cs,448,"shader = Shader.Find(""Standard"");"
+Assets/Scripts/Environment/City/CityBillboardPlacementSlot.cs,139,Renderer[] renderers = surfaceRoot.GetComponentsInChildren<Renderer>(true);
+Assets/Scripts/Environment/City/CityFacadeBillboardPlacer.cs,149,Transform[] allObjects = FindObjectsOfType<Transform>(includeInactiveBuildings);
+Assets/Scripts/Environment/City/CityFacadeBillboardPlacer.cs,172,Transform[] allObjects = FindObjectsOfType<Transform>(includeInactiveBuildings);
+Assets/Scripts/Environment/City/CityFacadeBillboardPlacer.cs,334,CityBillboardPlacementSlot[] billboards = FindObjectsOfType<CityBillboardPlacementSlot>(includeInactiveBuildings);
+Assets/Scripts/Environment/City/CityFacadeBillboardPlacer.cs,354,GameObject sharedRoot = GameObject.Find(sharedBillboardRootName);
+Assets/Scripts/Environment/City/CityFacadeBillboardPlacer.cs,366,CityBillboardPlacementSlot[] billboards = FindObjectsOfType<CityBillboardPlacementSlot>(includeInactiveBuildings);
+Assets/Scripts/Environment/City/CityFacadeBillboardPlacer.cs,402,CityBuildingPlacementSlot[] allSlots = FindObjectsOfType<CityBuildingPlacementSlot>(includeInactiveBuildings);
+Assets/Scripts/Environment/City/CityFacadeBillboardPlacer.cs,464,Renderer[] renderers = candidate.GetComponentsInChildren<Renderer>(true);
+Assets/Scripts/Environment/City/CityFacadeBillboardPlacer.cs,568,GameObject sharedRootObject = GameObject.Find(sharedBillboardRootName);
+Assets/Scripts/Environment/City/CityFacadeBillboardPlacer.cs,591,CityBillboardPlacementSlot[] existingBillboards = FindObjectsOfType<CityBillboardPlacementSlot>(includeInactiveBuildings);
+Assets/Scripts/Environment/City/CityFacadeBillboardPlacer.cs,612,CityBillboardPlacementSlot[] existingBillboards = FindObjectsOfType<CityBillboardPlacementSlot>(includeInactiveBuildings);
+Assets/Scripts/Environment/City/CityFacadeBillboardPlacer.cs,643,Renderer[] renderers = slot.ContentRoot.GetComponentsInChildren<Renderer>(true);
+Assets/Scripts/Environment/City/CityFacadeBillboardPlacer.cs,706,Renderer[] renderers = sourceRoot.GetComponentsInChildren<Renderer>(true);
+Assets/Scripts/Environment/City/CityFacadeBillboardPlacer.cs,924,"Transform existing = slot.transform.Find(""Billboards"");"
+Assets/Scripts/Environment/City/CityFacadeBillboardPlacer.cs,938,"Transform existing = sourceRoot.Find(""Billboards"");"
+Assets/Scripts/Environment/City/CityFacadeBillboardPlacer.cs,952,GameObject existing = GameObject.Find(sharedBillboardRootName);
+Assets/Scripts/Environment/City/CityFacadeBillboardPlacer.cs,1129,"Shader shader = Shader.Find(""Universal Render Pipeline/Lit"");"
+Assets/Scripts/Environment/City/CityFacadeBillboardPlacer.cs,1132,"shader = Shader.Find(""Standard"");"
+Assets/Scripts/Environment/City/CityLotAssetPlacer.cs,345,GameObject generatedRoot = GameObject.Find(generatedRootName);
+Assets/Scripts/Environment/City/CityLotAssetPlacer.cs,381,GameObject existing = GameObject.Find(generatedRootName);
+Assets/Scripts/Environment/City/CityLotAssetPlacer.cs,1549,MeshFilter[] meshFilters = lotTransform.GetComponentsInChildren<MeshFilter>(true);
+Assets/Scripts/Environment/City/CityLotAssetPlacer.cs,1853,"Shader shader = Shader.Find(""Universal Render Pipeline/Lit"");"
+Assets/Scripts/Environment/City/CityLotAssetPlacer.cs,1856,"shader = Shader.Find(""Standard"");"
+Assets/Scripts/Environment/City/CityLotAssetPlacer.cs,1875,Renderer[] renderers = root.GetComponentsInChildren<Renderer>(true);
+Assets/Scripts/Environment/City/CityLotAssetPlacer.cs,1892,Transform[] allTransforms = UnityEngine.Object.FindObjectsOfType<Transform>(true);
+Assets/Scripts/Environment/City/CityLotAssetPlacer.cs,1905,Transform[] children = root.GetComponentsInChildren<Transform>(true);
+Assets/Scripts/Environment/City/CityWindowNightController.cs,163,Renderer[] renderers = buildings[buildingIndex].GetComponentsInChildren<Renderer>(true);
+Assets/Scripts/Environment/City/CityWindowNightController.cs,282,Renderer[] renderers = building.GetComponentsInChildren<Renderer>(true);
+Assets/Scripts/Environment/City/CityWindowNightController.cs,384,Renderer[] renderers = building.GetComponentsInChildren<Renderer>(true);
+Assets/Scripts/Interactions/InteractionFeedbackController.cs,285,targetLights = GetComponentsInChildren<Light>(true);
+Assets/Scripts/Interactions/InteractionFeedbackController.cs,290,targetRenderers = GetComponentsInChildren<Renderer>(true);
+Assets/Scripts/Interactions/PlayerInteraction.cs,227,Canvas[] canvases = FindObjectsOfType<Canvas>(true);
+Assets/Scripts/Interactions/PlayerInteraction.cs,236,Transform promptTransform = canvas.transform.Find(promptPath);
+Assets/Scripts/Interactions/SmartDoorTriggerZone.cs,53,get { return targetDoor != null || GetComponentInParent<SmartDoorController>() != null; }
+Assets/Scripts/Interactions/SmartDoorTriggerZone.cs,285,targetDoor = GetComponentInParent<SmartDoorController>();
+Assets/Scripts/MinLoop/ComfortActionInteractable.cs,110,cachedColliders = GetComponentsInChildren<Collider>(true);
+Assets/Scripts/MinLoop/ComfortActionInteractable.cs,181,sequenceController = FindObjectOfType<ReplaySequenceController>();
+Assets/Scripts/MinLoop/Hearth17F03InspectionPanel.cs,284,"Transform panel = transform.Find(""InspectionPanel"");"
+Assets/Scripts/MinLoop/Hearth17F03InspectionPanel.cs,759,Transform[] descendants = GetComponentsInChildren<Transform>(true);
+Assets/Scripts/MinLoop/Hearth17F03InspectionPanel.cs,895,Transform child = parent.Find(objectName);
+Assets/Scripts/MinLoop/Hearth17F03InspectionPanel.cs,929,Transform child = parent.Find(objectName);
+Assets/Scripts/MinLoop/Hearth17F03InspectionPanel.cs,958,Transform row = parent.Find(objectName);
+Assets/Scripts/MinLoop/Hearth17F03InspectionPanel.cs,1005,FindObjectOfType<HearthUiStateCoordinator>(true);
+Assets/Scripts/MinLoop/Hearth17F04FinaleController.cs,698,if (firstPersonHud == null) firstPersonHud = FindObjectOfType<HearthFirstPersonHudController>(true);
+Assets/Scripts/MinLoop/Hearth17F04FinaleController.cs,699,if (firstPersonHudInput == null) firstPersonHudInput = FindObjectOfType<HearthFirstPersonHudInput>(true);
+Assets/Scripts/MinLoop/Hearth17F04FinaleController.cs,700,if (catGuide == null) catGuide = FindObjectOfType<Hearth17F04CatGuideController>(true);
+Assets/Scripts/MinLoop/Hearth17F04FinaleController.cs,701,if (trustState == null) trustState = FindObjectOfType<TrustStateController>(true);
+Assets/Scripts/MinLoop/Hearth17F04FinaleController.cs,702,if (householdProgress == null) householdProgress = FindObjectOfType<HearthHouseholdProgressState>(true);
+Assets/Scripts/MinLoop/Hearth17F04FinaleController.cs,703,if (playerControlLock == null) playerControlLock = FindObjectOfType<HearthPlayerControlLock>(true);
+Assets/Scripts/MinLoop/Hearth17F04FinaleController.cs,706,HearthTvTerminalController[] terminals = FindObjectsOfType<HearthTvTerminalController>(true);
+Assets/Scripts/MinLoop/Hearth17F04FinaleController.cs,722,PlayerInteraction[] interactions = FindObjectsOfType<PlayerInteraction>(true);
+Assets/Scripts/MinLoop/Hearth17F04FinaleController.cs,755,firstPersonHud = FindObjectOfType<HearthFirstPersonHudController>(true);
+Assets/Scripts/MinLoop/HearthActorPosePreset.cs,167,animatorsToPause = GetComponentsInChildren<Animator>(true);
+Assets/Scripts/MinLoop/HearthCompanion17F01ReplayController.cs,755,flowController = FindObjectOfType<MinLoopFlowController>();
+Assets/Scripts/MinLoop/HearthCompanion17F01ReplayController.cs,767,companionHud = FindObjectOfType<HearthCompanionHudController>();
+Assets/Scripts/MinLoop/HearthCompanion17F01ReplayController.cs,772,subtitlePlayer = FindObjectOfType<MinLoopSubtitlePlayer>();
+Assets/Scripts/MinLoop/HearthCompanion17F01ReplayController.cs,777,"GameObject robotObject = GameObject.Find(""CompanionRig"");"
+Assets/Scripts/MinLoop/HearthCompanion17F01ReplayController.cs,780,"robotObject = GameObject.Find(""Player/CompanionRig"");"
+Assets/Scripts/MinLoop/HearthCompanion17F02ReplayController.cs,1243,flowController = FindObjectOfType<MinLoopFlowController>();
+Assets/Scripts/MinLoop/HearthCompanion17F02ReplayController.cs,1255,companionHud = FindObjectOfType<HearthCompanionHudController>();
+Assets/Scripts/MinLoop/HearthCompanion17F02ReplayController.cs,1260,subtitlePlayer = FindObjectOfType<MinLoopSubtitlePlayer>();
+Assets/Scripts/MinLoop/HearthCompanion17F02ReplayController.cs,1265,"GameObject robotObject = GameObject.Find(""Player/CompanionRig"");"
+Assets/Scripts/MinLoop/HearthCompanion17F02ReplayController.cs,1268,"robotObject = GameObject.Find(""CompanionRig"");"
+Assets/Scripts/MinLoop/HearthCompanion17F03ReplayController.cs,940,MonoBehaviour[] behaviours = actor.GetComponentsInChildren<MonoBehaviour>(true);
+Assets/Scripts/MinLoop/HearthCompanion17F03ReplayController.cs,1063,FindObjectsOfType<HearthFirstPersonHudController>(true);
+Assets/Scripts/MinLoop/HearthCurrentTaskRouter.cs,272,cachedCatalog = Resources.Load<HearthTaskTextCatalog>(
+Assets/Scripts/MinLoop/HearthDialogueSurface.cs,237,TMP_Text[] texts = root.GetComponentsInChildren<TMP_Text>(true);
+Assets/Scripts/MinLoop/HearthEditorOnlyReferenceModel.cs,56,foreach (Collider collider in GetComponentsInChildren<Collider>(true))
+Assets/Scripts/MinLoop/HearthEditorOnlyReferenceModel.cs,64,foreach (Rigidbody body in GetComponentsInChildren<Rigidbody>(true))
+Assets/Scripts/MinLoop/HearthEditorOnlyReferenceModel.cs,84,foreach (Renderer renderer in GetComponentsInChildren<Renderer>(true))
+Assets/Scripts/MinLoop/HearthEditorOnlyReferenceModel.cs,92,foreach (Animator animator in GetComponentsInChildren<Animator>(true))
+Assets/Scripts/MinLoop/HearthEditorOnlyReferenceModel.cs,100,foreach (Animation animation in GetComponentsInChildren<Animation>(true))
+Assets/Scripts/MinLoop/HearthEditorOnlyReferenceModel.cs,109,foreach (AudioSource audioSource in GetComponentsInChildren<AudioSource>(true))
+Assets/Scripts/MinLoop/HearthEditorOnlyReferenceModel.cs,117,foreach (Camera camera in GetComponentsInChildren<Camera>(true))
+Assets/Scripts/MinLoop/HearthEditorOnlyReferenceModel.cs,125,foreach (AudioListener listener in GetComponentsInChildren<AudioListener>(true))
+Assets/Scripts/MinLoop/HearthEditorOnlyReferenceModel.cs,133,foreach (NavMeshAgent agent in GetComponentsInChildren<NavMeshAgent>(true))
+Assets/Scripts/MinLoop/HearthEditorOnlyReferenceModel.cs,138,foreach (NavMeshObstacle obstacle in GetComponentsInChildren<NavMeshObstacle>(true))
+Assets/Scripts/MinLoop/HearthEditorOnlyReferenceModel.cs,146,foreach (MonoBehaviour behaviour in GetComponentsInChildren<MonoBehaviour>(true))
+Assets/Scripts/MinLoop/HearthLobbyElevatorInteractable.cs,51,flowController = FindObjectOfType<HearthLobbyFlowController>(true);
+Assets/Scripts/MinLoop/HearthLobbyFlowController.cs,651,"GameObject player = GameObject.Find(""Player/HumanRig"");"
+Assets/Scripts/MinLoop/HearthLobbyFlowController.cs,670,subtitlePlayer = FindObjectOfType<MinLoopSubtitlePlayer>(true);
+Assets/Scripts/MinLoop/HearthLobbyFlowController.cs,675,locationProbe = FindObjectOfType<HearthLocationProbe>(true);
+Assets/Scripts/MinLoop/HearthLobbyFlowController.cs,680,humanHud = FindObjectOfType<HearthFirstPersonHudController>(true);
+Assets/Scripts/MinLoop/HearthLobbyFlowController.cs,688,humanHud = FindObjectOfType<HearthFirstPersonHudController>(true);
+Assets/Scripts/MinLoop/HearthLobbyFlowController.cs,703,playerControlLock = FindObjectOfType<HearthPlayerControlLock>(true);
+Assets/Scripts/MinLoop/HearthLobbyHudOverlay.cs,130,if (GetComponentInParent<HearthUiTypography>(true) != null) return;
+Assets/Scripts/MinLoop/HearthLobbyTaskTerminalInteractable.cs,54,flowController = FindObjectOfType<HearthLobbyFlowController>(true);
+Assets/Scripts/MinLoop/HearthPhotoArchiveWorldView.cs,168,"Transform existing = transform.Find(""PhotoArchiveCanvas_V2"");"
+Assets/Scripts/MinLoop/HearthPhotoArchiveWorldView.cs,378,"Transform unit = canvasRect.Find(""ArchiveUnit"");"
+Assets/Scripts/MinLoop/HearthPhotoArchiveWorldView.cs,383,"Transform topRule = canvasRect.Find(""ArchiveTopRule"");"
+Assets/Scripts/MinLoop/HearthPhotoArchiveWorldView.cs,391,"Transform page = canvasRect.Find(""ArchivePage"");"
+Assets/Scripts/MinLoop/HearthPhotoFrameInteractable.cs,341,PlayerInteraction[] interactions = FindObjectsOfType<PlayerInteraction>(true);
+Assets/Scripts/MinLoop/HearthSequentialShutdownChallenge.cs,69,hudController = FindObjectOfType<HearthFirstPersonHudController>(true);
+Assets/Scripts/MinLoop/HearthTerminalOpeningBriefing.cs,199,subtitlePlayer = FindObjectOfType<MinLoopSubtitlePlayer>(true);
+Assets/Scripts/MinLoop/HearthVirusPopupShutdownChallenge.cs,435,TMP_Text[] texts = rect.GetComponentsInChildren<TMP_Text>(true);
+Assets/Scripts/MinLoop/HearthVirusPopupShutdownChallenge.cs,476,Image[] images = rect.GetComponentsInChildren<Image>(true);
+Assets/Scripts/MinLoop/HearthVirusPopupShutdownChallenge.cs,496,TMP_Text[] texts = rect.GetComponentsInChildren<TMP_Text>(true);
+Assets/Scripts/MinLoop/HearthVirusPopupShutdownChallenge.cs,540,Graphic[] graphics = popup.rect.GetComponentsInChildren<Graphic>(true);
+Assets/Scripts/MinLoop/HearthVirusPopupShutdownChallenge.cs,745,highTrustHudController = FindObjectOfType<HearthFirstPersonHudController>(true);
+Assets/Scripts/MinLoop/HearthVirusPopupShutdownChallenge.cs,757,highTrustHudController.GetComponentsInChildren<HearthFirstPersonHudPage>(true);
+Assets/Scripts/MinLoop/MinLoopAudioStateController.cs,389,flowController = FindObjectOfType<MinLoopFlowController>();
+Assets/Scripts/MinLoop/MinLoopDebugHotkeys.cs,157,flowController = FindObjectOfType<MinLoopFlowController>();
+Assets/Scripts/MinLoop/MinLoopDebugHotkeys.cs,162,replaySequenceController = FindObjectOfType<ReplaySequenceController>();
+Assets/Scripts/MinLoop/MinLoopFlowController.cs,782,terminalPresenter = FindObjectOfType<MinLoopTerminalPresenter>();
+Assets/Scripts/MinLoop/MinLoopFlowController.cs,787,tvTerminalController = FindObjectOfType<HearthTvTerminalController>();
+Assets/Scripts/MinLoop/MinLoopFlowController.cs,799,replaySequenceController = FindObjectOfType<ReplaySequenceController>();
+Assets/Scripts/MinLoop/MinLoopFlowController.cs,804,companion17F01ReplayController = FindObjectOfType<HearthCompanion17F01ReplayController>();
+Assets/Scripts/MinLoop/MinLoopFlowController.cs,809,companion17F02ReplayController = FindObjectOfType<HearthCompanion17F02ReplayController>();
+Assets/Scripts/MinLoop/MinLoopFlowController.cs,814,companion17F03ReplayController = FindObjectOfType<HearthCompanion17F03ReplayController>();
+Assets/Scripts/MinLoop/MinLoopFlowController.cs,823,trustStateController = FindObjectOfType<TrustStateController>();
+Assets/Scripts/MinLoop/MinLoopFlowController.cs,828,householdProgress = FindObjectOfType<HearthHouseholdProgressState>();
+Assets/Scripts/MinLoop/MinLoopFlowController.cs,833,subtitlePlayer = FindObjectOfType<MinLoopSubtitlePlayer>(true);
+Assets/Scripts/MinLoop/MinLoopFlowController.cs,839,FindObjectOfType<HearthFirstPersonHudController>(true);
+Assets/Scripts/MinLoop/MinLoopLightingStateController.cs,416,flowController = FindObjectOfType<MinLoopFlowController>();
+Assets/Scripts/MinLoop/MinLoopSceneValidator.cs,376,return Object.FindObjectsOfType<T>(includeInactiveObjects);
+Assets/Scripts/MinLoop/MinLoopStageAnchorController.cs,239,flowController = FindObjectOfType<MinLoopFlowController>();
+Assets/Scripts/MinLoop/MinLoopStageCueController.cs,434,flowController = FindObjectOfType<MinLoopFlowController>();
+Assets/Scripts/MinLoop/MinLoopStageObjectActivator.cs,176,flowController = FindObjectOfType<MinLoopFlowController>();
+Assets/Scripts/MinLoop/MinLoopSubtitlePlayer.cs,1059,UnityEngine.Object.FindObjectOfType<HearthPlayerControlLock>();
+Assets/Scripts/MinLoop/MinLoopSubtitlePlayer.cs,1115,FindObjectsOfType<HearthCompanionHudController>(true);
+Assets/Scripts/MinLoop/MinLoopSubtitlePlayer.cs,1296,visualRoot.GetComponentInParent<HearthSubtitleViewBindings>(true);
+Assets/Scripts/MinLoop/MinLoopSubtitlePlayer.cs,1353,"Transform backdrop = GetVisualRoot().transform.Find(""Backdrop"");"
+Assets/Scripts/MinLoop/MinLoopSubtitlePlayer.cs,1362,"Transform accent = GetVisualRoot().transform.Find(""AccentRule"");"
+Assets/Scripts/MinLoop/MinLoopSubtitlePlayer.cs,1371,"Transform speakerTab = GetVisualRoot().transform.Find(""SpeakerTab"");"
+Assets/Scripts/MinLoop/MinLoopSubtitlePlayer.cs,1405,"GetVisualRoot().transform.Find(""AdvanceHint"");"
+Assets/Scripts/MinLoop/MinLoopSubtitlePlayer.cs,1428,Canvas canvas = GetComponentInParent<Canvas>();
+Assets/Scripts/MinLoop/MinLoopSubtitlePlayer.cs,1737,Canvas canvas = root != null ? root.GetComponentInParent<Canvas>() : null;
+Assets/Scripts/MinLoop/MinLoopSubtitlePlayer.cs,1743,"Transform existing = canvas.transform.Find(""PersistentSceneHeader"");"
+Assets/Scripts/MinLoop/MinLoopSubtitlePlayer.cs,2129,Transform found = root.Find(objectName);
+Assets/Scripts/MinLoop/MinLoopSubtitlePlayer.cs,2283,Canvas[] childCanvases = GetComponentsInChildren<Canvas>(true);
+Assets/Scripts/MinLoop/MinLoopTerminalPresenter.cs,114,terminalUI = FindObjectOfType<TerminalUIController>();
+Assets/Scripts/MinLoop/MinLoopWorldGuideMarker.cs,241,targetCamera = FindObjectOfType<Camera>();
+Assets/Scripts/MinLoop/ReplaySequenceController.cs,292,flowController = FindObjectOfType<MinLoopFlowController>();
+Assets/Scripts/MinLoop/ReplaySequenceController.cs,297,subtitlePlayer = FindObjectOfType<MinLoopSubtitlePlayer>();
+Assets/Scripts/MinLoop/ResidentTerminalFlow.cs,48,flowController = FindObjectOfType<MinLoopFlowController>();
+Assets/Scripts/MinLoop/ViewSwitchController.cs,257,ViewSwitchController[] controllers = Object.FindObjectsOfType<ViewSwitchController>(true);
+Assets/Scripts/MinLoop/ViewSwitchController.cs,558,fadeCanvasGroup = fadeImage.GetComponentInParent<CanvasGroup>();
+Assets/Scripts/UI/HearthHud/Companion/HearthCompanionHoldPrompt.cs,270,controller = GetComponentInParent<HearthCompanionHudController>(true);
+Assets/Scripts/UI/HearthHud/Companion/HearthCompanionHudController.cs,805,FindObjectsOfType<PlayerInteraction>(true);
+Assets/Scripts/UI/HearthHud/Companion/HearthCompanionHudController.cs,1073,TMP_Text[] texts = GetComponentsInChildren<TMP_Text>(true);
+Assets/Scripts/UI/HearthHud/Companion/HearthCompanionHudFlowBinder.cs,117,minLoopFlowController = FindObjectOfType<MinLoopFlowController>();
+Assets/Scripts/UI/HearthHud/Companion/HearthCompanionHudPreviewInput.cs,93,controller = GetComponentInParent<HearthCompanionHudController>();
+Assets/Scripts/UI/HearthHud/FirstPerson/HearthFirstPersonHudButtonAction.cs,110,controller = GetComponentInParent<HearthFirstPersonHudController>();
+Assets/Scripts/UI/HearthHud/FirstPerson/HearthFirstPersonHudButtonAction.cs,115,controller = FindObjectOfType<HearthFirstPersonHudController>();
+Assets/Scripts/UI/HearthHud/FirstPerson/HearthFirstPersonHudController.cs,1076,GetComponentsInChildren<HearthFirstPersonHudPage>(true);
+Assets/Scripts/UI/HearthHud/FirstPerson/HearthFirstPersonHudController.cs,1319,"Transform existing = target.Find(""SelectionFill"");"
+Assets/Scripts/UI/HearthHud/FirstPerson/HearthFirstPersonHudController.cs,1403,page.GetComponentsInChildren<Transform>(true);
+Assets/Scripts/UI/HearthHud/FirstPerson/HearthFirstPersonHudController.cs,1426,Graphic[] graphics = item.GetComponentsInChildren<Graphic>(true);
+Assets/Scripts/UI/HearthHud/FirstPerson/HearthFirstPersonHudController.cs,1445,Transform[] items = root.GetComponentsInChildren<Transform>(true);
+Assets/Scripts/UI/HearthHud/FirstPerson/HearthFirstPersonHudController.cs,1461,RectTransform[] rects = GetComponentsInChildren<RectTransform>(true);
+Assets/Scripts/UI/HearthHud/FirstPerson/HearthFirstPersonHudController.cs,1483,root.GetComponentsInChildren<RectTransform>(true);
+Assets/Scripts/UI/HearthHud/FirstPerson/HearthFirstPersonHudController.cs,1584,playerControlLock = FindObjectOfType<HearthPlayerControlLock>();
+Assets/Scripts/UI/HearthHud/FirstPerson/HearthFirstPersonHudFlowBinder.cs,179,hudController = FindObjectOfType<HearthFirstPersonHudController>();
+Assets/Scripts/UI/HearthHud/FirstPerson/HearthFirstPersonHudFlowBinder.cs,184,flowController = FindObjectOfType<MinLoopFlowController>();
+Assets/Scripts/UI/HearthHud/FirstPerson/HearthFirstPersonHudFlowBinder.cs,189,trustStateController = FindObjectOfType<TrustStateController>();
+Assets/Scripts/UI/HearthHud/FirstPerson/HearthFirstPersonHudInput.cs,287,controller = FindObjectOfType<HearthFirstPersonHudController>();
+Assets/Scripts/UI/HearthHud/FirstPerson/HearthLocationProbe.cs,160,hudController = FindObjectOfType<HearthFirstPersonHudController>();
+Assets/Scripts/UI/HearthHud/FirstPerson/HearthLocationProbe.cs,165,hudView = FindObjectOfType<HearthLocationHudView>(true);
+Assets/Scripts/UI/HearthHud/FirstPerson/HearthLocationProbe.cs,170,FirstPersonMovement[] movements = FindObjectsOfType<FirstPersonMovement>(true);
+Assets/Scripts/UI/HearthHud/FirstPerson/HearthLocationProbe.cs,211,? hits[i].collider.GetComponentInParent<HearthLocationSurface>()
+Assets/Scripts/UI/HearthHud/FirstPerson/HearthPlayerControlLock.cs,280,movementComponents = FindObjectsOfType<FirstPersonMovement>(true);
+Assets/Scripts/UI/HearthHud/FirstPerson/HearthPlayerControlLock.cs,285,lookComponents = FindObjectsOfType<FirstPersonLook>(true);
+Assets/Scripts/UI/HearthHud/FirstPerson/HearthPlayerControlLock.cs,290,crouchComponents = FindObjectsOfType<Crouch>(true);
+Assets/Scripts/UI/HearthHud/FirstPerson/HearthPlayerControlLock.cs,295,jumpComponents = FindObjectsOfType<Jump>(true);
+Assets/Scripts/UI/HearthHud/FirstPerson/HearthPlayerControlLock.cs,300,interactionComponents = FindObjectsOfType<PlayerInteraction>(true);
+Assets/Scripts/UI/HearthHud/FirstPerson/HearthSettingsView.cs,266,audioSettings = GetComponentInParent<HearthAudioSettingsController>();
+Assets/Scripts/UI/HearthHud/FirstPerson/HearthSettingsView.cs,271,audioSettings = FindObjectOfType<HearthAudioSettingsController>();
+Assets/Scripts/UI/HearthHud/FirstPerson/HearthSettingsView.cs,308,TMP_Text[] allTexts = GetComponentsInChildren<TMP_Text>(true);
+Assets/Scripts/UI/HearthHud/FirstPerson/HearthSettingsView.cs,346,HearthFirstPersonHudPage page = labelText.GetComponentInParent<HearthFirstPersonHudPage>(true);
+Assets/Scripts/UI/HearthHud/FirstPerson/HearthSettingsView.cs,361,candidate.GetComponentInParent<HearthFirstPersonHudPage>(true) != page ||
+Assets/Scripts/UI/HearthHud/HearthHoldToActButton.cs,137,controller = GetComponentInParent<HearthHudController>();
+Assets/Scripts/UI/HearthHud/HearthHoldToActButton.cs,140,controller = FindObjectOfType<HearthHudController>();
+Assets/Scripts/UI/HearthHud/HearthHudButtonAction.cs,200,tvTerminalController = GetComponentInParent<HearthTvTerminalController>();
+Assets/Scripts/UI/HearthHud/HearthHudButtonAction.cs,208,controller = GetComponentInParent<HearthHudController>();
+Assets/Scripts/UI/HearthHud/HearthHudButtonAction.cs,211,controller = FindObjectOfType<HearthHudController>();
+Assets/Scripts/UI/HearthHud/HearthHudController.cs,82,pages = GetComponentsInChildren<HearthHudPage>(true);
+Assets/Scripts/UI/HearthHud/HearthHudController.cs,241,pages = GetComponentsInChildren<HearthHudPage>(true);
+Assets/Scripts/UI/HearthHud/HearthHudController.cs,314,HearthHoldToActButton[] holdButtons = page.GetComponentsInChildren<HearthHoldToActButton>(true);
+Assets/Scripts/UI/HearthHud/HearthHudPreviewInput.cs,24,controller = FindObjectOfType<HearthHudController>();
+Assets/Scripts/UI/HearthHud/HearthTerminalBootSequence.cs,184,"Transform found = transform.Find(""TerminalContentRoot"");"
+Assets/Scripts/UI/HearthHud/HearthTerminalBootSequence.cs,195,"Transform found = transform.Find(""TerminalOffOverlay"");"
+Assets/Scripts/UI/HearthHud/HearthTerminalBootSequence.cs,201,"Transform found = transform.Find(""TerminalBootOverlay"");"
+Assets/Scripts/UI/HearthHud/HearthTerminalBootSequence.cs,212,"Transform foundFlash = bootOverlayGroup.transform.Find(""BootFlash"");"
+Assets/Scripts/UI/HearthHud/HearthTerminalBootSequence.cs,218,"Transform foundScanlines = bootOverlayGroup.transform.Find(""BootScanlines"");"
+Assets/Scripts/UI/HearthHud/HearthTerminalSelectionHighlighter.cs,117,"Transform found = transform.Find(""KeyboardSelectionHighlight"");"
+Assets/Scripts/UI/HearthHud/HearthTerminalSelectionHighlighter.cs,128,"Transform foundBounds = transform.Find(""KeyboardSelectionBounds"");"
+Assets/Scripts/UI/HearthHud/HearthTerminalSelectionHighlighter.cs,132,"if ((targets == null || targets.Length == 0) && transform.Find(""SelectionTargets"") != null)"
+Assets/Scripts/UI/HearthHud/HearthTerminalSelectionHighlighter.cs,134,"Transform targetRoot = transform.Find(""SelectionTargets"");"
+Assets/Scripts/UI/HearthHud/HearthTerminalSelectionHighlighter.cs,135,RectTransform[] foundTargets = targetRoot.GetComponentsInChildren<RectTransform>(true);
+Assets/Scripts/UI/HearthHud/HearthTvTerminalController.cs,295,dialogueSurface.GetComponentInParent<HearthHudPage>(true);
+Assets/Scripts/UI/HearthHud/HearthTvTerminalController.cs,317,"existingPanel = contentRoot.Find(""TerminalDialogueSurface_V2"");"
+Assets/Scripts/UI/HearthHud/HearthTvTerminalController.cs,395,messageSurface.GetComponentInParent<HearthHudPage>(true);
+Assets/Scripts/UI/HearthHud/HearthTvTerminalController.cs,415,"existingPanel = contentRoot.Find(""TerminalMessageSurface_V2"");"
+Assets/Scripts/UI/HearthHud/HearthTvTerminalController.cs,528,GetComponentsInChildren<HearthDialogueSurface>(true);
+Assets/Scripts/UI/HearthHud/HearthTvTerminalController.cs,845,? searchRoot.GetComponentsInChildren<HearthHudPage>(true)
+Assets/Scripts/UI/HearthHud/HearthTvTerminalController.cs,846,: GetComponentsInChildren<HearthHudPage>(true);
+Assets/Scripts/UI/HearthHud/HearthTvTerminalController.cs,1562,canvas = GetComponentInParent<Canvas>();
+Assets/Scripts/UI/HearthHud/HearthTvTerminalController.cs,1581,"Transform found = transform.Find(""TerminalContentRoot"");"
+Assets/Scripts/UI/HearthHud/HearthTvTerminalController.cs,1584,"found = transform.Find(""TerminalScreenRoot/TerminalContentRoot"");"
+Assets/Scripts/UI/HearthHud/HearthTvTerminalController.cs,1592,"Transform foundHint = transform.Find(""KeyboardNavigationRoot/KeyboardHintText"");"
+Assets/Scripts/UI/HearthHud/HearthTvTerminalController.cs,1598,"Transform foundFocus = transform.Find(""KeyboardNavigationRoot/KeyboardFocusText"");"
+Assets/Scripts/UI/HearthHud/HearthTvTerminalController.cs,1604,"Transform foundPrompt = transform.Find(""KeyboardNavigationRoot/RuntimePromptText"");"
+Assets/Scripts/UI/HearthHud/HearthTvTerminalController.cs,1610,"Transform foundFooter = transform.Find(""KeyboardNavigationRoot/V2_FooterRule"");"
+Assets/Scripts/UI/HearthHud/HearthTvTerminalController.cs,1643,"Transform loopTransform = transform.Find(""TerminalActiveLoop"");"
+Assets/Scripts/UI/HearthHud/HearthTvTerminalController.cs,1658,"Transform visualRoot = transform.Find(""TerminalVisualRoot"");"
+Assets/Scripts/UI/HearthHud/HearthTvTerminalController.cs,1987,Transform[] children = root.GetComponentsInChildren<Transform>(true);
+Assets/Scripts/UI/HearthHud/HearthTvTerminalController.cs,2006,TMP_Text[] texts = root.GetComponentsInChildren<TMP_Text>(true);
+Assets/Scripts/UI/HearthHud/HearthTvTerminalController.cs,2023,"Transform navigationRoot = transform.Find(""KeyboardNavigationRoot"");"
+Assets/Scripts/UI/HearthHud/HearthTvTerminalController.cs,2353,UnityEngine.Object.FindObjectsOfType<HearthPlayerControlLock>(true);
+Assets/Scripts/UI/HearthHud/HearthTvTerminalController.cs,2451,Camera[] cameras = hardwareRoot.GetComponentsInChildren<Camera>(true);
+Assets/Scripts/UI/HearthHud/HearthTvTerminalController.cs,2485,candidate.GetComponentInParent<FirstPersonMovement>() != null ||
+Assets/Scripts/UI/HearthHud/HearthTvTerminalController.cs,2486,candidate.GetComponentInParent<PlayerInteraction>() != null ||
+Assets/Scripts/UI/HearthHud/HearthTvTerminalController.cs,2499,PlayerInteraction[] interactions = UnityEngine.Object.FindObjectsOfType<PlayerInteraction>(true);
+Assets/Scripts/UI/HearthHud/HearthTvTerminalController.cs,2588,Camera[] cameras = UnityEngine.Object.FindObjectsOfType<Camera>(true);
+Assets/Scripts/UI/HearthHud/HearthTvTerminalInteractable.cs,63,terminalController = GetComponentInParent<HearthTvTerminalController>();
+Assets/Scripts/UI/HearthHud/V2/HearthInitialGameplayTutorialController.cs,182,Object.FindObjectsOfType<MinLoopSubtitlePlayer>(true);
+Assets/Scripts/UI/HearthHud/V2/HearthInitialGameplayTutorialController.cs,207,humanHud = GetComponentInParent<HearthFirstPersonHudController>(true);
+Assets/Scripts/UI/HearthHud/V2/HearthInitialGameplayTutorialController.cs,213,GetComponentInParent<HearthUiStateCoordinator>(true);
+Assets/Scripts/UI/HearthHud/V2/HearthInitialGameplayTutorialController.cs,225,Object.FindObjectsOfType<PlayerInteraction>(true);
+Assets/Scripts/UI/HearthHud/V2/HearthInitialGameplayTutorialController.cs,242,Object.FindObjectsOfType<MinLoopSubtitlePlayer>(true);
+Assets/Scripts/UI/HearthHud/V2/HearthUiStateCoordinator.cs,343,? humanHud.GetComponentsInChildren<HearthFirstPersonHudPage>(true)
+Assets/Scripts/UI/HearthHud/V2/HearthUiStateCoordinator.cs,436,GetComponentInParent<HearthFirstPersonHudController>(true);
+Assets/Scripts/UI/HearthHud/V2/HearthUiStateCoordinator.cs,443,humanHud.GetComponentsInChildren<HearthFirstPersonHudPage>(true);
+Assets/Scripts/UI/HearthHud/V2/HearthUiStateCoordinator.cs,462,UnityEngine.Object.FindObjectOfType<HearthPlayerControlLock>();
+Assets/Scripts/UI/HearthHud/V2/HearthUiStateCoordinator.cs,468,UnityEngine.Object.FindObjectsOfType<MinLoopSubtitlePlayer>(true);
+Assets/Scripts/UI/HearthHud/V2/HearthUiStateCoordinator.cs,474,UnityEngine.Object.FindObjectsOfType<
+Assets/Scripts/UI/HearthHud/V2/HearthUiStateCoordinator.cs,481,UnityEngine.Object.FindObjectsOfType<HearthShutdownChallenge>(true);
+Assets/Scripts/UI/HearthHud/V2/HearthUiStateCoordinator.cs,487,UnityEngine.Object.FindObjectsOfType<HearthLobbyHudOverlay>(true);
+Assets/Scripts/UI/HearthHud/V2/HearthUiTypography.cs,51,var typography = text.GetComponentInParent<HearthUiTypography>(true);
+Assets/Scripts/UI/TerminalUIController.cs,61,Canvas canvas = GetComponentInParent<Canvas>();

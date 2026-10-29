@@ -47,16 +47,9 @@
 
 ## 17F03 人物站位摆演入口
 
-- 统一编辑入口：`MIN_LOOP_ROOT/ReplayRoom_17F03/StagingPreview_17F03`。这里的 `Preview_*` 是专门给编辑摆位用的副本，不是运行时演员。
-- 调整流程：退出 Play Mode -> `Tools / Hearth / Replay / 17F03 Staging / Create Or Update Preview` -> 移动或旋转 `Preview_*` -> `Apply Preview Poses To Anchors` -> Play 测试。
-- 当前也支持自动同步：移动或旋转 `Preview_*` 根节点后可以直接按 Play，工具会在进入 Play Mode 前把位置和朝向写入对应 Anchor。`Apply Preview Poses To Anchors` 仍可用于立即保存；若人物显示回默认坐姿或展开手姿势，执行 `Reapply Animation Poses`。
-- 每幕对应关系：
-  - 第一幕：`Preview_Mother_Human`、`Preview_Father_Human`。
-  - 第二幕：`Preview_Mother_Midday`、`Preview_Father_Midday`、`Preview_Daughter_Midday`。
-  - 第三幕：`Preview_Daughter_NightStart`、`Preview_Daughter_NightPath_01`、`Preview_Daughter_NightApproach`。
-- 运行时显隐仍由 `HearthCompanion17F03ReplayController` 管理。预览层在 Play Mode 自动隐藏，不能替代 RuntimeActors。
-- 不要直接改 `RuntimeActors` 的位置；正式流程会重新吸附到 `Anchors`。正常运行 `Apply 17F03 Minimal Loop Setup` 会保留已同步的 Anchor；`Rebuild 17F03 Anchors From References` 会覆盖它们，只在确实要从旧参考模型重建时使用。
-- 预览安全规则：即使已经创建 `StagingPreview_17F03`，也可以正常重跑 `Apply 17F03 Minimal Loop Setup`。绑定工具会忽略预览副本并检查正式演员是否重复；若预览根节点少了可视子模型，重跑 `Create Or Update Preview` 会补回模型但不重置你手调过的预览根节点位置和朝向。
+2026-10-29 更新：直接编辑 `Gameplay/ReplayRoom_17F03/Anchors` 下各幕的正式 Anchor。退出 Play，按 `HearthCompanion17F03ReplayController` Inspector 中的母亲/父亲/女儿各阶段引用定位 Anchor，调整位置与朝向，保存场景，再运行对应阶段测试。
+
+正式演员位于 RuntimeActors，位置和显隐仍由现有回放控制器管理；不要用修改演员临时位置代替修改 Anchor。StagingPreview 副本、StagingPoseProxy、创建/重建/套用预览菜单及进入 Play 前自动写回均已退役。此次仅改变制作入口，未改变剧情顺序、字幕或动作阶段。
 
 ## 17F01 字幕与语音入口
 

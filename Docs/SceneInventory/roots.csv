@@ -1,0 +1,47 @@
+root,visualSection,category,objects,activeObjects,projectScriptInstances,projectScripts
+========= 01 UI =========,========= 01 UI =========,分割线（非容器）,1,1,0,
+LegacyHumanOverlay,========= 01 UI =========,01 UI,5,1,2,HearthUiCanvasOrder (1); HearthUiTypography (1)
+HearthHudRoot,========= 01 UI =========,01 UI,1113,40,85,HearthFirstPersonHudButtonAction (23); HearthFirstPersonHudPage (22); HearthReachControl (22); HearthUiCanvasOrder (2); HearthAudioSettingsController (1); HearthPlayerControlLock (1); HearthFirstPersonHudController (1); HearthFirstPersonHudInput (1); HearthDispositionHistoryView (1); HearthSettingsView (1); HearthFirstPersonHudFlowBinder (1); HearthUiStateCoordinator (1); HearthUiThemeMarker (1); HearthHumanHudBindings (1); HearthUiTypography (1); HearthAudioChannelSource (1); HearthLocationHudView (1); HearthActionHintPresenter (1); HearthInitialGameplayTutorialController (1); HearthInteractionPromptPresenter (1)
+HearthCompanionHudRoot,========= 01 UI =========,01 UI,95,34,17,HearthCompanionHudController (1); HearthCompanionHudPreviewInput (1); HearthCompanionHudFlowBinder (1); HearthUiThemeMarker (1); HearthCompanionHudBindings (1); HearthUiTypography (1); HearthUiCanvasOrder (1); HearthAudioChannelSource (1); HearthCompanionDecisionPanelView (1); HearthCompanionDataStreamView (1); HearthCompanionStatusPanelView (1); HearthCompanionTriggerCardView (1); HearthCompanionHoldPrompt (1); HearthCompanionDirectionGuideView (1); HearthInteractionPromptPresenter (1); HearthCompanionProjectionPanelView (1); HearthCompanionSpecialEffectsView (1)
+========= 02 PLAYER & CAMERAS =========,========= 02 PLAYER & CAMERAS =========,分割线（非容器）,1,1,0,
+Player,========= 02 PLAYER & CAMERAS =========,02 PlayerCameras,27,27,8,HearthAudioChannelSource (4); PlayerInteraction (2); HearthFootstepAudioProfile (2)
+FallbackCamera,========= 02 PLAYER & CAMERAS =========,02 PlayerCameras,1,1,0,
+========= 03 GAMEPLAY SYSTEMS =========,========= 03 GAMEPLAY SYSTEMS =========,分割线（非容器）,1,1,0,
+LocationSystem,========= 03 GAMEPLAY SYSTEMS =========,03 GameplaySystems,3,3,2,HearthLocationProbe (1); HearthLocationSurface (1)
+EventSystem,========= 03 GAMEPLAY SYSTEMS =========,03 GameplaySystems,1,1,0,
+Gameplay,========= 03 GAMEPLAY SYSTEMS =========,03 GameplaySystems,1253,1044,188,HearthAudioChannelSource (64); HearthActorPosePreset (17); HearthEditorOnlyReferenceModel (14); HearthUiCanvasOrder (10); InteractionFeedbackController (7); HearthRouteAnchorGizmo (7); HearthUiTypography (6); HearthSfxCuePlayer (6); HearthActorAnimatorDriver (5); HearthActorRootMotionRelay (4); MinLoopWorldGuideMarker (3); HearthScreenTransitionService (3); HearthReachControl (3); MinLoopSubtitlePlayer (2); HearthSubtitleViewBindings (2); Hearth17F03GazeInteractable (2); MinLoopFlowController (1); TrustStateController (1); ViewSwitchController (1); MinLoopStageObjectActivator (1); MinLoopStageAnchorController (1); MinLoopStageCueController (1); MinLoopDebugHotkeys (1); MinLoopLightingStateController (1); MinLoopAudioStateController (1); HearthHouseholdProgressState (1); MinLoopTerminalPresenter (1); ReplaySequenceController (1); ComfortActionInteractable (1); HearthCompanion17F01ReplayController (1); HearthCompanionReplayInteractable (1); ResidentTerminalFlow (1); MinLoopSceneValidator (1); HearthCompanion17F02ReplayController (1); HearthCompanion17F03ReplayController (1); Hearth17F03InspectionPanel (1); HearthDialogueSurface (1); HearthV2FrameGraphic (1); HearthTerminalCameraTransition (1); HearthDialogueSfxTrack (1); HearthUiPressFeedback (1); HearthVirusPopupShutdownChallenge (1); Hearth17F04FinaleController (1); HearthActorAnimationPlayer (1); Hearth17F04CatGuideController (1); HearthLobbyElevatorInteractable (1); HearthLobbyHudOverlay (1); HearthScreenFader (1); HearthLobbyFlowController (1)
+========= 04 WORLD SCENES =========,========= 04 WORLD SCENES =========,分割线（非容器）,1,1,0,
+Floor17,========= 04 WORLD SCENES =========,04 World,2200,954,188,HearthUiCanvasOrder (38); HearthV2FrameGraphic (34); HearthHudPage (25); HearthDialogueSurface (18); HearthLocationSurface (14); HearthReachControl (12); HearthAudioChannelSource (6); HearthTerminalCameraTransition (5); HearthUiTypography (5); HearthTvTerminalInteractable (4); HearthTerminalBootSequence (4); HearthTvTerminalController (4); HearthTerminalCompactChromeView (4); HearthUiThemeMarker (4); HearthTerminalViewBindings (4); SmartDoorController (2); HearthUiPressFeedback (1); HearthPhotoFrameInteractable (1); HearthPhotoArchiveWorldView (1); HearthPhotoArchiveViewBindings (1); Hearth17F04RoomDoorInteractable (1)
+Lobby,========= 04 WORLD SCENES =========,04 World,407,373,29,Hearth17F04HomeUnitInteractable (6); HearthUiCanvasOrder (3); HearthLobbyConversationZone (3); HearthAudioChannelSource (2); HearthActorPosePreset (2); HearthLobbyTaskTerminalInteractable (1); HearthTerminalCameraTransition (1); HearthTerminalBootSequence (1); HearthUiPressFeedback (1); HearthTvTerminalController (1); HearthUiThemeMarker (1); HearthTerminalViewBindings (1); HearthUiTypography (1); HearthHudPage (1); HearthDialogueSurface (1); HearthV2FrameGraphic (1); CityBillboardContentController (1); HearthActorAnimationPlayer (1)
+HouseholdActors,========= 04 WORLD SCENES =========,04 World,122,122,6,HearthEditorOnlyReferenceModel (4); Hearth17F03UnitInteractable (1); Hearth17F04HomeUnitInteractable (1)
+========= 05 ENVIRONMENT =========,========= 05 ENVIRONMENT =========,分割线（非容器）,1,1,0,
+OriginalSunLight,========= 05 ENVIRONMENT =========,05 Environment,1,1,0,
+OriginalPostProcessing,========= 05 ENVIRONMENT =========,05 Environment,1,1,0,
+CityLots_Primary,========= 05 ENVIRONMENT =========,05 Environment,264,264,0,
+CityLots_Secondary,========= 05 ENVIRONMENT =========,05 Environment,264,264,0,
+CityBuildings_Manual,========= 05 ENVIRONMENT =========,05 Environment,142,142,0,
+CityBillboardAuthoring,========= 05 ENVIRONMENT =========,05 Environment,1,1,2,CityFacadeBillboardPlacer (1); CityBillboardContentDistributor (1)
+CityBillboards_ManualBuildings,========= 05 ENVIRONMENT =========,05 Environment,107,107,52,CityBillboardPlacementSlot (26); CityBillboardContentController (26)
+CityBuildings_Generated,========= 05 ENVIRONMENT =========,05 Environment,12259,12259,462,CityBuildingPlacementSlot (462)
+CityLotAuthoring,========= 05 ENVIRONMENT =========,05 Environment,1,1,1,CityLotAssetPlacer (1)
+OutdoorProps,========= 05 ENVIRONMENT =========,05 Environment,152,152,0,
+EnvironmentGeometry_Secondary,========= 05 ENVIRONMENT =========,05 Environment,589,589,0,
+BuildingSiteGeometry,========= 05 ENVIRONMENT =========,05 Environment,7695,7695,0,
+CityLots_Offset,========= 05 ENVIRONMENT =========,05 Environment,264,264,0,
+DuskLighting,========= 05 ENVIRONMENT =========,05 Environment,6,6,1,CityDuskLightingPresetController (1)
+CityWindowLighting,========= 05 ENVIRONMENT =========,05 Environment,1,1,1,CityWindowNightController (1)
+========= 06 LOOSE ACTORS & SOURCE REFERENCES =========,========= 06 LOOSE ACTORS & SOURCE REFERENCES =========,分割线（非容器）,1,1,0,
+PoseReference_Ben_Seated,========= 06 LOOSE ACTORS & SOURCE REFERENCES =========,06 ActorsReferences,34,0,1,HearthActorPosePreset (1)
+Actor_Noah_17F01,========= 06 LOOSE ACTORS & SOURCE REFERENCES =========,06 ActorsReferences,34,34,2,HearthActorPosePreset (1); HearthActorAnimationPlayer (1)
+CharacterReference_Girl,========= 06 LOOSE ACTORS & SOURCE REFERENCES =========,06 ActorsReferences,73,73,0,
+CharacterReference_Noah,========= 06 LOOSE ACTORS & SOURCE REFERENCES =========,06 ActorsReferences,34,0,3,HearthActorPosePreset (2); HearthActorAnimationPlayer (1)
+Actor_Emily_17F01,========= 06 LOOSE ACTORS & SOURCE REFERENCES =========,06 ActorsReferences,33,33,3,HearthActorPosePreset (2); HearthActorAnimationPlayer (1)
+Actor_Ben_17F02_Terminal,========= 06 LOOSE ACTORS & SOURCE REFERENCES =========,06 ActorsReferences,34,34,3,HearthActorPosePreset (2); HearthActorAnimatorDriver (1)
+Actor_Ben_17F02_Dining,========= 06 LOOSE ACTORS & SOURCE REFERENCES =========,06 ActorsReferences,34,34,3,HearthActorPosePreset (2); HearthActorAnimatorDriver (1)
+CharacterReference_PoliceOfficer,========= 06 LOOSE ACTORS & SOURCE REFERENCES =========,06 ActorsReferences,33,33,0,
+Actor_Claire_17F02_Dining,========= 06 LOOSE ACTORS & SOURCE REFERENCES =========,06 ActorsReferences,34,34,3,HearthActorPosePreset (2); HearthActorAnimatorDriver (1)
+Actor_Daniel_17F01,========= 06 LOOSE ACTORS & SOURCE REFERENCES =========,06 ActorsReferences,33,33,3,HearthActorPosePreset (2); HearthActorAnimationPlayer (1)
+CharacterReference_Daniel,========= 06 LOOSE ACTORS & SOURCE REFERENCES =========,06 ActorsReferences,32,32,0,
+========= 07 REVIEW =========,========= 07 REVIEW =========,分割线（非容器）,1,1,0,
+GroundPlane_Reference,========= 07 REVIEW =========,07 Review（尚未判定废弃）,1,1,0,
+LobbyLayoutReference,========= 07 REVIEW =========,07 Review（尚未判定废弃）,82,82,0,

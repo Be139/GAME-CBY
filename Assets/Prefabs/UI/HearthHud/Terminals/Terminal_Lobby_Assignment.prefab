@@ -1674,6 +1674,10 @@ MonoBehaviour:
   audioSource: {fileID: 6842956411568086146}
   channel: 3
   baseVolume: 0.35
+  duckWhileDialogue: 0
+  dialogueDuckScale: 0.56
+  duckAttackSeconds: 0.12
+  duckReleaseSeconds: 0.35
 --- !u!1 &3821171903546482978
 GameObject:
   m_ObjectHideFlags: 0
@@ -2302,6 +2306,7 @@ MonoBehaviour:
   canvasScaler: {fileID: 0}
   contentRoot: {fileID: 998851146800502384}
   canvasGroup: {fileID: 7476093439566299890}
+  pagePresentationGroup: {fileID: 0}
   worldCamera: {fileID: 0}
   createEventSystemIfMissing: 1
   hideCanvasWhenClosed: 0
@@ -2312,6 +2317,7 @@ MonoBehaviour:
   startingPage: 1
   showStartingPageOnStart: 1
   refreshPagesFromChildrenOnAwake: 1
+  terminalMode: 0
   switchCameraWhileOpen: 0
   playerCamera: {fileID: 0}
   terminalCamera: {fileID: 0}
@@ -2323,12 +2329,16 @@ MonoBehaviour:
   playerInteraction: {fileID: 0}
   playerRigidbody: {fileID: 0}
   unlockCursorWhileOpen: 0
-  hideFirstPersonUiWhileOpen: 1
-  firstPersonUiRootsToHide: []
   zoom: 1
+  authoredViewBindings: {fileID: 0}
+  allowRuntimeSurfaceFallback: 1
   bootSequence: {fileID: 3096642991186328225}
   selectionHighlighter: {fileID: 0}
   submitFeedback: {fileID: 4503669747189667805}
+  dialogueSurface: {fileID: 0}
+  messageSurface: {fileID: 0}
+  uiThemeProfile: {fileID: 0}
+  uiLayoutProfile: {fileID: 0}
   keyboardNavigationEnabled: 1
   closeKey: 27
   cyclePageKey: 9
@@ -2345,7 +2355,7 @@ MonoBehaviour:
   runtimePromptWaitingColor: {r: 0.46, g: 0.52, b: 0.56, a: 0.84}
   pageFocusFormat: PAGE {0}/{1}
   replayFocusLabel: LOAD ROUTE | SPACE
-  keyboardHintLabel: SPACE LOAD ASSIGNMENT     ESC EXIT
+  keyboardHintLabel: SPACE CLOSE TERMINAL
   submitPrimaryActionFromCurrentPage: 1
   pageDrivenSelectionStates: 0
   preChoiceSelectionPageCount: 6

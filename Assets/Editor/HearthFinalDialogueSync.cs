@@ -54,6 +54,7 @@ public static class HearthFinalDialogueSync
     private sealed class PreservedLineState
     {
         public AudioClip VoiceClip;
+        public string VoiceKey;
         public HearthSubtitleLinePresentationKind PresentationKind;
         public HearthDialogueLineMode DialogueMode;
         public SpeakerSide SpeakerSide;
@@ -487,9 +488,16 @@ public static class HearthFinalDialogueSync
             for (int i = 0; i < sourceLines.Length; i++)
             {
                 string trimmed = sourceLines[i].Trim();
+                if (TimeCardMarkerRegex.IsMatch(trimmed))
+                {
+                    DialogueLine timeCard = dialogueBySourceLine[i + 1];
+                    output.Add(MarkerPrefix + string.Join(",", markerIdsBySourceLine[timeCard.SourceLine]) + " -->");
+                    output.Add(sourceLines[i]);
+                    continue;
+                }
+
                 if (MarkerRegex.IsMatch(trimmed) ||
-                    VoiceMarkerRegex.IsMatch(trimmed) ||
-                    TimeCardMarkerRegex.IsMatch(trimmed))
+                    VoiceMarkerRegex.IsMatch(trimmed))
                 {
                     continue;
                 }
@@ -787,6 +795,7 @@ public static class HearthFinalDialogueSync
                 preservedByLineId[oldLineId] = new PreservedLineState
                 {
                     VoiceClip = clip,
+                    VoiceKey = BuildVoiceKey(speaker, text),
                     PresentationKind =
                         (HearthSubtitleLinePresentationKind)oldLine.FindPropertyRelative("presentationKind").enumValueIndex,
                     DialogueMode =
@@ -881,7 +890,10 @@ public static class HearthFinalDialogueSync
                         ? preservedState.HoldSeconds
                         : EstimateHoldSeconds(source.Text));
             AudioClip preserved;
-            if (hasPreservedState)
+            if (hasPreservedState && string.Equals(
+                preservedState.VoiceKey,
+                BuildVoiceKey(source.Speaker, source.Text),
+                StringComparison.Ordinal))
             {
                 preserved = preservedState.VoiceClip;
             }

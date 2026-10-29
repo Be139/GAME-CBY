@@ -17,7 +17,7 @@ public static partial class HearthProductionUiTools
         string folder = "Temp/HearthUiReview/Pages";
         Directory.CreateDirectory(folder);
         var sources = UnityEngine.Object.FindObjectsOfType<Canvas>(true).Where(c => c.gameObject.scene.IsValid() &&
-            (c.name == "LobbyNarrativeCanvas" || c.name == "ShutdownChallenge_17F04" || c.name == "HumanCanvas")).ToArray();
+            (c.name == "LobbyNarrativeCanvas" || c.name == "ShutdownChallenge_17F04" || c.name == "LegacyHumanOverlay")).ToArray();
         foreach (Canvas source in sources)
         {
             var scene = EditorSceneManager.NewPreviewScene();

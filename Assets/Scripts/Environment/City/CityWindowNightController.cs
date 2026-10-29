@@ -438,12 +438,12 @@ public class CityWindowNightController : MonoBehaviour
     {
         if (selectedBuildingRoot == null)
         {
-            selectedBuildingRoot = FindSceneTransform("BUILDING");
+            selectedBuildingRoot = FindSceneTransform("CityBuildings_Manual");
         }
 
         if (heightGroupedBuildingRoot == null)
         {
-            heightGroupedBuildingRoot = FindSceneTransform("CityBuildings_ByHeight");
+            heightGroupedBuildingRoot = FindSceneTransform("CityBuildings_Generated");
         }
     }
 

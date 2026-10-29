@@ -176,11 +176,11 @@ public class HearthLocationProbe : MonoBehaviour
                 }
 
                 string path = GetPath(movements[i].transform);
-                if (humanProbeRoot == null && path.Contains("Person Controller"))
+                if (humanProbeRoot == null && path.Contains("HumanRig"))
                 {
                     humanProbeRoot = movements[i].transform;
                 }
-                else if (companionProbeRoot == null && path.Contains("Robot Controller"))
+                else if (companionProbeRoot == null && path.Contains("CompanionRig"))
                 {
                     companionProbeRoot = movements[i].transform;
                 }

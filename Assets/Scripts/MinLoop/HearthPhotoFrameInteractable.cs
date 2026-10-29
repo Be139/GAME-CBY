@@ -341,7 +341,7 @@ public class HearthPhotoFrameInteractable : MonoBehaviour, IInteractable, IInter
             PlayerInteraction[] interactions = FindObjectsOfType<PlayerInteraction>(true);
             for (int i = 0; i < interactions.Length; i++)
             {
-                if (interactions[i] != null && interactions[i].gameObject.name == "Person Controller")
+                if (interactions[i] != null && interactions[i].gameObject.name == "HumanRig")
                 {
                     playerInteraction = interactions[i];
                     break;

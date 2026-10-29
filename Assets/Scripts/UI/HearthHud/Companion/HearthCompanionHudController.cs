@@ -807,7 +807,7 @@ public class HearthCompanionHudController : MonoBehaviour
             {
                 if (interactions[i] != null &&
                     interactions[i].gameObject.scene == gameObject.scene &&
-                    interactions[i].name == "Robot Controller")
+                    interactions[i].name == "CompanionRig")
                 {
                     companionInteraction = interactions[i];
                     break;

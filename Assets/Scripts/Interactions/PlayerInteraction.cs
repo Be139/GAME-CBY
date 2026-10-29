@@ -218,7 +218,7 @@ public class PlayerInteraction : MonoBehaviour
             return false;
         }
 
-        bool companion = name == "Robot Controller";
+        bool companion = name == "CompanionRig";
         string hudRootName = companion ? "HearthCompanionHudRoot" : "HearthHudRoot";
         string promptPath = companion
             ? "InteractionLayer/PlayerInteractionPrompt"
@@ -485,7 +485,7 @@ public class PlayerInteraction : MonoBehaviour
     {
         return transform.parent != null
             && transform.parent.name == "Player"
-            && (name == "Person Controller" || name == "Robot Controller");
+            && (name == "HumanRig" || name == "CompanionRig");
     }
 
     private static Transform FindDescendantByName(Transform root, string targetName)

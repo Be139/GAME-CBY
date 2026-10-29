@@ -2642,7 +2642,7 @@ public class HearthTvTerminalController : MonoBehaviour
             score += 5;
         }
 
-        if (camera.name == "Main Camera")
+        if (camera.name == "FallbackCamera")
         {
             score -= 30;
         }

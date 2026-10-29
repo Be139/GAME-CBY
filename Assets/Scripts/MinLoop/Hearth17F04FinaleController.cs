@@ -722,7 +722,7 @@ public class Hearth17F04FinaleController : MonoBehaviour
             PlayerInteraction[] interactions = FindObjectsOfType<PlayerInteraction>(true);
             for (int i = 0; i < interactions.Length; i++)
             {
-                if (interactions[i] != null && interactions[i].gameObject.name == "Person Controller")
+                if (interactions[i] != null && interactions[i].gameObject.name == "HumanRig")
                 {
                     humanInteraction = interactions[i];
                     break;

@@ -686,6 +686,8 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
         Color idle = WithAlpha(ThemePanelBackground, idleAlpha);
         if (choiceABackground != null) choiceABackground.color = choiceIndex == 0 ? selected : idle;
         if (choiceBBackground != null) choiceBBackground.color = choiceIndex == 1 ? selected : idle;
+        if (choiceABackground != null) HearthReachControl.Focus(choiceABackground.transform, choiceIndex == 0);
+        if (choiceBBackground != null) HearthReachControl.Focus(choiceBBackground.transform, choiceIndex == 1);
 
         float alpha = choiceSubmitted ? 0.42f : choiceInputEnabled ? 1f : 0.58f;
         SetTextAlpha(choiceAText, alpha);

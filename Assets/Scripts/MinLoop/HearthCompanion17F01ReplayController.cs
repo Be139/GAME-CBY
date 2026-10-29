@@ -774,10 +774,10 @@ public class HearthCompanion17F01ReplayController : MonoBehaviour
 
         if (viewSwitchController != null && robotRoot == null)
         {
-            GameObject robotObject = GameObject.Find("Robot Controller");
+            GameObject robotObject = GameObject.Find("CompanionRig");
             if (robotObject == null)
             {
-                robotObject = GameObject.Find("Player/Robot Controller");
+                robotObject = GameObject.Find("Player/CompanionRig");
             }
 
             if (robotObject != null)

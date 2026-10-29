@@ -10,7 +10,7 @@ using Object = UnityEngine.Object;
 
 public static class HearthP0StabilityTools
 {
-    private const string MenuRoot = "Tools/Hearth/Stability/";
+    private const string MenuRoot = "Tools/Hearth/Validation/";
     private const string CityPeopleTypeName = "CityPeople.CityPeople";
 
     private static readonly string[] DoorPrefabPaths =
@@ -20,42 +20,7 @@ public static class HearthP0StabilityTools
         "Assets/Free Wood Door Pack/Prefab/Wood/Door_2/Door_2_White.prefab",
     };
 
-    [MenuItem(MenuRoot + "Apply P0 01-03 Repairs")]
-    public static void ApplyP0Repairs()
-    {
-        if (EditorApplication.isPlayingOrWillChangePlaymode)
-        {
-            Debug.LogWarning("[HearthP0StabilityTools] Exit Play Mode before applying repairs.");
-            return;
-        }
-
-        Scene scene = SceneManager.GetActiveScene();
-        if (!scene.IsValid() || !scene.isLoaded)
-        {
-            Debug.LogError("[HearthP0StabilityTools] No loaded scene is available.");
-            return;
-        }
-
-        int removedDoorScripts = RemoveMissingScriptsFromDoorPrefabs();
-        int disabledCityPeople = DisableControlledCityPeopleAutoplay(scene);
-        int removedLegacyCatAnimations = RemoveLegacyCatAnimations(scene);
-
-        if (disabledCityPeople > 0 || removedLegacyCatAnimations > 0)
-        {
-            EditorSceneManager.MarkSceneDirty(scene);
-            EditorSceneManager.SaveScene(scene);
-        }
-
-        AssetDatabase.SaveAssets();
-        AssetDatabase.Refresh();
-        Debug.Log(
-            "[HearthP0StabilityTools] Repairs applied. Removed missing door scripts: " + removedDoorScripts +
-            ", disabled controlled CityPeople behaviours: " + disabledCityPeople +
-            ", removed legacy cat Animation components: " + removedLegacyCatAnimations + ".");
-        ValidateP0Repairs();
-    }
-
-    [MenuItem(MenuRoot + "Validate P0 01-03")]
+    [MenuItem(MenuRoot + "Validate Actors And Reference Models")]
     public static void ValidateP0Repairs()
     {
         List<string> issues = new List<string>();
@@ -84,97 +49,6 @@ public static class HearthP0StabilityTools
             string.Join("\n- ", issues.ToArray()));
     }
 
-    public static int DisableCityPeopleAutoplayInHierarchy(GameObject root, bool recordUndo)
-    {
-        if (root == null)
-        {
-            return 0;
-        }
-
-        int changed = 0;
-        MonoBehaviour[] behaviours = root.GetComponentsInChildren<MonoBehaviour>(true);
-        for (int i = 0; i < behaviours.Length; i++)
-        {
-            MonoBehaviour behaviour = behaviours[i];
-            if (behaviour == null || !behaviour.enabled || behaviour.GetType().FullName != CityPeopleTypeName)
-            {
-                continue;
-            }
-
-            if (recordUndo)
-            {
-                Undo.RecordObject(behaviour, "Disable random CityPeople animation");
-            }
-
-            behaviour.enabled = false;
-            EditorUtility.SetDirty(behaviour);
-            changed++;
-        }
-
-        return changed;
-    }
-
-    private static int RemoveMissingScriptsFromDoorPrefabs()
-    {
-        int removed = 0;
-        for (int i = 0; i < DoorPrefabPaths.Length; i++)
-        {
-            string path = DoorPrefabPaths[i];
-            if (AssetDatabase.LoadAssetAtPath<GameObject>(path) == null)
-            {
-                Debug.LogWarning("[HearthP0StabilityTools] Door prefab was not found: " + path);
-                continue;
-            }
-
-            GameObject root = PrefabUtility.LoadPrefabContents(path);
-            bool changed = false;
-            try
-            {
-                foreach (Transform item in root.GetComponentsInChildren<Transform>(true))
-                {
-                    int count = GameObjectUtility.GetMonoBehavioursWithMissingScriptCount(item.gameObject);
-                    if (count <= 0)
-                    {
-                        continue;
-                    }
-
-                    GameObjectUtility.RemoveMonoBehavioursWithMissingScript(item.gameObject);
-                    removed += count;
-                    changed = true;
-                }
-
-                if (changed)
-                {
-                    PrefabUtility.SaveAsPrefabAsset(root, path);
-                }
-            }
-            finally
-            {
-                PrefabUtility.UnloadPrefabContents(root);
-            }
-        }
-
-        return removed;
-    }
-
-    private static int DisableControlledCityPeopleAutoplay(Scene scene)
-    {
-        int changed = 0;
-        MonoBehaviour[] behaviours = Object.FindObjectsOfType<MonoBehaviour>(true);
-        for (int i = 0; i < behaviours.Length; i++)
-        {
-            MonoBehaviour behaviour = behaviours[i];
-            if (behaviour == null || behaviour.gameObject.scene != scene || !IsControlledActorBehaviour(behaviour))
-            {
-                continue;
-            }
-
-            changed += DisableCityPeopleAutoplayInHierarchy(behaviour.gameObject, true);
-        }
-
-        return changed;
-    }
-
     private static bool IsControlledActorBehaviour(MonoBehaviour behaviour)
     {
         if (behaviour.GetType().FullName != CityPeopleTypeName)
@@ -187,7 +61,6 @@ public static class HearthP0StabilityTools
         {
             if (current.GetComponent<HearthActorAnimatorDriver>() != null ||
                 current.GetComponent<HearthActorAnimationPlayer>() != null ||
-                current.GetComponent<Hearth17F03StagingPoseProxy>() != null ||
                 current.GetComponent<HearthEditorOnlyReferenceModel>() != null)
             {
                 return true;
@@ -197,34 +70,8 @@ public static class HearthP0StabilityTools
         }
 
         string path = GetHierarchyPath(behaviour.transform);
-        return path.StartsWith("MIN_LOOP_ROOT/ReplayRoom_17F", StringComparison.Ordinal) ||
-               path.StartsWith("MIN_LOOP_ROOT/Finale_17F04", StringComparison.Ordinal);
-    }
-
-    private static int RemoveLegacyCatAnimations(Scene scene)
-    {
-        int removed = 0;
-        foreach (GameObject gameObject in EnumerateSceneGameObjects(scene))
-        {
-            if (!IsCatRouteObject(gameObject.name))
-            {
-                continue;
-            }
-
-            Animation[] legacy = gameObject.GetComponentsInChildren<Animation>(true);
-            for (int i = 0; i < legacy.Length; i++)
-            {
-                if (legacy[i] == null)
-                {
-                    continue;
-                }
-
-                Undo.DestroyObjectImmediate(legacy[i]);
-                removed++;
-            }
-        }
-
-        return removed;
+        return path.StartsWith("Gameplay/ReplayRoom_17F", StringComparison.Ordinal) ||
+               path.StartsWith("Gameplay/Finale_17F04", StringComparison.Ordinal);
     }
 
     private static void ValidateSceneMissingScripts(Scene scene, List<string> issues)

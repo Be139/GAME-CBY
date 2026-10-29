@@ -10,13 +10,14 @@ public enum HearthUiCanvasBand
     LobbyBlackout = 20000, ViewTransition = 32767
 }
 
-[RequireComponent(typeof(Canvas)), DisallowMultipleComponent]
+[ExecuteAlways, RequireComponent(typeof(Canvas)), DisallowMultipleComponent]
 public sealed class HearthUiCanvasOrder : MonoBehaviour
 {
     [SerializeField] private HearthUiCanvasBand band;
     [SerializeField] private bool overrideParent = true;
     public HearthUiCanvasBand Band { get { return band; } }
     private void OnEnable() { Apply(); }
+    private void OnValidate() { Apply(); }
     public void Configure(HearthUiCanvasBand value, bool independent)
     {
         band = value;

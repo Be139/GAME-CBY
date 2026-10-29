@@ -1274,6 +1274,7 @@ public class HearthFirstPersonHudController : MonoBehaviour
             }
 
             Transform selection = EnsureSelectionFill(target);
+            HearthReachControl.Focus(target, visible && i == selectedIndex);
             if (selection != null)
             {
                 selection.gameObject.SetActive(visible && i == selectedIndex);

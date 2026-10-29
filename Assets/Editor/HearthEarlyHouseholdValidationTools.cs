@@ -9,7 +9,7 @@ using Object = UnityEngine.Object;
 
 public static class HearthEarlyHouseholdValidationTools
 {
-    private const string MenuRoot = "Tools/Hearth/Replay/";
+    private const string MenuRoot = "Tools/Hearth/Validation/";
 
     [MenuItem(MenuRoot + "Validate 17F01 Minimal Loop Setup")]
     public static void Validate17F01()
@@ -103,8 +103,8 @@ public static class HearthEarlyHouseholdValidationTools
             Flow = FindSceneComponent<MinLoopFlowController>(),
             Hud = FindSceneComponent<HearthCompanionHudController>(),
             Subtitle = FindSceneComponent<MinLoopSubtitlePlayer>(),
-            Human = FindSceneObjectByPath("Player/Person Controller"),
-            Robot = FindSceneObjectByPath("Player/Robot Controller"),
+            Human = FindSceneObjectByPath("Player/HumanRig"),
+            Robot = FindSceneObjectByPath("Player/CompanionRig"),
         };
 
         ViewSwitchController[] viewSwitches = FindSceneComponents<ViewSwitchController>()
@@ -123,8 +123,8 @@ public static class HearthEarlyHouseholdValidationTools
         if (FindSceneComponent<TrustStateController>() == null) issues.Add("TrustStateController is missing.");
         if (shared.Hud == null) issues.Add("HearthCompanionHudController is missing.");
         if (shared.Subtitle == null) issues.Add("MinLoopSubtitlePlayer is missing.");
-        if (shared.Human == null) issues.Add("Formal Player/Person Controller is missing.");
-        if (shared.Robot == null) issues.Add("Formal Player/Robot Controller is missing.");
+        if (shared.Human == null) issues.Add("Formal Player/HumanRig is missing.");
+        if (shared.Robot == null) issues.Add("Formal Player/CompanionRig is missing.");
 
         if (shared.Human != null)
         {

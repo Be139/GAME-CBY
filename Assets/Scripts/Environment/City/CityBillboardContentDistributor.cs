@@ -30,7 +30,7 @@ public class CityBillboardContentDistributor : MonoBehaviour
 
     [Header("Billboard Scope")]
     [SerializeField] private Transform billboardRoot;
-    [SerializeField] private string billboardRootName = "CityBillboards_BUILDING";
+    [SerializeField] private string billboardRootName = "CityBillboards_ManualBuildings";
     [SerializeField] private bool includeInactiveBillboards = true;
     [SerializeField] private Material mediaSurfaceMaterial;
     [SerializeField, Min(0.02f)] private float repairedSurfaceThickness = 0.28f;

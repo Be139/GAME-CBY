@@ -90,7 +90,8 @@ public static class HearthFinalVoiceBinder
             "[HearthFinalVoiceBinder] Final voice binding passed: " + runtimeRows.Count +
             " distinct gameplay clips imported and bound across " + usageCount +
             " runtime dialogue entries. The 7 commercial clips and the lobby line that refers to the omitted " +
-            "commercial were intentionally excluded. Subtitles use the final JSONL wording without performance tags.");
+            "commercial were intentionally excluded. Subtitles remain sourced from the final game script; " +
+            "voice manifest wording must match before a clip is bound.");
     }
 
     [MenuItem("Tools/Hearth/Dialogue/Validate Final Voice Bindings")]
@@ -253,11 +254,26 @@ public static class HearthFinalVoiceBinder
             for (int i = 0; i < lines.arraySize; i++)
             {
                 SerializedProperty line = lines.GetArrayElementAtIndex(i);
+                if ((HearthSubtitleLinePresentationKind)line.FindPropertyRelative("presentationKind").enumValueIndex ==
+                    HearthSubtitleLinePresentationKind.TimeCard)
+                {
+                    continue;
+                }
                 string lineId = line.FindPropertyRelative("lineId").stringValue;
                 VoiceManifestLine row;
                 if (string.IsNullOrWhiteSpace(lineId) || !rowsById.TryGetValue(lineId, out row))
                 {
                     issues.Add(path + " line " + i + " has no valid final voice line ID.");
+                    continue;
+                }
+
+                if (!string.Equals(line.FindPropertyRelative("speaker").stringValue,
+                        row.speaker ?? string.Empty, StringComparison.Ordinal) ||
+                    !string.Equals(line.FindPropertyRelative("text").stringValue,
+                        CleanSubtitle(row.text), StringComparison.Ordinal))
+                {
+                    issues.Add(path + " line " + i + " differs from voice recording " + lineId +
+                        "; update the recording/manifest before binding it to revised dialogue.");
                     continue;
                 }
 
@@ -340,6 +356,14 @@ public static class HearthFinalVoiceBinder
             for (int i = 0; i < sequence.Lines.Count; i++)
             {
                 MinLoopSubtitleLine line = sequence.Lines[i];
+                if (line != null && line.presentationKind == HearthSubtitleLinePresentationKind.TimeCard)
+                {
+                    if (line.voiceClip != null)
+                    {
+                        issues.Add(path + " time card " + i + " must not have voice audio.");
+                    }
+                    continue;
+                }
                 VoiceManifestLine row;
                 if (line == null || string.IsNullOrWhiteSpace(line.lineId) ||
                     !rowsById.TryGetValue(line.lineId, out row))

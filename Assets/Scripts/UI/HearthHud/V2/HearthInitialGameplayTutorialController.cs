@@ -227,7 +227,7 @@ public sealed class HearthInitialGameplayTutorialController : MonoBehaviour
             {
                 PlayerInteraction candidate = interactions[i];
                 if (candidate != null &&
-                    candidate.name != "Robot Controller" &&
+                    candidate.name != "CompanionRig" &&
                     candidate.gameObject.scene == gameObject.scene)
                 {
                     humanInteraction = candidate;

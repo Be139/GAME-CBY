@@ -45,7 +45,7 @@ public class CityFacadeBillboardPlacer : MonoBehaviour
     [SerializeField] private Transform[] manualBuildingRoots;
     [SerializeField] private string[] manualBuildingRootNameHints =
     {
-        "BUILDING"
+        "CityBuildings_Manual"
     };
     [SerializeField] private bool includeInactiveBuildings = true;
 

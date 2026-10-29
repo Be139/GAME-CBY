@@ -143,6 +143,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2439477087806181045}
+  - component: {fileID: 5501133418390114001}
   m_Layer: 0
   m_Name: KeyboardNavigationRoot
   m_TagString: Untagged
@@ -172,6 +173,29 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!223 &5501133418390114001
+Canvas:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 999723423675775237}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_RenderMode: 2
+  m_Camera: {fileID: 0}
+  m_PlaneDistance: 100
+  m_PixelPerfect: 0
+  m_ReceivesEvents: 1
+  m_OverrideSorting: 0
+  m_OverridePixelPerfect: 0
+  m_SortingBucketNormalizedSize: 0
+  m_VertexColorAlwaysGammaSpace: 0
+  m_AdditionalShaderChannelsFlag: 0
+  m_UpdateRectTransformForStandalone: 0
+  m_SortingLayerID: 0
+  m_SortingOrder: 20
+  m_TargetDisplay: 0
 --- !u!1 &1282733325673112263
 GameObject:
   m_ObjectHideFlags: 0
@@ -715,6 +739,7 @@ MonoBehaviour:
   canvasScaler: {fileID: 0}
   contentRoot: {fileID: 7356266733629530499}
   canvasGroup: {fileID: 2735207115800862417}
+  pagePresentationGroup: {fileID: 0}
   worldCamera: {fileID: 0}
   createEventSystemIfMissing: 1
   hideCanvasWhenClosed: 0
@@ -738,11 +763,15 @@ MonoBehaviour:
   playerRigidbody: {fileID: 0}
   unlockCursorWhileOpen: 1
   zoom: 1
+  authoredViewBindings: {fileID: 0}
+  allowRuntimeSurfaceFallback: 1
   bootSequence: {fileID: 8105359383984648099}
   selectionHighlighter: {fileID: 0}
   submitFeedback: {fileID: 7789977779324328891}
   dialogueSurface: {fileID: 0}
   messageSurface: {fileID: 0}
+  uiThemeProfile: {fileID: 0}
+  uiLayoutProfile: {fileID: 0}
   keyboardNavigationEnabled: 1
   closeKey: 27
   cyclePageKey: 9
@@ -752,9 +781,9 @@ MonoBehaviour:
   downSelectionKey: 274
   submitKey: 32
   keyboardCyclePageCount: 1
-  keyboardHintText: {fileID: 0}
-  keyboardFocusText: {fileID: 0}
-  runtimePromptText: {fileID: 0}
+  keyboardHintText: {fileID: 1941999277048094158}
+  keyboardFocusText: {fileID: 8601559530419935334}
+  runtimePromptText: {fileID: 5222220225303370707}
   runtimePromptReadyColor: {r: 0.78, g: 0.96, b: 1, a: 0.96}
   runtimePromptWaitingColor: {r: 0.46, g: 0.52, b: 0.56, a: 0.84}
   pageFocusFormat: PAGE {0}/{1}

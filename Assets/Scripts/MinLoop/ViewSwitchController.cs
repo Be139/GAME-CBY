@@ -83,26 +83,7 @@ public class ViewSwitchController : MonoBehaviour
 
         public void SetControlsActive(bool isActive)
         {
-            if (movement != null)
-            {
-                movement.enabled = isActive;
-            }
-
-            if (look != null)
-            {
-                look.enabled = isActive;
-            }
-
-            if (interaction != null)
-            {
-                AssignInteractionCamera();
-                interaction.SetInteractionEnabled(isActive);
-            }
-
-            if (!isActive)
-            {
-                ClearVelocity();
-            }
+            SetControlsActive(isActive, HearthPlayerControlMask.None);
         }
 
         public void SetControlsActive(
@@ -304,16 +285,16 @@ public class ViewSwitchController : MonoBehaviour
             string path = GetHierarchyPath(candidate.transform);
             if (string.Equals(
                 path,
-                "MIN_LOOP_ROOT/FlowManagers/ViewSwitchController",
+                "Gameplay/FlowManagers/ViewSwitchController",
                 System.StringComparison.Ordinal))
             {
                 score += 10000;
             }
-            else if (path.Contains("MIN_LOOP_ROOT/FlowManagers"))
+            else if (path.Contains("Gameplay/FlowManagers"))
             {
                 score += 2000;
             }
-            else if (path.Contains("MIN_LOOP_ROOT"))
+            else if (path.Contains("Gameplay"))
             {
                 score += 1000;
             }

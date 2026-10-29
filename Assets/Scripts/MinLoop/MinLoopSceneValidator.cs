@@ -189,7 +189,7 @@ public class MinLoopSceneValidator : MonoBehaviour
 
     private void ValidateCoreFlow()
     {
-        AddRequired(flowController != null, "存在 MinLoopFlowController 总流程控制器。", "缺少 MinLoopFlowController。请在 MIN_LOOP_ROOT/FlowManagers 下新建对象并挂载。");
+        AddRequired(flowController != null, "存在 MinLoopFlowController 总流程控制器。", "缺少 MinLoopFlowController。请在 Gameplay/FlowManagers 下新建对象并挂载。");
         AddRequired(terminalPresenter != null, "存在 MinLoopTerminalPresenter 终端展示器。", "缺少 MinLoopTerminalPresenter。终端刷卡、摘要和 A/B 页面无法显示。");
         AddRequired(replaySequenceController != null, "存在 ReplaySequenceController 儿童房复盘控制器。", "缺少 ReplaySequenceController。无法进入昨夜事件复盘。");
         AddRequired(trustStateController != null, "存在 TrustStateController 信任度控制器。", "缺少 TrustStateController。A/B 处置后无法记录信任度。");

@@ -648,7 +648,7 @@ public class HearthLobbyFlowController : MonoBehaviour
     {
         if (humanRoot == null)
         {
-            GameObject player = GameObject.Find("Player/Person Controller");
+            GameObject player = GameObject.Find("Player/HumanRig");
             humanRoot = player != null ? player.transform : null;
         }
 

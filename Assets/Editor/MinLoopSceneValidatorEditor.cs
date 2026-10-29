@@ -19,11 +19,6 @@ public class MinLoopSceneValidatorEditor : Editor
             EditorUtility.SetDirty(validator);
         }
 
-        if (GUILayout.Button("Auto Bind Scene References"))
-        {
-            MinLoopSceneAutoBinder.AutoBindSceneReferences();
-        }
-
         if (GUILayout.Button("Validate Scene Setup"))
         {
             validator.ValidateSceneSetup();

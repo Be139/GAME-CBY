@@ -777,6 +777,7 @@ public sealed class HearthUiStateCoordinator : MonoBehaviour
             terminal.SetModalPresentationSuppressed(state.Modal, state.Dialogue);
         bool companionView =
             !state.Terminal &&
+            !state.Modal &&
             !state.Takeover &&
             viewSwitchController != null &&
             !viewSwitchController.IsSwitching &&

@@ -44,7 +44,7 @@ public class CityLotAssetPlacer : MonoBehaviour
 
     [Header("Lot Source")]
     [SerializeField] private Transform lotRoot;
-    [SerializeField] private string lotRootName = "dikuai";
+    [SerializeField] private string lotRootName = "CityLots_Primary";
     [SerializeField] private string[] targetLotNames =
     {
         "Group20",

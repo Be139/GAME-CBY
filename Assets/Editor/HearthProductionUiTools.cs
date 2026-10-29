@@ -13,7 +13,7 @@ using UnityEngine.UI;
 /// Conservative production UI authoring tools. They never save an open scene
 /// and never migrate text, active state, story, audio or UnityEvent data.
 /// </summary>
-public static class HearthProductionUiTools
+public static partial class HearthProductionUiTools
 {
     private const string MenuRoot = "Tools/Hearth/Production UI/";
     private const string HumanPrefab =
@@ -241,7 +241,7 @@ public static class HearthProductionUiTools
             TerminalFolder + "Terminal_17F04_Home_V2.prefab");
     }
 
-    [MenuItem(MenuRoot + "Repair Prefab Authoring Visibility")]
+    // Historical migration entry: production appearance is edited in Prefab Mode.
     public static void RepairPrefabAuthoringVisibility()
     {
         if (!EditorUtility.DisplayDialog(
@@ -258,7 +258,7 @@ public static class HearthProductionUiTools
         RepairPrefabAuthoringVisibilityBatch();
     }
 
-    [MenuItem(MenuRoot + "Adopt Approved Appearance")]
+    // Historical migration entry: production appearance is edited in Prefab Mode.
     public static void AdoptApprovedAppearance()
     {
         GameObject instanceRoot = GetSelectedCanonicalInstance();
@@ -286,7 +286,7 @@ public static class HearthProductionUiTools
             ". Unity recorded the operation for Undo.");
     }
 
-    [MenuItem(MenuRoot + "Clear Visual Overrides")]
+    // Historical migration entry: production appearance is edited in Prefab Mode.
     public static void ClearVisualOverrides()
     {
         GameObject instanceRoot = GetSelectedCanonicalInstance();
@@ -312,7 +312,7 @@ public static class HearthProductionUiTools
         Debug.Log("[Production UI] Visual overrides cleared. Review and save the scene manually.");
     }
 
-    [MenuItem(MenuRoot + "Install or Refresh Explicit Bindings")]
+    // Historical migration entry: production appearance is edited in Prefab Mode.
     public static void InstallExplicitBindings()
     {
         if (!EditorUtility.DisplayDialog(
@@ -350,7 +350,7 @@ public static class HearthProductionUiTools
             "No open scene was saved.");
     }
 
-    [MenuItem(MenuRoot + "Repair 17F03 Inspection Layout")]
+    // Historical migration entry: production appearance is edited in Prefab Mode.
     public static void RepairF03InspectionLayout()
     {
         if (!EditorUtility.DisplayDialog(
@@ -376,7 +376,7 @@ public static class HearthProductionUiTools
             "Deprecated feed/Field Unit blocks were retired and the open scene was not saved.");
     }
 
-    [MenuItem(MenuRoot + "Sync Six Doorway Pages From 17F01 Before")]
+    // Historical migration entry: production appearance is edited in Prefab Mode.
     public static void SyncSixDoorwayPagesFrom17F01Before()
     {
         if (!EditorUtility.DisplayDialog(
@@ -461,7 +461,7 @@ public static class HearthProductionUiTools
             "from the approved 17F01 Before page. Content and flow data were preserved.");
     }
 
-    [MenuItem(MenuRoot + "Apply Approved Terminal And F03 Repairs")]
+    // Historical migration entry: production appearance is edited in Prefab Mode.
     public static void ApplyApprovedTerminalAndF03Repairs()
     {
         SyncSixDoorwayPagesFrom17F01BeforeBatch();
@@ -547,7 +547,7 @@ public static class HearthProductionUiTools
         }
     }
 
-    [MenuItem(MenuRoot + "Apply Hold E V2 Frame")]
+    // Historical migration entry: production appearance is edited in Prefab Mode.
     public static void ApplyHoldPromptFrame()
     {
         if (!EditorUtility.DisplayDialog(
@@ -739,7 +739,7 @@ public static class HearthProductionUiTools
         }
     }
 
-    [MenuItem(MenuRoot + "Apply Current Approved Repairs")]
+    // Historical migration entry: production appearance is edited in Prefab Mode.
     public static void ApplyCurrentApprovedRepairs()
     {
         SyncSixDoorwayPagesFrom17F01BeforeBatch();
@@ -903,7 +903,7 @@ public static class HearthProductionUiTools
         }
     }
 
-    [MenuItem(MenuRoot + "Bind Open Scene To Canonical Views")]
+    // Historical migration entry: production appearance is edited in Prefab Mode.
     public static void BindOpenSceneToCanonicalViews()
     {
         Scene scene = EditorSceneManager.GetActiveScene();
@@ -1939,7 +1939,7 @@ public static class HearthProductionUiTools
         });
     }
 
-    [MenuItem(MenuRoot + "Apply Missing Scalable Frames To Terminals")]
+    // Historical migration entry: production appearance is edited in Prefab Mode.
     public static void ApplyMissingScalableFramesToTerminals()
     {
         if (!EditorUtility.DisplayDialog(
@@ -3377,15 +3377,17 @@ public static class HearthProductionUiTools
     {
         HashSet<string> names = new HashSet<string>
         {
-            "MinLoopTerminalPresenter", "TerminalUIController",
-            "ResidentTerminalFlow", "ReplaySequenceController"
+            "TerminalUIController"
         };
         int count = 0;
         MonoBehaviour[] behaviours = FindSceneComponents<MonoBehaviour>(scene);
         for (int i = 0; i < behaviours.Length; i++)
         {
-            if (behaviours[i] != null && behaviours[i].enabled &&
-                names.Contains(behaviours[i].GetType().Name)) count++;
+            if (behaviours[i] == null || !behaviours[i].enabled) continue;
+            // Interaction and replay flow components are not UI builders.
+            var presenter = behaviours[i] as MinLoopTerminalPresenter;
+            if (presenter != null && presenter.CanCreateFallbackUI) count++;
+            else if (names.Contains(behaviours[i].GetType().Name)) count++;
         }
         return count;
     }

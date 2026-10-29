@@ -126,6 +126,8 @@ public class HearthLobbyHudOverlay : MonoBehaviour
 
     private void ApplyApprovedLayout()
     {
+        // Managed scene UI owns its rectangles. Retain the old layout only for unbound legacy instances.
+        if (GetComponentInParent<HearthUiTypography>(true) != null) return;
         SetTopLeft(
             activationGroup != null
                 ? activationGroup.transform as RectTransform

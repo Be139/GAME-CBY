@@ -599,7 +599,7 @@ public class ViewSwitchController : MonoBehaviour
 
         Canvas canvas = canvasObject.GetComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.sortingOrder = short.MaxValue;
+        canvas.sortingOrder = (int)HearthUiCanvasBand.ViewTransition;
 
         CanvasScaler canvasScaler = canvasObject.GetComponent<CanvasScaler>();
         canvasScaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;

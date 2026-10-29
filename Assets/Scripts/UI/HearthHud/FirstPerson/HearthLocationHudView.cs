@@ -342,7 +342,7 @@ public class HearthLocationHudView : MonoBehaviour
         if (titleText != null)
         {
             ApplyLeftAlignedRect(titleText, 0f, 28f);
-            titleText.fontSize = 16f;
+            titleText.fontSize = HearthUiTypography.ResolveSize(titleText, 16f);
             titleText.fontSizeMin = 16f;
             titleText.fontSizeMax = 16f;
             titleText.enableAutoSizing = false;
@@ -353,7 +353,7 @@ public class HearthLocationHudView : MonoBehaviour
         if (locationText != null)
         {
             ApplyLeftAlignedRect(locationText, 30f, 38f);
-            locationText.fontSize = 24f;
+            locationText.fontSize = HearthUiTypography.ResolveSize(locationText, 24f);
             locationText.fontSizeMin = 24f;
             locationText.fontSizeMax = 24f;
             locationText.enableAutoSizing = false;
@@ -364,7 +364,7 @@ public class HearthLocationHudView : MonoBehaviour
         if (glowText != null)
         {
             ApplyLeftAlignedRect(glowText, 30f, 38f);
-            glowText.fontSize = 24f;
+            glowText.fontSize = HearthUiTypography.ResolveSize(glowText, 24f);
             glowText.fontSizeMin = 24f;
             glowText.fontSizeMax = 24f;
             glowText.enableAutoSizing = false;

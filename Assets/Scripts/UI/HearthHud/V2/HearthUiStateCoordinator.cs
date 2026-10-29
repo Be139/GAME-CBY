@@ -571,7 +571,7 @@ public sealed class HearthUiStateCoordinator : MonoBehaviour
         {
             return new HearthUiVisibilityState(
                 requested.Terminal && requested.Persistent,
-                false,
+                requested.Dialogue,
                 false,
                 requested.Terminal,
                 true,
@@ -772,6 +772,9 @@ public sealed class HearthUiStateCoordinator : MonoBehaviour
     private void ApplyExternalPresentationSuppression(
         HearthUiVisibilityState state)
     {
+        HearthTvTerminalController terminal = HearthTvTerminalController.ActiveTerminal;
+        if (terminal != null)
+            terminal.SetModalPresentationSuppressed(state.Modal, state.Dialogue);
         bool companionView =
             !state.Terminal &&
             !state.Takeover &&

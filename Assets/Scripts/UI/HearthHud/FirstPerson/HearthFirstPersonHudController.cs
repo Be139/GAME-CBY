@@ -94,6 +94,20 @@ public class HearthFirstPersonHudController : MonoBehaviour
     private bool externalPersistentPresentationSuppressed;
     private System.Action<MinLoopDispositionChoice> dispositionDecisionCallback;
     private bool dispositionDecisionActive;
+    [SerializeField] private RectTransform decisionRecommendation;
+    [SerializeField] private RectTransform decisionOptionA;
+    [SerializeField] private RectTransform decisionOptionB;
+
+    private void SetRecommendationOption(bool recommendA)
+    {
+        if (decisionRecommendation == null) return;
+        RectTransform target = recommendA ? decisionOptionA : decisionOptionB;
+        if (target == null) return;
+        decisionRecommendation.SetParent(target, false);
+        decisionRecommendation.anchorMin = decisionRecommendation.anchorMax = new Vector2(1f, 0.5f);
+        decisionRecommendation.pivot = new Vector2(1f, 0.5f);
+        decisionRecommendation.anchoredPosition = new Vector2(-24f, 0f);
+    }
     private TMP_Text dispositionHeadingText;
     private TMP_Text dispositionOptionAText;
     private TMP_Text dispositionOptionBText;
@@ -694,15 +708,16 @@ public class HearthFirstPersonHudController : MonoBehaviour
         if (dispositionOptionAText != null)
         {
             dispositionOptionAText.text =
-                "A   ACCEPT SYSTEM RECOMMENDATION";
+                "ACCEPT SYSTEM RECOMMENDATION";
         }
 
         if (dispositionOptionBText != null)
         {
             dispositionOptionBText.text =
-                "B   PROMPT FAMILY RESPONSE";
+                "PROMPT FAMILY RESPONSE";
         }
 
+        SetRecommendationOption(true);
         RefreshFinalChoiceFocus();
     }
 
@@ -823,6 +838,7 @@ public class HearthFirstPersonHudController : MonoBehaviour
 
     private void RestoreOriginalDecisionCopy()
     {
+        SetRecommendationOption(false);
         if (!capturedOriginalDecisionCopy)
         {
             return;

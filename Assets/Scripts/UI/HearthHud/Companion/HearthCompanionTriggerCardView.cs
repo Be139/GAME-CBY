@@ -198,7 +198,7 @@ public class HearthCompanionTriggerCardView : MonoBehaviour
         if (titleText != null)
         {
             titleText.color = V2TitleColor;
-            titleText.fontSize = 20f;
+            titleText.fontSize = HearthUiTypography.ResolveSize(titleText, 20f);
             titleText.fontStyle = FontStyles.Bold;
             titleText.alignment = TextAlignmentOptions.TopLeft;
             titleText.enableAutoSizing = false;
@@ -209,7 +209,7 @@ public class HearthCompanionTriggerCardView : MonoBehaviour
         if (bodyText != null)
         {
             bodyText.color = V2BodyColor;
-            bodyText.fontSize = 18f;
+            bodyText.fontSize = HearthUiTypography.ResolveSize(bodyText, 18f);
             bodyText.fontStyle = FontStyles.Normal;
             bodyText.alignment = TextAlignmentOptions.TopLeft;
             bodyText.enableAutoSizing = false;

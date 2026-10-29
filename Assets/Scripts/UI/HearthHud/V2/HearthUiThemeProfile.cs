@@ -12,6 +12,28 @@ public sealed class HearthUiThemeProfile : ScriptableObject
     [Tooltip("Dialogue body font: spoken subtitle sentences and terminal dialogue bodies.")]
     [SerializeField] private TMP_FontAsset dialogueFontAsset;
 
+    [Header("Shared Type Scale (1920 x 1080 reference)")]
+    [SerializeField, Min(1f)] private float headingSize = 36f;
+    [SerializeField, Min(1f)] private float sectionSize = 28f;
+    [SerializeField, Min(1f)] private float bodySize = 24f;
+    [SerializeField, Min(1f)] private float labelSize = 20f;
+    [SerializeField, Min(1f)] private float captionSize = 18f;
+
+    public float GetFontSize(HearthUiTextRole role)
+    {
+        switch (role)
+        {
+            case HearthUiTextRole.Heading: return headingSize;
+            case HearthUiTextRole.Section: return sectionSize;
+            case HearthUiTextRole.Label: return labelSize;
+            case HearthUiTextRole.Caption: return captionSize;
+            case HearthUiTextRole.Subtitle: return subtitleFontSize;
+            case HearthUiTextRole.Speaker: return speakerFontSize;
+            case HearthUiTextRole.Display: return sceneCardFontSize;
+            default: return bodySize;
+        }
+    }
+
     [Header("Terminal Palette")]
     [SerializeField] private Color terminalBackground = new Color32(11, 16, 24, 255);
     [SerializeField] private Color terminalPanelBackground = new Color32(9, 16, 28, 255);

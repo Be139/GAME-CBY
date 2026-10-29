@@ -646,6 +646,16 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
                 externalMessageSurface != null
                     ? externalMessageSurface
                     : externalSurface;
+            // Field Unit speaks through the player's glasses, regardless of
+            // the physical terminal or photograph that started playback.
+            string normalizedSpeaker = (line.speaker ?? string.Empty).Trim().ToUpperInvariant();
+            if (normalizedSpeaker.Contains("FIELD UNIT") ||
+                normalizedSpeaker == "FIELD COMPANION UNIT")
+            {
+                lineSurface = null;
+                lineContext = HearthSubtitleContext.FieldUnit;
+                linePresentation = HearthSubtitlePresentationMode.StandardDialogue;
+            }
             // Audio-only lines still respect their authored advance policy.
             // This keeps dedicated HUD messages skippable with Space without
             // bringing back the ordinary bottom dialogue box.
@@ -1652,11 +1662,13 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
                 ? contextStyle.accentColor
                 : new Color(0.47f, 0.67f, 0.86f, 0.92f);
 
-        ConfigureFrameVisibility(formalFrameImage, formal, frameColor);
+        Color borderColor = frameColor;
+        borderColor.a = 0.32f;
+        ConfigureFrameVisibility(formalFrameImage, formal, borderColor);
         ConfigureFrameVisibility(
             auxiliaryFrameImage,
             auxiliary || terminalLowerThird,
-            frameColor);
+            borderColor);
         ConfigureFrameVisibility(
             leftSpeakerTabImage,
             formal && activeSpeakerSide == SpeakerSide.Left,
@@ -1822,6 +1834,7 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
         }
 
         text.color = color;
+        fontSize = HearthUiTypography.ResolveSize(text, fontSize);
         text.fontSize = fontSize;
         text.fontSizeMax = fontSize;
         text.fontSizeMin = fontSize;

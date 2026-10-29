@@ -183,7 +183,7 @@ public sealed class HearthPhotoArchiveWorldView : MonoBehaviour
         worldCanvas = canvasObject.GetComponent<Canvas>();
         worldCanvas.renderMode = RenderMode.WorldSpace;
         worldCanvas.overrideSorting = true;
-        worldCanvas.sortingOrder = 80;
+        worldCanvas.sortingOrder = (int)HearthUiCanvasBand.PhotoArchive;
 
         CanvasScaler scaler = canvasObject.GetComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
@@ -340,12 +340,9 @@ public sealed class HearthPhotoArchiveWorldView : MonoBehaviour
             return;
         }
 
-        Vector3 focus = activePhotoRenderer != null
-            ? activePhotoRenderer.bounds.center
-            : transform.position;
-        float distance = Mathf.Max(
-            0.35f,
-            Vector3.Distance(activeCamera.transform.position, focus));
+        // Keep labels ahead of the physical frame rather than coplanar with
+        // the photograph, where the frame can occlude the title and page text.
+        float distance = activeCamera.nearClipPlane + 0.05f;
         float verticalWorldSize =
             2f * distance * Mathf.Tan(activeCamera.fieldOfView * 0.5f * Mathf.Deg2Rad);
         float desiredHeight = verticalWorldSize * 0.94f;
@@ -359,7 +356,11 @@ public sealed class HearthPhotoArchiveWorldView : MonoBehaviour
             DivideByScale(desiredWorldScale, parentScale.x),
             DivideByScale(desiredWorldScale, parentScale.y),
             DivideByScale(desiredWorldScale, parentScale.z));
-        canvasRect.position = focus - activeCamera.transform.forward * 0.012f;
+        // Chrome is registered to the view, not the off-centre photograph.
+        // Keep the physical photograph in world space while its labels stay
+        // within the same camera-relative safe area.
+        canvasRect.position = activeCamera.transform.position +
+            activeCamera.transform.forward * distance;
         canvasRect.rotation = activeCamera.transform.rotation;
     }
 

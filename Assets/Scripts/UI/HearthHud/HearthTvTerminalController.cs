@@ -33,6 +33,18 @@ public class HearthTvTerminalController : MonoBehaviour
     [SerializeField] private CanvasScaler canvasScaler;
     [SerializeField] private RectTransform contentRoot;
     [SerializeField] private CanvasGroup canvasGroup;
+    [SerializeField] private CanvasGroup pagePresentationGroup;
+    private bool modalPresentationSuppressed;
+    private bool glassesDialogueVisible;
+
+    public void SetModalPresentationSuppressed(bool modal, bool dialogue)
+    {
+        modalPresentationSuppressed = modal;
+        glassesDialogueVisible = dialogue;
+        if (pagePresentationGroup != null)
+            pagePresentationGroup.alpha = modal ? 0f : 1f;
+        RefreshEmbeddedDialogueNavigationChrome();
+    }
     [SerializeField] private Camera worldCamera;
     [SerializeField] private bool createEventSystemIfMissing = true;
     [Tooltip("When enabled, the World Space Canvas is not rendered at all while the terminal is closed. Intended for the lobby task terminal whose UI must sit flush with the physical screen.")]
@@ -268,6 +280,8 @@ public class HearthTvTerminalController : MonoBehaviour
             if (authoredSurface != null)
             {
                 dialogueSurface = authoredSurface;
+                dialogueSurface.ApplyTypography(
+                    ResolveTerminalSpeakerSize(), ResolveTerminalBodySize(), ResolveTerminalAdvanceSize());
                 dialogueSurface.ApplyFonts(uiThemeProfile);
                 LinkExclusiveDialogueSurfaces();
                 SuppressRuntimePromptForDialogue();
@@ -281,6 +295,8 @@ public class HearthTvTerminalController : MonoBehaviour
                 dialogueSurface.GetComponentInParent<HearthHudPage>(true);
             if (ownerPage == null || ownerPage == currentPage)
             {
+                dialogueSurface.ApplyTypography(
+                    ResolveTerminalSpeakerSize(), ResolveTerminalBodySize(), ResolveTerminalAdvanceSize());
                 dialogueSurface.ApplyFonts(uiThemeProfile);
                 SuppressRuntimePromptForDialogue();
                 return dialogueSurface;
@@ -364,6 +380,8 @@ public class HearthTvTerminalController : MonoBehaviour
             authoredViewBindings.TerminalMessageSurface != null)
         {
             messageSurface = authoredViewBindings.TerminalMessageSurface;
+            messageSurface.ApplyTypography(
+                ResolveTerminalSpeakerSize(), ResolveTerminalBodySize(), ResolveTerminalAdvanceSize());
             messageSurface.ApplyFonts(uiThemeProfile);
             EnsureAuthoredSurfaceHierarchyVisible(messageSurface);
             LinkExclusiveDialogueSurfaces();
@@ -377,6 +395,8 @@ public class HearthTvTerminalController : MonoBehaviour
                 messageSurface.GetComponentInParent<HearthHudPage>(true);
             if (ownerPage == null || ownerPage == currentPage)
             {
+                messageSurface.ApplyTypography(
+                    ResolveTerminalSpeakerSize(), ResolveTerminalBodySize(), ResolveTerminalAdvanceSize());
                 messageSurface.ApplyFonts(uiThemeProfile);
                 EnsureAuthoredSurfaceHierarchyVisible(messageSurface);
                 SuppressRuntimePromptForDialogue();
@@ -1657,7 +1677,8 @@ public class HearthTvTerminalController : MonoBehaviour
         bool dialogueVisible =
             (dialogueSurface != null && dialogueSurface.IsVisible) ||
             (messageSurface != null && messageSurface.IsVisible);
-        bool shouldShow = !dialogueVisible;
+        bool shouldShow = !dialogueVisible && !choiceSubmitted &&
+            !modalPresentationSuppressed && !glassesDialogueVisible;
         if (dialogueNavigationChromeVisible == shouldShow)
         {
             return;
@@ -1670,6 +1691,9 @@ public class HearthTvTerminalController : MonoBehaviour
             shouldShow);
         SetActiveIfNeeded(
             keyboardFocusText != null ? keyboardFocusText.gameObject : null,
+            shouldShow);
+        SetActiveIfNeeded(
+            runtimePromptText != null ? runtimePromptText.gameObject : null,
             shouldShow);
     }
 
@@ -2012,7 +2036,7 @@ public class HearthTvTerminalController : MonoBehaviour
         // Keep the shared keyboard footer above every page surface, including
         // scene instances that still carry an old prefab override.
         navigationCanvas.overrideSorting = true;
-        navigationCanvas.sortingOrder = 20;
+        navigationCanvas.sortingOrder = (int)HearthUiCanvasBand.TerminalNavigation;
     }
 
     private void EnsureEventSystem()
@@ -3546,6 +3570,7 @@ public class HearthTvTerminalController : MonoBehaviour
             (messageSurface != null && messageSurface.IsVisible);
         runtimePromptText.gameObject.SetActive(
             IsOpen && terminalPresentationReady &&
+            !modalPresentationSuppressed && !glassesDialogueVisible &&
             !dialogueOwnsPrompt && !string.IsNullOrEmpty(prompt));
     }
 

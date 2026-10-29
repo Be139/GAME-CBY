@@ -24,6 +24,7 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
     [SerializeField] private TMP_Text recallActionText;
     [SerializeField] private Image recallHighlight;
     [SerializeField] private GameObject choiceRoot;
+    [SerializeField] private GameObject inspectionContentRoot;
     [SerializeField] private Image choiceABackground;
     [SerializeField] private Image choiceBBackground;
     [SerializeField] private TMP_Text choiceAText;
@@ -607,7 +608,7 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
         if (recallHighlight != null)
         {
             Color color = recallHighlight.color;
-            color.a = recallAvailable && !recallSubmitted ? 0.28f : recallQueued ? 0.18f : 0.08f;
+            color.a = 1f;
             recallHighlight.color = color;
         }
     }
@@ -619,6 +620,8 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
             presentationPhase == PresentationPhase.FieldUnitExplanation;
         bool choiceMode =
             presentationPhase == PresentationPhase.DispositionChoice;
+        if (inspectionContentRoot != null)
+            inspectionContentRoot.SetActive(IsOpen && recallMode);
         if (fullscreenSelectionDimmer != null)
         {
             fullscreenSelectionDimmer.gameObject.SetActive(
@@ -677,8 +680,8 @@ public class Hearth17F03InspectionPanel : MonoBehaviour
 
     private void RefreshChoiceVisuals()
     {
-        float selectedAlpha = choiceSubmitted ? 0.22f : choiceInputEnabled ? 0.62f : 0.32f;
-        float idleAlpha = choiceSubmitted ? 0.12f : choiceInputEnabled ? 0.42f : 0.22f;
+        float selectedAlpha = 1f;
+        float idleAlpha = 1f;
         Color selected = WithAlpha(ThemeSuccess, selectedAlpha);
         Color idle = WithAlpha(ThemePanelBackground, idleAlpha);
         if (choiceABackground != null) choiceABackground.color = choiceIndex == 0 ? selected : idle;

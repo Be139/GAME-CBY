@@ -34,7 +34,7 @@ public class HearthCompanionStatusPanelView : MonoBehaviour
         {
             titleText.text = scene.StatusTitle;
             titleText.color = new Color(0.48f, 0.82f, 0.92f, 1f);
-            titleText.fontSize = 20f;
+            titleText.fontSize = HearthUiTypography.ResolveSize(titleText, 20f);
             titleText.fontStyle = FontStyles.Bold;
             titleText.alignment = TextAlignmentOptions.TopLeft;
         }
@@ -69,7 +69,7 @@ public class HearthCompanionStatusPanelView : MonoBehaviour
         {
             rowsText.text = builder.ToString();
             rowsText.color = new Color(0.84f, 0.9f, 0.96f, 0.96f);
-            rowsText.fontSize = 18f;
+            rowsText.fontSize = HearthUiTypography.ResolveSize(rowsText, 18f);
             rowsText.fontStyle = FontStyles.Normal;
             rowsText.alignment = TextAlignmentOptions.TopLeft;
         }
@@ -78,7 +78,7 @@ public class HearthCompanionStatusPanelView : MonoBehaviour
         {
             footerText.text = scene.StatusFooter;
             footerText.color = new Color(0.56f, 0.72f, 0.84f, 0.92f);
-            footerText.fontSize = 17f;
+            footerText.fontSize = HearthUiTypography.ResolveSize(footerText, 17f);
             footerText.fontStyle = FontStyles.Bold;
             footerText.alignment = TextAlignmentOptions.TopLeft;
         }

@@ -93,9 +93,9 @@ public class HearthDialogueSurface : MonoBehaviour
     public void ApplyTerminalInternalLayout()
     {
         ResolveReferences();
-        SetStretchRect(speakerText, 0.035f, 0.69f, 0.965f, 0.96f);
-        SetStretchRect(bodyText, 0.035f, 0.22f, 0.965f, 0.69f);
-        SetStretchRect(advanceHintText, 0.62f, 0.025f, 0.965f, 0.21f);
+        SetStretchRect(speakerText, 0.045f, 0.80f, 0.955f, 0.95f);
+        SetStretchRect(bodyText, 0.045f, 0.18f, 0.955f, 0.78f);
+        SetStretchRect(advanceHintText, 0.62f, 0.025f, 0.955f, 0.15f);
         if (speakerText != null)
         {
             speakerText.alignment = TextAlignmentOptions.TopLeft;
@@ -288,11 +288,12 @@ public class HearthDialogueSurface : MonoBehaviour
             return;
         }
 
-        float safeSize = Mathf.Max(1f, size);
+        float safeSize = Mathf.Max(1f, HearthUiTypography.ResolveSize(text, size));
         text.enableAutoSizing = false;
         text.fontSize = safeSize;
         text.fontSizeMin = safeSize;
         text.fontSizeMax = safeSize;
+        text.enableWordWrapping = true;
     }
 
 

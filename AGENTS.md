@@ -59,7 +59,7 @@
 这里的 `MCP for Unity` 不是 Codex 内置下载的官方工具，而是 Unity 项目内安装的第三方包：
 
 - Unity 包名：`com.coplaydev.unity-mcp`
-- 当前项目锁定来源：`https://github.com/CoplayDev/unity-mcp.git?path=/MCPForUnity#v10.0.0`
+- 当前项目锁定来源：`https://github.com/CoplayDev/unity-mcp.git?path=/MCPForUnity#v10.3.0`
 - Codex 本机 MCP 配置名：`unityMCP`
 - 默认 HTTP 地址：`http://127.0.0.1:8080/mcp`
 
@@ -67,7 +67,7 @@
 
 - Unity 包声明：`Packages/manifest.json` 中的 `com.coplaydev.unity-mcp`
 - Unity 包锁定：`Packages/packages-lock.json` 中的 `com.coplaydev.unity-mcp.hash`
-- Codex MCP 客户端配置：`C:\Users\彩笔\.codex\config.toml`
+- Codex MCP 客户端有效配置：`C:\CodexHome\config.toml`（当前 `CODEX_HOME`）；历史配置：`C:\Users\彩笔\.codex\config.toml`。两处目前均指向同一个本地 HTTP 地址。
 
 Unity 编辑器内使用入口：
 
@@ -75,7 +75,7 @@ Unity 编辑器内使用入口：
 - 快捷键：Windows/Linux 可用 `Ctrl + Shift + M`
 - 常用按钮：`Configure All Detected Clients` 用于重新写入/刷新 Codex 等客户端配置；`Start/Stop Server` 用于启动或停止本地 HTTP MCP 服务。
 - 连接检查：面板里的 HTTP URL 应与 Codex 配置一致，默认是 `http://127.0.0.1:8080/mcp` 或 `http://localhost:8080/mcp`。
-- 手动启动命令入口在面板 `Connect > Manual Server Launch`。本项目 v10 当前命令格式为：`C:\Users\彩笔\AppData\Local\Microsoft\WinGet\Links\uvx.exe --from "mcpforunityserver==10.0.0" mcp-for-unity --transport http --http-url http://127.0.0.1:8080 --project-scoped-tools`。注意：手动命令里的 `--http-url` 不带 `/mcp`，Codex 客户端配置里的 URL 带 `/mcp`。
+- 手动启动命令入口在面板 `Connect > Manual Server Launch`。本项目 v10.3 当前命令格式为：`C:\Users\彩笔\AppData\Local\Microsoft\WinGet\Links\uvx.exe --python D:/Tools/Python/python.exe --from "mcpforunityserver==10.3.0" mcp-for-unity --transport http --http-url http://127.0.0.1:8080 --project-scoped-tools`。注意：手动命令里的 `--http-url` 不带 `/mcp`，Codex 客户端配置里的 URL 带 `/mcp`。
 - v10 工具组：v10 将工具分为 `core`、`animation`、`asset_gen`、`docs`、`probuilder`、`profiling`、`scripting_ext`、`testing`、`ui`、`vfx`。非 `core` 工具可能需要在 Unity 的 `Tools` 标签页启用，或通过 MCP 工具 `manage_tools action=activate group=组名` 启用。
 - 多 Unity 实例：如果之后同时打开多个 Unity 项目，应优先读取 MCP 资源 `unity_instances`，再用 `set_active_instance` 选择目标实例。
 

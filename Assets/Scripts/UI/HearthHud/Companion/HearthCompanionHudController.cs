@@ -69,6 +69,16 @@ public class HearthCompanionHudController : MonoBehaviour
     private bool shortPressInteractionEnabledBeforeHold;
     private bool transientDialogueExclusive;
     private bool decisionWasVisibleBeforeTransientDialogue;
+    private bool rootPresentationTarget;
+
+    private void Update()
+    {
+        if (rootCanvasGroup != null && rootPresentationTarget)
+        {
+            rootCanvasGroup.alpha = Mathf.MoveTowards(
+                rootCanvasGroup.alpha, 1f, Time.unscaledDeltaTime / 0.22f);
+        }
+    }
 
     public HearthCompanionHudSceneData CurrentScene { get { return currentScene; } }
     public string CurrentSceneId { get { return currentScene != null ? currentScene.SceneId : string.Empty; } }
@@ -553,7 +563,7 @@ public class HearthCompanionHudController : MonoBehaviour
                 statusPanelView.Apply(scene);
             }
             SetStatusPanelVisible(
-                !hideStandbyObservation && HasStatusContent(scene));
+                !hideStandbyObservation && HasStatusContent(scene) && !UsesTimedStatus(scene));
         }
 
         if (decisionPanelView != null)
@@ -862,7 +872,14 @@ public class HearthCompanionHudController : MonoBehaviour
 
     private void HandleTriggerCardVisibilityChanged(bool triggerVisible)
     {
-        SetStatusPanelVisible(!triggerVisible && HasStatusContent(currentScene));
+        SetStatusPanelVisible(!triggerVisible && HasStatusContent(currentScene) &&
+            !IsStandbyObservation(currentScene.StatusTitle) && !UsesTimedStatus(currentScene));
+    }
+
+    private static bool UsesTimedStatus(HearthCompanionHudSceneData scene)
+    {
+        return scene != null && (scene.ShowTriggerCard ||
+            (scene.TimedCues != null && scene.TimedCues.Length > 0));
     }
 
     private void SetStatusPanelVisible(bool visible)
@@ -943,7 +960,10 @@ public class HearthCompanionHudController : MonoBehaviour
 
         if (rootCanvasGroup != null)
         {
-            rootCanvasGroup.alpha = visible ? 1f : 0f;
+            rootPresentationTarget = visible;
+            // Exit immediately at perspective handoff; fade in once without
+            // restarting when the coordinator repeats the same state.
+            if (!visible) rootCanvasGroup.alpha = 0f;
             rootCanvasGroup.interactable = visible;
             rootCanvasGroup.blocksRaycasts = visible;
         }

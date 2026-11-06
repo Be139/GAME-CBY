@@ -221,11 +221,7 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
 
     private void OnDisable()
     {
-        ActiveDialoguePlayers.Remove(this);
-        ClearPersistentSceneHeader();
-        RestoreCompanionDialogueLayers();
-        ReleaseDialogueControlLock();
-        HideActiveExternalSurface();
+        Stop();
     }
 
     public Coroutine PlaySequence(IList<MinLoopSubtitleLine> lines)
@@ -574,6 +570,11 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
         HearthDialogueSurface externalSurface = null,
         HearthDialogueSurface externalMessageSurface = null)
     {
+        if (!isActiveAndEnabled)
+        {
+            yield break;
+        }
+
         int playbackToken = playbackGeneration;
         IsPlaying = true;
         ActiveDialoguePlayers.Add(this);
@@ -670,6 +671,11 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
                 LineStarted(sequenceId, line, i);
             }
 
+            if (playbackToken != playbackGeneration)
+            {
+                yield break;
+            }
+
             ApplyDialogueControlLock(lineChannel);
             ShowLine(
                 line.speaker,
@@ -755,6 +761,11 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
         HearthDialogueSurface externalSurface = null,
         HearthDialogueSurface externalMessageSurface = null)
     {
+        if (!isActiveAndEnabled)
+        {
+            yield break;
+        }
+
         int playbackToken = playbackGeneration;
         if (sequence == null || !sequence.HasLines)
         {
@@ -1153,6 +1164,7 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
 
     private IEnumerator FadeCanvas(float from, float to, float seconds)
     {
+        int playbackToken = playbackGeneration;
         if (canvasGroup == null || seconds <= 0f)
         {
             desiredCanvasAlpha = to;
@@ -1163,13 +1175,18 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
         desiredCanvasAlpha = from;
         ApplyDesiredCanvasAlpha();
         float elapsed = 0f;
-        while (elapsed < seconds)
+        while (elapsed < seconds && playbackToken == playbackGeneration)
         {
             elapsed += useUnscaledTime ? Time.unscaledDeltaTime : Time.deltaTime;
             desiredCanvasAlpha =
                 Mathf.Lerp(from, to, Mathf.Clamp01(elapsed / seconds));
             ApplyDesiredCanvasAlpha();
             yield return null;
+        }
+
+        if (playbackToken != playbackGeneration)
+        {
+            yield break;
         }
 
         desiredCanvasAlpha = to;
@@ -1180,6 +1197,7 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
         string text,
         float seconds)
     {
+        int playbackToken = playbackGeneration;
         EnsurePersistentSceneHeader();
         if (persistentSceneHeaderText != null)
         {
@@ -1196,7 +1214,7 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
 
         SetPersistentSceneHeaderAlpha(0f);
         float elapsed = 0f;
-        while (elapsed < seconds)
+        while (elapsed < seconds && playbackToken == playbackGeneration)
         {
             elapsed += useUnscaledTime ? Time.unscaledDeltaTime : Time.deltaTime;
             float progress = Mathf.Clamp01(elapsed / seconds);
@@ -1204,6 +1222,11 @@ public class MinLoopSubtitlePlayer : MonoBehaviour
             ApplyDesiredCanvasAlpha();
             SetPersistentSceneHeaderAlpha(progress);
             yield return null;
+        }
+
+        if (playbackToken != playbackGeneration)
+        {
+            yield break;
         }
 
         desiredCanvasAlpha = 0f;

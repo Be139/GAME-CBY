@@ -162,8 +162,11 @@ public class MinLoopAudioStateController : MonoBehaviour
 
         Unsubscribe();
         flowController = controller;
-        Subscribe();
-        ApplyCurrentStage();
+        if (isActiveAndEnabled)
+        {
+            Subscribe();
+            ApplyCurrentStage();
+        }
     }
 
     public void StopAllAudio()

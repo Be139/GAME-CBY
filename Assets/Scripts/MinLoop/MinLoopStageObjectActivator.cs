@@ -165,8 +165,11 @@ public class MinLoopStageObjectActivator : MonoBehaviour
 
         Unsubscribe();
         flowController = controller;
-        Subscribe();
-        ApplyCurrentStage();
+        if (isActiveAndEnabled)
+        {
+            Subscribe();
+            ApplyCurrentStage();
+        }
     }
 
     private void ResolveFlowController()

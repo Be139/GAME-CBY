@@ -8,7 +8,7 @@
 
 ## UI 库协作入口
 
-- 场景命名、正式 Anchor 摆位及 Editor 工具入口遵循 `HEARTH_制作工具与场景命名规范.md`；已退役的一次性生成/重建/预览写回菜单不得按旧文档恢复。
+- 场景命名、正式 Anchor 摆位及 Editor 工具入口遵循 `脚本使用说明总表.md`；已退役的一次性生成/重建/预览写回菜单不得按旧文档恢复。
 
 - UI 任务先读取 `HEARTH_UI库制作与协作规范.md` 与 `Assets/UI/HEARTH/V2/HearthUiLibrary.json`，通过 `Tools > Hearth > UI Library > Open Library` 定位正式资产及场景对象。
 - 新增或改变 UI 用途/出现条件/共存关系时，同步目录与制作规范；沿用 `HearthUiStateCoordinator` 和 `HearthUiCanvasOrder`，不另造显隐系统。
@@ -39,10 +39,12 @@
 
 ## 文档维护方式
 
+- 现行内容入口收敛为 `HEARTH_ClaudeCode接手指南.md`（玩法、世界观、物品与视觉协作）和 `脚本使用说明总表.md`（程序实现与使用手册）。程序架构、挂载、接口、UI/场景制作方法统一更新总表对应章节，不为每次检查另建重复说明。旧文档迁移表见 `Docs/README.md`，归档不作为默认必读材料。
+- 后续 Claude 可按用户指定范围和自己的工程判断检查程序规范；程序检查与视觉任务分开，不因存在旧待办就自动启动批量修复或全量审查。
 - `AGENTS.md` 只记录长期规则和协作提醒，不写大量脚本细节。
 - `脚本使用说明总表.md` 作为实际脚本说明总表，所有脚本使用说明都写在那里。
 - `HEARTH_剧情变更记录.md` 记录用户口述的剧情、流程、演出、角色走位、UI 触发条件等变更；这些内容先作为制作记录保存，不直接等同于正式策划案。
-- `HEARTH_剧情接口与可接入点.md` 记录剧情、字幕、语音、处置记录、信任度和后续关卡预留接口；后续开始剧情或 UI 流程相关任务前，应优先读取它，再判断怎么接入。
+- `脚本使用说明总表.md` 记录剧情、字幕、语音、处置记录、信任度和后续关卡预留接口；后续开始剧情或 UI 流程相关任务前，应优先读取它，再判断怎么接入。
 - 每次完成代码任务前，把“是否更新脚本使用说明总表”作为固定收尾检查项。
 - 后续继续协作时，Codex 应优先读取 `AGENTS.md` 和 `脚本使用说明总表.md`，再判断已有脚本如何使用或扩展。
 
@@ -62,7 +64,7 @@
 
 ## Unity MCP 使用规则
 
-场景分类与程序关联入口：先读 `HEARTH_场景物件与程序关联清单.md`，再按需查询 `Docs/SceneInventory/` 的物件、挂载脚本及字段引用。清单是注明日期的编辑器快照，变更前应检查实时状态；`=======` 分割线和 Deprecated 名称不能替代实际归属或删除依据。
+场景分类与程序关联入口：先读 `脚本使用说明总表.md`，再按需查询 `Docs/SceneInventory/` 的物件、挂载脚本及字段引用。清单是注明日期的编辑器快照，变更前应检查实时状态；`=======` 分割线和 Deprecated 名称不能替代实际归属或删除依据。
 
 本项目已选择 `MCP for Unity` 作为 Unity 2022 项目的第三方 MCP 连接方案。
 
@@ -81,7 +83,7 @@
 
 ### CLI 优先与启动顺序
 
-- v10.3.0 本机已观察到 MCP 面板的本地服务探测触发 `ending orphaned session`，而 HTTP 服务仍正常。连接后日常关闭 MCP for Unity 面板，使用 CLI/原生工具；关闭面板不会停止 Bridge。此为已验证可保持连接的缓解措施，不等同于插件问题根治。详见 `HEARTH_UnityMCP断连排查.md`。
+- v10.3.0 本机已观察到 MCP 面板的本地服务探测触发 `ending orphaned session`，而 HTTP 服务仍正常。连接后日常关闭 MCP for Unity 面板，使用 CLI/原生工具；关闭面板不会停止 Bridge。此为已验证可保持连接的缓解措施，不等同于插件问题根治。详见 `脚本使用说明总表.md`。
 
 - 日常连接检查、Hierarchy、组件、Console、Play Mode 和脚本执行优先使用现有 `Tools/Dev/unity-mcp.sh`；原生 Unity MCP 工具可用时也可直接调用。不要为了启动或检查 MCP 默认使用 Computer Use。
 - 在项目根目录经 Git for Windows Bash 执行 `./Tools/Dev/unity-mcp.sh status`，再执行 `./Tools/Dev/unity-mcp.sh instance list`。确认目标为 GAME-CBY；多实例用 `-i <实际实例哈希>` 指定。CLI 使用已缓存的 10.2.0 与固定 Python，详细用法见 `Tools/Dev/README.md`。

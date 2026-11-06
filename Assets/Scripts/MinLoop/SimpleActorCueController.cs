@@ -44,11 +44,17 @@ public class SimpleActorCueController : MonoBehaviour
     private Quaternion initialLocalRotation;
     private Vector3 initialLocalScale = Vector3.one;
     private Coroutine poseRoutine;
+    private bool hasInitialPose;
 
     private void Awake()
     {
         ResolveReferences();
         CaptureInitialPose();
+    }
+
+    private void OnDisable()
+    {
+        StopPoseRoutine();
     }
 
     private void OnValidate()
@@ -106,7 +112,7 @@ public class SimpleActorCueController : MonoBehaviour
         ResolveReferences();
         StopPoseRoutine();
 
-        if (poseRoot == null)
+        if (poseRoot == null || !hasInitialPose)
         {
             return;
         }
@@ -338,6 +344,7 @@ public class SimpleActorCueController : MonoBehaviour
         initialLocalPosition = poseRoot.localPosition;
         initialLocalRotation = poseRoot.localRotation;
         initialLocalScale = poseRoot.localScale;
+        hasInitialPose = true;
     }
 
     private void CapturePoseFromCurrent(LocalPoseCue targetPose)

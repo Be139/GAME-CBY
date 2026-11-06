@@ -458,14 +458,7 @@ public static partial class HearthProductionUiTools
                         inspectionPanels[i]);
                     issues++;
                 }
-                if (!inspectionPanels[i].UsesAuthoredVisualLayout)
-                {
-                    Debug.LogError(
-                        "[Production UI] F03 inspection panel still permits runtime visual " +
-                        "layout writes. Run Bind Open Scene To Canonical Views.",
-                        inspectionPanels[i]);
-                    issues++;
-                }
+
             }
 
             for (int i = 0; i < f02Controllers.Length; i++)

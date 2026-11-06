@@ -47,6 +47,7 @@ public class InteractionFeedbackController : MonoBehaviour, IInteractable, IInte
     private bool hasPlayed;
     private LightState[] lightStates;
     private MaterialPropertyBlock[] rendererStates;
+    private bool hasVisualSnapshot;
 
     public bool CanInteract
     {
@@ -62,7 +63,17 @@ public class InteractionFeedbackController : MonoBehaviour, IInteractable, IInte
     {
         EnsurePropertyBlock();
         ResolveReferences();
-        CacheLightStates();
+    }
+
+    private void OnDisable()
+    {
+        if (feedbackRoutine != null)
+        {
+            StopCoroutine(feedbackRoutine);
+            feedbackRoutine = null;
+        }
+
+        RestoreVisuals();
     }
 
     private void OnValidate()
@@ -103,7 +114,7 @@ public class InteractionFeedbackController : MonoBehaviour, IInteractable, IInte
 
     public void PlayFeedback()
     {
-        if (!canInteract)
+        if (!isActiveAndEnabled || !canInteract)
         {
             return;
         }
@@ -118,17 +129,20 @@ public class InteractionFeedbackController : MonoBehaviour, IInteractable, IInte
             return;
         }
 
-        ResolveReferences();
-        CacheLightStates();
-        CacheRendererStates();
-
-        nextAllowedTime = Time.time + cooldown;
-        hasPlayed = true;
-
         if (feedbackRoutine != null)
         {
             StopCoroutine(feedbackRoutine);
+            feedbackRoutine = null;
         }
+
+        RestoreVisuals();
+        ResolveReferences();
+        CacheLightStates();
+        CacheRendererStates();
+        hasVisualSnapshot = true;
+
+        nextAllowedTime = Time.time + cooldown;
+        hasPlayed = true;
 
         feedbackRoutine = StartCoroutine(FeedbackRoutine());
     }
@@ -156,6 +170,10 @@ public class InteractionFeedbackController : MonoBehaviour, IInteractable, IInte
     private IEnumerator FeedbackRoutine()
     {
         feedbackStarted.Invoke();
+        if (!isActiveAndEnabled)
+        {
+            yield break;
+        }
         PlayAudio();
         ApplyVisuals(1f);
 
@@ -228,6 +246,11 @@ public class InteractionFeedbackController : MonoBehaviour, IInteractable, IInte
 
     private void RestoreVisuals()
     {
+        if (!hasVisualSnapshot)
+        {
+            return;
+        }
+
         if (targetLights == null)
         {
             targetLights = new Light[0];
@@ -271,6 +294,8 @@ public class InteractionFeedbackController : MonoBehaviour, IInteractable, IInte
                 targetRenderer.SetPropertyBlock(null);
             }
         }
+
+        hasVisualSnapshot = false;
     }
 
     private void ResolveReferences()

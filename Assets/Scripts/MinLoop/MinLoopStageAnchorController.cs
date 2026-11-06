@@ -132,8 +132,11 @@ public class MinLoopStageAnchorController : MonoBehaviour
 
         Unsubscribe();
         flowController = controller;
-        Subscribe();
-        ApplyCurrentStage();
+        if (isActiveAndEnabled)
+        {
+            Subscribe();
+            ApplyCurrentStage();
+        }
     }
 
     public void ApplyRuleNow(int ruleIndex)

@@ -23,7 +23,7 @@ Unity MCP 的 `Auto-Start on Editor Load` 已开启，HTTP 模式使用现有 lo
 
 这是持续运行的服务进程，后台启动遵守 AGENTS 的 PowerShell 7 `Start-Process -WindowStyle Hidden` 规则。已有服务时不重复启动。CLI 本身没有离线强制连接编辑器的命令；只有自动连接未恢复且无可调用 API 时，才用 Unity 面板 Start Session 恢复会话。
 
-场景与脚本盘点入口见根目录 `HEARTH_场景物件与程序关联清单.md`。先执行 `inventory-scene-programs.cs` 导出快照，再用固定 Python 执行 `build-scene-inventory.py` 生成检索清单。
+场景与脚本盘点入口见根目录 `脚本使用说明总表.md`。先执行 `inventory-scene-programs.cs` 导出快照，再用固定 Python 执行 `build-scene-inventory.py` 生成检索清单。
 
 脚本编译和 Play Mode 造成域重载时，可短暂返回 503/no Unity session；等待编辑器完成重载，再读 status 和无副作用的状态。不要自动重复执行刚才的修改命令：断线不代表修改没有执行。服务器健康不等于 Unity 会话健康，应确认 status 列出 GAME-CBY，并成功读取编辑器状态。
 

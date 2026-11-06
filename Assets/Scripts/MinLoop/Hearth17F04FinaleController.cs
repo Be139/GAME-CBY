@@ -120,6 +120,7 @@ public class Hearth17F04FinaleController : MonoBehaviour
     private bool selectedAnswerSelf;
     private bool currentHighTrust;
     private bool savedHudRouting;
+    private bool hasSavedHudRouting;
     private bool hasSavedFinalChoiceInputProfile;
     private HearthFinalChoiceInputProfile savedFinalChoiceInputProfile;
     private bool hasSavedCorridorPose;
@@ -134,6 +135,11 @@ public class Hearth17F04FinaleController : MonoBehaviour
     public FinaleStage CurrentStage
     {
         get { return currentStage; }
+    }
+
+    public HearthPlayerControlLock PlayerControlLock
+    {
+        get { return playerControlLock; }
     }
 
     public bool CanInspectPhoto
@@ -159,21 +165,27 @@ public class Hearth17F04FinaleController : MonoBehaviour
     private void Awake()
     {
         ResolveReferences();
-        SubscribeEvents();
-        savedHudRouting = firstPersonHud == null || firstPersonHud.RouteFinalChoiceInternally;
         SetBlackoutAlpha(0f);
         SetHomeUnitAvailable(false);
     }
 
-    private void OnDestroy()
+    private void OnEnable()
     {
+        SubscribeEvents();
+    }
+
+    private void OnDisable()
+    {
+        UnsubscribeEvents();
+        if (Application.isPlaying && currentStage != FinaleStage.Inactive)
+        {
+            ResetForPreview();
+        }
         if (playerControlLock != null)
         {
             playerControlLock.ReleaseOwner(this);
         }
         RestoreFinalChoiceInputProfile();
-        UnsubscribeEvents();
-        StopAllStorySfx();
     }
 
     private void OnValidate()
@@ -185,6 +197,7 @@ public class Hearth17F04FinaleController : MonoBehaviour
 
     public void BeginFromHomeTerminal()
     {
+        if (!isActiveAndEnabled) return;
         if (flowRoutine != null || (currentStage != FinaleStage.Inactive && currentStage != FinaleStage.Complete))
         {
             if (homeTerminal != null)
@@ -254,6 +267,24 @@ public class Hearth17F04FinaleController : MonoBehaviour
         {
             photoDialogueRoutine = StartCoroutine(PhotoSequenceAfterGreetingRoutine(1));
         }
+    }
+
+    public void AbortPhotoInspection(HearthPhotoFrameInteractable source)
+    {
+        if (source != photoFrame || currentStage != FinaleStage.Photo)
+        {
+            return;
+        }
+
+        if (photoDialogueRoutine != null)
+        {
+            StopCoroutine(photoDialogueRoutine);
+            photoDialogueRoutine = null;
+            if (sceneSubtitlePlayer != null) sceneSubtitlePlayer.Hide();
+        }
+        currentStage = FinaleStage.LivingRoom;
+        photoUnlocked = true;
+        secondPhotoReviewed = false;
     }
 
     public void CompletePhotoInspection()
@@ -340,6 +371,7 @@ public class Hearth17F04FinaleController : MonoBehaviour
 
     public void CompleteFinale()
     {
+        if (!isActiveAndEnabled) return;
         if (currentStage == FinaleStage.Epilogue || currentStage == FinaleStage.Complete)
         {
             return;
@@ -350,6 +382,8 @@ public class Hearth17F04FinaleController : MonoBehaviour
 
     public void ResetForPreview()
     {
+        if (shutdownChallenge != null) shutdownChallenge.AbortChallenge();
+        if (photoFrame != null) photoFrame.AbortView();
         if (flowRoutine != null)
         {
             StopCoroutine(flowRoutine);
@@ -362,13 +396,14 @@ public class Hearth17F04FinaleController : MonoBehaviour
         if (epilogueSubtitlePlayer != null) epilogueSubtitlePlayer.Hide();
         if (firstPersonHud != null)
         {
-            firstPersonHud.SetRouteFinalChoiceInternally(savedHudRouting);
+            RestoreHudRouting();
             firstPersonHud.HideOverlay();
         }
         RestoreFinalChoiceInputProfile();
         if (catGuide != null) catGuide.ResetSequence();
         if (homeTerminal != null)
         {
+            homeTerminal.CancelCustomActionHandoff();
             homeTerminal.SetPrimaryActionInputEnabled(true);
             homeTerminal.ClearRuntimePrompt();
         }
@@ -501,6 +536,7 @@ public class Hearth17F04FinaleController : MonoBehaviour
         if (firstPersonHud != null)
         {
             savedHudRouting = firstPersonHud.RouteFinalChoiceInternally;
+            hasSavedHudRouting = true;
             firstPersonHud.SetRouteFinalChoiceInternally(false);
             firstPersonHud.ShowFinalChoice(false);
         }
@@ -580,7 +616,7 @@ public class Hearth17F04FinaleController : MonoBehaviour
 
         if (firstPersonHud != null)
         {
-            firstPersonHud.SetRouteFinalChoiceInternally(savedHudRouting);
+            RestoreHudRouting();
             firstPersonHud.HideOverlay();
         }
 
@@ -657,6 +693,13 @@ public class Hearth17F04FinaleController : MonoBehaviour
         SetCurrentTask(HearthCurrentTaskId.ApproachHomeUnit);
         SetHomeUnitAvailable(true);
         SetHumanControls(true, true, true);
+    }
+
+    private void RestoreHudRouting()
+    {
+        if (!hasSavedHudRouting) return;
+        if (firstPersonHud != null) firstPersonHud.SetRouteFinalChoiceInternally(savedHudRouting);
+        hasSavedHudRouting = false;
     }
 
     private void SubscribeEvents()

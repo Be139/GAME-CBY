@@ -1,0 +1,29 @@
+{
+  "schema_version": "meshy.cli/v1",
+  "command": "image-to-3d.create",
+  "ok": true,
+  "result": {
+    "task": null,
+    "submission": {
+      "state": "accepted",
+      "operation_id": "50a793ee-77a1-4255-8811-38fc81c2ec1f",
+      "task_id": "01a1919c-0a97-766a-be11-f371f7f05279",
+      "request_id": null
+    },
+    "downloads": {
+      "state": "not_requested",
+      "files": [],
+      "metadata_path": null
+    },
+    "saved_json": null,
+    "task_id": "01a1919c-0a97-766a-be11-f371f7f05279",
+    "next": {
+      "get": "meshy image-to-3d get 01a1919c-0a97-766a-be11-f371f7f05279 --output-schema v1",
+      "wait": "meshy image-to-3d wait 01a1919c-0a97-766a-be11-f371f7f05279 --output-schema v1",
+      "stream": "meshy image-to-3d stream 01a1919c-0a97-766a-be11-f371f7f05279 --format ndjson --output-schema v1"
+    },
+    "project": null
+  },
+  "error": null,
+  "warnings": []
+}

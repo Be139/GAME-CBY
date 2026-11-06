@@ -1,0 +1,46 @@
+{
+  "schema_version": "meshy.cli/v1",
+  "command": "download",
+  "ok": true,
+  "result": {
+    "source": {
+      "kind": "api",
+      "resource": "image-to-3d",
+      "task_id": "01a1916f-9e21-7528-9dbd-f9929310b180",
+      "status": "SUCCEEDED"
+    },
+    "selection": {
+      "selected": [
+        "model.fbx"
+      ],
+      "dependencies": []
+    },
+    "downloads": {
+      "state": "completed",
+      "files": [
+        {
+          "key": "model.fbx",
+          "path": "D:\\UGit\\GAME-CBY\\Docs\\VisualPipeline\\generated\\noah\\chair\\chair.fbx",
+          "relative_path": "noah/chair/chair.fbx",
+          "bytes": 2905244,
+          "sha256": "e9625615bdc6e3af220057b37cccf494d7234d2a5c63306e0bd68a41cc2be1cb",
+          "content_type": "application/octet-stream",
+          "format": "fbx",
+          "container_format": null,
+          "extracted": null,
+          "status": "written",
+          "error": null,
+          "publish_method": "link",
+          "relinked": false
+        }
+      ],
+      "metadata_path": null,
+      "material_links": null
+    },
+    "unknown_urls": [],
+    "saved_json": null,
+    "project": null
+  },
+  "error": null,
+  "warnings": []
+}

@@ -374,12 +374,12 @@ public class CityFacadeBillboardPlacer : MonoBehaviour
                 continue;
             }
 
-            Bounds ignoredBounds;
-            bool sourceMissing = billboard.BuildingSlot == null || !TryGetSlotLocalRendererBounds(billboard.BuildingSlot, out ignoredBounds);
-            if (billboard.BuildingSlot == null && billboard.SourceBuildingRoot != null)
-            {
-                sourceMissing = !TryGetTransformLocalRendererBounds(billboard.SourceBuildingRoot, out ignoredBounds);
-            }
+            // Visibility is a placement filter, not evidence that an authored source is gone.
+            Transform sourceContent = billboard.BuildingSlot != null
+                ? billboard.BuildingSlot.ContentRoot
+                : billboard.SourceBuildingRoot;
+            bool sourceMissing = sourceContent == null ||
+                sourceContent.GetComponentInChildren<Renderer>(true) == null;
 
             if (sourceMissing)
             {

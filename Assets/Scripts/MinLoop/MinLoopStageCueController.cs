@@ -196,8 +196,11 @@ public class MinLoopStageCueController : MonoBehaviour
 
         Unsubscribe();
         flowController = controller;
-        Subscribe();
-        ApplyCurrentStage();
+        if (isActiveAndEnabled)
+        {
+            Subscribe();
+            ApplyCurrentStage();
+        }
     }
 
     public void ExecuteRuleNow(int ruleIndex)

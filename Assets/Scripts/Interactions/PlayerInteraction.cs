@@ -139,7 +139,7 @@ public class PlayerInteraction : MonoBehaviour
         UnityEngine.Object owner,
         IInteractable interactable)
     {
-        if (owner == null || interactable == null)
+        if (owner == null || !IsInteractionAvailable(interactable))
         {
             return;
         }
@@ -259,7 +259,7 @@ public class PlayerInteraction : MonoBehaviour
 
     private void UpdateCurrentTarget()
     {
-        if (proximityInteractable != null &&
+        if (proximityInteractionOwner != null && proximityInteractable != null &&
             IsInteractionAvailable(proximityInteractable))
         {
             SetCurrentTarget(proximityInteractable, null);
@@ -378,6 +378,22 @@ public class PlayerInteraction : MonoBehaviour
 
     private static bool IsInteractionAvailable(IInteractable interactable)
     {
+        if (interactable == null)
+        {
+            return false;
+        }
+
+        // Interface references bypass Unity's destroyed-object null comparison.
+        if (interactable is UnityEngine.Object unityObject && unityObject == null)
+        {
+            return false;
+        }
+
+        if (interactable is Behaviour behaviour && !behaviour.isActiveAndEnabled)
+        {
+            return false;
+        }
+
         IInteractionAvailability availability = interactable as IInteractionAvailability;
         return availability == null || availability.IsInteractionAvailable;
     }

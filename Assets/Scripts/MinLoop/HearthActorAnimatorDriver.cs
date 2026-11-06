@@ -278,13 +278,6 @@ public class HearthActorAnimatorDriver : MonoBehaviour
             return 0f;
         }
 
-        animator.enabled = true;
-        animator.speed = Mathf.Max(0.01f, slot.playbackSpeed);
-        animator.applyRootMotion = slot.applyRootMotion;
-        RestoreAnimatorTransformNow();
-        currentStabilizeAnimatorTransform = slot.stabilizeAnimatorTransform;
-        RestoreRootMotionChildBaseline();
-
         string statePath = ResolveStatePath(slot.stateName);
         if (string.IsNullOrEmpty(statePath))
         {
@@ -293,6 +286,13 @@ public class HearthActorAnimatorDriver : MonoBehaviour
                 this);
             return 0f;
         }
+
+        animator.enabled = true;
+        animator.speed = Mathf.Max(0.01f, slot.playbackSpeed);
+        animator.applyRootMotion = slot.applyRootMotion;
+        RestoreAnimatorTransformNow();
+        currentStabilizeAnimatorTransform = slot.stabilizeAnimatorTransform;
+        RestoreRootMotionChildBaseline();
 
         int stateHash = Animator.StringToHash(statePath);
         float fade = activeStateHash != 0

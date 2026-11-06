@@ -65,7 +65,7 @@ public class CityLotAssetPlacer : MonoBehaviour
 
     [Header("Planning Rules")]
     [SerializeField] private float edgeSetback = 1.5f;
-    [SerializeField] private float internalRoadWidth = 9f;
+    [SerializeField, Min(0f)] private float internalRoadWidth = 9f;
     [SerializeField] private Vector2 blockSizeRange = new Vector2(38f, 64f);
     [SerializeField] private float buildingGap = 3f;
     [SerializeField] private float largeBuildingExtraGap = 8f;
@@ -1446,6 +1446,7 @@ public class CityLotAssetPlacer : MonoBehaviour
 
     private static AxisLayout BuildAxisLayout(float min, float max, Vector2 blockRange, float roadWidth, System.Random random)
     {
+        roadWidth = Mathf.Max(0f, roadWidth);
         AxisLayout layout = new AxisLayout();
         float cursor = min;
         float minBlock = Mathf.Max(16f, blockRange.x);

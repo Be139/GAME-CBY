@@ -1,0 +1,192 @@
+> 历史来源，2026-10-31 已整合。不得按本文件的旧菜单、路径、计数或未验收状态覆盖当前实现。现行入口：[程序手册](../../../脚本使用说明总表.md)、[交接指南](../../../HEARTH_ClaudeCode接手指南.md)。
+
+# HEARTH UI、音频与对白调整入口
+
+> 本文记录当前正式场景 `SampleScene` 的可维护入口。调整普通数值、文字、AudioClip 后通常不需要运行生成器；只有新增控制器、丢失引用或重建 HUD 后，才需要重新运行绑定菜单。
+
+## 1. 米娅 Tab 菜单
+
+- 运行时按 `Tab` 打开左上菜单，使用 `↑/↓` 移动高亮，`Space` 确认，`Esc` 或再次按 `Tab` 关闭。
+- 菜单三项：今日巡查、处置历史/信任度、系统设置。
+- 打开任一菜单页面时，人类移动、视角和普通交互都会锁定；关闭后恢复。
+- 处置历史只显示已完成住户：0/1/2/3 户分别对应 Slides 18/19/20/21。
+- `SHIFT TRUST DELTA` 是当前记录的增减总和；`CURRENT TRUST` 是 `TrustStateController` 的真实当前分数，不是百分制。
+
+## 2. 系统音量
+
+场景入口：
+
+- `HearthHudRoot / HearthSettingsView`：设置页焦点、四个显示值和退出入口。
+- `HearthHudRoot / HearthAudioSettingsController`：Master、Dialogue、Ambient、SFX 的默认值、运行值和 PlayerPrefs 持久化。
+
+运行时：在设置页用 `↑/↓` 选项目，`←/→` 每次调整 5；四组数值会同步到 Slides 22/23/24。
+
+音频归类：
+
+- Master：直接控制 `AudioListener.volume`。
+- Dialogue：已绑定全局标准对白播放器和终局黑幕播放器的语音 AudioSource。
+- SFX：已绑定正式人类/机器人脚步声，以及 HUD/TV 上已有的短音效 AudioSource。
+- Ambient：已绑定 `MIN_LOOP_ROOT/Audio` 下 Corridor、Replay Night、Morning 三个 Ambience 占位音源；以后给其他环境 AudioSource 添加 `HearthAudioChannelSource`，把 `Channel` 设为 `Ambient` 即可接入。
+
+## 3. 人类与机器人脚步声
+
+### 人类 Mia
+
+层级：`Player/Person Controller/First Person Audio`
+
+组件：`HearthFootstepAudioProfile`
+
+- `Role = Human`
+- `Walk Clip` / `Run Clip`：替换人类脚步素材。
+- `Walk Playback Speed`：当前 `0.82`，数值越小，当前录音中的步频越慢。
+- `Run Playback Speed`：当前 `1.05`。
+- `Walk Volume` / `Run Volume`：进入 SFX 总线前的基础音量。
+
+实际播放源位于子物体 `Step Audio` 与 `Running Audio`。
+
+### 陪伴单元 Robot
+
+层级：`Player/Robot Controller/Robot First Person Audio`
+
+组件：`HearthFootstepAudioProfile`
+
+- `Role = Companion`
+- 当前 `Walk Playback Speed = 1.00`、`Run Playback Speed = 1.30`。
+- 后续把机器人专用金属/机械脚步分别拖到 `Walk Clip`、`Run Clip`，不会覆盖人类脚步。
+
+### 当前素材限制
+
+现有 `Steps` 是一段包含多个脚步的循环录音，所以 `Playback Speed` 会同时改变步频和音高。若以后要求“只改步频、不改音高”，应换成单个脚步 One Shot 素材，再把 `FirstPersonAudio` 升级成按距离/时间触发；当前接口已把人类和机器人素材分开，不需要再改剧情脚本。
+
+## 4. 对白文字、句数、时间与语音
+
+正式对白资产：
+
+- 17F01-03：`Assets/Data/MinLoop/Dialogues/17F01_*.asset`、`17F02_*.asset`、`17F03_*.asset`
+- 17F04：`Assets/Data/MinLoop/Dialogues/17F04/*.asset`
+
+当前正式同步范围为 59 个 Dialogue Sequence、422 个映射条目；正式稿覆盖验证为 351 个唯一对白段。部分对白会同时映射到高/低信任等多个 Sequence，因此“映射条目”会多于正式稿唯一段落数。目前尚未拖入真实语音。
+
+选中任一 `HearthDialogueSequence` 后，可在专用 Inspector 中：
+
+- 用 `+ / -` 增删句子。
+- 拖动句子改变顺序。
+- 修改 `Speaker`、`Subtitle Text`、`Delay Before Line`。
+- 把录音拖到 `Voice AudioClip`。
+- 设置 `Duration Mode`：
+  - `VoiceClipWhenAssigned`：有语音时跟随语音长度；无语音时使用手动时长。推荐。
+  - `ManualHold`：始终使用 `Manual Hold Seconds`。
+  - `LongerOfVoiceAndManual`：取手动时长与语音时长中较长者。
+- `Voice Tail Seconds`：语音结束后额外停顿多久再进入下一句。
+
+增删句子、改文字、改时长或拖语音后直接保存资产即可，关卡会在下一次 Play 时读取；不需要重跑场景绑定菜单。流程会等待整段 Dialogue Sequence 播放完，再开放后续 E、切幕或选项。
+
+### 四户统一字幕外观
+
+共享样式资产：`Assets/Data/MinLoop/UI/Hearth_SubtitleStyle.asset`
+
+- `Standard Dialogue`：统一控制 17F01、17F02、17F03、17F04 普通对白；修改一次，四户一起生效。
+- `Centered Epilogue`：只控制 17F04 最终纯黑画面中的居中结局文字，不会把普通对白挪到屏幕中央。
+- `Time Card`：只控制结局中的时间提示，例如 `MORNING - KITCHEN`、`THREE YEARS LATER - FRONT HALL`；它不占用说话人栏，并带独立淡入淡出时间。
+- `Width Fraction`：字幕最大宽度；默认约为屏幕宽度的三分之二，过长内容会自动居中换行。
+- `Speaker Center Y / Body Center Y`：说话人名称和正文的垂直位置。
+- `Speaker Height / Body Height`：两个文字区域的高度。
+- `Speaker/Body Max Font Size` 与 `Min Font Size`：自动字号的上下限。
+- `Body Max Visible Lines` 与 `Body Line Spacing`：最大行数与行距。超出安全区域时会自动缩小字号和换行，不应再越出屏幕。
+
+只调整这些位置、大小或换行参数时，直接保存共享样式资产即可，不需要运行菜单。新增字幕播放器、引用丢失或重建场景后，运行 `Tools / Hearth / Dialogue / Apply Shared Subtitle Presentation`；随后可运行同目录下的验证菜单检查四户是否仍共用一套样式。
+
+注意：共享样式只负责“怎么显示”。每句台词、说话人、句数、等待时间与语音仍在对应的 `HearthDialogueSequence` 资产中修改。
+
+### 住户终端开场介绍与选择提示
+
+- 组件：三台 17F 住户终端根上的 `HearthTerminalOpeningBriefing`。
+- 17F01 / 17F02 / 17F03 分别绑定 `17F01_ApartmentGreeting`、`17F02_TerminalIntro`、`17F03_TerminalEntry`。
+- 介绍播放期间仍可用 Tab 浏览页面，但回放或入户主操作会锁定，终端上方显示 `PLEASE WAIT`。
+- 介绍结束后自动开放主操作；17F01/02 显示 `LEFT / RIGHT  SELECT     SPACE  CONFIRM`，17F03/04 显示 `UP / DOWN  SELECT     SPACE  CONFIRM`。
+- 这些文字由 `HearthTvTerminalController / Runtime Prompt Text` 统一显示。只改字号、颜色或位置时，修改终端内 `KeyboardNavigationRoot/RuntimePromptText`；不需要重跑对白同步。
+- 如果重建了住户终端或丢失绑定，运行 `Tools / Hearth / Terminals / Apply Household Opening Briefings`。
+
+### 一楼任务终端等待提示
+
+- E 打开并完成开机后，任务简报立即开始。
+- 前 5 秒显示 `PLEASE WAIT`，Space 与 Esc 都不生效。
+- 5 秒后显示 `SPACE  CLOSE TERMINAL`；关闭页面后简报继续，米娅可移动和转头，但其他 E 交互与电梯仍锁定。
+- 最后一行结束后才恢复交互并开放电梯；本轮任务终端不再允许第二次打开。
+- 5 秒时长在 `MIN_LOOP_ROOT/LobbyOpening/HearthLobbyFlowController / Assignment Terminal Minimum View Seconds` 调整。
+
+## 5. 单按 E 与长按 E
+
+- 单按 E 统一由正式人类/机器人上的 `PlayerInteraction` 显示，运行时强制使用英文 ASCII 提示，例如 `E  INTERACT`、`E  ACCESS TERMINAL`、`E  OPEN DOOR`。
+- 场景中旧的中文序列化文字已经迁移为英文，因此不会再以方框显示。
+- 长按 E 的 0-100% 进度条属于 `HearthCompanionHoldPrompt` / 关卡专用长按逻辑，本次没有改成单按。
+- 新增单按交互时，让脚本实现 `IInteractable`，`GetDescription()` 返回英文；若阶段受限，同时实现 `IInteractionAvailability`。
+
+## 6. 什么时候运行绑定菜单
+
+菜单：`Tools / Hearth / Systems / Apply HUD Audio And English Prompt Fixes`
+
+需要运行：
+
+- 新建了正式人类/机器人控制器。
+- 重建了 `HearthHudRoot`。
+- 手动删除了音频配置、字幕 AudioSource 或设置页引用。
+- 新场景要采用同一套系统。
+
+不需要运行：
+
+- 调整音量、脚步速度、音量或替换 AudioClip。
+- 修改 Dialogue Sequence 的文字、句数、顺序、时长或语音。
+- 调整已有 UI 的 RectTransform、字体大小、颜色。
+
+验证菜单：`Tools / Hearth / Systems / Validate HUD Audio And English Prompts`。它会检查正式音频入口以及所有运行时 `IInteractable` 提示是否仍为英文。
+
+## 7. 最小检查
+
+1. Play 后按 Tab，确认人物停止移动。
+2. 打开处置历史，确认只显示已完成住户和真实信任值。
+3. 打开设置，把 Master 调低，确认数值与整体声音同时变化。
+4. 分别操控 Mia 和机器人，确认两套脚步配置互不覆盖。
+5. 给任意 Dialogue Sequence 一句拖入测试 AudioClip，确认字幕按所选 Duration Mode 推进。
+6. 走近单按 E 交互物，确认提示是英文且无方框。
+
+## 8. 分关卡剧情音效空槽
+
+场景总入口：`MIN_LOOP_ROOT / Audio`。
+
+现有三条 `Audio_Corridor_Ambience / Audio_Replay_Night_Ambience / Audio_Morning_Ambience` 继续负责持续环境声。新增剧情动作音效集中在：
+
+- `StorySFX_17F02`：女主起身、女主移动、餐桌 Foley、调取记录、故障、关机。
+- `StorySFX_17F03`：母亲起身、女儿起身、女儿移动、键盘输入、故障、深眠关机。
+- `StorySFX_17F04`：相框记忆提示、最终关闭陪伴单元。
+
+每个分组都挂 `HearthSfxCuePlayer`。展开 `Cues` 后，把选好的素材拖到对应 `Primary Clip`；需要多个随机版本时拖到 `Alternate Clips`。通常不需要修改子物体 AudioSource，也不需要重新运行菜单。
+
+命名规则：
+
+- `AUTO_*`：剧情脚本已经在准确阶段自动调用，拖入 Clip 后直接生效。
+- `TBD_*`：发声位置已建立，但触发时刻尚未确认，不会自动播放。
+- 当前唯一的 `TBD` 是 `TBD_17F02_Wife_SitOnBed`。需要先确认黑屏对白中的精确落座时刻，再调用 `StorySFX_17F02.PlayCue("Wife.SitOnBed")`。
+
+移动音源：
+
+- `AUTO_17F02_Wife_Walk` 会跟随 `Actor_Wife_17F02_BedroomRuntimeRoot`，门口停下时停止，继续出门时恢复。
+- `AUTO_17F03_Daughter_Walk` 会跟随 `Actor_Daughter_17F03_RuntimeRoot`，到达最后路径点后停止。
+- `HearthSfxCuePlayer / Follow Target` 是实际跟随对象；`Spatial Blend / Min Distance / Max Distance` 控制空间听感。
+- 猫咪音效明确排除，`CatGuide` 下没有创建任何音效槽。
+
+门音效仍使用门自身的 `SmartDoorController / Open Clip / Close Clip / Locked Clip`，不放进 StorySFX 重复播放。17F02 女主出门和 17F03 女儿开门已经补好 SFX AudioSource；拖入 Clip 即可。
+
+应用菜单：`Tools / Hearth / Audio / Apply Story SFX Placeholder Setup`。只有新增/删除发声点、引用丢失或重建场景时才运行。普通替换 Clip 不运行。
+
+验证菜单：`Tools / Hearth / Audio / Validate Story SFX Placeholder Setup`。空 Clip 是允许状态；验证重点是 Cue、AudioSource、空间跟随目标和剧情控制器绑定。
+
+17F01 没有新增剧情 Foley 分组：排除小男孩呼吸、翻身和床单声后，该户由现有 Room Tone、机器人脚步、Companion HUD 长按完成声和 TV 终端音效槽覆盖，避免重复播放。
+
+## 9. 17F04 猫咪动作频率
+
+- 正式对象：`MIN_LOOP_ROOT / Finale_17F04 / CatGuide / CatMoveRoot`。
+- 组件：`Hearth17F04CatGuideController / Walk Playback Speed`，当前为 `2.0`。
+- 该值只加快 `Walk_F` 的腿部动作频率；`Run_F / Lie_to / Lie_idle` 保持原速。
+- 路线时间仍为 `1.5 / 1.5 / 1.5 / 1.5 / 7.5 / 0.5 / 0.5` 秒。
+- 第 4、5、6 个参考点在运行开始时直接读取当前 Transform。移动这些参考点后重新 Play 即可，不需要同步菜单。

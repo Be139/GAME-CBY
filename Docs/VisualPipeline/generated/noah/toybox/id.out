@@ -1,0 +1,46 @@
+{
+  "schema_version": "meshy.cli/v1",
+  "command": "download",
+  "ok": true,
+  "result": {
+    "source": {
+      "kind": "api",
+      "resource": "image-to-image",
+      "task_id": "01a19171-58a9-72a9-b292-23f5efd41e34",
+      "status": "SUCCEEDED"
+    },
+    "selection": {
+      "selected": [
+        "image.0"
+      ],
+      "dependencies": []
+    },
+    "downloads": {
+      "state": "completed",
+      "files": [
+        {
+          "key": "image.0",
+          "path": "D:\\UGit\\GAME-CBY\\Docs\\VisualPipeline\\generated\\noah\\toybox\\ref\\image_0.png",
+          "relative_path": "noah/toybox/ref/image_0.png",
+          "bytes": 1099681,
+          "sha256": "bb16e6c2e80b3d4ebfa43df20f2998f53793655d266f494b55b7542779677f5a",
+          "content_type": "image/png",
+          "format": "png",
+          "container_format": null,
+          "extracted": null,
+          "status": "written",
+          "error": null,
+          "publish_method": "link",
+          "relinked": false
+        }
+      ],
+      "metadata_path": null,
+      "material_links": null
+    },
+    "unknown_urls": [],
+    "saved_json": null,
+    "project": null
+  },
+  "error": null,
+  "warnings": []
+}

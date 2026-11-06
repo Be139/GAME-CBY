@@ -1,0 +1,3 @@
+var s = UnityEngine.SceneManagement.SceneManager.GetActiveScene(); int lit = 0, gi = 0; foreach (var r in UnityEngine.Object.FindObjectsOfType<UnityEngine.MeshRenderer>(true)) { if (r.lightmapIndex >= 0 && r.lightmapIndex < 65534) lit++; if ((UnityEditor.GameObjectUtility.GetStaticEditorFlags(r.gameObject) & UnityEditor.StaticEditorFlags.ContributeGI) != 0) gi++; }
+int groupsOn = 0; foreach (var g in UnityEngine.Object.FindObjectsOfType<UnityEngine.LightProbeGroup>(true)) if (g.enabled) groupsOn++;
+return "dirty=" + s.isDirty + " lightmaps=" + UnityEngine.LightmapSettings.lightmaps.Length + " lit=" + lit + " giFlag=" + gi + " probeGroupsOn=" + groupsOn + " probes=" + (UnityEngine.LightmapSettings.lightProbes != null ? UnityEngine.LightmapSettings.lightProbes.count : 0);

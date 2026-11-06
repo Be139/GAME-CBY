@@ -1,0 +1,46 @@
+{
+  "schema_version": "meshy.cli/v1",
+  "command": "download",
+  "ok": true,
+  "result": {
+    "source": {
+      "kind": "api",
+      "resource": "image-to-image",
+      "task_id": "01a19175-9e47-713a-a9aa-a11ff208b4ba",
+      "status": "SUCCEEDED"
+    },
+    "selection": {
+      "selected": [
+        "image.0"
+      ],
+      "dependencies": []
+    },
+    "downloads": {
+      "state": "completed",
+      "files": [
+        {
+          "key": "image.0",
+          "path": "D:\\UGit\\GAME-CBY\\Docs\\VisualPipeline\\generated\\noah\\slippers\\ref\\image_0.png",
+          "relative_path": "noah/slippers/ref/image_0.png",
+          "bytes": 1078817,
+          "sha256": "5a73379816f50223e3207b741519bd62dddbed89497f1b3bd76351f3fe8ec1e1",
+          "content_type": "image/png",
+          "format": "png",
+          "container_format": null,
+          "extracted": null,
+          "status": "written",
+          "error": null,
+          "publish_method": "link",
+          "relinked": false
+        }
+      ],
+      "metadata_path": null,
+      "material_links": null
+    },
+    "unknown_urls": [],
+    "saved_json": null,
+    "project": null
+  },
+  "error": null,
+  "warnings": []
+}

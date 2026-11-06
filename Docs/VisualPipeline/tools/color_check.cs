@@ -1,0 +1,1 @@
+var sb = new System.Text.StringBuilder(); foreach (var n in new[] { "Bake_Sconce_F01", "Bake_EntryLamp", "Bake_SofaLamp", "Light_MorningSun", "Bake_ArrivalWin_W" }) foreach (var l in UnityEngine.Object.FindObjectsOfType<UnityEngine.Light>(true)) if (l.name == n) sb.Append(n + "=" + UnityEngine.ColorUtility.ToHtmlStringRGB(l.color) + " "); return sb.ToString();

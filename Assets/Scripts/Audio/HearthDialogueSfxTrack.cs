@@ -56,6 +56,7 @@ public sealed class HearthDialogueSfxTrack : MonoBehaviour
         CueAction[] newActions)
     {
         Unsubscribe();
+        StopTrackedLoops();
         subtitlePlayer = newSubtitlePlayer;
         cuePlayer = newCuePlayer;
         actions = newActions ?? Array.Empty<CueAction>();
@@ -64,7 +65,7 @@ public sealed class HearthDialogueSfxTrack : MonoBehaviour
 
     private void Subscribe()
     {
-        if (subtitlePlayer == null)
+        if (!isActiveAndEnabled || subtitlePlayer == null)
         {
             return;
         }

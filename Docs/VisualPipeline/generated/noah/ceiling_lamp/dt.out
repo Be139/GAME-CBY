@@ -1,0 +1,47 @@
+{
+  "schema_version": "meshy.cli/v1",
+  "command": "download",
+  "ok": true,
+  "result": {
+    "source": {
+      "kind": "api",
+      "resource": "image-to-3d",
+      "task_id": "01a19176-75ee-74a6-bcb3-81e548c1dd09",
+      "status": "SUCCEEDED"
+    },
+    "selection": {
+      "selected": [
+        "thumbnail.primary"
+      ],
+      "dependencies": []
+    },
+    "downloads": {
+      "state": "completed",
+      "files": [
+        {
+          "key": "thumbnail.primary",
+          "path": "D:\\UGit\\GAME-CBY\\Docs\\VisualPipeline\\generated\\noah\\ceiling_lamp\\thumb.png",
+          "relative_path": "noah/ceiling_lamp/thumb.png",
+          "bytes": 44573,
+          "sha256": "7701f1773482ada85a5e0d8da6bba2aa5cf488df34b8c30da9c408f7f7b24f1f",
+          "content_type": "image/png",
+          "format": "png",
+          "container_format": null,
+          "extracted": null,
+          "status": "written",
+          "error": null,
+          "publish_method": "link",
+          "relinked": false
+        }
+      ],
+      "metadata_path": null,
+      "material_links": null
+    },
+    "unknown_urls": [],
+    "saved_json": null,
+    "project": null
+  },
+  "error": null,
+  "warnings": []
+}
+Assertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\win\async.c, line 94

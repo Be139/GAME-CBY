@@ -21,4 +21,6 @@ public abstract class HearthShutdownChallenge : MonoBehaviour
     public abstract void BeginChallenge(bool highTrust);
     public abstract void Submit();
     public abstract void Cancel();
+    // System teardown must not emit a player choice or complete the story.
+    public abstract void AbortChallenge();
 }

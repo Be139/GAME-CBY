@@ -1,0 +1,29 @@
+{
+  "schema_version": "meshy.cli/v1",
+  "command": "image-to-image.create",
+  "ok": true,
+  "result": {
+    "task": null,
+    "submission": {
+      "state": "accepted",
+      "operation_id": "dfbc786b-f4cb-4233-b98a-249781ef8c2b",
+      "task_id": "01a19173-8d35-7593-a233-835ed726c571",
+      "request_id": null
+    },
+    "downloads": {
+      "state": "not_requested",
+      "files": [],
+      "metadata_path": null
+    },
+    "saved_json": null,
+    "task_id": "01a19173-8d35-7593-a233-835ed726c571",
+    "next": {
+      "get": "meshy image-to-image get 01a19173-8d35-7593-a233-835ed726c571 --output-schema v1",
+      "wait": "meshy image-to-image wait 01a19173-8d35-7593-a233-835ed726c571 --output-schema v1",
+      "stream": "meshy image-to-image stream 01a19173-8d35-7593-a233-835ed726c571 --format ndjson --output-schema v1"
+    },
+    "project": null
+  },
+  "error": null,
+  "warnings": []
+}

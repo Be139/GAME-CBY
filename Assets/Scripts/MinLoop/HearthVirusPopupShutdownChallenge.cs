@@ -58,6 +58,7 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
     [SerializeField] private int randomSeed = 1704;
 
     private readonly List<PopupState> activePopups = new List<PopupState>();
+    private readonly List<PopupState> dismissingPopups = new List<PopupState>();
     private Coroutine waveRoutine;
     private int currentWaveIndex = -1;
     private int currentWaveSpawned;
@@ -77,6 +78,7 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
         public CanvasGroup group;
         public Vector2 targetPosition;
         public bool isWaveGate;
+        public bool dismissing;
     }
 
     private void Awake()
@@ -93,6 +95,11 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
     private void OnDestroy()
     {
         UnsubscribeHighTrustHud();
+    }
+
+    private void OnDisable()
+    {
+        AbortChallenge();
     }
 
     private void Update()
@@ -194,7 +201,8 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
 
     public override void BeginChallenge(bool highTrust)
     {
-        ResetRuntime();
+        if (!isActiveAndEnabled) return;
+        AbortChallenge();
         EnsureWaveDefaults();
         ResolveHighTrustHud();
         highTrustMode = highTrust;
@@ -279,6 +287,8 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
         PlayCue(popupDismissCueId);
         PopupState popup = activePopups[activePopups.Count - 1];
         activePopups.RemoveAt(activePopups.Count - 1);
+        popup.dismissing = true;
+        dismissingPopups.Add(popup);
         if (popup.isWaveGate)
         {
             waitingForWaveGate = false;
@@ -307,6 +317,18 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
         ResetRuntime();
         SetVisible(false);
         cancelled.Invoke();
+    }
+
+    public override void AbortChallenge()
+    {
+        bool hideConfirmation = usingSecondUiHighTrustConfirmation;
+        ResetRuntime();
+        SetVisible(false);
+        if (hideConfirmation && highTrustHudController != null &&
+            highTrustHudController.CurrentPageId == HearthFirstPersonHudPageId.Slide10ShutdownConfirm)
+        {
+            highTrustHudController.HideOverlay();
+        }
     }
 
     public void ConfigureSecondUiHighTrustConfirmation(
@@ -514,7 +536,7 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
         popup.rect.localScale = Vector3.one * 0.86f;
         popup.group.alpha = 0.15f;
         float elapsed = 0f;
-        while (elapsed < popupEnterSeconds && popup.rect != null)
+        while (elapsed < popupEnterSeconds && popup.rect != null && !popup.dismissing)
         {
             elapsed += Time.unscaledDeltaTime;
             float t = Mathf.Clamp01(elapsed / popupEnterSeconds);
@@ -525,7 +547,7 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
             yield return null;
         }
 
-        if (popup.rect != null)
+        if (popup.rect != null && !popup.dismissing)
         {
             popup.rect.anchoredPosition = popup.targetPosition;
             popup.rect.localScale = Vector3.one;
@@ -562,6 +584,7 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
             }
         }
 
+        dismissingPopups.Remove(popup);
         pendingDismissals = Mathf.Max(0, pendingDismissals - 1);
         if (popup.isWaveGate && IsRunning && !highTrustMode)
         {
@@ -727,6 +750,14 @@ public class HearthVirusPopupShutdownChallenge : HearthShutdownChallenge
         }
 
         activePopups.Clear();
+        for (int i = 0; i < dismissingPopups.Count; i++)
+        {
+            if (dismissingPopups[i].rect != null)
+            {
+                Destroy(dismissingPopups[i].rect.gameObject);
+            }
+        }
+        dismissingPopups.Clear();
         currentWaveIndex = -1;
         currentWaveSpawned = 0;
         popupSerial = 0;

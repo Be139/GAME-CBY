@@ -29,6 +29,15 @@ public class HearthActorPosePreset : MonoBehaviour
 
     private Coroutine activeRoutine;
 
+    private void OnDisable()
+    {
+        if (activeRoutine != null)
+        {
+            StopCoroutine(activeRoutine);
+            activeRoutine = null;
+        }
+    }
+
     private void Awake()
     {
         if (defaultPoseRoot == null)
@@ -60,15 +69,15 @@ public class HearthActorPosePreset : MonoBehaviour
             return;
         }
 
-        if (pauseAnimatorsOnApply)
-        {
-            SetAnimatorsPaused(true);
-        }
-
         Transform targetRoot = pose.root != null ? pose.root : defaultPoseRoot;
         if (targetRoot == null)
         {
             return;
+        }
+
+        if (pauseAnimatorsOnApply)
+        {
+            SetAnimatorsPaused(true);
         }
 
         if (activeRoutine != null)

@@ -1,0 +1,46 @@
+{
+  "schema_version": "meshy.cli/v1",
+  "command": "download",
+  "ok": true,
+  "result": {
+    "source": {
+      "kind": "api",
+      "resource": "image-to-image",
+      "task_id": "01a19173-8d63-768f-b845-8ca29fb7ba7f",
+      "status": "SUCCEEDED"
+    },
+    "selection": {
+      "selected": [
+        "image.0"
+      ],
+      "dependencies": []
+    },
+    "downloads": {
+      "state": "completed",
+      "files": [
+        {
+          "key": "image.0",
+          "path": "D:\\UGit\\GAME-CBY\\Docs\\VisualPipeline\\generated\\noah\\toy_rocket\\ref\\image_0.png",
+          "relative_path": "noah/toy_rocket/ref/image_0.png",
+          "bytes": 912796,
+          "sha256": "e008eb6ad83aaaa9d2954e63cbadeac73ca1c430584489c5ee21b073e20ae17f",
+          "content_type": "image/png",
+          "format": "png",
+          "container_format": null,
+          "extracted": null,
+          "status": "written",
+          "error": null,
+          "publish_method": "link",
+          "relinked": false
+        }
+      ],
+      "metadata_path": null,
+      "material_links": null
+    },
+    "unknown_urls": [],
+    "saved_json": null,
+    "project": null
+  },
+  "error": null,
+  "warnings": []
+}

@@ -182,6 +182,7 @@ public class HearthTvTerminalController : MonoBehaviour
     private bool terminalAudioWasEnabled;
     private int keyboardFocusIndex;
     private Coroutine terminalRoutine;
+    private Coroutine bootRoutine;
     private Coroutine cameraFocusRoutine;
     private bool terminalInputReady;
     private bool terminalPresentationReady;
@@ -306,6 +307,15 @@ public class HearthTvTerminalController : MonoBehaviour
             dialogueSurface = null;
         }
 
+        if (!allowRuntimeSurfaceFallback)
+        {
+            Debug.LogError(
+                "[HearthTvTerminalController] Missing authored dialogue surface. " +
+                "Bind it on HearthTerminalViewBindings instead of generating UI at runtime.",
+                this);
+            return null;
+        }
+
         // Page prefabs can contain several FieldUnitPanel objects under
         // mutually exclusive V2_PageVisual roots. Only bind the panel owned by
         // the currently visible page; otherwise use a terminal-wide surface.
@@ -350,15 +360,6 @@ public class HearthTvTerminalController : MonoBehaviour
             dialogueSurface.HideImmediate();
             SuppressRuntimePromptForDialogue();
             return dialogueSurface;
-        }
-
-        if (!allowRuntimeSurfaceFallback)
-        {
-            Debug.LogError(
-                "[HearthTvTerminalController] Missing authored dialogue surface. " +
-                "Bind it on HearthTerminalViewBindings instead of generating UI at runtime.",
-                this);
-            return null;
         }
 
         dialogueSurface = CreateRuntimeDialogueSurface();
@@ -407,6 +408,15 @@ public class HearthTvTerminalController : MonoBehaviour
             messageSurface = null;
         }
 
+        if (!allowRuntimeSurfaceFallback)
+        {
+            Debug.LogError(
+                "[HearthTvTerminalController] Missing authored message surface. " +
+                "Bind it on HearthTerminalViewBindings instead of generating UI at runtime.",
+                this);
+            return null;
+        }
+
         Transform existingPanel = currentPage != null
             ? FindDescendantByName(currentPage.transform, "LilyMessagePanel")
             : null;
@@ -438,15 +448,6 @@ public class HearthTvTerminalController : MonoBehaviour
             messageSurface.HideImmediate();
             SuppressRuntimePromptForDialogue();
             return messageSurface;
-        }
-
-        if (!allowRuntimeSurfaceFallback)
-        {
-            Debug.LogError(
-                "[HearthTvTerminalController] Missing authored message surface. " +
-                "Bind it on HearthTerminalViewBindings instead of generating UI at runtime.",
-                this);
-            return null;
         }
 
         messageSurface = CreateRuntimeMessageSurface();
@@ -947,13 +948,13 @@ public class HearthTvTerminalController : MonoBehaviour
 
         PlayClip(bootClip);
         StartActiveAudioLoop();
-        Coroutine bootRoutine = bootSequence != null ? StartCoroutine(bootSequence.PlayOpenSequence()) : null;
+        bootRoutine = bootSequence != null ? StartCoroutine(bootSequence.PlayOpenSequence()) : null;
         StartCameraFocusRoutine(true);
         yield return WaitForRealtime(Mathf.Max(GetExpectedCameraDuration(true), GetExpectedBootDuration(true)));
 
         if (bootRoutine != null)
         {
-            StopCoroutine(bootRoutine);
+            StopBootRoutine();
             bootSequence.ApplyOpenInstant();
         }
 
@@ -986,16 +987,16 @@ public class HearthTvTerminalController : MonoBehaviour
         StopActiveAudioLoop();
         PlayClip(closeClip);
 
-        Coroutine closeBootRoutine = bootSequence != null ? StartCoroutine(bootSequence.PlayCloseSequence()) : null;
+        bootRoutine = bootSequence != null ? StartCoroutine(bootSequence.PlayCloseSequence()) : null;
 
         if (smoothCamera)
         {
             StartCameraFocusRoutine(false);
             yield return WaitForRealtime(Mathf.Max(GetExpectedCameraDuration(false), GetExpectedBootDuration(false)));
 
-            if (closeBootRoutine != null)
+            if (bootRoutine != null)
             {
-                StopCoroutine(closeBootRoutine);
+                StopBootRoutine();
                 bootSequence.ApplyClosedInstant();
             }
 
@@ -1003,9 +1004,9 @@ public class HearthTvTerminalController : MonoBehaviour
         }
         else
         {
-            if (closeBootRoutine != null)
+            if (bootRoutine != null)
             {
-                StopCoroutine(closeBootRoutine);
+                StopBootRoutine();
                 bootSequence.ApplyClosedInstant();
             }
 
@@ -3746,6 +3747,7 @@ public class HearthTvTerminalController : MonoBehaviour
 
     private void StartTerminalRoutine(IEnumerator routine)
     {
+        StopBootRoutine();
         if (terminalRoutine != null)
         {
             StopCoroutine(terminalRoutine);
@@ -3763,6 +3765,15 @@ public class HearthTvTerminalController : MonoBehaviour
         }
 
         terminalRoutine = StartCoroutine(routine);
+    }
+
+    private void StopBootRoutine()
+    {
+        if (bootRoutine != null)
+        {
+            StopCoroutine(bootRoutine);
+            bootRoutine = null;
+        }
     }
 
     private void StartCameraFocusRoutine(bool focused)
@@ -3836,6 +3847,7 @@ public class HearthTvTerminalController : MonoBehaviour
         }
 
         terminalSessionCleanupInProgress = true;
+        StopBootRoutine();
 
         if (terminalRoutine != null)
         {

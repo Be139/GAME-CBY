@@ -1,0 +1,46 @@
+{
+  "schema_version": "meshy.cli/v1",
+  "command": "download",
+  "ok": true,
+  "result": {
+    "source": {
+      "kind": "api",
+      "resource": "image-to-3d",
+      "task_id": "01a1916b-e73c-73c3-b409-280d40662f0f",
+      "status": "SUCCEEDED"
+    },
+    "selection": {
+      "selected": [
+        "model.fbx"
+      ],
+      "dependencies": []
+    },
+    "downloads": {
+      "state": "completed",
+      "files": [
+        {
+          "key": "model.fbx",
+          "path": "D:\\UGit\\GAME-CBY\\Docs\\VisualPipeline\\generated\\noah\\bed\\bed.fbx",
+          "relative_path": "noah/bed/bed.fbx",
+          "bytes": 3812284,
+          "sha256": "bc1a7fabcc66be31796c081a18ee0987a3c27f00e67aabd8949a8bab22eab1e4",
+          "content_type": "application/octet-stream",
+          "format": "fbx",
+          "container_format": null,
+          "extracted": null,
+          "status": "written",
+          "error": null,
+          "publish_method": "link",
+          "relinked": false
+        }
+      ],
+      "metadata_path": null,
+      "material_links": null
+    },
+    "unknown_urls": [],
+    "saved_json": null,
+    "project": null
+  },
+  "error": null,
+  "warnings": []
+}

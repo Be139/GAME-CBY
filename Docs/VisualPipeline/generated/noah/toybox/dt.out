@@ -1,0 +1,46 @@
+{
+  "schema_version": "meshy.cli/v1",
+  "command": "download",
+  "ok": true,
+  "result": {
+    "source": {
+      "kind": "api",
+      "resource": "image-to-3d",
+      "task_id": "01a19172-2540-70e2-8825-cd802d67c421",
+      "status": "SUCCEEDED"
+    },
+    "selection": {
+      "selected": [
+        "thumbnail.primary"
+      ],
+      "dependencies": []
+    },
+    "downloads": {
+      "state": "completed",
+      "files": [
+        {
+          "key": "thumbnail.primary",
+          "path": "D:\\UGit\\GAME-CBY\\Docs\\VisualPipeline\\generated\\noah\\toybox\\thumb.png",
+          "relative_path": "noah/toybox/thumb.png",
+          "bytes": 120324,
+          "sha256": "9b8946deb6dbbcf7eae9fc1a306c8922e48c55dfd02e2c6fd66f3d84ea382219",
+          "content_type": "image/png",
+          "format": "png",
+          "container_format": null,
+          "extracted": null,
+          "status": "written",
+          "error": null,
+          "publish_method": "link",
+          "relinked": false
+        }
+      ],
+      "metadata_path": null,
+      "material_links": null
+    },
+    "unknown_urls": [],
+    "saved_json": null,
+    "project": null
+  },
+  "error": null,
+  "warnings": []
+}

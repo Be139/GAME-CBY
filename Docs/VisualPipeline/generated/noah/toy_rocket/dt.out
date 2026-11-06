@@ -1,0 +1,47 @@
+{
+  "schema_version": "meshy.cli/v1",
+  "command": "download",
+  "ok": true,
+  "result": {
+    "source": {
+      "kind": "api",
+      "resource": "image-to-3d",
+      "task_id": "01a19174-6c3d-757d-953f-0d2130b15e4d",
+      "status": "SUCCEEDED"
+    },
+    "selection": {
+      "selected": [
+        "thumbnail.primary"
+      ],
+      "dependencies": []
+    },
+    "downloads": {
+      "state": "completed",
+      "files": [
+        {
+          "key": "thumbnail.primary",
+          "path": "D:\\UGit\\GAME-CBY\\Docs\\VisualPipeline\\generated\\noah\\toy_rocket\\thumb.png",
+          "relative_path": "noah/toy_rocket/thumb.png",
+          "bytes": 75278,
+          "sha256": "fbbb0ec31943627557d7f43835f82ebba0cff8f7f497e18fe3357e499d545097",
+          "content_type": "image/png",
+          "format": "png",
+          "container_format": null,
+          "extracted": null,
+          "status": "written",
+          "error": null,
+          "publish_method": "link",
+          "relinked": false
+        }
+      ],
+      "metadata_path": null,
+      "material_links": null
+    },
+    "unknown_urls": [],
+    "saved_json": null,
+    "project": null
+  },
+  "error": null,
+  "warnings": []
+}
+Assertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\win\async.c, line 94

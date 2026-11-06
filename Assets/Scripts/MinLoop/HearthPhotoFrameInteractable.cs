@@ -51,6 +51,8 @@ public class HearthPhotoFrameInteractable : MonoBehaviour, IInteractable, IInter
     private int currentPageIndex;
     private MaterialPropertyBlock photoPropertyBlock;
     private bool archiveOverlayOpen;
+    private bool statesCaptured;
+    private HearthPlayerControlLock acquiredControlLock;
 
     public bool IsOpen
     {
@@ -74,7 +76,7 @@ public class HearthPhotoFrameInteractable : MonoBehaviour, IInteractable, IInter
 
     public bool IsInteractionAvailable
     {
-        get { return !viewOpen && !transitioning && finaleController != null && finaleController.CanInspectPhoto; }
+        get { return isActiveAndEnabled && !viewOpen && !transitioning && finaleController != null && finaleController.CanInspectPhoto; }
     }
 
     private void Awake()
@@ -94,9 +96,35 @@ public class HearthPhotoFrameInteractable : MonoBehaviour, IInteractable, IInter
 
     private void OnDisable()
     {
+        AbortView();
+    }
+
+    /// <summary>Restores the view without advancing the finale story.</summary>
+    public void AbortView()
+    {
+        bool wasViewing = statesCaptured;
+        StopAllCoroutines();
+        if (statesCaptured)
+        {
+            if (cameraTransition != null) cameraTransition.CancelTransition();
+            SetCameraState(playerCamera, playerCameraWasEnabled, playerAudioWasEnabled);
+            SetCameraState(photoCamera, photoCameraWasEnabled, photoAudioWasEnabled);
+            RestoreControls();
+            statesCaptured = false;
+        }
+        viewOpen = false;
+        transitioning = false;
+        dialogueComplete = false;
+        pageNavigationEnabled = false;
+        exitInputArmed = false;
+        archiveOverlayOpen = false;
         if (photoArchiveWorldView != null)
         {
             photoArchiveWorldView.Hide();
+        }
+        if (wasViewing && finaleController != null)
+        {
+            finaleController.AbortPhotoInspection(this);
         }
     }
 
@@ -331,6 +359,7 @@ public class HearthPhotoFrameInteractable : MonoBehaviour, IInteractable, IInter
         SetHint(string.Empty, false);
         transitioning = false;
         RestoreControls();
+        statesCaptured = false;
         finaleController.CompletePhotoInspection();
     }
 
@@ -390,10 +419,19 @@ public class HearthPhotoFrameInteractable : MonoBehaviour, IInteractable, IInter
         photoCameraWasEnabled = photoCamera != null && photoCamera.enabled;
         playerAudioWasEnabled = GetAudioState(playerCamera);
         photoAudioWasEnabled = GetAudioState(photoCamera);
+        statesCaptured = true;
     }
 
     private void SetControlsEnabled(bool enabled)
     {
+        if (!enabled && finaleController != null && finaleController.PlayerControlLock != null)
+        {
+            acquiredControlLock = finaleController.PlayerControlLock;
+            acquiredControlLock.SetControlMask(this,
+                HearthPlayerControlMask.Movement | HearthPlayerControlMask.Look |
+                HearthPlayerControlMask.Interaction | HearthPlayerControlMask.Menu);
+            return;
+        }
         if (playerMovement != null) playerMovement.enabled = enabled;
         if (playerLook != null) playerLook.enabled = enabled;
         if (playerInteraction != null) playerInteraction.SetInteractionEnabled(enabled);
@@ -406,6 +444,12 @@ public class HearthPhotoFrameInteractable : MonoBehaviour, IInteractable, IInter
 
     private void RestoreControls()
     {
+        if (acquiredControlLock != null)
+        {
+            acquiredControlLock.ReleaseOwner(this);
+            acquiredControlLock = null;
+            return;
+        }
         if (playerMovement != null) playerMovement.enabled = movementWasEnabled;
         if (playerLook != null) playerLook.enabled = lookWasEnabled;
         if (playerInteraction != null) playerInteraction.SetInteractionEnabled(interactionWasEnabled);

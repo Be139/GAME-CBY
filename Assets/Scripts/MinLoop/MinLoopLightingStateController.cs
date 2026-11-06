@@ -75,6 +75,7 @@ public class MinLoopLightingStateController : MonoBehaviour
     private bool originalFogEnabled;
     private Color originalFogColor;
     private float originalFogDensity;
+    private bool hasSceneAmbientSnapshot;
     private bool isListening;
     private readonly List<Coroutine> activeTransitions = new List<Coroutine>();
 
@@ -172,12 +173,20 @@ public class MinLoopLightingStateController : MonoBehaviour
 
         Unsubscribe();
         flowController = controller;
-        Subscribe();
-        ApplyCurrentStage();
+        if (isActiveAndEnabled)
+        {
+            Subscribe();
+            ApplyCurrentStage();
+        }
     }
 
     public void RestoreSceneAmbient()
     {
+        if (!hasSceneAmbientSnapshot)
+        {
+            return;
+        }
+
         RenderSettings.ambientLight = originalAmbientLight;
         RenderSettings.fog = originalFogEnabled;
         RenderSettings.fogColor = originalFogColor;
@@ -451,6 +460,7 @@ public class MinLoopLightingStateController : MonoBehaviour
         originalFogEnabled = RenderSettings.fog;
         originalFogColor = RenderSettings.fogColor;
         originalFogDensity = RenderSettings.fogDensity;
+        hasSceneAmbientSnapshot = true;
     }
 
     private bool IsLightUsedByMatchedRule(Light targetLight, MinLoopStage currentStage)

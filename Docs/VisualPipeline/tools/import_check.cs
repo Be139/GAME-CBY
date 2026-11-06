@@ -1,0 +1,3 @@
+int done = 0, total = 0; var left = new System.Collections.Generic.List<string>();
+foreach (var dir in UnityEditor.AssetDatabase.GetSubFolders("Assets/Art/Generated/Rooms")) { var id = System.IO.Path.GetFileName(dir); if (id == "shared" || id == "variants") continue; total++; var mi = UnityEditor.AssetImporter.GetAtPath(dir + "/" + id + ".fbx") as UnityEditor.ModelImporter; if (mi != null && mi.generateSecondaryUV && mi.secondaryUVPackMargin == 48f) done++; else left.Add(id); }
+return "imported " + done + " of " + total + " compiling=" + UnityEditor.EditorApplication.isCompiling + " left: " + string.Join(",", left.ToArray());

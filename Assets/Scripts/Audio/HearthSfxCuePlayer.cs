@@ -109,12 +109,12 @@ public class HearthSfxCuePlayer : MonoBehaviour
         for (int i = 0; i < cues.Length; i++)
         {
             CueSlot cue = cues[i];
-            if (cue == null || cue.source == null || cue.followTarget == null)
+            if (cue == null || cue.source == null)
             {
                 continue;
             }
 
-            if (cue.followWhilePlaying && cue.source.isPlaying)
+            if (cue.followTarget != null && cue.followWhilePlaying && cue.source.isPlaying)
             {
                 PositionSource(cue);
             }
@@ -326,9 +326,9 @@ public class HearthSfxCuePlayer : MonoBehaviour
         return null;
     }
 
-    private static bool CanPlay(CueSlot cue)
+    private bool CanPlay(CueSlot cue)
     {
-        return cue != null && cue.source != null && cue.source.isActiveAndEnabled;
+        return isActiveAndEnabled && cue != null && cue.source != null && cue.source.isActiveAndEnabled;
     }
 
     private void PrepareSource(CueSlot cue, bool loop)
@@ -512,7 +512,7 @@ public class HearthSfxCuePlayer : MonoBehaviour
 
         float remaining = Mathf.Max(0f, clip.length - ResolveStartTime(cue, clip));
         return Mathf.Min(cue.playDurationSeconds, remaining) /
-            Mathf.Max(0.01f, cue.pitch + cue.randomPitchRange);
+            Mathf.Max(0.01f, cue.source.pitch);
     }
 
     private static bool UsesCustomLoopSegment(CueSlot cue, AudioClip clip)

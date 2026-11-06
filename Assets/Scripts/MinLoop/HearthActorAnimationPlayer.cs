@@ -312,7 +312,7 @@ public class HearthActorAnimationPlayer : MonoBehaviour
         float elapsed = 0f;
         while (elapsed < duration && mixer.IsValid())
         {
-            elapsed += Time.deltaTime;
+            elapsed += useUnscaledTime ? Time.unscaledDeltaTime : Time.deltaTime;
             float t = Mathf.Clamp01(elapsed / duration);
             mixer.SetInputWeight(oldInput, 1f - t);
             mixer.SetInputWeight(newInput, t);

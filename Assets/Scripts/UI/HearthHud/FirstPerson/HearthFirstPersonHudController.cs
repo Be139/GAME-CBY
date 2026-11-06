@@ -450,9 +450,10 @@ public class HearthFirstPersonHudController : MonoBehaviour
 
     public void ConfirmGracefulShutdown()
     {
+        bool routeThisSubmissionInternally = routeFinalChoiceInternally;
         PlayOneShot(confirmClip);
         onGracefulShutdownConfirmed.Invoke();
-        if (routeFinalChoiceInternally)
+        if (routeThisSubmissionInternally)
         {
             ShowEnding(HearthFirstPersonEndingPath.GracefulA);
         }
@@ -460,6 +461,7 @@ public class HearthFirstPersonHudController : MonoBehaviour
 
     public void CancelShutdownDecision()
     {
+        bool routeThisSubmissionInternally = routeFinalChoiceInternally;
         if (currentPageId == HearthFirstPersonHudPageId.Slide10ShutdownConfirm)
         {
             // The high-trust shutdown page has one authorized action only.
@@ -470,7 +472,7 @@ public class HearthFirstPersonHudController : MonoBehaviour
 
         PlayOneShot(cancelClip);
         onShutdownCancelled.Invoke();
-        if (routeFinalChoiceInternally)
+        if (routeThisSubmissionInternally)
         {
             ShowFinalChoice(true);
         }
@@ -495,8 +497,9 @@ public class HearthFirstPersonHudController : MonoBehaviour
         }
         else if (currentPageId == HearthFirstPersonHudPageId.Slide13Warning03)
         {
+            bool routeThisSubmissionInternally = routeFinalChoiceInternally;
             onForcedShutdownConfirmed.Invoke();
-            if (routeFinalChoiceInternally)
+            if (routeThisSubmissionInternally)
             {
                 ShowEnding(HearthFirstPersonEndingPath.ForcedA);
             }
@@ -505,9 +508,10 @@ public class HearthFirstPersonHudController : MonoBehaviour
 
     public void CancelWarning()
     {
+        bool routeThisSubmissionInternally = routeFinalChoiceInternally;
         PlayOneShot(cancelClip);
         onShutdownCancelled.Invoke();
-        if (routeFinalChoiceInternally)
+        if (routeThisSubmissionInternally)
         {
             ShowFinalChoice(true);
         }

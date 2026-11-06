@@ -2,7 +2,6 @@ using UnityEngine;
 using UnityEngine.AI;
 
 [DisallowMultipleComponent]
-[ExecuteAlways]
 public class HearthEditorOnlyReferenceModel : MonoBehaviour
 {
     [SerializeField] private bool disableCollidersAlways = true;
@@ -37,11 +36,6 @@ public class HearthEditorOnlyReferenceModel : MonoBehaviour
         {
             ApplyReferenceState();
         }
-    }
-
-    private void OnValidate()
-    {
-        ApplyReferenceState();
     }
 
     public void ApplyPlayModeState()

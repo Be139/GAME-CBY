@@ -1,11 +1,6 @@
 using UnityEngine;
 using UnityEngine.Rendering;
 
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
-
-[ExecuteAlways]
 [DisallowMultipleComponent]
 public class CityDuskLightingPresetController : MonoBehaviour
 {
@@ -32,7 +27,7 @@ public class CityDuskLightingPresetController : MonoBehaviour
     [SerializeField, Min(0f)] private float fogStartDistance = 80f;
     [SerializeField, Min(0f)] private float fogEndDistance = 650f;
 
-    [Header("Activation")]
+    [Header("Play Mode Activation")]
     [SerializeField] private bool applyOnEnable = true;
     [SerializeField] private bool restoreOnDisable = true;
     [SerializeField, HideInInspector] private bool isDuskApplied;
@@ -71,7 +66,7 @@ public class CityDuskLightingPresetController : MonoBehaviour
 
     private void OnEnable()
     {
-        if (applyOnEnable)
+        if (Application.IsPlaying(gameObject) && applyOnEnable)
         {
             ApplyDusk();
         }
@@ -79,14 +74,7 @@ public class CityDuskLightingPresetController : MonoBehaviour
 
     private void OnDisable()
     {
-#if UNITY_EDITOR
-        if (!Application.isPlaying && (EditorApplication.isCompiling || EditorApplication.isUpdating))
-        {
-            return;
-        }
-#endif
-
-        if (restoreOnDisable)
+        if (Application.IsPlaying(gameObject) && restoreOnDisable)
         {
             RestoreOriginal();
         }

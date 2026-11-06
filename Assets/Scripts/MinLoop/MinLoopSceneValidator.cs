@@ -299,14 +299,14 @@ public class MinLoopSceneValidator : MonoBehaviour
 
         if (stageAnchorController != null)
         {
-            AddRecommended(stageAnchorController.HasRules, "阶段锚点控制器已有站位规则。", "MinLoopStageAnchorController 存在但没有规则。请运行 Create 17F-01 Scene Skeleton 或手动添加 Mia/陪伴单元锚点规则。");
+            AddRecommended(stageAnchorController.HasRules, "阶段锚点控制器已有站位规则。", "MinLoopStageAnchorController 存在但没有规则。请在该组件 Inspector 中配置需要的阶段和正式 Mia/陪伴单元 Anchor 引用。");
         }
 
         AddRecommended(stageCueController != null, "检测到 MinLoopStageCueController 阶段 Cue 控制。", "没有检测到 MinLoopStageCueController。流程仍能跑，但安抚点就绪、早晨回顾、下一户指引等阶段反馈需要手动触发。");
 
         if (stageCueController != null)
         {
-            AddRecommended(stageCueController.HasRules, "阶段 Cue 控制器已有表现规则。", "MinLoopStageCueController 存在但没有规则。请运行 Create 17F-01 Scene Skeleton 或手动添加阶段反馈、开门、动画、音效规则。");
+            AddRecommended(stageCueController.HasRules, "阶段 Cue 控制器已有表现规则。", "MinLoopStageCueController 存在但没有规则。请在该组件 Inspector 中配置需要的阶段反馈、门、动画或音效引用。");
         }
 
         AddRecommended(guideMarkers != null && guideMarkers.Length > 0, "检测到 MinLoopWorldGuideMarker 世界指引标记。", "没有检测到 MinLoopWorldGuideMarker。如果 Guide 父物体下面还没放正式箭头/光圈，玩家可能看不到阶段指引。");
@@ -314,14 +314,14 @@ public class MinLoopSceneValidator : MonoBehaviour
 
         if (lightingStateController != null)
         {
-            AddRecommended(lightingStateController.HasRules, "阶段灯光控制器已有灯光规则。", "MinLoopLightingStateController 存在但没有规则。请运行 Create 17F-01 Scene Skeleton 或手动添加走廊/夜间/早晨灯光规则。");
+            AddRecommended(lightingStateController.HasRules, "阶段灯光控制器已有灯光规则。", "MinLoopLightingStateController 存在但没有规则。若流程需要动态切灯，请在该组件 Inspector 中配置阶段和对应灯光；保留当前场景烘焙配置。");
         }
 
         AddRecommended(audioStateController != null, "检测到 MinLoopAudioStateController 阶段音频控制。", "没有检测到 MinLoopAudioStateController。流程仍能跑，但走廊、夜间复盘和早晨回顾的环境声需要手动开关。");
 
         if (audioStateController != null)
         {
-            AddRecommended(audioStateController.HasRules, "阶段音频控制器已有音频规则。", "MinLoopAudioStateController 存在但没有规则。请运行 Create 17F-01 Scene Skeleton 或手动添加走廊/夜间/早晨音频规则。");
+            AddRecommended(audioStateController.HasRules, "阶段音频控制器已有音频规则。", "MinLoopAudioStateController 存在但没有规则。请在该组件 Inspector 中配置需要的阶段及对应环境音源。");
         }
 
         AddRecommended(debugHotkeys != null, "检测到 MinLoopDebugHotkeys 测试热键。", "没有检测到 MinLoopDebugHotkeys。正式流程不受影响，但 Play Mode 调试会慢一些。");

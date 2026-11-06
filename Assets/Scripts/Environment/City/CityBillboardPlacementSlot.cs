@@ -94,8 +94,6 @@ public class CityBillboardPlacementSlot : MonoBehaviour
             return;
         }
 
-        ClearContent();
-
 #if UNITY_EDITOR
         GameObject instance;
         if (!Application.isPlaying)
@@ -114,9 +112,15 @@ public class CityBillboardPlacementSlot : MonoBehaviour
         instance.transform.localPosition = Vector3.zero;
         instance.transform.localRotation = Quaternion.identity;
         instance.transform.localScale = Vector3.one;
+        ClearContentExcept(instance);
     }
 
     public void ClearContent()
+    {
+        ClearContentExcept(null);
+    }
+
+    private void ClearContentExcept(GameObject retained)
     {
         if (contentRoot == null)
         {
@@ -125,7 +129,8 @@ public class CityBillboardPlacementSlot : MonoBehaviour
 
         for (int i = contentRoot.childCount - 1; i >= 0; i--)
         {
-            DestroySlotObject(contentRoot.GetChild(i).gameObject);
+            GameObject child = contentRoot.GetChild(i).gameObject;
+            if (child != retained) DestroySlotObject(child);
         }
     }
 

@@ -143,11 +143,7 @@ public class HearthAudioSettingsController : MonoBehaviour
 
         if (changed)
         {
-            volumeChanged.Invoke(channel, value);
-            if (VolumeChanged != null)
-            {
-                VolumeChanged(channel, value);
-            }
+            NotifyVolumeChanged(channel, value);
         }
     }
 
@@ -171,10 +167,16 @@ public class HearthAudioSettingsController : MonoBehaviour
         ApplyAll();
         SaveValues();
 
-        volumeChanged.Invoke(HearthAudioChannel.Master, masterVolume);
-        volumeChanged.Invoke(HearthAudioChannel.Dialogue, dialogueVolume);
-        volumeChanged.Invoke(HearthAudioChannel.Ambient, ambientVolume);
-        volumeChanged.Invoke(HearthAudioChannel.SFX, sfxVolume);
+        NotifyVolumeChanged(HearthAudioChannel.Master, masterVolume);
+        NotifyVolumeChanged(HearthAudioChannel.Dialogue, dialogueVolume);
+        NotifyVolumeChanged(HearthAudioChannel.Ambient, ambientVolume);
+        NotifyVolumeChanged(HearthAudioChannel.SFX, sfxVolume);
+    }
+
+    private void NotifyVolumeChanged(HearthAudioChannel channel, int value)
+    {
+        volumeChanged.Invoke(channel, value);
+        VolumeChanged?.Invoke(channel, value);
     }
 
     public void SaveValues()

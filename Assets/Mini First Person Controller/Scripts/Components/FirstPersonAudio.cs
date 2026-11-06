@@ -1,4 +1,3 @@
-﻿using System.Linq;
 using UnityEngine;
 
 public class FirstPersonAudio : MonoBehaviour
@@ -29,7 +28,6 @@ public class FirstPersonAudio : MonoBehaviour
     public AudioSource crouchStartAudio, crouchedAudio, crouchEndAudio;
     public AudioClip[] crouchStartSFX, crouchEndSFX;
 
-    AudioSource[] MovingAudios => new AudioSource[] { stepAudio, runningAudio, crouchedAudio };
 
 
     void Reset()
@@ -53,14 +51,18 @@ public class FirstPersonAudio : MonoBehaviour
         if (crouch)
         {
             crouchStartAudio = GetOrCreateAudioSource("Crouch Start Audio");
-            crouchStartAudio = GetOrCreateAudioSource("Crouched Audio");
-            crouchStartAudio = GetOrCreateAudioSource("Crouch End Audio");
+            crouchedAudio = GetOrCreateAudioSource("Crouched Audio");
+            crouchEndAudio = GetOrCreateAudioSource("Crouch End Audio");
         }
     }
 
     void OnEnable() => SubscribeToEvents();
 
-    void OnDisable() => UnsubscribeToEvents();
+    void OnDisable()
+    {
+        SetPlayingMovingAudio(null);
+        UnsubscribeToEvents();
+    }
 
     void FixedUpdate()
     {
@@ -98,15 +100,22 @@ public class FirstPersonAudio : MonoBehaviour
     void SetPlayingMovingAudio(AudioSource audioToPlay)
     {
         // Pause all MovingAudios.
-        foreach (var audio in MovingAudios.Where(audio => audio != audioToPlay && audio != null))
-        {
-            audio.Pause();
-        }
+        PauseOtherMovingAudio(stepAudio, audioToPlay);
+        PauseOtherMovingAudio(runningAudio, audioToPlay);
+        PauseOtherMovingAudio(crouchedAudio, audioToPlay);
 
         // Play audioToPlay if it was not playing.
         if (audioToPlay && !audioToPlay.isPlaying)
         {
             audioToPlay.Play();
+        }
+    }
+
+    static void PauseOtherMovingAudio(AudioSource source, AudioSource audioToPlay)
+    {
+        if (source != null && source != audioToPlay)
+        {
+            source.Pause();
         }
     }
 
@@ -180,14 +189,20 @@ public class FirstPersonAudio : MonoBehaviour
 
     static void PlayRandomClip(AudioSource audio, AudioClip[] clips)
     {
-        if (!audio || clips.Length <= 0)
+        if (!audio || clips == null || clips.Length == 0)
             return;
 
-        // Get a random clip. If possible, make sure that it's not the same as the clip that is already on the audiosource.
-        AudioClip clip = clips[Random.Range(0, clips.Length)];
-        if (clips.Length > 1)
-            while (clip == audio.clip)
-                clip = clips[Random.Range(0, clips.Length)];
+        // Scan at most once; repeated or empty slots must not stall the main thread.
+        int start = Random.Range(0, clips.Length);
+        AudioClip clip = null;
+        for (int i = 0; i < clips.Length; i++)
+        {
+            AudioClip candidate = clips[(start + i) % clips.Length];
+            if (candidate == null) continue;
+            clip = candidate;
+            if (clip != audio.clip) break;
+        }
+        if (clip == null) return;
 
         // Play the clip.
         audio.clip = clip;

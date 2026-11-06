@@ -48,12 +48,6 @@ public class HearthFootstepAudioProfile : MonoBehaviour
         runPlaybackSpeed = Mathf.Clamp(runPlaybackSpeed, 0.5f, 1.75f);
         walkVolume = Mathf.Clamp01(walkVolume);
         runVolume = Mathf.Clamp01(runVolume);
-        ResolveReferences();
-
-        if (!Application.isPlaying)
-        {
-            Apply();
-        }
     }
 
     [ContextMenu("Apply Footstep Profile")]

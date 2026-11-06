@@ -27,9 +27,8 @@ namespace CityPeople
             _paletteMeshes = new List<Renderer>();
             foreach (Renderer r in AllRenderers)
             {
-                var matName = r.sharedMaterial.name;
-                var len = Math.Min( people_pal_prefix.Length, matName.Length);
-                if (matName[0..len] == CityPeople.people_pal_prefix)
+                var material = r.sharedMaterial;
+                if (material != null && material.name.StartsWith(people_pal_prefix, StringComparison.Ordinal))
                 {
                     _paletteMeshes.Add(r);
                 }
@@ -48,7 +47,7 @@ namespace CityPeople
         void Start()
         {
             animator = GetComponent<Animator>();
-            if (animator != null)
+            if (animator != null && animator.runtimeAnimatorController != null)
             {
                 myClips = animator.runtimeAnimatorController.animationClips;
                 if (AutoPlayAnimations)
@@ -71,11 +70,25 @@ namespace CityPeople
 
         }
 
+        private void OnEnable()
+        {
+            // Start owns the initial playback; subsequent enables resume the timer.
+            if (AutoPlayAnimations && animator != null && myClips != null)
+            {
+                StartCoroutine(ShuffleClips());
+            }
+        }
+
+        private void OnDisable()
+        {
+            StopAllCoroutines();
+        }
+
         public void SetPalette(Material mat)
         {
             if (mat != null)
             {
-                if (mat.name[0..people_pal_prefix.Length] == CityPeople.people_pal_prefix)
+                if (mat.name.StartsWith(people_pal_prefix, StringComparison.Ordinal))
                 {
                     CurrentPaletteName = mat.name;
                     foreach (Renderer r in _paletteMeshes)
@@ -84,14 +97,14 @@ namespace CityPeople
                     }
                 } else
                 {
-                    Debug.Log("Material name should start with 'palete_pal...' by convention.");
+                    Debug.Log("Material name should start with 'people_pal...' by convention.");
                 } 
             }
         }
 
         public void PlayAnyClip()
         {
-            if (myClips.Length > 0)
+            if (animator != null && myClips != null && myClips.Length > 0)
             {
                 var cl = myClips[Random.Range(0, myClips.Length)];
                 animator.CrossFadeInFixedTime(cl.name, 1.0f, -1, Random.value * cl.length);

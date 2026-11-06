@@ -59,12 +59,6 @@ public class HearthAudioChannelSource : MonoBehaviour
         dialogueDuckScale = Mathf.Clamp(dialogueDuckScale, 0.1f, 1f);
         duckAttackSeconds = Mathf.Max(0.01f, duckAttackSeconds);
         duckReleaseSeconds = Mathf.Max(0.01f, duckReleaseSeconds);
-        ResolveSource();
-
-        if (!Application.isPlaying)
-        {
-            ApplyVolume();
-        }
     }
 
     private void Update()

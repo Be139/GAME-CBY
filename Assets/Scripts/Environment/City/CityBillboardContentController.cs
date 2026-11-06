@@ -110,10 +110,7 @@ public class CityBillboardContentController : MonoBehaviour
 
     private void OnDisable()
     {
-        if (videoPlayer != null && videoPlayer.isPlaying)
-        {
-            videoPlayer.Pause();
-        }
+        Pause();
     }
 
     private void OnBecameInvisible()
@@ -129,7 +126,7 @@ public class CityBillboardContentController : MonoBehaviour
 
     private void OnBecameVisible()
     {
-        if (!Application.isPlaying || !resumeWhenVisible || contentKind != BillboardContentKind.Video)
+        if (!Application.isPlaying || !isActiveAndEnabled || !resumeWhenVisible || contentKind != BillboardContentKind.Video)
         {
             return;
         }
@@ -209,6 +206,7 @@ public class CityBillboardContentController : MonoBehaviour
 
     public void Pause()
     {
+        resumeWhenVisible = false;
         if (videoPlayer != null && videoPlayer.isPlaying)
         {
             videoPlayer.Pause();
@@ -237,6 +235,7 @@ public class CityBillboardContentController : MonoBehaviour
             return;
         }
 
+        StopVideoPlayer();
         ClearRendererContent();
     }
 
@@ -312,6 +311,7 @@ public class CityBillboardContentController : MonoBehaviour
         ClearRendererContent();
         PrepareRendererColor(videoBrightness);
 
+        RecordVideoPlayerUndo();
         videoPlayer.enabled = true;
         videoPlayer.source = VideoSource.VideoClip;
         videoPlayer.clip = videoClip;
@@ -323,10 +323,12 @@ public class CityBillboardContentController : MonoBehaviour
         videoPlayer.waitForFirstFrame = true;
         videoPlayer.skipOnDrop = true;
         videoPlayer.audioOutputMode = muteVideo ? VideoAudioOutputMode.None : VideoAudioOutputMode.Direct;
+        MarkVideoPlayerDirty();
     }
 
     private void StopVideoPlayer()
     {
+        resumeWhenVisible = false;
         if (videoPlayer == null)
         {
             videoPlayer = GetComponent<VideoPlayer>();
@@ -337,10 +339,35 @@ public class CityBillboardContentController : MonoBehaviour
             return;
         }
 
+        RecordVideoPlayerUndo();
         videoPlayer.Stop();
         videoPlayer.clip = null;
         videoPlayer.enabled = false;
-        resumeWhenVisible = false;
+        MarkVideoPlayerDirty();
+    }
+
+    private void RecordVideoPlayerUndo()
+    {
+#if UNITY_EDITOR
+        if (!Application.isPlaying)
+        {
+            Undo.RecordObject(videoPlayer, "Change billboard video");
+        }
+#endif
+    }
+
+    private void MarkVideoPlayerDirty()
+    {
+#if UNITY_EDITOR
+        if (!Application.isPlaying)
+        {
+            EditorUtility.SetDirty(videoPlayer);
+            if (PrefabUtility.IsPartOfPrefabInstance(videoPlayer))
+            {
+                PrefabUtility.RecordPrefabInstancePropertyModifications(videoPlayer);
+            }
+        }
+#endif
     }
 
     private void ClearRendererContent()

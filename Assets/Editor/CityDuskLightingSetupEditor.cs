@@ -1,9 +1,7 @@
-using System.IO;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
-using UnityEngine.Rendering;
-using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
 
 [CustomEditor(typeof(CityDuskLightingPresetController))]
@@ -16,20 +14,49 @@ public class CityDuskLightingPresetControllerEditor : Editor
         CityDuskLightingPresetController controller = (CityDuskLightingPresetController)target;
         EditorGUILayout.Space(10f);
 
-        if (GUILayout.Button("Apply Fixed Dusk"))
+        bool isActiveScene = controller.gameObject.scene == SceneManager.GetActiveScene();
+        if (!isActiveScene)
         {
-            Undo.RecordObject(controller, "Apply fixed dusk");
-            controller.ApplyDusk();
-            EditorUtility.SetDirty(controller);
-            EditorSceneManager.MarkSceneDirty(controller.gameObject.scene);
+            EditorGUILayout.HelpBox("Make this object's scene active before changing global lighting.", MessageType.Info);
         }
 
-        if (GUILayout.Button("Restore Original Lighting"))
+        using (new EditorGUI.DisabledScope(!isActiveScene))
         {
-            Undo.RecordObject(controller, "Restore original lighting");
-            controller.RestoreOriginal();
-            EditorUtility.SetDirty(controller);
-            EditorSceneManager.MarkSceneDirty(controller.gameObject.scene);
+            if (GUILayout.Button("Apply Fixed Dusk"))
+            {
+                ApplyLighting(controller, true);
+            }
+
+            if (GUILayout.Button("Restore Original Lighting"))
+            {
+                ApplyLighting(controller, false);
+            }
         }
+    }
+
+    private void ApplyLighting(CityDuskLightingPresetController controller, bool apply)
+    {
+        string action = apply ? "Apply fixed dusk" : "Restore original lighting";
+        var affected = new List<Object> { controller, Unsupported.GetRenderSettings() };
+        serializedObject.Update();
+        foreach (string field in new[] { "originalDirectionalLight", "originalGlobalVolume", "duskContentRoot", "roomSampleRoot" })
+        {
+            Object value = serializedObject.FindProperty(field).objectReferenceValue;
+            if (value != null && !affected.Contains(value)) affected.Add(value);
+        }
+
+        Undo.RecordObjects(affected.ToArray(), action);
+        if (apply) controller.ApplyDusk();
+        else controller.RestoreOriginal();
+
+        foreach (Object value in affected)
+        {
+            EditorUtility.SetDirty(value);
+            if (PrefabUtility.IsPartOfPrefabInstance(value))
+            {
+                PrefabUtility.RecordPrefabInstancePropertyModifications(value);
+            }
+        }
+        EditorSceneManager.MarkSceneDirty(controller.gameObject.scene);
     }
 }

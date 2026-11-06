@@ -17,7 +17,9 @@
       "empty_catch": [],
       "array_first": []
     },
-    "review": "pending"
+    "review": "source-reviewed",
+    "reviewDate": "2026-11-06",
+    "reviewNotes": "仅保存包导出引用，无生命周期逻辑。Assets 下 unity/prefab/asset 文本未发现该脚本 GUID 引用；项目 C# 无调用。保留供应商源码。"
   },
   {
     "path": "Assets/DenysAlmaral/CityPeople/Demo_Scenes/Scripts-construction/SwapAndToolController.cs",
@@ -42,7 +44,9 @@
       "empty_catch": [],
       "array_first": []
     },
-    "review": "pending"
+    "review": "source-reviewed-unused-demo",
+    "reviewDate": "2026-11-06",
+    "reviewNotes": "完整审读 Awake/PlayCycle/查找方法：依赖 Animator、Controller、非空 ToolConfig/entries；组件停用未停止循环。Assets 下 unity/prefab/asset 未发现挂载，项目 C# 无调用；不改未接入演示代码。"
   },
   {
     "path": "Assets/DenysAlmaral/CityPeople/Demo_Scenes/Scripts-construction/ToolConfig.cs",
@@ -63,11 +67,13 @@
       "empty_catch": [],
       "array_first": []
     },
-    "review": "pending"
+    "review": "source-reviewed",
+    "reviewDate": "2026-11-06",
+    "reviewNotes": "仅定义 clipName/prefab 列表；唯一 GUID 引用为 ToolConfigDemo.asset，含六条映射，消费者为未挂载的演示 SwapAndToolController。"
   },
   {
     "path": "Assets/DenysAlmaral/CityPeople/Scripts/CityPeople.cs",
-    "lines": 112,
+    "lines": 125,
     "ownership": "imported",
     "types": [
       "CityPeople"
@@ -90,11 +96,13 @@
       "empty_catch": [],
       "array_first": []
     },
-    "review": "pending"
+    "review": "source-reviewed-fix-runtime-validation-pending",
+    "reviewDate": "2026-11-07",
+    "reviewNotes": "全文审读。Awake 跳过缺失材质；SetPalette 用 Ordinal StartsWith 修复短名称越界并纠正诊断前缀。Unity 附带 Mono/mcs 引用 UnityEngine 程序集独立编译通过；编辑器全项目编译/行为测试待连接恢复。六种 Prefab 在 SampleScene 共18个直接实例，16个显式禁用此组件；Daniel/PoliceOfficer参考实例无该覆盖，父级/EditorOnly配置待核实。随机协程停用及公开调用初始化契约仍待接入验证。 生命周期续改：OnDisable停止随机协程，后续OnEnable恢复计时，Start首次初始化不重复；缺Controller不读取clips，PlayAnyClip无初始化/Animator/片段时警告。独立编译通过，真实Play超过20秒及重新启用验证待恢复编辑器。"
   },
   {
     "path": "Assets/Editor/CityBillboardContentDistributorEditor.cs",
-    "lines": 145,
+    "lines": 163,
     "ownership": "imported",
     "types": [
       "CityBillboardContentDistributorEditor"
@@ -114,11 +122,13 @@
       "empty_catch": [],
       "array_first": []
     },
-    "review": "pending"
+    "review": "source-reviewed-fix-editor-validation-pending",
+    "reviewDate": "2026-11-07",
+    "reviewNotes": "Inspector指定当前对象；菜单限活动场景唯一分配器；要求显式Root并保留配置；移除隐式SaveScene/SaveAssets，保留贴图SaveAndReimport。独立编译通过，编辑器行为待验证。"
   },
   {
     "path": "Assets/Editor/CityDuskLightingSetupEditor.cs",
-    "lines": 35,
+    "lines": 62,
     "ownership": "project",
     "types": [
       "CityDuskLightingPresetControllerEditor"
@@ -134,7 +144,9 @@
       "empty_catch": [],
       "array_first": []
     },
-    "review": "pending"
+    "review": "source-reviewed-fix-editor-validation-pending",
+    "reviewDate": "2026-11-07",
+    "reviewNotes": "按钮Undo覆盖controller、活动RenderSettings、原Light/Volume、两个内容根并记录Prefab实例修改。非活动场景禁用按钮。与控制器联合独立编译通过；真实Undo/Redo和Prefab保存重开待编辑器恢复。"
   },
   {
     "path": "Assets/Editor/CityFacadeBillboardPlacerEditor.cs",
@@ -198,7 +210,7 @@
   },
   {
     "path": "Assets/Editor/CrossPlatformInput/CrossPlatformInputInitialize.cs",
-    "lines": 145,
+    "lines": 121,
     "ownership": "imported",
     "types": [
       "CrossPlatformInitialize"
@@ -216,7 +228,9 @@
       "empty_catch": [],
       "array_first": []
     },
-    "review": "pending"
+    "review": "source-reviewed-fix-editor-validation-pending",
+    "reviewDate": "2026-11-07",
+    "reviewNotes": "移除加载时自动宏写入；显式菜单遍历全部受支持平台，mixed状态可用性检查全部平台；已配置项continue，保留无关宏。去除过时平台。UnityEditor引用独立编译与内存PlayerSettings隔离测试通过；真实菜单/全项目编译待恢复。"
   },
   {
     "path": "Assets/Editor/Hearth17F04CatGuideControllerEditor.cs",
@@ -380,7 +394,9 @@
       "empty_catch": [],
       "array_first": []
     },
-    "review": "pending"
+    "review": "source-reviewed-runtime-validation-pending",
+    "reviewDate": "2026-11-06",
+    "reviewNotes": "全文审读；显式只读菜单检查场景丢脚本、三份门 Prefab、受控 CityPeople 和猫 Legacy Animation。Prefab 内容 finally 卸载，无保存写回；检查 enabled 不能证明旧随机协程已停止。本轮未成功连接编辑器执行。"
   },
   {
     "path": "Assets/Editor/HearthProductionUiTools.Audit.cs",
@@ -1603,11 +1619,13 @@
       "empty_catch": [],
       "array_first": []
     },
-    "review": "pending"
+    "review": "source-reviewed-followup-required",
+    "reviewDate": "2026-11-07",
+    "reviewNotes": "全文审读；显式关闭会还原高度及速度覆盖。直接禁用未清理覆盖、恢复Collider中心假定脚底原点；需核对正式使用（默认禁用）。未修改。"
   },
   {
     "path": "Assets/Mini First Person Controller/Scripts/Components/FirstPersonAudio.cs",
-    "lines": 197,
+    "lines": 212,
     "ownership": "imported",
     "types": [
       "FirstPersonAudio"
@@ -1637,7 +1655,9 @@
       "empty_catch": [],
       "array_first": []
     },
-    "review": "pending"
+    "review": "source-reviewed-fix-runtime-validation-pending",
+    "reviewDate": "2026-11-07",
+    "reviewNotes": "全文审读；修正Reset三路蹲伏字段覆盖、禁用移动音未暂停、重复素材随机重试死循环；消除每FixedUpdate数组/LINQ分配。独立Mono编译通过，运行与重复素材回归待验证；GroundCheck必填但未校验，后续核对正式绑定。 当前PlayRandomClip方法体提取编译隔离回归37项通过（重复/空槽/空数组/各随机起点）；场景两处Character/GroundCheck均指向实际Movement/GroundCheck组件。独立试听与生命周期验证未完成。"
   },
   {
     "path": "Assets/Mini First Person Controller/Scripts/Components/GroundCheck.cs",
@@ -1682,7 +1702,9 @@
       "empty_catch": [],
       "array_first": []
     },
-    "review": "pending"
+    "review": "source-reviewed-followup-required",
+    "reviewDate": "2026-11-07",
+    "reviewNotes": "全文审读；jumpEnabled默认false，由控制锁显式禁用，GroundCheck可选；需要同对象Rigidbody。未修改，正式组件依赖待核对。"
   },
   {
     "path": "Assets/Mini First Person Controller/Scripts/Components/Zoom.cs",
@@ -1734,7 +1756,9 @@
       "empty_catch": [],
       "array_first": []
     },
-    "review": "pending"
+    "review": "source-reviewed-followup-required",
+    "reviewDate": "2026-11-07",
+    "reviewNotes": "全文审读；ForceLookAngles清平滑残留、ForceLookFromCurrentTransforms用本地角恢复。Reset假设父级Movement；初始角缓存为零，需核对场景初始化调用。未修改。"
   },
   {
     "path": "Assets/Mini First Person Controller/Scripts/FirstPersonMovement.cs",
@@ -1756,7 +1780,9 @@
       "empty_catch": [],
       "array_first": []
     },
-    "review": "pending"
+    "review": "source-reviewed-followup-required",
+    "reviewDate": "2026-11-07",
+    "reviewNotes": "全文审读；速度覆盖取末项并保留垂直速度。依赖同对象Rigidbody；禁用时IsRunning保持旧值，音频按位移才使用，需结合正式Rig配置进一步核对。未修改。"
   },
   {
     "path": "Assets/polyperfect/Common/Common_AnimationControl.cs",
@@ -5607,7 +5633,7 @@
   },
   {
     "path": "Assets/Scripts/Audio/HearthAudioChannelSource.cs",
-    "lines": 163,
+    "lines": 157,
     "ownership": "project",
     "types": [
       "HearthAudioChannelSource"
@@ -5629,11 +5655,13 @@
       "empty_catch": [],
       "array_first": []
     },
-    "review": "pending"
+    "review": "source-reviewed-fix-runtime-validation-pending",
+    "reviewDate": "2026-11-07",
+    "reviewNotes": "全文审读，OnValidate去掉ResolveSource/ApplyVolume跨对象写回，仅约束自身参数；运行及显式配置入口保留。独立编译通过（旧程序集同名类型警告），真实音频/编辑态行为待验证。"
   },
   {
     "path": "Assets/Scripts/Audio/HearthAudioSettingsController.cs",
-    "lines": 227,
+    "lines": 229,
     "ownership": "project",
     "types": [
       "HearthAudioChannel",
@@ -5669,7 +5697,9 @@
       "empty_catch": [],
       "array_first": []
     },
-    "review": "pending"
+    "review": "source-reviewed-fix-runtime-validation-pending",
+    "reviewDate": "2026-11-07",
+    "reviewNotes": "SetVolume/ResetToDefaults共用通知入口，重置同时通知UnityEvent和C#事件。当前C#无订阅者，属接口一致性修复而非已观察UI故障。独立编译通过（旧程序集同名类型警告），真实事件验证待完成；重复实例仍可ApplyAll的权威来源问题待续审。 隔离回归TestAudioSettings通过：不变值无通知、钳制、重置双事件四通道同序同值、内存保存与Master/刷新次数正确。替身测试不替代真实Unity事件/音频验证。"
   },
   {
     "path": "Assets/Scripts/Audio/HearthDialogueSfxTrack.cs",
@@ -5702,11 +5732,13 @@
       "empty_catch": [],
       "array_first": []
     },
-    "review": "pending"
+    "review": "source-reviewed-runtime-validation-pending",
+    "reviewDate": "2026-11-07",
+    "reviewNotes": "全文审读，Configure先退订并停止旧循环，OnDisable清理；需追踪SequenceCompleted取消语义及正式actions配置：完成动作若StartLoop会立即被StopTrackedLoops停止。未修改，不能判定正式流程故障。 正式SampleScene唯一直接挂载，18条动作均有lineId，无完成时StartLoop配置。字幕Stop不发SequenceCompleted；中断清理需结合结局控制器StopAllCues调用继续追踪，未扩展事件。 已核对Finale OnDisable→ResetForPreview→StopAllStorySfx，且SampleScene轨道cuePlayer与Finale sfxCuePlayer均为1541219627，epilogueSubtitlePlayer均104795052：正式结局重置已有清理。独立字幕Stop不发完成事件仍为接口局限；不扩大事件改造。"
   },
   {
     "path": "Assets/Scripts/Audio/HearthFootstepAudioProfile.cs",
-    "lines": 150,
+    "lines": 144,
     "ownership": "project",
     "types": [
       "HearthFootstepRole",
@@ -5726,7 +5758,9 @@
       "empty_catch": [],
       "array_first": []
     },
-    "review": "pending"
+    "review": "source-reviewed-fix-runtime-validation-pending",
+    "reviewDate": "2026-11-07",
+    "reviewNotes": "全文审读。OnValidate仅自身参数约束，取消隐式关联音源/通道写回；保留显式Apply菜单和Awake/配置接口。独立编译通过（旧程序集同名枚举警告），真实试听/菜单保存撤销待验证。"
   },
   {
     "path": "Assets/Scripts/Audio/HearthSfxCatalog.cs",
@@ -5750,11 +5784,13 @@
       "empty_catch": [],
       "array_first": []
     },
-    "review": "pending"
+    "review": "source-reviewed-no-change-runtime-validation-pending",
+    "reviewDate": "2026-11-07",
+    "reviewNotes": "全文审读并核对正式HearthSfxCatalog.asset：37个ID，无空白或忽略大小写后的重复。OnEnable/OnValidate重建映射，CuePlayer按soundId解析。Count与EntryCount比较在空/重复条目时会重复重建，但当前正式数据不触发；保留候选性能问题，不增加缓存状态或修改资产。真实Unity加载/试听尚未验证。"
   },
   {
     "path": "Assets/Scripts/Audio/HearthSfxCuePlayer.cs",
-    "lines": 566,
+    "lines": 583,
     "ownership": "project",
     "types": [
       "HearthSfxCuePlayer",
@@ -5778,11 +5814,13 @@
       "empty_catch": [],
       "array_first": []
     },
-    "review": "pending"
+    "review": "source-reviewed-fix-runtime-validation-pending",
+    "reviewDate": "2026-11-07",
+    "reviewNotes": "全文审读；OnValidate仅约束自身CueSlot，取消关联音源/通道/位置隐式写回；公开ApplyAllSourceSettings菜单，保留Awake/PrepareSource应用和独立Snap。独立Mono编译通过，Unity Console两次超时。仍需核对restartIfPlaying=false在单次播放中的语义、共享Source与循环所有权及实际试听。 已修正单次播放restartIfPlaying=false同素材仍重启的问题，早返回保留原停止计时；当前正式场景/Prefab未找到false配置。当前版本独立Mono编译通过，真实播放待验证。"
   },
   {
     "path": "Assets/Scripts/Environment/City/CityBillboardContentController.cs",
-    "lines": 423,
+    "lines": 450,
     "ownership": "project",
     "types": [
       "CityBillboardContentController",
@@ -5808,11 +5846,13 @@
       "empty_catch": [],
       "array_first": []
     },
-    "review": "pending"
+    "review": "source-reviewed-fix-runtime-validation-pending",
+    "reviewDate": "2026-11-07",
+    "reviewNotes": "全文审读；Pause/OnDisable/Stop清除离屏恢复请求，OnBecameVisible拒绝停用组件，ApplyAssignedContent None停止旧播放器。保持现有属性块编辑态预览。UNITY_EDITOR分支独立编译通过；Play跨帧行为待验证。 2026-11-07续改：已有VideoPlayer配置/停止记录Undo与Prefab覆盖；已有内容控制器Configure前记录Undo；分配器dirty路径记录Prefab覆盖。联合独立编译通过（引用旧Assembly-CSharp同名类型警告），真实撤销/预览/保存重开待验证。"
   },
   {
     "path": "Assets/Scripts/Environment/City/CityBillboardContentDistributor.cs",
-    "lines": 699,
+    "lines": 686,
     "ownership": "project",
     "types": [
       "CityBillboardContentDistributor",
@@ -5837,11 +5877,13 @@
       "empty_catch": [],
       "array_first": []
     },
-    "review": "pending"
+    "review": "source-reviewed-fix-editor-validation-pending",
+    "reviewDate": "2026-11-07",
+    "reviewNotes": "全文审读。空池在查根/准备表面/统计之前返回；EnsureSurfaceRenderer跳过缺失SurfaceRoot；分配/清空记录自身Undo。独立UNITY_EDITOR编译通过；对象行为、Undo/Prefab覆盖待验证及补齐。根名称自动查找、运行Fallback材质所有权仍需结合配置续审。 2026-11-07续改：已有VideoPlayer配置/停止记录Undo与Prefab覆盖；已有内容控制器Configure前记录Undo；分配器dirty路径记录Prefab覆盖。联合独立编译通过（引用旧Assembly-CSharp同名类型警告），真实撤销/预览/保存重开待验证。 根作用域续改：批量操作不自动名称查找；显式Find限所属场景唯一匹配且包含inactive，失败保留原引用。独立编译通过，多场景实际测试待完成。 材质来源续改：移除子Renderer猜测和临时材质生成，修补缺失表面/统一换材质要求显式配置；已有表面无配置保持。正式场景材质GUID解析有效。独立编译通过，真实验证待完成。"
   },
   {
     "path": "Assets/Scripts/Environment/City/CityBillboardPlacementSlot.cs",
-    "lines": 163,
+    "lines": 168,
     "ownership": "project",
     "types": [
       "CityBillboardPlacementSlot"
@@ -5857,11 +5899,13 @@
       "empty_catch": [],
       "array_first": []
     },
-    "review": "pending"
+    "review": "source-reviewed-fix-editor-validation-pending",
+    "reviewDate": "2026-11-07",
+    "reviewNotes": "全文审读。替换先实例化/设置姿态再清理旧子树，ClearContent保留全清；编辑器实例化失败不先丢失旧内容。当前Assets C#无替换接口外部调用。联合UNITY_EDITOR独立编译通过，实际Prefab/Undo行为待验证。"
   },
   {
     "path": "Assets/Scripts/Environment/City/CityBuildingPlacementSlot.cs",
-    "lines": 122,
+    "lines": 127,
     "ownership": "project",
     "types": [
       "CityBuildingPlacementSlot"
@@ -5877,11 +5921,13 @@
       "empty_catch": [],
       "array_first": []
     },
-    "review": "pending"
+    "review": "source-reviewed-fix-editor-validation-pending",
+    "reviewDate": "2026-11-07",
+    "reviewNotes": "全文审读。替换先实例化/设置姿态再清理旧子树，ClearContent保留全清；编辑器实例化失败不先丢失旧内容。当前Assets C#无替换接口外部调用。联合UNITY_EDITOR独立编译通过，实际Prefab/Undo行为待验证。"
   },
   {
     "path": "Assets/Scripts/Environment/City/CityDuskLightingPresetController.cs",
-    "lines": 228,
+    "lines": 216,
     "ownership": "project",
     "types": [
       "CityDuskLightingPresetController"
@@ -5901,7 +5947,9 @@
       "empty_catch": [],
       "array_first": []
     },
-    "review": "pending"
+    "review": "source-reviewed-fix-runtime-validation-pending",
+    "reviewDate": "2026-11-07",
+    "reviewNotes": "移除ExecuteAlways；自动Apply/Restore仅Application.IsPlaying(gameObject)场景实例。保留显式Inspector按钮和运行时开关，未修改场景/材质/烘焙。引用Unity/URP程序集独立编译通过，真实编辑器/Play尚待连接恢复。"
   },
   {
     "path": "Assets/Scripts/Environment/City/CityFacadeBillboardPlacer.cs",
@@ -6776,7 +6824,7 @@
   },
   {
     "path": "Assets/Scripts/MinLoop/HearthEditorOnlyReferenceModel.cs",
-    "lines": 155,
+    "lines": 149,
     "ownership": "project",
     "types": [
       "HearthEditorOnlyReferenceModel"
@@ -6798,7 +6846,9 @@
       "empty_catch": [],
       "array_first": []
     },
-    "review": "pending"
+    "review": "source-reviewed-fix-runtime-validation-pending",
+    "reviewDate": "2026-11-07",
+    "reviewNotes": "全文审读并核对所有 C# 调用。移除 ExecuteAlways/OnValidate 自动编辑态组件写回；保留显式接口和原运行时隔离。Unity 附带 Mono/mcs 引用 UnityEngine 程序集独立编译通过；编辑器重载/Inspector无写回和Play隔离验证待MCP恢复。字段和挂载不变，编辑态自动应用契约已更新脚本总表。"
   },
   {
     "path": "Assets/Scripts/MinLoop/HearthHouseholdProgressState.cs",
@@ -7055,7 +7105,9 @@
       "empty_catch": [],
       "array_first": []
     },
-    "review": "pending"
+    "review": "source-reviewed",
+    "reviewDate": "2026-11-07",
+    "reviewNotes": "全文仅绘制Gizmos/Handles与自身参数约束，无组件/场景写回，保留。"
   },
   {
     "path": "Assets/Scripts/MinLoop/HearthSequentialShutdownChallenge.cs",
@@ -7729,7 +7781,9 @@
       "empty_catch": [],
       "array_first": []
     },
-    "review": "pending"
+    "review": "source-reviewed-runtime-validation-pending",
+    "reviewDate": "2026-11-07",
+    "reviewNotes": "全文审读：显式引用集合及任务转发，无生命周期副作用；当前Assets/Scripts内未找到消费者（仅类型声明），不增加接入或删资产。未修改。"
   },
   {
     "path": "Assets/Scripts/MinLoop/Services/HearthPlayerRigService.cs",
@@ -7750,7 +7804,9 @@
       "empty_catch": [],
       "array_first": []
     },
-    "review": "pending"
+    "review": "source-reviewed-runtime-validation-pending",
+    "reviewDate": "2026-11-07",
+    "reviewNotes": "全文审读：显式根节点/相机锚点摆位，动态刚体清速并同步FirstPersonLook；空根/锚点返回false，两重载行为一致，无隐式场景搜索。实际移动/视角/物理表现待验证。未修改。"
   },
   {
     "path": "Assets/Scripts/MinLoop/Services/HearthScreenTransitionService.cs",
@@ -7772,7 +7828,9 @@
       "empty_catch": [],
       "array_first": []
     },
-    "review": "pending"
+    "review": "source-reviewed-runtime-validation-pending",
+    "reviewDate": "2026-11-07",
+    "reviewNotes": "全文审读：优先既有fader，否则显式CanvasGroup渐变，零/负时长立即应用，无创建UI或编辑态写回。协程由调用者管理；实际场景配置及中断/并发渐变尚未验证。未修改。"
   },
   {
     "path": "Assets/Scripts/MinLoop/Services/HearthStoryCueService.cs",
@@ -7792,7 +7850,9 @@
       "empty_catch": [],
       "array_first": []
     },
-    "review": "pending"
+    "review": "source-reviewed-runtime-validation-pending",
+    "reviewDate": "2026-11-07",
+    "reviewNotes": "全文审读：实例与静态入口直接转发既有CuePlayer，无独立状态或编辑态写回；空引用保持false/no-op。已追踪结局ResetForPreview停止调用及正式场景共享播放器。未修改。"
   },
   {
     "path": "Assets/Scripts/MinLoop/SimpleActorCueController.cs",
@@ -8606,7 +8666,9 @@
       "empty_catch": [],
       "array_first": []
     },
-    "review": "pending"
+    "review": "source-reviewed-followup-required",
+    "reviewDate": "2026-11-07",
+    "reviewNotes": "全文审读；owner掩码合并/快照恢复/销毁owner清理及全局视角刷新。候选问题：多个锁组件共享对象的快照恢复顺序、禁用组件后仍被外部申请锁、永久跳蹲开关false不恢复。需结合正式绑定和调用方确认。未修改。"
   },
   {
     "path": "Assets/Scripts/UI/HearthHud/FirstPerson/HearthSettingsView.cs",
@@ -12914,5 +12976,887 @@
       "array_first": []
     },
     "review": "pending"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/_work/vp_views_run.cs",
+    "lines": 25,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/atmo_1106.cs",
+    "lines": 86,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/audit.cs",
+    "lines": 36,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/bake_cancel.cs",
+    "lines": 1,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/bake_eta.cs",
+    "lines": 12,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/bake_roof.cs",
+    "lines": 25,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/black_who.cs",
+    "lines": 24,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/city_accents.cs",
+    "lines": 81,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/city_check.cs",
+    "lines": 19,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/city_revert.cs",
+    "lines": 42,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/city_state.cs",
+    "lines": 6,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/color_check.cs",
+    "lines": 1,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/compare.py",
+    "lines": 21,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/diag1.cs",
+    "lines": 41,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/diag2.cs",
+    "lines": 26,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/diag3.cs",
+    "lines": 22,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/final_checks.cs",
+    "lines": 16,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/find_windows.cs",
+    "lines": 16,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/gen_img2.sh",
+    "lines": 17,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/gen_item2.sh",
+    "lines": 35,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/gen_pool.sh",
+    "lines": 19,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/gen_ref.sh",
+    "lines": 18,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/gen_refs_batch.sh",
+    "lines": 26,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/gen_towers.sh",
+    "lines": 17,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/gpu_check.cs",
+    "lines": 7,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/grid_uv.py",
+    "lines": 28,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/ground_y.cs",
+    "lines": 23,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/head_mods.py",
+    "lines": 35,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/import_check.cs",
+    "lines": 3,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/import_rooms.cs",
+    "lines": 29,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/kiosk_fix.cs",
+    "lines": 30,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/lamp_soft.cs",
+    "lines": 18,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/layers_here.cs",
+    "lines": 32,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/light_tag.cs",
+    "lines": 23,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/list_props.cs",
+    "lines": 40,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/lm_dump.cs",
+    "lines": 21,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/lp_walls.cs",
+    "lines": 16,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/make_lift_tex.py",
+    "lines": 62,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/make_screens.py",
+    "lines": 64,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/make_textures.py",
+    "lines": 53,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/noah_ceiling.cs",
+    "lines": 7,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/normal_check.cs",
+    "lines": 14,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/pick_px.cs",
+    "lines": 22,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/plan_data.cs",
+    "lines": 43,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/plan_draw.py",
+    "lines": 65,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/plan_ext.cs",
+    "lines": 17,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/plan_lobby.cs",
+    "lines": 24,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/plan_lobby.py",
+    "lines": 37,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/prep_rooms.py",
+    "lines": 115,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/q_fix.cs",
+    "lines": 62,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/q_fix2.cs",
+    "lines": 38,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/r_city.cs",
+    "lines": 46,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/r_city_tint.cs",
+    "lines": 21,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/r_corridor.cs",
+    "lines": 79,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/r_elevator.cs",
+    "lines": 53,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/r_f01.cs",
+    "lines": 79,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/r_f02.cs",
+    "lines": 100,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/r_f03.cs",
+    "lines": 104,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/r_f04.cs",
+    "lines": 123,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/r_robot.cs",
+    "lines": 24,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/r_street.cs",
+    "lines": 81,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/reuse_table.py",
+    "lines": 36,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/s_corridor.cs",
+    "lines": 36,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/s_f01.cs",
+    "lines": 52,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/s_f02.cs",
+    "lines": 81,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/s_f03.cs",
+    "lines": 82,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/s_f04.cs",
+    "lines": 95,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/s_lobby.cs",
+    "lines": 74,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/s_post.cs",
+    "lines": 19,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/s_street.cs",
+    "lines": 56,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/scan_open2.cs",
+    "lines": 21,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/scan_openings.cs",
+    "lines": 21,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/shell_stats.cs",
+    "lines": 9,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/show.py",
+    "lines": 14,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/state_check.cs",
+    "lines": 3,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/tripo_batch.py",
+    "lines": 143,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/uiref_board.py",
+    "lines": 83,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/uiref_fetch.py",
+    "lines": 75,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/uiref_pick.py",
+    "lines": 92,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/vp_bake.sh",
+    "lines": 24,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/vp_bake2.sh",
+    "lines": 24,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/vp_bake2_start.cs",
+    "lines": 49,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/vp_bake3.sh",
+    "lines": 24,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/vp_bake3_start.cs",
+    "lines": 52,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/vp_bake_finish.cs",
+    "lines": 24,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/vp_bake_start.cs",
+    "lines": 44,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/vp_lib.cs",
+    "lines": 218,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/vp_lib2.cs",
+    "lines": 121,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/vp_lib3.cs",
+    "lines": 48,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/vp_lib4.cs",
+    "lines": 42,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/vp_run.sh",
+    "lines": 14,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/vp_uv2.cs",
+    "lines": 46,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/vp_views.cs",
+    "lines": 25,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/vp_views.sh",
+    "lines": 23,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/vpv.py",
+    "lines": 21,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/wall_texel.cs",
+    "lines": 28,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/who_here.cs",
+    "lines": 28,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
+  },
+  {
+    "path": "Docs/VisualPipeline/tools/zf_toggle.cs",
+    "lines": 12,
+    "ownership": "project-authoring",
+    "types": [],
+    "hits": {},
+    "review": "pending",
+    "scopeNote": "2026-11-06 added visual authoring tool; not runtime; no automatic rerun"
   }
 ]

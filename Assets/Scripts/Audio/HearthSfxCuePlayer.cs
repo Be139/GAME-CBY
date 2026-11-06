@@ -139,10 +139,9 @@ public class HearthSfxCuePlayer : MonoBehaviour
             return;
         }
 
-        ApplyAllSourceSettings();
-        if (!Application.isPlaying)
+        for (int i = 0; i < cues.Length; i++)
         {
-            SnapSourcesToTargets();
+            ValidateCueSettings(cues[i]);
         }
     }
 
@@ -170,6 +169,13 @@ public class HearthSfxCuePlayer : MonoBehaviour
         {
             LogMissingClip(cue);
             return false;
+        }
+
+        if (cue.source.isPlaying &&
+            cue.source.clip == clip &&
+            !cue.restartIfPlaying)
+        {
+            return true;
         }
 
         PrepareSource(cue, false);
@@ -339,7 +345,8 @@ public class HearthSfxCuePlayer : MonoBehaviour
         cue.source.pitch = Mathf.Max(0.01f, cue.pitch + UnityEngine.Random.Range(-cue.randomPitchRange, cue.randomPitchRange));
     }
 
-    private void ApplyAllSourceSettings()
+    [ContextMenu("Apply All Source Settings")]
+    public void ApplyAllSourceSettings()
     {
         if (cues == null)
         {
@@ -352,9 +359,9 @@ public class HearthSfxCuePlayer : MonoBehaviour
         }
     }
 
-    private static void ApplySourceSettings(CueSlot cue)
+    private static void ValidateCueSettings(CueSlot cue)
     {
-        if (cue == null || cue.source == null)
+        if (cue == null)
         {
             return;
         }
@@ -367,6 +374,16 @@ public class HearthSfxCuePlayer : MonoBehaviour
         cue.playFromSeconds = Mathf.Max(0f, cue.playFromSeconds);
         cue.playDurationSeconds = Mathf.Max(0f, cue.playDurationSeconds);
         cue.dialogueDuckScale = Mathf.Clamp(cue.dialogueDuckScale, 0.1f, 1f);
+    }
+
+    private static void ApplySourceSettings(CueSlot cue)
+    {
+        if (cue == null || cue.source == null)
+        {
+            return;
+        }
+
+        ValidateCueSettings(cue);
 
         AudioSource source = cue.source;
         source.playOnAwake = false;

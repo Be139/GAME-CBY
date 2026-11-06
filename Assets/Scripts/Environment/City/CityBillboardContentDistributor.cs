@@ -82,14 +82,34 @@ public class CityBillboardContentDistributor : MonoBehaviour
 
     public void FindBillboardRoot()
     {
-        GameObject found = GameObject.Find(billboardRootName);
-        billboardRoot = found != null ? found.transform : null;
-
-        if (billboardRoot == null)
+        if (!gameObject.scene.IsValid() || !gameObject.scene.isLoaded)
         {
-            Debug.LogWarning("CityBillboardContentDistributor: could not find billboard root '" + billboardRootName + "'.");
+            Debug.LogWarning("CityBillboardContentDistributor: load the owning scene before finding a root.", this);
+            return;
         }
 
+        Transform found = null;
+        foreach (GameObject root in gameObject.scene.GetRootGameObjects())
+        {
+            foreach (Transform candidate in root.GetComponentsInChildren<Transform>(true))
+            {
+                if (candidate.name != billboardRootName) continue;
+                if (found != null)
+                {
+                    Debug.LogWarning("CityBillboardContentDistributor: multiple matching roots; assign Billboard Root explicitly.", this);
+                    return;
+                }
+                found = candidate;
+            }
+        }
+        if (found == null)
+        {
+            Debug.LogWarning("CityBillboardContentDistributor: could not find billboard root '" + billboardRootName + "' in the owning scene.", this);
+            return;
+        }
+
+        RecordUndo(this, "Find billboard root");
+        billboardRoot = found;
         MarkDirty();
     }
 
@@ -113,7 +133,7 @@ public class CityBillboardContentDistributor : MonoBehaviour
 
     public int ApplySurfaceMaterialToAll()
     {
-        Material targetMaterial = ResolveMediaSurfaceMaterial();
+        Material targetMaterial = mediaSurfaceMaterial;
         if (targetMaterial == null)
         {
             Debug.LogWarning("CityBillboardContentDistributor: no media surface material is available.");
@@ -153,6 +173,13 @@ public class CityBillboardContentDistributor : MonoBehaviour
     {
         List<Texture> images = GetValidImages();
         List<VideoClip> animations = GetValidAnimations();
+        if (images.Count == 0 && animations.Count == 0)
+        {
+            Debug.LogWarning("CityBillboardContentDistributor: add at least one image or VideoClip to the media pools before redistributing.");
+            return;
+        }
+
+        RecordUndo(this, "Redistribute billboard media");
         List<CityBillboardPlacementSlot> slots = CollectBillboardSlots();
         List<BillboardTarget> targets = new List<BillboardTarget>();
 
@@ -172,13 +199,6 @@ public class CityBillboardContentDistributor : MonoBehaviour
         if (targets.Count == 0)
         {
             Debug.LogWarning("CityBillboardContentDistributor: no billboard screens were found under the selected root.");
-            MarkDirty();
-            return;
-        }
-
-        if (images.Count == 0 && animations.Count == 0)
-        {
-            Debug.LogWarning("CityBillboardContentDistributor: add at least one image or VideoClip to the media pools before redistributing.");
             MarkDirty();
             return;
         }
@@ -275,6 +295,7 @@ public class CityBillboardContentDistributor : MonoBehaviour
 
     public void ClearAllContent()
     {
+        RecordUndo(this, "Clear billboard media");
         List<CityBillboardPlacementSlot> slots = CollectBillboardSlots();
         int cleared = 0;
 
@@ -301,14 +322,10 @@ public class CityBillboardContentDistributor : MonoBehaviour
 
     private List<CityBillboardPlacementSlot> CollectBillboardSlots()
     {
-        if (billboardRoot == null)
-        {
-            FindBillboardRoot();
-        }
-
         List<CityBillboardPlacementSlot> result = new List<CityBillboardPlacementSlot>();
         if (billboardRoot == null)
         {
+            Debug.LogWarning("CityBillboardContentDistributor: assign Billboard Root before operating on billboards.", this);
             return result;
         }
 
@@ -354,6 +371,7 @@ public class CityBillboardContentDistributor : MonoBehaviour
 #endif
         }
 
+        RecordUndo(controller, "Prepare billboard content controller");
         controller.Configure(renderer);
         MarkObjectDirty(controller);
         return controller;
@@ -361,14 +379,14 @@ public class CityBillboardContentDistributor : MonoBehaviour
 
     private Renderer EnsureSurfaceRenderer(CityBillboardPlacementSlot slot)
     {
+        if (slot == null || slot.SurfaceRoot == null)
+        {
+            return null;
+        }
+
         Renderer existing = slot.SurfaceRoot.GetComponentInChildren<Renderer>(true);
         if (existing != null)
         {
-            if (mediaSurfaceMaterial == null && existing.sharedMaterial != null)
-            {
-                mediaSurfaceMaterial = existing.sharedMaterial;
-            }
-
             if (mediaSurfaceMaterial != null && existing.sharedMaterial != mediaSurfaceMaterial)
             {
                 RecordUndo(existing, "Assign billboard media material");
@@ -377,6 +395,12 @@ public class CityBillboardContentDistributor : MonoBehaviour
             }
 
             return existing;
+        }
+
+        if (mediaSurfaceMaterial == null)
+        {
+            Debug.LogWarning("CityBillboardContentDistributor: assign Media Surface Material before repairing a missing screen.", slot);
+            return null;
         }
 
         GameObject surface = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -416,51 +440,10 @@ public class CityBillboardContentDistributor : MonoBehaviour
         Renderer renderer = surface.GetComponent<Renderer>();
         if (renderer != null)
         {
-            renderer.sharedMaterial = ResolveMediaSurfaceMaterial();
+            renderer.sharedMaterial = mediaSurfaceMaterial;
         }
 
         return renderer;
-    }
-
-    private Material ResolveMediaSurfaceMaterial()
-    {
-        if (mediaSurfaceMaterial != null)
-        {
-            return mediaSurfaceMaterial;
-        }
-
-        if (billboardRoot != null)
-        {
-            Renderer[] renderers = billboardRoot.GetComponentsInChildren<Renderer>(true);
-            for (int i = 0; i < renderers.Length; i++)
-            {
-                if (renderers[i] != null && renderers[i].sharedMaterial != null)
-                {
-                    mediaSurfaceMaterial = renderers[i].sharedMaterial;
-                    return mediaSurfaceMaterial;
-                }
-            }
-        }
-
-        Shader shader = Shader.Find("Universal Render Pipeline/Lit");
-        if (shader == null)
-        {
-            shader = Shader.Find("Standard");
-        }
-
-        mediaSurfaceMaterial = new Material(shader);
-        mediaSurfaceMaterial.name = "M_CityBillboard_Media_Fallback";
-
-        if (mediaSurfaceMaterial.HasProperty("_BaseColor"))
-        {
-            mediaSurfaceMaterial.SetColor("_BaseColor", Color.white);
-        }
-        else
-        {
-            mediaSurfaceMaterial.color = Color.white;
-        }
-
-        return mediaSurfaceMaterial;
     }
 
     private static CityBillboardContentController FindContentController(CityBillboardPlacementSlot slot)
@@ -679,6 +662,10 @@ public class CityBillboardContentDistributor : MonoBehaviour
         if (!Application.isPlaying && target != null)
         {
             EditorUtility.SetDirty(target);
+            if (PrefabUtility.IsPartOfPrefabInstance(target))
+            {
+                PrefabUtility.RecordPrefabInstancePropertyModifications(target);
+            }
         }
 #endif
     }
@@ -688,7 +675,7 @@ public class CityBillboardContentDistributor : MonoBehaviour
 #if UNITY_EDITOR
         if (!Application.isPlaying)
         {
-            EditorUtility.SetDirty(this);
+            MarkObjectDirty(this);
             if (gameObject.scene.IsValid())
             {
                 EditorSceneManager.MarkSceneDirty(gameObject.scene);

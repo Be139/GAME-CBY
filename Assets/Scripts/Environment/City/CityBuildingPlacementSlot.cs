@@ -62,6 +62,11 @@ public class CityBuildingPlacementSlot : MonoBehaviour
 
     public void ClearContent()
     {
+        ClearContentExcept(null);
+    }
+
+    private void ClearContentExcept(GameObject retained)
+    {
         if (contentRoot == null)
         {
             return;
@@ -69,7 +74,8 @@ public class CityBuildingPlacementSlot : MonoBehaviour
 
         for (int i = contentRoot.childCount - 1; i >= 0; i--)
         {
-            DestroySlotObject(contentRoot.GetChild(i).gameObject);
+            GameObject child = contentRoot.GetChild(i).gameObject;
+            if (child != retained) DestroySlotObject(child);
         }
     }
 
@@ -79,8 +85,6 @@ public class CityBuildingPlacementSlot : MonoBehaviour
         {
             return null;
         }
-
-        ClearContent();
 
 #if UNITY_EDITOR
         GameObject instance;
@@ -99,6 +103,7 @@ public class CityBuildingPlacementSlot : MonoBehaviour
 
         instance.transform.localPosition = Vector3.zero;
         instance.transform.localRotation = Quaternion.identity;
+        ClearContentExcept(instance);
         return instance;
     }
 

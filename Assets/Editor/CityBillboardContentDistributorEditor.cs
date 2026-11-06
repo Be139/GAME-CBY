@@ -23,9 +23,7 @@ public class CityBillboardContentDistributorEditor : Editor
 
         if (GUILayout.Button("Find Billboard Root"))
         {
-            Undo.RecordObject(distributor, "Find billboard root");
             distributor.FindBillboardRoot();
-            EditorUtility.SetDirty(distributor);
         }
 
         if (GUILayout.Button("Prepare Existing Billboard Screens"))
@@ -45,7 +43,7 @@ public class CityBillboardContentDistributorEditor : Editor
 
         if (GUILayout.Button("Import AI Images And Redistribute"))
         {
-            ImportAiImagesAndRedistribute();
+            ImportAiImagesAndRedistribute(distributor);
         }
 
         if (GUILayout.Button("Clear Media Assignments"))
@@ -57,11 +55,34 @@ public class CityBillboardContentDistributorEditor : Editor
     [MenuItem("Tools/City/Billboards/Import AI Images And Redistribute")]
     public static void ImportAiImagesAndRedistribute()
     {
-        CityBillboardContentDistributor distributor =
-            UnityEngine.Object.FindObjectOfType<CityBillboardContentDistributor>(true);
+        CityBillboardContentDistributor distributor = null;
+        Scene activeScene = SceneManager.GetActiveScene();
+        foreach (GameObject root in activeScene.GetRootGameObjects())
+        {
+            foreach (CityBillboardContentDistributor candidate in root.GetComponentsInChildren<CityBillboardContentDistributor>(true))
+            {
+                if (distributor != null)
+                {
+                    Debug.LogError("City billboard images: multiple distributors in the active scene. Use the intended component's Inspector button.");
+                    return;
+                }
+                distributor = candidate;
+            }
+        }
         if (distributor == null)
         {
-            Debug.LogError("City billboard images: CityBillboardContentDistributor was not found in the loaded scene.");
+            Debug.LogError("City billboard images: CityBillboardContentDistributor was not found in the active scene.");
+            return;
+        }
+
+        ImportAiImagesAndRedistribute(distributor);
+    }
+
+    private static void ImportAiImagesAndRedistribute(CityBillboardContentDistributor distributor)
+    {
+        if (distributor.BillboardRoot == null)
+        {
+            Debug.LogError("City billboard images: assign Billboard Root before importing and redistributing.", distributor);
             return;
         }
 
@@ -74,7 +95,6 @@ public class CityBillboardContentDistributorEditor : Editor
 
         Undo.RecordObject(distributor, "Import AI billboard images");
         distributor.SetImageContents(images, false);
-        distributor.FindBillboardRoot();
         distributor.PrepareExistingBillboards();
         distributor.ApplySurfaceMaterialToAll();
         distributor.RedistributeAll();
@@ -84,10 +104,8 @@ public class CityBillboardContentDistributorEditor : Editor
         if (scene.IsValid() && scene.isLoaded)
         {
             EditorSceneManager.MarkSceneDirty(scene);
-            EditorSceneManager.SaveScene(scene);
         }
 
-        AssetDatabase.SaveAssets();
         Debug.Log(
             "City billboard images: imported " + images.Length +
             " AI images and redistributed them by billboard aspect ratio.");
